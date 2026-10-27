@@ -44,6 +44,19 @@ Claude Code는 시작할 때 `CLAUDE.md`를 읽고 프로젝트 규칙과 다음
 | `assets/models/` | 확정 캐릭터 GLB (평상복, 탐험복, 탐험복+모자)와 뼈대 포함 GLB(`wonderloop-rigged*.glb`) |
 | `CLAUDE.md` | 프로젝트 규칙과 다음 작업 로드맵 (Claude Code용) |
 
+## 텍스처를 포토샵으로 고치는 방법
+
+색연필 텍스처는 `assets/textures/<묶음>/`(캐릭터는 `character`, 베이스캠프는 `basecamp`)에 WebP 파일로 구워져 있어요. 어떤 파일이 어떤 텍스처인지는 `docs/bake/texture-index.jpg`에서 볼 수 있어요.
+
+1. 고칠 파일을 포토샵(23.2 이상, WebP 지원)으로 엽니다. 색 모드는 RGB 8비트, 작업 색공간은 sRGB 그대로 둡니다.
+2. 이미지 크기는 바꾸지 않습니다. 특히 캐릭터 텍스처는 256×256이어야 해요(방 텍스처는 바꿔도 됩니다).
+3. 덧칠합니다. 반복해서 깔리는 텍스처라 가장자리가 반대쪽과 이어져야 해요. 가장자리를 칠할 때는 **필터 → 기타 → 오프셋**(가로·세로 절반, 둘러싸기)으로 이음매를 가운데로 옮겨 확인하세요.
+4. **파일 → 다른 이름으로 저장 → WebP**, **무손실(Lossless)** 을 골라 같은 이름으로 덮어씁니다. PNG로 저장해도 되는데, 그때는 같은 폴더 `textures.json`에서 그 텍스처 줄의 `"file"`을 `.png` 이름으로 고쳐 주세요.
+5. `textures.json`의 그 줄에 `"hand": true`를 넣습니다. 굽기 도구를 다시 돌려도 손으로 고친 파일은 덮어쓰지 않아요. 깜빡해도 굽기 도구가 파일이 바뀐 걸 알아채고 저절로 붙여요.
+6. 로컬 서버로 열어 확인한 뒤 커밋합니다. 커밋 훅(`git config core.hooksPath tools/hooks`)을 켜 두면 파일 버전 표시가 저절로 새로 붙고, 아니면 `python3 tools/stamp.py`를 먼저 돌려요.
+
+원래 그림으로 되돌리려면 그 파일을 지우고 `textures.json`에서 `"hand": true`를 지운 뒤, 굽기 도구(`tools/bake-textures.js`)를 다시 돌립니다.
+
 ## 뼈대 포함 모델을 블렌더에서 열기
 
 `assets/models/`의 뼈대 포함 GLB는 게임 속 원더룹과 같은 뼈 이름(`hips`, `spine`, `thigh.L`, `forearm.R`, `neck`, `head` …)을 씁니다.

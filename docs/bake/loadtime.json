@@ -1,0 +1,146 @@
+{
+ "데스크톱 | 네트워크 제한 없음 | 그리기 | 첫 방문": {
+  "loaded": 956,
+  "frame": 956,
+  "drawMs": 164,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "데스크톱 | 네트워크 제한 없음 | 그리기 | 다시 방문": {
+  "loaded": 428,
+  "frame": 428,
+  "drawMs": 145,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "데스크톱 | 네트워크 제한 없음 | 구운 파일 | 첫 방문": {
+  "loaded": 510,
+  "frame": 510,
+  "drawMs": 0,
+  "loadMs": 72,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "데스크톱 | 네트워크 제한 없음 | 구운 파일 | 다시 방문": {
+  "loaded": 249,
+  "frame": 249,
+  "drawMs": 0,
+  "loadMs": 35,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 그리기 | 첫 방문": {
+  "loaded": 1723,
+  "frame": 1723,
+  "drawMs": 161,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 그리기 | 다시 방문": {
+  "loaded": 455,
+  "frame": 455,
+  "drawMs": 160,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 구운 파일 | 첫 방문": {
+  "loaded": 5209,
+  "frame": 5209,
+  "drawMs": 0,
+  "loadMs": 3632,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 구운 파일 | 다시 방문": {
+  "loaded": 276,
+  "frame": 276,
+  "drawMs": 0,
+  "loadMs": 36,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 그리기 | 첫 방문": {
+  "loaded": 1537,
+  "frame": 1537,
+  "drawMs": 651,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 그리기 | 다시 방문": {
+  "loaded": 1298,
+  "frame": 1297,
+  "drawMs": 617,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 구운 파일 | 첫 방문": {
+  "loaded": 853,
+  "frame": 853,
+  "drawMs": 0,
+  "loadMs": 99,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 구운 파일 | 다시 방문": {
+  "loaded": 631,
+  "frame": 631,
+  "drawMs": 0,
+  "loadMs": 73,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 그리기 | 첫 방문": {
+  "loaded": 2527,
+  "frame": 2527,
+  "drawMs": 615,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 그리기 | 다시 방문": {
+  "loaded": 1319,
+  "frame": 1318,
+  "drawMs": 656,
+  "loadMs": 0,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 0
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 구운 파일 | 첫 방문": {
+  "loaded": 5539,
+  "frame": 5539,
+  "drawMs": 0,
+  "loadMs": 3645,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 구운 파일 | 다시 방문": {
+  "loaded": 658,
+  "frame": 658,
+  "drawMs": 0,
+  "loadMs": 78,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ }
+}

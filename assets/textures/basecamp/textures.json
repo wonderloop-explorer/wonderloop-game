@@ -1,0 +1,893 @@
+{
+ "note": "원더룹 구운 텍스처 목록 — tools/bake-textures.js가 쓴다. hand: true = 손으로 고친 파일(다시 구워도 덮어쓰지 않음). key는 텍스처를 찾는 열쇠라 고치지 않는다.",
+ "textures": [
+  {
+   "key": "pencil|#e6bd92|planks|{\"rep\":[2.5,2.5]}",
+   "file": "planks-e6bd92-r2.5x2.5-47ac.webp",
+   "w": 256,
+   "h": 256,
+   "px": "4e6b6472aa909cc1",
+   "bytes": 22516
+  },
+  {
+   "key": "pencil|#a9764b|wood|{}",
+   "file": "wood-a9764b-258e.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b750fa6a07a70917",
+   "bytes": 21636
+  },
+  {
+   "key": "pencil|#f5e6c9|plaster|{\"rep\":[3,2]}",
+   "file": "plaster-f5e6c9-r3x2-e262.webp",
+   "w": 256,
+   "h": 256,
+   "px": "ee6e550422f89854",
+   "bytes": 28876
+  },
+  {
+   "key": "pencil|#a97a52|wood|{}",
+   "file": "wood-a97a52-1ac0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "8568668d8b2e5c90",
+   "bytes": 21924
+  },
+  {
+   "key": "pencil|#bfdccf|boards|{\"rep\":[6,1]}",
+   "file": "boards-bfdccf-r6x1-2668.webp",
+   "w": 256,
+   "h": 256,
+   "px": "faad3393eede026f",
+   "bytes": 18556
+  },
+  {
+   "key": "sky|0",
+   "file": "sky-day.webp",
+   "w": 256,
+   "h": 256,
+   "px": "68a17299c80591b7",
+   "bytes": 25394
+  },
+  {
+   "key": "sky|1",
+   "file": "sky-night.webp",
+   "w": 256,
+   "h": 256,
+   "px": "2bc1f82e752ea96e",
+   "bytes": 27118
+  },
+  {
+   "key": "pencil|#b88457|wood|{}",
+   "file": "wood-b88457-9930.webp",
+   "w": 256,
+   "h": 256,
+   "px": "696616393e7176ff",
+   "bytes": 21360
+  },
+  {
+   "key": "pencil|#e48d6a|plain|{}",
+   "file": "plain-e48d6a-1928.webp",
+   "w": 256,
+   "h": 256,
+   "px": "ac1d03fa753d4f71",
+   "bytes": 13564
+  },
+  {
+   "key": "pencil|#7fb86a|plain|{}",
+   "file": "plain-7fb86a-257b.webp",
+   "w": 256,
+   "h": 256,
+   "px": "fc27832255881769",
+   "bytes": 12172
+  },
+  {
+   "key": "pencil|#cfeaf2|plain|{\"opacity\":0.55}",
+   "file": "plain-cfeaf2-8d81.webp",
+   "w": 256,
+   "h": 256,
+   "px": "fa1f1deb8de1d1ff",
+   "bytes": 12892
+  },
+  {
+   "key": "pencil|#8a6a4c|wood|{}",
+   "file": "wood-8a6a4c-bed6.webp",
+   "w": 256,
+   "h": 256,
+   "px": "a76fd84f0434c2bd",
+   "bytes": 21398
+  },
+  {
+   "key": "pencil|#f3b9a6|stripes|{\"stripes\":[\"#f3b9a6\",\"#fbe3d4\"],\"n\":6}",
+   "file": "stripes-f3b9a6-75cb.webp",
+   "w": 256,
+   "h": 256,
+   "px": "f00a6b70275f7cf0",
+   "bytes": 20638
+  },
+  {
+   "key": "pencil|#c88f5e|wood|{}",
+   "file": "wood-c88f5e-d611.webp",
+   "w": 256,
+   "h": 256,
+   "px": "510655124c3e16b8",
+   "bytes": 20910
+  },
+  {
+   "key": "pencil|#d7a274|wood|{}",
+   "file": "wood-d7a274-a119.webp",
+   "w": 256,
+   "h": 256,
+   "px": "e70f07b07d70216a",
+   "bytes": 15158
+  },
+  {
+   "key": "pencil|#e3c27a|plain|{}",
+   "file": "plain-e3c27a-6c2c.webp",
+   "w": 256,
+   "h": 256,
+   "px": "18f5233bcdf67349",
+   "bytes": 13576
+  },
+  {
+   "key": "pencil|#f3e1b9|map|{\"size\":512}",
+   "file": "map-f3e1b9-b48f.webp",
+   "w": 512,
+   "h": 512,
+   "px": "9d300025db0cda60",
+   "bytes": 97402
+  },
+  {
+   "key": "pencil|#d8b36a|plain|{}",
+   "file": "plain-d8b36a-8030.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d04d2a7c9c28eaa7",
+   "bytes": 13974
+  },
+  {
+   "key": "pencil|#7a4e34|wood|{}",
+   "file": "wood-7a4e34-90ee.webp",
+   "w": 256,
+   "h": 256,
+   "px": "7c31ed54815f3e38",
+   "bytes": 21296
+  },
+  {
+   "key": "pencil|#fbf1dc|plain|{}",
+   "file": "plain-fbf1dc-c098.webp",
+   "w": 256,
+   "h": 256,
+   "px": "23fb1a29aa37aafd",
+   "bytes": 12544
+  },
+  {
+   "key": "pencil|#d45d5a|plain|{}",
+   "file": "plain-d45d5a-4337.webp",
+   "w": 256,
+   "h": 256,
+   "px": "735d1f5b73f9241a",
+   "bytes": 13528
+  },
+  {
+   "key": "pencil|#6fc0b3|plain|{}",
+   "file": "plain-6fc0b3-ed4f.webp",
+   "w": 256,
+   "h": 256,
+   "px": "64001da92b85d751",
+   "bytes": 13182
+  },
+  {
+   "key": "pencil|#f2c14e|plain|{}",
+   "file": "plain-f2c14e-1817.webp",
+   "w": 256,
+   "h": 256,
+   "px": "58b24a5e545de75a",
+   "bytes": 13446
+  },
+  {
+   "key": "pencil|#f2d7b0|plain|{}",
+   "file": "plain-f2d7b0-962a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "e910eb9aaf78988f",
+   "bytes": 13486
+  },
+  {
+   "key": "pencil|#e2725b|plain|{}",
+   "file": "plain-e2725b-ac83.webp",
+   "w": 256,
+   "h": 256,
+   "px": "7800712cca19df09",
+   "bytes": 13612
+  },
+  {
+   "key": "pencil|#8fb6e0|plain|{}",
+   "file": "plain-8fb6e0-6e03.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b9ef679e8b7eeee2",
+   "bytes": 13696
+  },
+  {
+   "key": "pencil|#7c9fcf|plain|{}",
+   "file": "plain-7c9fcf-301a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "bab6767e7b708816",
+   "bytes": 13486
+  },
+  {
+   "key": "pencil|#e8a39a|plain|{}",
+   "file": "plain-e8a39a-ab26.webp",
+   "w": 256,
+   "h": 256,
+   "px": "cfc585733c449920",
+   "bytes": 13456
+  },
+  {
+   "key": "pencil|#a8cf8e|plain|{}",
+   "file": "plain-a8cf8e-31ea.webp",
+   "w": 256,
+   "h": 256,
+   "px": "6b9cd6fbe41f96ed",
+   "bytes": 13386
+  },
+  {
+   "key": "pencil|#fbe9cf|plain|{}",
+   "file": "plain-fbe9cf-742b.webp",
+   "w": 256,
+   "h": 256,
+   "px": "45a9580f00bdec46",
+   "bytes": 13076
+  },
+  {
+   "key": "pencil|#a0673f|plain|{}",
+   "file": "plain-a0673f-609f.webp",
+   "w": 256,
+   "h": 256,
+   "px": "098b8e4804761f70",
+   "bytes": 19646
+  },
+  {
+   "key": "pencil|#fff8ea|paper|{}",
+   "file": "paper-fff8ea-d51d.webp",
+   "w": 256,
+   "h": 256,
+   "px": "313b56c1250607b8",
+   "bytes": 14038
+  },
+  {
+   "key": "pencil|#b9855a|wood|{}",
+   "file": "wood-b9855a-2c09.webp",
+   "w": 256,
+   "h": 256,
+   "px": "90974ba280ca802b",
+   "bytes": 20920
+  },
+  {
+   "key": "pencil|#f4c4c0|quilt|{\"pal\":[\"#f4c4c0\",\"#f8d9cf\",\"#f0b2ae\"]}",
+   "file": "quilt-f4c4c0-ffca.webp",
+   "w": 256,
+   "h": 256,
+   "px": "a3cdce3fad998dd0",
+   "bytes": 22096
+  },
+  {
+   "key": "pencil|#8b6a4a|wood|{}",
+   "file": "wood-8b6a4a-7170.webp",
+   "w": 256,
+   "h": 256,
+   "px": "ee28fc6c7c48e720",
+   "bytes": 21528
+  },
+  {
+   "key": "pencil|#6f8fb8|plain|{}",
+   "file": "plain-6f8fb8-bf60.webp",
+   "w": 256,
+   "h": 256,
+   "px": "755f124237b1f2db",
+   "bytes": 13078
+  },
+  {
+   "key": "pencil|#c69468|wood|{}",
+   "file": "wood-c69468-e0cd.webp",
+   "w": 256,
+   "h": 256,
+   "px": "f53612613cfd7d72",
+   "bytes": 15278
+  },
+  {
+   "key": "pencil|#9cc9e0|plain|{}",
+   "file": "plain-9cc9e0-cdee.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1b0369ba911c449a",
+   "bytes": 12622
+  },
+  {
+   "key": "pencil|#86c07a|plain|{}",
+   "file": "plain-86c07a-5229.webp",
+   "w": 256,
+   "h": 256,
+   "px": "bbb404fefa53f846",
+   "bytes": 13988
+  },
+  {
+   "key": "pencil|#efd3a8|plain|{}",
+   "file": "plain-efd3a8-aaa1.webp",
+   "w": 256,
+   "h": 256,
+   "px": "2bdb8b1cc68b5fed",
+   "bytes": 13586
+  },
+  {
+   "key": "pencil|#f3e1b9|plain|{}",
+   "file": "plain-f3e1b9-a512.webp",
+   "w": 256,
+   "h": 256,
+   "px": "2df5df83a6cade0a",
+   "bytes": 13284
+  },
+  {
+   "key": "pencil|#e7b05a|plain|{}",
+   "file": "plain-e7b05a-f8e1.webp",
+   "w": 256,
+   "h": 256,
+   "px": "000c9555e979270d",
+   "bytes": 14060
+  },
+  {
+   "key": "pencil|#d77f7a|plain|{}",
+   "file": "plain-d77f7a-41fb.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c8584c97c3621b82",
+   "bytes": 13278
+  },
+  {
+   "key": "pencil|#9ccf9a|plain|{}",
+   "file": "plain-9ccf9a-9624.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1900223401ebbe02",
+   "bytes": 12384
+  },
+  {
+   "key": "pencil|#b6a0d6|plain|{}",
+   "file": "plain-b6a0d6-3b37.webp",
+   "w": 256,
+   "h": 256,
+   "px": "977c5be184f088d3",
+   "bytes": 13722
+  },
+  {
+   "key": "pencil|#f2d27b|plain|{}",
+   "file": "plain-f2d27b-de70.webp",
+   "w": 256,
+   "h": 256,
+   "px": "8fd17ca718d312d2",
+   "bytes": 12754
+  },
+  {
+   "key": "pencil|#e3b98c|crate|{}",
+   "file": "crate-e3b98c-41d8.webp",
+   "w": 256,
+   "h": 256,
+   "px": "cf26bdf24a40a918",
+   "bytes": 22152
+  },
+  {
+   "key": "pencil|#cfc6b8|plain|{}",
+   "file": "plain-cfc6b8-7a61.webp",
+   "w": 256,
+   "h": 256,
+   "px": "0bb1fab0bba82b54",
+   "bytes": 13006
+  },
+  {
+   "key": "pencil|#e2a27a|plain|{}",
+   "file": "plain-e2a27a-c235.webp",
+   "w": 256,
+   "h": 256,
+   "px": "3ca91a0adebb412a",
+   "bytes": 13476
+  },
+  {
+   "key": "pencil|#8a6a4c|plain|{}",
+   "file": "plain-8a6a4c-6b6e.webp",
+   "w": 256,
+   "h": 256,
+   "px": "4f4c6b6ae0ea5492",
+   "bytes": 13992
+  },
+  {
+   "key": "pencil|#fff8ea|antsketch|{}",
+   "file": "antsketch-fff8ea-853a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b1ad1224d29bea2b",
+   "bytes": 9962
+  },
+  {
+   "key": "pencil|#cfe7f2|plain|{}",
+   "file": "plain-cfe7f2-d83e.webp",
+   "w": 256,
+   "h": 256,
+   "px": "e41f729a1bfe47c5",
+   "bytes": 13316
+  },
+  {
+   "key": "pencil|#fde2c4|paper|{}",
+   "file": "paper-fde2c4-a669.webp",
+   "w": 256,
+   "h": 256,
+   "px": "84147790eaecf9ba",
+   "bytes": 16772
+  },
+  {
+   "key": "pencil|#e7f2d0|plain|{}",
+   "file": "plain-e7f2d0-3657.webp",
+   "w": 256,
+   "h": 256,
+   "px": "5445314591c9d6b3",
+   "bytes": 13114
+  },
+  {
+   "key": "pencil|#e59a5a|plain|{}",
+   "file": "plain-e59a5a-540b.webp",
+   "w": 256,
+   "h": 256,
+   "px": "664bd191f46294b8",
+   "bytes": 13644
+  },
+  {
+   "key": "pencil|#c9b05a|plain|{}",
+   "file": "plain-c9b05a-265f.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c1bbfb3f688cef99",
+   "bytes": 12924
+  },
+  {
+   "key": "pencil|#9ab86a|plain|{}",
+   "file": "plain-9ab86a-3da5.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d83da6a1005a48e0",
+   "bytes": 12610
+  },
+  {
+   "key": "pencil|#d4795c|plain|{}",
+   "file": "plain-d4795c-54f2.webp",
+   "w": 256,
+   "h": 256,
+   "px": "96d083e65d39ad7b",
+   "bytes": 14056
+  },
+  {
+   "key": "pencil|#d9a86e|cork|{}",
+   "file": "cork-d9a86e-ec7a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d2af6bebf8005b3e",
+   "bytes": 37600
+  },
+  {
+   "key": "pencil|#fde2c4|antsketch|{}",
+   "file": "antsketch-fde2c4-fe0d.webp",
+   "w": 256,
+   "h": 256,
+   "px": "944f07a004235bfc",
+   "bytes": 16050
+  },
+  {
+   "key": "pencil|#cfe7f2|paper|{}",
+   "file": "paper-cfe7f2-af30.webp",
+   "w": 256,
+   "h": 256,
+   "px": "ea45323240661629",
+   "bytes": 16990
+  },
+  {
+   "key": "pencil|#fff1a8|plain|{}",
+   "file": "plain-fff1a8-60e1.webp",
+   "w": 256,
+   "h": 256,
+   "px": "6e639e1bde1b7150",
+   "bytes": 12626
+  },
+  {
+   "key": "pencil|#f7c6d0|plain|{}",
+   "file": "plain-f7c6d0-8ceb.webp",
+   "w": 256,
+   "h": 256,
+   "px": "052293eca750284d",
+   "bytes": 13388
+  },
+  {
+   "key": "pencil|#c28b5c|wood|{}",
+   "file": "wood-c28b5c-9a49.webp",
+   "w": 256,
+   "h": 256,
+   "px": "236cb8dd36f4ffbc",
+   "bytes": 14990
+  },
+  {
+   "key": "pencil|#fbf4e6|plain|{}",
+   "file": "plain-fbf4e6-615f.webp",
+   "w": 256,
+   "h": 256,
+   "px": "9b08974b07501b53",
+   "bytes": 11860
+  },
+  {
+   "key": "pencil|#f6d68b|quilt|{\"rep\":[2,3]}",
+   "file": "quilt-f6d68b-r2x3-482a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "cd8fc4a5653c5e3a",
+   "bytes": 26256
+  },
+  {
+   "key": "pencil|#f6d68b|quilt|{\"rep\":[2,1]}",
+   "file": "quilt-f6d68b-r2x1-73c0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "9754bca8e02ed202",
+   "bytes": 27328
+  },
+  {
+   "key": "pencil|#fbe9e2|stripes|{\"stripes\":[\"#fbe9e2\",\"#f6c9c0\"],\"n\":10}",
+   "file": "stripes-fbe9e2-9f3a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "03a52a5e1dbc99e6",
+   "bytes": 15380
+  },
+  {
+   "key": "pencil|#d98a62|plain|{}",
+   "file": "plain-d98a62-51f0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d1e4b74b97de900f",
+   "bytes": 13854
+  },
+  {
+   "key": "pencil|#3d2c22|plain|{}",
+   "file": "plain-3d2c22-1de0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b6dc8c9cf40de9c4",
+   "bytes": 13812
+  },
+  {
+   "key": "pencil|#7a4e34|plain|{}",
+   "file": "plain-7a4e34-7f00.webp",
+   "w": 256,
+   "h": 256,
+   "px": "db268eab21ba0b67",
+   "bytes": 13810
+  },
+  {
+   "key": "pencil|#3fb5a8|plain|{}",
+   "file": "plain-3fb5a8-42a0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "871c232906550085",
+   "bytes": 13986
+  },
+  {
+   "key": "pencil|#8fc4b7|plain|{}",
+   "file": "plain-8fc4b7-30f0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d5428ec7fe2a169d",
+   "bytes": 13194
+  },
+  {
+   "key": "pencil|#4b3a2b|plain|{}",
+   "file": "plain-4b3a2b-4714.webp",
+   "w": 256,
+   "h": 256,
+   "px": "79b581a26aceacbb",
+   "bytes": 13898
+  },
+  {
+   "key": "pencil|#efe1c4|weave|{}",
+   "file": "weave-efe1c4-98f0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "dad749caca1fb1d9",
+   "bytes": 15560
+  },
+  {
+   "key": "pencil|#e9cf95|plain|{}",
+   "file": "plain-e9cf95-69e1.webp",
+   "w": 256,
+   "h": 256,
+   "px": "749c2fa74eaf20c9",
+   "bytes": 13372
+  },
+  {
+   "key": "pencil|#d8bd8a|plain|{}",
+   "file": "plain-d8bd8a-7188.webp",
+   "w": 256,
+   "h": 256,
+   "px": "bb802a00b69415d3",
+   "bytes": 12840
+  },
+  {
+   "key": "pencil|#b4744a|leather|{}",
+   "file": "leather-b4744a-aae1.webp",
+   "w": 256,
+   "h": 256,
+   "px": "a2f6d0691be631a6",
+   "bytes": 36306
+  },
+  {
+   "key": "pencil|#8e5534|leather|{}",
+   "file": "leather-8e5534-6588.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d5efe7daad06bf0d",
+   "bytes": 35872
+  },
+  {
+   "key": "pencil|#8fc4b7|stripes|{\"stripes\":[\"#8fc4b7\",\"#f4d4a2\",\"#e9a07c\"],\"n\":9}",
+   "file": "stripes-8fc4b7-9056.webp",
+   "w": 256,
+   "h": 256,
+   "px": "6dca36259932111f",
+   "bytes": 24636
+  },
+  {
+   "key": "pencil|#c9a06e|wood|{}",
+   "file": "wood-c9a06e-fd79.webp",
+   "w": 256,
+   "h": 256,
+   "px": "f9bb68fe2446c1ee",
+   "bytes": 15220
+  },
+  {
+   "key": "pencil|#d9ac7a|crate|{}",
+   "file": "crate-d9ac7a-9fcb.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c2101fc29eb2ede8",
+   "bytes": 22730
+  },
+  {
+   "key": "pencil|#5f6f6a|plain|{}",
+   "file": "plain-5f6f6a-fd75.webp",
+   "w": 256,
+   "h": 256,
+   "px": "2f8e38f9d4d3eacf",
+   "bytes": 12742
+  },
+  {
+   "key": "pencil|#e9a07c|rug|{\"size\":512}",
+   "file": "rug-e9a07c-9e7b.webp",
+   "w": 512,
+   "h": 512,
+   "px": "05e774188259ffe2",
+   "bytes": 108928
+  },
+  {
+   "key": "pencil|#c9b6e2|quilt|{\"pal\":[\"#c9b6e2\",\"#ded3ed\",\"#b8a0d9\"]}",
+   "file": "quilt-c9b6e2-6459.webp",
+   "w": 256,
+   "h": 256,
+   "px": "732b0cfbf74c6792",
+   "bytes": 21144
+  },
+  {
+   "key": "pencil|#bcd893|quilt|{\"pal\":[\"#bcd893\",\"#cee2b0\",\"#aecf7c\"]}",
+   "file": "quilt-bcd893-fbd5.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b64d39e546b3f159",
+   "bytes": 20184
+  },
+  {
+   "key": "pencil|#d39a66|wood|{}",
+   "file": "wood-d39a66-a790.webp",
+   "w": 256,
+   "h": 256,
+   "px": "4e025868dbb961fd",
+   "bytes": 15852
+  },
+  {
+   "key": "pencil|#c98a5a|plain|{}",
+   "file": "plain-c98a5a-7588.webp",
+   "w": 256,
+   "h": 256,
+   "px": "fdf1870e5a27313c",
+   "bytes": 12998
+  },
+  {
+   "key": "pencil|#d9925a|plain|{}",
+   "file": "plain-d9925a-cc48.webp",
+   "w": 256,
+   "h": 256,
+   "px": "46ee45778be99baa",
+   "bytes": 13946
+  },
+  {
+   "key": "pencil|#5b4636|plain|{}",
+   "file": "plain-5b4636-a341.webp",
+   "w": 256,
+   "h": 256,
+   "px": "2ce48e226b5e55f3",
+   "bytes": 13992
+  },
+  {
+   "key": "pencil|#ec8b7d|plain|{\"emissive\":\"#ec8b7d\",\"ei\":0.05}",
+   "file": "plain-ec8b7d-66e8.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c18ab201cf619ea4",
+   "bytes": 14332
+  },
+  {
+   "key": "pencil|#fff4e2|plain|{}",
+   "file": "plain-fff4e2-50d8.webp",
+   "w": 256,
+   "h": 256,
+   "px": "70d2d946499212cc",
+   "bytes": 12184
+  },
+  {
+   "key": "pencil|#86c5e0|globe|{}",
+   "file": "globe-86c5e0-58a8.webp",
+   "w": 256,
+   "h": 256,
+   "px": "3a748e0108ca6915",
+   "bytes": 27864
+  },
+  {
+   "key": "pencil|#d9825f|plain|{}",
+   "file": "plain-d9825f-a842.webp",
+   "w": 256,
+   "h": 256,
+   "px": "f3c18f315f37c4a6",
+   "bytes": 13754
+  },
+  {
+   "key": "pencil|#8fc4b7|stripes|{\"stripes\":[\"#8fc4b7\",\"#f5ead2\"],\"n\":16}",
+   "file": "stripes-8fc4b7-43c4.webp",
+   "w": 256,
+   "h": 256,
+   "px": "e67104d3ae926cf5",
+   "bytes": 21950
+  },
+  {
+   "key": "pencil|#eb9b74|plain|{}",
+   "file": "plain-eb9b74-f97b.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1edaf871c84ae395",
+   "bytes": 13688
+  },
+  {
+   "key": "pencil|#7a5a3e|plaster|{}",
+   "file": "plaster-7a5a3e-4326.webp",
+   "w": 256,
+   "h": 256,
+   "px": "54f5d25cf20284a0",
+   "bytes": 39734
+  },
+  {
+   "key": "pencil|#e9dccb|plain|{}",
+   "file": "plain-e9dccb-27f3.webp",
+   "w": 256,
+   "h": 256,
+   "px": "7a302063437d54e4",
+   "bytes": 12966
+  },
+  {
+   "key": "pencil|#bfb2a3|plain|{}",
+   "file": "plain-bfb2a3-4542.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1da9c4fc8725221e",
+   "bytes": 13208
+  },
+  {
+   "key": "pencil|#d9c7ae|plain|{}",
+   "file": "plain-d9c7ae-eae7.webp",
+   "w": 256,
+   "h": 256,
+   "px": "995bad3eba920646",
+   "bytes": 13304
+  },
+  {
+   "key": "pencil|#cfd6c9|plain|{}",
+   "file": "plain-cfd6c9-b768.webp",
+   "w": 256,
+   "h": 256,
+   "px": "ab7c69074d889fb7",
+   "bytes": 13010
+  },
+  {
+   "key": "pencil|#5fa457|leaf|{}",
+   "file": "leaf-5fa457-f3c5.webp",
+   "w": 256,
+   "h": 256,
+   "px": "ddb3913822c05000",
+   "bytes": 23016
+  },
+  {
+   "key": "pencil|#78b863|leaf|{}",
+   "file": "leaf-78b863-9f7c.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d28ef19cc887eb73",
+   "bytes": 21572
+  },
+  {
+   "key": "pencil|#9ccd78|leaf|{}",
+   "file": "leaf-9ccd78-b3ae.webp",
+   "w": 256,
+   "h": 256,
+   "px": "898aec25068ab0d4",
+   "bytes": 22930
+  },
+  {
+   "key": "pencil|#7c9a55|plain|{}",
+   "file": "plain-7c9a55-6530.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d725bfa9b13d7eb9",
+   "bytes": 14088
+  },
+  {
+   "key": "pencil|#d8b57a|weave|{\"rep\":[3,1]}",
+   "file": "weave-d8b57a-r3x1-3abd.webp",
+   "w": 256,
+   "h": 256,
+   "px": "841e7341b7898002",
+   "bytes": 16954
+  },
+  {
+   "key": "pencil|#f6e6c4|plain|{}",
+   "file": "plain-f6e6c4-34b2.webp",
+   "w": 256,
+   "h": 256,
+   "px": "f37fec4f3c13badf",
+   "bytes": 13192
+  },
+  {
+   "key": "pencil|#36aaa0|plain|{\"hatch\":0.45}",
+   "file": "plain-36aaa0-2589.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b012407efa07edc6",
+   "bytes": 9546
+  },
+  {
+   "key": "pencil|#744631|plain|{\"hatch\":0.5}",
+   "file": "plain-744631-2c8d.webp",
+   "w": 256,
+   "h": 256,
+   "px": "915be0853a174154",
+   "bytes": 10138
+  },
+  {
+   "key": "pencil|#5c3625|plain|{\"hatch\":0.4}",
+   "file": "plain-5c3625-a864.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1c38531a6fc2640b",
+   "bytes": 9494
+  },
+  {
+   "key": "pencil|#f3ead6|plain|{\"hatch\":0.45}",
+   "file": "plain-f3ead6-33e7.webp",
+   "w": 256,
+   "h": 256,
+   "px": "3ff3eb32087d39eb",
+   "bytes": 8692
+  }
+ ]
+}

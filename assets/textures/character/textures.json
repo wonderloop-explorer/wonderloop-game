@@ -1,0 +1,277 @@
+{
+ "note": "원더룹 구운 텍스처 목록 — tools/bake-textures.js가 쓴다. hand: true = 손으로 고친 파일(다시 구워도 덮어쓰지 않음). key는 텍스처를 찾는 열쇠라 고치지 않는다.",
+ "textures": [
+  {
+   "key": "pencil|#ffc9a0|plain|{\"hatch\":0.45}",
+   "file": "plain-ffc9a0-40cf.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d97f1330b5f6a7a7",
+   "bytes": 9152
+  },
+  {
+   "key": "pencil|#4e2e22|plain|{\"hatch\":0.45}",
+   "file": "plain-4e2e22-8728.webp",
+   "w": 256,
+   "h": 256,
+   "px": "a3cbdea59da7ec41",
+   "bytes": 9536
+  },
+  {
+   "key": "pencil|#f3ead6|jersey|{\"rep\":[3,3]}",
+   "file": "jersey-f3ead6-r3x3-3c0a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "220b40419db25c99",
+   "bytes": 17862
+  },
+  {
+   "key": "pencil|#4a68b0|denim|{\"rep\":[2,3],\"grain\":0.35}",
+   "file": "denim-4a68b0-r2x3-ea84.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1200b54d4e9df235",
+   "bytes": 82962
+  },
+  {
+   "key": "pencil|#7a4a32|suede|{\"rep\":[2,2],\"grain\":0.4}",
+   "file": "suede-7a4a32-r2x2-7a5b.webp",
+   "w": 256,
+   "h": 256,
+   "px": "2f6cb6629d92619e",
+   "bytes": 74380
+  },
+  {
+   "key": "pencil|#7a4a32|plain|{\"hatch\":0.45}",
+   "file": "plain-7a4a32-20f6.webp",
+   "w": 256,
+   "h": 256,
+   "px": "aed5631e72e0b9de",
+   "bytes": 9762
+  },
+  {
+   "key": "pencil|#f2b63c|plain|{\"hatch\":0.45}",
+   "file": "plain-f2b63c-96c7.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d2be240b13957647",
+   "bytes": 9692
+  },
+  {
+   "key": "pencil|#f3ead6|rubber|{\"grain\":0.3}",
+   "file": "rubber-f3ead6-f5e3.webp",
+   "w": 256,
+   "h": 256,
+   "px": "47f915157b2260e0",
+   "bytes": 55844
+  },
+  {
+   "key": "pencil|#d9cdb3|jersey|{\"rep\":[6,1]}",
+   "file": "jersey-d9cdb3-r6x1-ff06.webp",
+   "w": 256,
+   "h": 256,
+   "px": "524a4eeed1d703cb",
+   "bytes": 19144
+  },
+  {
+   "key": "pencil|#f2a27e|plain|{\"hatch\":0.45}",
+   "file": "plain-f2a27e-9577.webp",
+   "w": 256,
+   "h": 256,
+   "px": "40f9376c6ea82633",
+   "bytes": 9566
+  },
+  {
+   "key": "pencil|#a8603f|plain|{\"hatch\":0.45}",
+   "file": "plain-a8603f-4440.webp",
+   "w": 256,
+   "h": 256,
+   "px": "75e76a53ea162582",
+   "bytes": 9500
+  },
+  {
+   "key": "pencil|#7e4229|plain|{\"hatch\":0.45}",
+   "file": "plain-7e4229-a270.webp",
+   "w": 256,
+   "h": 256,
+   "px": "565c4830a0af5a15",
+   "bytes": 9912
+  },
+  {
+   "key": "pencil|#7e4c33|hair|{\"size\":512}",
+   "file": "hair-7e4c33-ca36.webp",
+   "w": 512,
+   "h": 512,
+   "px": "adcf523680dae1bd",
+   "bytes": 71210
+  },
+  {
+   "key": "pencil|#7d96cc|denim|{\"rep\":[3,1],\"grain\":0.35}",
+   "file": "denim-7d96cc-r3x1-8e60.webp",
+   "w": 256,
+   "h": 256,
+   "px": "97cb2108ffb04ede",
+   "bytes": 81244
+  },
+  {
+   "key": "pencil|#3f5a9c|plain|{\"hatch\":0.45}",
+   "file": "plain-3f5a9c-1f4a.webp",
+   "w": 256,
+   "h": 256,
+   "px": "5ef73e5a449b3cab",
+   "bytes": 9590
+  },
+  {
+   "key": "pencil|#f7f2e8|linen|{\"rep\":[3,3]}",
+   "file": "linen-f7f2e8-r3x3-a45e.webp",
+   "w": 256,
+   "h": 256,
+   "px": "4d20a0f896ce272b",
+   "bytes": 13174
+  },
+  {
+   "key": "pencil|#8f8558|twill|{\"rep\":[2,3],\"grain\":0.35}",
+   "file": "twill-8f8558-r2x3-9617.webp",
+   "w": 256,
+   "h": 256,
+   "px": "3a28925b9d0b5413",
+   "bytes": 63932
+  },
+  {
+   "key": "pencil|#b3a978|twill|{\"rep\":[3,1],\"grain\":0.35}",
+   "file": "twill-b3a978-r3x1-a711.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b99b9f6be446e79e",
+   "bytes": 56598
+  },
+  {
+   "key": "pencil|#6c643f|plain|{\"hatch\":0.45}",
+   "file": "plain-6c643f-1214.webp",
+   "w": 256,
+   "h": 256,
+   "px": "68e9ac039f3602fe",
+   "bytes": 9690
+  },
+  {
+   "key": "pencil|#c99d5c|canvas|{\"rep\":[3,2]}",
+   "file": "canvas-c99d5c-r3x2-4816.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b01763c94d77b148",
+   "bytes": 21782
+  },
+  {
+   "key": "pencil|#a87e43|canvas|{\"rep\":[2,1]}",
+   "file": "canvas-a87e43-r2x1-d990.webp",
+   "w": 256,
+   "h": 256,
+   "px": "16f39ba8efbe9214",
+   "bytes": 21600
+  },
+  {
+   "key": "pencil|#7a4a32|leather2|{\"rep\":[6,1],\"stitch\":\"h\"}",
+   "file": "leather2-7a4a32-r6x1-c001.webp",
+   "w": 256,
+   "h": 256,
+   "px": "cebfbadbd5262cd3",
+   "bytes": 37448
+  },
+  {
+   "key": "pencil|#ec8b7d|plain|{\"hatch\":0.45}",
+   "file": "plain-ec8b7d-cd72.webp",
+   "w": 256,
+   "h": 256,
+   "px": "81e48ab54033dc78",
+   "bytes": 9774
+  },
+  {
+   "key": "pencil|#dcc48e|canvas|{\"rep\":[4,2]}",
+   "file": "canvas-dcc48e-r4x2-c7cd.webp",
+   "w": 256,
+   "h": 256,
+   "px": "4abfb9d5cc304e68",
+   "bytes": 13216
+  },
+  {
+   "key": "pencil|#7a4a32|plain|{\"hatch\":0.4}",
+   "file": "plain-7a4a32-2c39.webp",
+   "w": 256,
+   "h": 256,
+   "px": "e1752465802262a7",
+   "bytes": 9406
+  },
+  {
+   "key": "pencil|#b8743f|leather2|{}",
+   "file": "leather2-b8743f-b9a4.webp",
+   "w": 256,
+   "h": 256,
+   "px": "93cd79ac023428d2",
+   "bytes": 38254
+  },
+  {
+   "key": "pencil|#8a5230|leather2|{}",
+   "file": "leather2-8a5230-dd57.webp",
+   "w": 256,
+   "h": 256,
+   "px": "37a49c9d4669115b",
+   "bytes": 39086
+  },
+  {
+   "key": "pencil|#f3e3c6|wool|{\"stripes\":[\"#f3e3c6\",\"#f3e3c6\",\"#d97e6a\",\"#f3e3c6\",\"#5f8f86\"],\"n\":10,\"rep\":[1,1]}",
+   "file": "wool-f3e3c6-r1x1-b8ee.webp",
+   "w": 256,
+   "h": 256,
+   "px": "2ac91eae5a6148aa",
+   "bytes": 38184
+  },
+  {
+   "key": "pencil|#f3e3c6|wool|{\"stripes\":[\"#f3e3c6\"],\"n\":1}",
+   "file": "wool-f3e3c6-8a59.webp",
+   "w": 256,
+   "h": 256,
+   "px": "ed41989e57ace15b",
+   "bytes": 21140
+  },
+  {
+   "key": "pencil|#d8b36a|plain|{\"hatch\":0.45}",
+   "file": "plain-d8b36a-67e7.webp",
+   "w": 256,
+   "h": 256,
+   "px": "940c232e50e108b7",
+   "bytes": 9794
+  },
+  {
+   "key": "pencil|#ffd04a|plain|{\"hatch\":0.3}",
+   "file": "plain-ffd04a-1c10.webp",
+   "w": 256,
+   "h": 256,
+   "px": "8cf0aa5d2288ae46",
+   "bytes": 7974
+  },
+  {
+   "key": "pencil|#fff3d8|plain|{\"hatch\":0.45}",
+   "file": "plain-fff3d8-829f.webp",
+   "w": 256,
+   "h": 256,
+   "px": "630fce4e02d96686",
+   "bytes": 8404
+  },
+  {
+   "key": "pencil|#e85a5a|plain|{\"hatch\":0.45}",
+   "file": "plain-e85a5a-828b.webp",
+   "w": 256,
+   "h": 256,
+   "px": "04ffa2d6368760e3",
+   "bytes": 8888
+  },
+  {
+   "key": "pencil|#5a6a9a|plain|{\"hatch\":0.45}",
+   "file": "plain-5a6a9a-a39c.webp",
+   "w": 256,
+   "h": 256,
+   "px": "59e905fc49d5b4ea",
+   "bytes": 9156
+  }
+ ]
+}

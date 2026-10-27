@@ -19,7 +19,7 @@ function rng(name,opt){
   return()=>i<vals.length?vals[i++]:(s=s||mulberry32(opt&&opt.afterLoad&&REC.loadEnd!=null?REC.loadEnd:hash(name)))();
 }
 /* 로딩 끝(08 맨 끝에서 부름): 기록 모드면 기록을 저장 */
-function rngLoaded(){if(!RREC||loaded)return;loaded=true;REC.loadEnd=OLD.state();
+function rngLoaded(){performance.mark('wl-loaded');if(!RREC||loaded)return;loaded=true;REC.loadEnd=OLD.state();
   fetch('/save?path=../assets/rand/recorded.json',{method:'POST',body:JSON.stringify(REC)}).then(r=>console.log('원더룹: 난수 기록 저장',r.status));}
 // 텍스처 그리기는 텍스처마다 자기 난수(이름이 같으면 #2, #3…)로
 const texSeen={};let R=rng('misc');
@@ -57,14 +57,35 @@ function blotches(g,S,dark,light,n,r0,r1,a){
 }
 function wavyLine(g,S,y,amp,freq,ph){g.beginPath();g.moveTo(0,y);for(let x=0;x<=S;x+=8)g.lineTo(x,y+Math.sin(x*freq+ph)*amp);g.stroke();}
 
+/* ---------- 구운 텍스처 ----------
+   assets/textures/<묶음>/textures.json(목록)에 있는 텍스처는 그리지 않고 파일(.webp·.png)을 읽어 쓴다. 없으면 지금처럼 캔버스로 그린다.
+   포토샵으로 고친 파일도 그대로 쓰도록 색 변환 없이 픽셀 값 그대로 읽는다(포토샵 작업 색공간은 sRGB).
+   ?nobake 를 붙이면 구운 파일을 안 쓰고 모두 그린다(굽기 도구가 쓴다). 목록의 이름(key)이 텍스처를 찾는 열쇠다. */
+// 불러오기 방식: 'all' = 구운 파일 모두(다시 방문·느린 CPU에서 빠름, 첫 방문에 약 3MB 더 받음), 'hand' = 손으로 고친 파일만(나머지는 그림)
+const BAKE_LOAD='hand';
+const BAKE_SETS=['character','basecamp'],BAKED=new Map(),TEXREG=new Map(),wlTex={drawMs:0,drawn:0,baked:0,loadMs:0};window.wlTex=wlTex;
+if(!RREC&&!new URLSearchParams(location.search).has('nobake')){const t0=performance.now();
+  await Promise.all(BAKE_SETS.map(async set=>{const dir=new URL(`../assets/textures/${set}/`,import.meta.url),v='?v='+(window.WL_V||'');
+    const list=await fetch(new URL('textures.json',dir)+v).then(r=>r.ok?r.json():null).catch(()=>null);if(!list)return;
+    await Promise.all(list.textures.filter(e=>BAKE_LOAD==='all'||e.hand).map(async e=>{try{
+      const b=await fetch(new URL(e.file,dir)+v).then(r=>{if(!r.ok)throw r.status;return r.blob();});
+      const bm=await createImageBitmap(b,{colorSpaceConversion:'none',premultiplyAlpha:'none'});
+      const cv=document.createElement('canvas');cv.width=bm.width;cv.height=bm.height;cv.getContext('2d').drawImage(bm,0,0);bm.close();BAKED.set(e.key,cv);
+    }catch(err){console.warn('원더룹: 구운 텍스처를 못 읽어 대신 그림 —',set,e.file,err);}}));}));
+  wlTex.loadMs=performance.now()-t0;}
+// 텍스처 하나: 구운 캔버스가 있으면 그것, 없으면 draw()로 그림 (TEXREG에 이름 → 캔버스를 남겨 굽기 도구가 쓴다)
+function texCanvas(key,draw){let cv=BAKED.get(key);if(cv)wlTex.baked++;else{const t0=performance.now();cv=texRng(key,draw);wlTex.drawMs+=performance.now()-t0;wlTex.drawn++;}
+  TEXREG.set(key,cv);return cv;}
 const texCache={};
 function pencil(base,kind,o){
   kind=kind||'plain';o=o||{};
   const key=base+'|'+kind+'|'+JSON.stringify(o);
   if(texCache[key])return texCache[key];
-  return texRng('pencil|'+key,()=>drawPencil(base,kind,o,key));
+  const t=new THREE.CanvasTexture(texCanvas('pencil|'+key,()=>drawPencil(base,kind,o)));t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
+  if(o.rep)t.repeat.set(o.rep[0],o.rep[1]);
+  texCache[key]=t;return t;
 }
-function drawPencil(base,kind,o,key){
+function drawPencil(base,kind,o){
   const S=o.size||256;const cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
   const dark=shade(base,-0.13),darker=shade(base,-0.25),light=shade(base,0.1);
   g.fillStyle=base;g.fillRect(0,0,S,S);
@@ -209,11 +230,9 @@ function drawPencil(base,kind,o,key){
   }
   hatch(g,S,dark,light,hatchAmt);
   if(o.grain){const n=S*S/12;for(let i=0;i<n;i++){g.fillStyle=hexA(R()<.55?shade(base,-.2):shade(base,.15),rnd(.1,o.grain));const z=rnd(1,2.2);g.fillRect(rnd(0,S),rnd(0,S),z,z);}}
-  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
-  if(o.rep)t.repeat.set(o.rep[0],o.rep[1]);
-  texCache[key]=t;return t;
+  return cv;
 }
-function skyTex(night){return texRng('sky|'+(night?1:0),()=>drawSky(night));}
+function skyTex(night){const t=new THREE.CanvasTexture(texCanvas('sky|'+(night?1:0),()=>drawSky(night)));t.colorSpace=THREE.SRGBColorSpace;return t;}
 function drawSky(night){
   const S=256,cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
   const gr=g.createLinearGradient(0,0,0,S);
@@ -228,7 +247,7 @@ function drawSky(night){
     [[0.3,0.55,1],[0.72,0.35,0.8],[0.55,0.8,1.2]].forEach(c=>{for(let k=0;k<5;k++){g.beginPath();g.arc(S*c[0]+(k-2)*16*c[2],S*c[1]+Math.abs(k-2)*5,(20-Math.abs(k-2)*4)*c[2],0,PI*2);g.fill();}});
   }
   hatch(g,S,night?'#1d2753':'#6fb3dc','#ffffff',0.6);
-  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;
+  return cv;
 }
 
 /* ---------- 재질 / 메쉬 헬퍼 ---------- */
@@ -280,4 +299,4 @@ const blobTex=gradTex(true,0.6),aoTex=gradTex(false,0.6);
 function softMat(t,op){return new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
 function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,op||0.35));m.rotation.x=-PI/2;m.position.set(x,0.045,z);scene.add(m);}
 function aoPlane(w,h,rot,pos,op){const geo=new THREE.PlaneGeometry(w,h);rot(geo);const m=new THREE.Mesh(geo,softMat(aoTex,op));m.position.set(...pos);scene.add(m);}
-export {B,C,M,PI,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,pencil,rawLin,rng,rngLoaded,scene,shade,skyTex,softMat};
+export {B,C,M,PI,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,pencil,TEXREG,rawLin,rng,rngLoaded,scene,shade,skyTex,softMat};
