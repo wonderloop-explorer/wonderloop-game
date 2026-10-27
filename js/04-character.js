@@ -1,6 +1,6 @@
 /* 원더룹 베이스캠프 — 원더룹 몸·얼굴·표정·개미탈 */
 import * as THREE from 'three';
-import {PI,lin,pencil,scene} from './01-textures.js';
+import {PI,lathe,lin,pencil,scene} from './01-textures.js';
 /* ---------- 원더룹 (탐험가) ---------- */
 const WLS=1;const WL=new THREE.Group();WL.position.set(1.1,0,2.5);WL.rotation.y=0.8;WL.scale.setScalar(WLS);scene.add(WL);
 const wlBody=new THREE.Group();WL.add(wlBody);
@@ -31,7 +31,7 @@ const legs=[],arms=[],eyes=[],antennae=[],hoodParts=[],hairParts=[];
   legs.push(pv);});
 {const body=wlBody;
   const sh=wm(new THREE.SphereGeometry(.11,18,12),shorts);sh.scale.set(1.25,.7,.85);sh.position.y=.3;body.add(sh);
-  const torso=wm(new THREE.LatheGeometry([[0,.31],[.2,.31],[.205,.36],[.207,.45],[.2,.52],[.186,.565],[.155,.605],[.11,.632],[0,.64]].map(q=>new THREE.Vector2(q[0],q[1])),30),tunic);torso.scale.set(1.1,1,1.1);body.add(torso);
+  const torso=wm(lathe([[0,.31],[.2,.31],[.205,.36],[.207,.45],[.2,.52],[.186,.565],[.155,.605],[.11,.632],[0,.64]].map(q=>new THREE.Vector2(q[0],q[1])),30),tunic);torso.scale.set(1.1,1,1.1);body.add(torso);
   const neck=wm(new THREE.TorusGeometry(.112,.022,10,28),TM('#d9cdb3','jersey',{rep:[6,1]}));neck.rotation.x=PI/2;neck.position.set(0,.628,0);body.add(neck);
   [-1,1].forEach(s=>{const ap=new THREE.Group();ap.position.set(s*.2,.555,0);ap.rotation.z=s*.32;body.add(ap);
     ap.add(wm(new THREE.SphereGeometry(.082,18,14),tunic));

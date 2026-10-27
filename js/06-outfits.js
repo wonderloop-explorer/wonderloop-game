@@ -1,6 +1,6 @@
 /* 원더룹 베이스캠프 — 바지·관절·캐릭터 병합·평상복/탐험복·탐험 모자·키링·탈 카테고리 */
 import * as THREE from 'three';
-import {PI,lin,pencil} from './01-textures.js';
+import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBody,wm,wmList} from './04-character.js';
 /* 디테일: 옷 구조 + 탐험대 패치 */
 {
@@ -33,7 +33,7 @@ function wlMerge(list){
   const E={shirt:TM('#f7f2e8','linen',{rep:[3,3]}),pants:TM('#8f8558','twill',{rep:[2,3],grain:.35}),roll:TM('#b3a978','twill',{rep:[3,1],grain:.35}),fold:SM('#6c643f')};
   const exp=[];const vestM=TM('#c99d5c','canvas',{rep:[3,2]},THREE.DoubleSide);const vestD=TM('#a87e43','canvas',{rep:[2,1]});
   const add2=(m,parent)=>{parent.add(m);exp.push(m);return m;};
-  add2(wm(new THREE.LatheGeometry([[.236,.33],[.238,.4],[.24,.45],[.233,.52],[.218,.565],[.185,.603]].map(q=>new THREE.Vector2(q[0],q[1])),30,.32,PI*2-.64),vestM),wlBody);
+  add2(wm(lathe([[.236,.33],[.238,.4],[.24,.45],[.233,.52],[.218,.565],[.185,.603]].map(q=>new THREE.Vector2(q[0],q[1])),30,.32,PI*2-.64),vestM),wlBody);
   [-1,1].forEach(s=>{const pk=add2(wm(roundBox(.068,.056,.014,.35),vestM),wlBody);pk.position.set(s*.175,.405,.176);pk.rotation.y=s*.82;
     const fl=add2(wm(roundBox(.07,.017,.019,.35),vestD),wlBody);fl.position.set(s*.177,.46,.179);fl.rotation.y=s*.82;});
   add2(wm(new THREE.CylinderGeometry(.232,.232,.034,30),TM('#7a4a32','leather2',{rep:[6,1],stitch:'h'})),wlBody).position.y=.322;
@@ -51,8 +51,8 @@ function wlMerge(list){
   // 탐험가 모자: 머리 위에 얹히고 앞챙이 살짝 들려 앞머리가 보임
   {const hatG=new THREE.Group();hatG.position.set(0,.33,-.1);hatG.rotation.x=-.3;hatG.scale.setScalar(.9);head.add(hatG);WL.userData.hatG=hatG;
    const hatM=TM('#dcc48e','canvas',{rep:[4,2]},THREE.DoubleSide);
-   hatG.add(wm(new THREE.LatheGeometry([[0,.235],[.12,.23],[.215,.21],[.262,.16],[.29,.07],[.305,0]].map(q=>new THREE.Vector2(q[0],q[1])),36),hatM));
-   hatG.add(wm(new THREE.LatheGeometry([[.3,.012],[.37,0],[.44,-.03],[.47,-.05],[.465,-.062],[.43,-.045],[.36,-.015],[.3,-.002]].map(q=>new THREE.Vector2(q[0],q[1])),40),hatM));
+   hatG.add(wm(lathe([[0,.235],[.12,.23],[.215,.21],[.262,.16],[.29,.07],[.305,0]].map(q=>new THREE.Vector2(q[0],q[1])),36),hatM));
+   hatG.add(wm(lathe([[.3,.012],[.37,0],[.44,-.03],[.47,-.05],[.465,-.062],[.43,-.045],[.36,-.015],[.3,-.002]].map(q=>new THREE.Vector2(q[0],q[1])),40),hatM));
    const band=wm(new THREE.CylinderGeometry(.296,.303,.045,36,1,true),new THREE.MeshStandardMaterial({map:pencil('#7a4a32','plain',{hatch:.4}),roughness:.9,side:THREE.DoubleSide}));band.position.y=.03;hatG.add(band);
    const pin=wm(new THREE.SphereGeometry(.03,12,10),SM('#ec8b7d'));pin.position.set(.21,.035,.21);hatG.add(pin);}
   // 모자를 쓰면 모자 안으로 들어가는 머리카락만 살짝 눌러 넣음 (모자 밖으로 뚫고 나오지 않게)

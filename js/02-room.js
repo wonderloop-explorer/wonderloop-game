@@ -1,6 +1,6 @@
 /* 원더룹 베이스캠프 — 베이스캠프 방과 소품 */
 import * as THREE from 'three';
-import {B,C,M,PI,R,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rnd,scene,shade,skyTex} from './01-textures.js';
+import {B,C,M,PI,R,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rawLin,rnd,scene,shade,skyTex} from './01-textures.js';
 /* ---------- 방 ---------- */
 // 바닥
 add(new THREE.PlaneGeometry(10,10),M('#e6bd92','planks',{rep:[2.5,2.5]}),0,0,0,{rx:-PI/2,cast:false,line:false});
@@ -51,7 +51,7 @@ const curtain=M('#f3b9a6','stripes',{stripes:['#f3b9a6','#fbe3d4'],n:6});
 const sunDir=new THREE.Vector3(3,-12,12).normalize();
 const beamLen=4.4;
 const beamTex=(()=>{const cv=document.createElement('canvas');cv.width=8;cv.height=128;const g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,0,128);gr.addColorStop(0,'rgba(255,255,255,0.9)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,8,128);return new THREE.CanvasTexture(cv);})();
-const beamMat2=new THREE.MeshBasicMaterial({map:beamTex,color:0xffe3a8,transparent:true,opacity:0.22,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+const beamMat2=new THREE.MeshBasicMaterial({map:beamTex,color:rawLin(0xffe3a8),transparent:true,opacity:0.22,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
 const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.82,1.05,beamLen,20,1,true),beamMat2);
 const beamStart=new THREE.Vector3(WX,WY,WZ+0.05);
 beam.position.copy(beamStart.clone().add(sunDir.clone().multiplyScalar(beamLen/2)));
@@ -63,7 +63,7 @@ const perpA=new THREE.Vector3().crossVectors(sunDir,new THREE.Vector3(1,0,0)).no
 for(let i=0;i<DUST;i++)dustSeed.push({t:R(),a:rnd(0,PI*2),r:Math.sqrt(R())*0.8,sp:rnd(0.01,0.03),ph:rnd(0,9)});
 dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
 const dotTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d');const gr=g.createRadialGradient(16,16,0,16,16,16);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,32,32);return new THREE.CanvasTexture(cv);})();
-const dustMat=new THREE.PointsMaterial({size:0.07,map:dotTex,color:0xfff2cc,transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending});
+const dustMat=new THREE.PointsMaterial({size:0.07,map:dotTex,color:rawLin(0xfff2cc),transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending});
 scene.add(new THREE.Points(dustGeo,dustMat));
 
 /* ---------- 책상 세트 ---------- */
@@ -230,7 +230,7 @@ boxAt(0.3,0.04,0.3,M('#5f6f6a','plain'),0,0,0,{parent:lantern});
 boxAt(0.24,0.36,0.24,new THREE.MeshStandardMaterial({color:lin('#fff1c8'),emissive:lin('#ffcf73'),emissiveIntensity:0.5,transparent:true,opacity:0.75,roughness:0.3}),0,0.04,0,{parent:lantern,line:false});
 add(new THREE.ConeGeometry(0.22,0.16,4),M('#5f6f6a','plain'),0,0.48,0,{parent:lantern,ry:PI/4});
 add(new THREE.TorusGeometry(0.08,0.015,4,10,PI),M('#5f6f6a','plain'),0,0.56,0,{parent:lantern,thr:60});
-const crateLight=new THREE.PointLight(0xffb867,0.3,5,2);crateLight.position.set(-4.08,1.85,3.3);scene.add(crateLight);
+const crateLight=new THREE.PointLight(rawLin(0xffb867),0.3,5,2);crateLight.position.set(-4.08,1.85,3.3);scene.add(crateLight);
 blob(-4.05,3.4,0.85,0.85,0.4);
 
 /* ---------- 러그 / 방석 / 낮은 탁자 ---------- */
@@ -264,7 +264,7 @@ for(let k=0;k<7;k++){const th=k*0.9+0.3,ph=0.35+(k%3)*0.32;add(new THREE.Icosahe
 const glowMat=new THREE.MeshStandardMaterial({color:lin('#fff1cf'),emissive:lin('#ffd58a'),emissiveIntensity:0.6,roughness:1,side:THREE.DoubleSide});
 add(new THREE.CircleGeometry(0.55,12),glowMat,0,-0.001,0,{parent:ML,rx:PI/2,line:false,cast:false});
 add(C(0.12,0.15,0.3,8),glowMat,0,-0.15,0,{parent:ML,line:false,cast:false});
-const lampLight=new THREE.PointLight(0xffb866,0.6,9,2);lampLight.position.set(0.55,3.1,0.75);scene.add(lampLight);
+const lampLight=new THREE.PointLight(rawLin(0xffb866),0.6,9,2);lampLight.position.set(0.55,3.1,0.75);scene.add(lampLight);
 const lampHit=[];ML.traverse(o=>{if(o.isMesh){lampHit.push(o);o.castShadow=false;}});
 const poolTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,214,140,0.9)');gr.addColorStop(1,'rgba(255,214,140,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(cv);})();
 const poolMat=new THREE.MeshBasicMaterial({map:poolTex,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-3});

@@ -9,7 +9,8 @@ import {WL,hairParts,head,hoodParts,wm} from './04-character.js';
   const smooth=(kp,az)=>{for(let k=1;k<kp.length;k++){if(az<=kp[k][0]){const a=kp[k-1],b=kp[k],u=(az-a[0])/(b[0]-a[0]),e=u*u*(3-2*u);return a[1]+(b[1]-a[1])*e;}}return kp[kp.length-1][1];};
   function shell(R,seg,edgeFn,lipK,flare,tousle,lift){
     const g=new THREE.SphereGeometry(R,seg,Math.floor(seg/2));const p=g.attributes.position;
-    for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);let ny=y/R;const ang=Math.atan2(x,z);const E=edgeFn(ang);
+    // 남극 줄(sp)의 각도: r128 구는 극점에 1e-16 크기 x·z가 남아 꼭짓점마다 각도가 달랐다(머리 끝 고리가 퍼짐). 새 구는 정확히 0이라 그 값을 직접 계산
+    for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);let ny=y/R;const ix=i%(seg+1),sp=i>=p.count-seg-1,ang=sp?Math.atan2(Math.fround(-R*Math.cos(ix/seg*PI*2)*Math.sin(PI)),Math.fround(R*Math.sin(ix/seg*PI*2)*Math.sin(PI))):Math.atan2(x,z);const E=edgeFn(ang);
       let k=1;if(ny<E){ny=E;k=lipK;}
       const near=Math.max(0,1-(ny-E)/.3);
       let f=1+lift*Math.sin(Math.max(0,Math.min(1,(ny+.1)/1.1))*PI);if(flare)f=f*(1-near*near)+flare*near*near;

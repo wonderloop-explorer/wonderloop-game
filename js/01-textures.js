@@ -5,9 +5,15 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 const R=mulberry32(11);
 const rnd=(a,b)=>a+(b-a)*R();
 const pick=arr=>arr[Math.floor(R()*arr.length)];
-function shade(hex,amt){const c=new THREE.Color(hex);const h={};c.getHSL(h);c.setHSL(h.h,h.s,Math.min(1,Math.max(0,h.l+amt)));return '#'+c.getHexString();}
-function hexA(hex,a){const c=new THREE.Color(hex);return `rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},${a})`;}
-const lin=hex=>new THREE.Color(hex).convertSRGBToLinear();
+/* 색연필 명암: sRGB 값 그대로 HSL을 다루고, 16진수는 r128처럼 버림(<<)으로 만든다 — 반올림하면 텍스처 색이 한 칸씩 어긋난다 */
+function shade(hex,amt){const cm=THREE.ColorManagement,on=cm.enabled;cm.enabled=false;
+  const c=new THREE.Color(hex);const h={};c.getHSL(h);c.setHSL(h.h,h.s,Math.min(1,Math.max(0,h.l+amt)));cm.enabled=on;
+  return '#'+('000000'+((c.r*255)<<16^(c.g*255)<<8^(c.b*255)<<0).toString(16)).slice(-6);}
+function hexA(hex,a){const c=new THREE.Color(hex).getRGB({},THREE.SRGBColorSpace);return `rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},${a})`;}
+/* 색 관리(ColorManagement)가 켜져 있어 new THREE.Color('#hex')가 sRGB 색을 선형으로 바꿔 준다 → 재질 색은 lin()으로 */
+const lin=hex=>new THREE.Color(hex);
+/* r128 시절 16진수를 변환 없이 선형 값으로 쓰던 색(조명, 빛기둥·먼지 등) — 화면을 그대로 유지하려고 그 값 그대로 둔다 */
+const rawLin=hex=>new THREE.Color().setHex(hex,THREE.LinearSRGBColorSpace);
 
 /* ---------- 색연필 텍스처 ---------- */
 function hatch(g,S,dark,light,amt){
@@ -177,7 +183,7 @@ function pencil(base,kind,o){
   }
   hatch(g,S,dark,light,hatchAmt);
   if(o.grain){const n=S*S/12;for(let i=0;i<n;i++){g.fillStyle=hexA(R()<.55?shade(base,-.2):shade(base,.15),rnd(.1,o.grain));const z=rnd(1,2.2);g.fillRect(rnd(0,S),rnd(0,S),z,z);}}
-  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;
+  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
   if(o.rep)t.repeat.set(o.rep[0],o.rep[1]);
   texCache[key]=t;return t;
 }
@@ -195,7 +201,7 @@ function skyTex(night){
     [[0.3,0.55,1],[0.72,0.35,0.8],[0.55,0.8,1.2]].forEach(c=>{for(let k=0;k<5;k++){g.beginPath();g.arc(S*c[0]+(k-2)*16*c[2],S*c[1]+Math.abs(k-2)*5,(20-Math.abs(k-2)*4)*c[2],0,PI*2);g.fill();}});
   }
   hatch(g,S,night?'#1d2753':'#6fb3dc','#ffffff',0.6);
-  const t=new THREE.CanvasTexture(cv);t.encoding=THREE.sRGBEncoding;return t;
+  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 
 /* ---------- 재질 / 메쉬 헬퍼 ---------- */
@@ -217,6 +223,13 @@ function add(geo,mat,x,y,z,o){
   if(o.line!==false&&mat.userData.base){m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,o.thr||28),lineMat(mat.userData.base)));}
   (o.parent||scene).add(m);return m;
 }
+/* 회전체(상체·조끼·모자): r128처럼 면 법선을 평균하고 이음매 법선을 맞춘다 — 새 LatheGeometry 법선은 음영이 달라진다 */
+function lathe(points,segments,phiStart,phiLength=PI*2){
+  const g=new THREE.LatheGeometry(points,segments,phiStart,phiLength);g.computeVertexNormals();
+  if(phiLength===PI*2){const n=g.attributes.normal.array,base=segments*points.length*3,v=new THREE.Vector3();
+    for(let j=0;j<points.length*3;j+=3){v.set(n[j]+n[base+j],n[j+1]+n[base+j+1],n[j+2]+n[base+j+2]).normalize();
+      n[j]=n[base+j]=v.x;n[j+1]=n[base+j+1]=v.y;n[j+2]=n[base+j+2]=v.z;}}
+  return g;}
 const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
 const C=(rt,rb,h,s)=>new THREE.CylinderGeometry(rt,rb,h,s||10);
 function boxAt(w,h,d,mat,x,yb,z,o){return add(B(w,h,d),mat,x,yb+h/2,z,o);}
@@ -240,4 +253,4 @@ const blobTex=gradTex(true,0.6),aoTex=gradTex(false,0.6);
 function softMat(t,op){return new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
 function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,op||0.35));m.rotation.x=-PI/2;m.position.set(x,0.045,z);scene.add(m);}
 function aoPlane(w,h,rot,pos,op){const geo=new THREE.PlaneGeometry(w,h);rot(geo);const m=new THREE.Mesh(geo,softMat(aoTex,op));m.position.set(...pos);scene.add(m);}
-export {B,C,M,PI,R,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lin,pencil,rnd,scene,shade,skyTex,softMat};
+export {B,C,M,PI,R,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,pencil,rawLin,rnd,scene,shade,skyTex,softMat};
