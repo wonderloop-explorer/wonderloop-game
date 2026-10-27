@@ -1,14 +1,13 @@
-/* 텍스처 굽기 — tools/shot-server.py로 띄운 http://localhost:8000/?shot&nobake 에서 (페이지가 다 뜬 뒤)
+/* 텍스처 굽기 — tools/shot-server.py로 띄운 http://localhost:8000/?shot&nobake&zonetest 에서 (페이지가 다 뜬 뒤, 견본 구역까지 구우려면 zonetest)
    (await import('/tools/bake-textures.js')).run()
    그린 색연필 텍스처를 묶음별로 assets/textures/<묶음>/ 에 손실 없는 WebP로 굽고, 목록 textures.json을 쓴다.
-   묶음: character(원더룹 재질 — 옷 전환·탈 포함), basecamp(나머지). 구역 구조가 생기면 구역마다 묶음이 된다.
+   묶음: character(원더룹 재질 — 옷 전환·탈 포함)와 구역마다 하나(basecamp, sample-outdoor…). 굽기 전에 모든 구역을 한 번씩 들러 텍스처를 모은다.
 
    손으로 고친 파일 지키기:
    - 목록에서 "hand": true 인 텍스처는 건드리지 않는다.
    - 표시가 없어도, 파일의 픽셀이 지난번 구울 때 적어 둔 해시(px)와 다르면 손으로 고친 것으로 보고 건드리지 않은 채 hand: true를 붙인다.
    - 파일 이름을 .png로 바꿔 저장했다면 목록의 file도 그 이름으로 고쳐 둔다(굽기 도구는 그 줄을 그대로 둔다).
    돌려주는 값: 텍스처마다 [묶음, 파일, 크기, 원래 그림과 구운 파일의 픽셀 최대 차이, 상태] — 차이는 0이어야 한다. */
-const SETS = ['character', 'basecamp'];
 
 async function pxHash(data) {
   const d = new Uint8Array(await crypto.subtle.digest('SHA-1', data));
@@ -36,11 +35,16 @@ function fileName(key, used) {
 
 export async function run() {
   if (!new URLSearchParams(location.search).has('nobake')) throw new Error('?shot&nobake 로 열어야 새로 그린 텍스처로 굽는다');
-  const { TEXREG } = await import('/js/01-textures.js');
+  const { TEXREG, TEXSET } = await import('/js/01-textures.js');
+  const Z = window.wlZone, start = Z.cur.id;
+  for (const id of Z.list) if (id !== start) await Z.go(id);
+  await Z.go(start);
   const WL = window.wlShot.WL, charCanvas = new Set();
   const addMat = m => { if (m && m.map && m.map.image) charCanvas.add(m.map.image); };
   WL.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(addMat); });
   (WL.userData.outfitMats || []).forEach(addMat);
+  const setOf = (key, cv) => charCanvas.has(cv) ? 'character' : TEXSET.get(key);
+  const SETS = ['character', ...Z.list];
   const out = [];
   for (const set of SETS) {
     const dir = `/assets/textures/${set}/`;
@@ -48,7 +52,7 @@ export async function run() {
     const byKey = new Map(old.textures.map(e => [e.key, e])), used = new Set(old.textures.map(e => e.file.replace(/\.\w+$/, '')));
     const list = [];
     for (const [key, cv] of TEXREG) {
-      if ((set === 'character') !== charCanvas.has(cv)) continue;
+      if (setOf(key, cv) !== set) continue;
       const prev = byKey.get(key);
       const e = prev ? { ...prev } : { key, file: fileName(key, used), w: cv.width, h: cv.height };
       const src = pixels(cv);

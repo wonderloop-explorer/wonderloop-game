@@ -1,6 +1,9 @@
-/* 원더룹 베이스캠프 — 베이스캠프 방과 소품 */
+/* 원더룹 구역: 베이스캠프 (첫 구역, 실내 방 하나) — 예전 js/02-room.js를 build() 안으로 옮긴 것.
+   방·소품은 예전 그대로 만든다(난수는 rng('room') 기록값 재생이라 다시 만들어도 같은 그림).
+   예전에 03(카메라·해 방향)·07(장애물)·08(조명 단계 속 램프·먼지·김·시계)에 흩어져 있던 방 전용 부분도 여기로 모았다. */
 import * as THREE from 'three';
-import {B,C,M,PI,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rawLin,rng,scene,shade,skyTex} from './01-textures.js';
+import {B,C,M,PI,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rawLin,rng,shade,skyTex} from '../01-textures.js';
+export function build({root}){
 const R=rng('room'),rnd=(a,b)=>a+(b-a)*R(); // 방 소품 배치용 난수
 /* ---------- 방 ---------- */
 // 바닥
@@ -57,7 +60,7 @@ const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.82,1.05,beamLen,20,1,true
 const beamStart=new THREE.Vector3(WX,WY,WZ+0.05);
 beam.position.copy(beamStart.clone().add(sunDir.clone().multiplyScalar(beamLen/2)));
 beam.quaternion.setFromUnitVectors(UP,sunDir.clone().negate());
-scene.add(beam);
+root.add(beam);
 // 먼지
 const DUST=110;const dustGeo=new THREE.BufferGeometry();const dustPos=new Float32Array(DUST*3);const dustSeed=[];
 const perpA=new THREE.Vector3().crossVectors(sunDir,new THREE.Vector3(1,0,0)).normalize();const perpB=new THREE.Vector3().crossVectors(sunDir,perpA).normalize();
@@ -65,7 +68,7 @@ for(let i=0;i<DUST;i++)dustSeed.push({t:R(),a:rnd(0,PI*2),r:Math.sqrt(R())*0.8,s
 dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
 const dotTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d');const gr=g.createRadialGradient(16,16,0,16,16,16);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,32,32);return new THREE.CanvasTexture(cv);})();
 const dustMat=new THREE.PointsMaterial({size:0.07,map:dotTex,color:rawLin(0xfff2cc),transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending});
-scene.add(new THREE.Points(dustGeo,dustMat));
+root.add(new THREE.Points(dustGeo,dustMat));
 
 /* ---------- 책상 세트 ---------- */
 const deskMat=M('#c88f5e','wood');
@@ -193,7 +196,7 @@ minute.geometry.translate(0,0.13,0);minute.position.y=CY;
 boxAt(0.06,0.16,1.7,M('#a97a52','wood'),-4.92,3.0,1.25,{cast:false});
 [0.6,1.2,1.85].forEach(z=>add(C(0.03,0.03,0.22,6),M('#a97a52','wood'),-4.8,3.08,z,{rz:PI/2,thr:50}));
 // 헝겊 주머니
-cylBetween([-4.8,3.06,1.2],[-4.86,2.78,1.2],0.012,M('#8a6a4c','plain'),scene,4);
+cylBetween([-4.8,3.06,1.2],[-4.86,2.78,1.2],0.012,M('#8a6a4c','plain'),root,4);
 boxAt(0.14,0.42,0.38,M('#efe1c4','weave'),-4.86,2.36,1.2);
 // 탐험 모자
 add(C(0.2,0.25,0.22,10),M('#e9cf95','plain'),-4.75,2.95,0.6,{rz:-PI/2,thr:50});
@@ -218,7 +221,7 @@ add(C(0.13,0.13,0.08,12),M('#9cc9e0','plain'),-0.48,0.4,0,{parent:bp,rz:PI/2,thr
 blob(-3.85,1.4,0.7,0.6,0.38);
 
 /* ---------- 나비채 ---------- */
-cylBetween([-4.3,0,2.35],[-4.78,2.3,2.18],0.025,M('#c9a06e','wood'),scene,6);
+cylBetween([-4.3,0,2.35],[-4.78,2.3,2.18],0.025,M('#c9a06e','wood'),root,6);
 add(new THREE.TorusGeometry(0.3,0.022,5,16),M('#c9a06e','wood'),-4.84,2.62,2.15,{rz:0.2,thr:60});
 add(new THREE.ConeGeometry(0.28,0.55,10,1,true),new THREE.MeshStandardMaterial({color:lin('#ffffff'),transparent:true,opacity:0.5,side:THREE.DoubleSide,depthWrite:false,roughness:1}),-4.84,2.58,2.38,{rx:PI/2,line:false,cast:false});
 
@@ -231,7 +234,7 @@ boxAt(0.3,0.04,0.3,M('#5f6f6a','plain'),0,0,0,{parent:lantern});
 boxAt(0.24,0.36,0.24,new THREE.MeshStandardMaterial({color:lin('#fff1c8'),emissive:lin('#ffcf73'),emissiveIntensity:0.5,transparent:true,opacity:0.75,roughness:0.3}),0,0.04,0,{parent:lantern,line:false});
 add(new THREE.ConeGeometry(0.22,0.16,4),M('#5f6f6a','plain'),0,0.48,0,{parent:lantern,ry:PI/4});
 add(new THREE.TorusGeometry(0.08,0.015,4,10,PI),M('#5f6f6a','plain'),0,0.56,0,{parent:lantern,thr:60});
-const crateLight=new THREE.PointLight(rawLin(0xffb867),0.3,5,2);crateLight.position.set(-4.08,1.85,3.3);scene.add(crateLight);
+const crateLight=new THREE.PointLight(rawLin(0xffb867),0.3,5,2);crateLight.position.set(-4.08,1.85,3.3);root.add(crateLight);
 blob(-4.05,3.4,0.85,0.85,0.4);
 
 /* ---------- 러그 / 방석 / 낮은 탁자 ---------- */
@@ -265,11 +268,11 @@ for(let k=0;k<7;k++){const th=k*0.9+0.3,ph=0.35+(k%3)*0.32;add(new THREE.Icosahe
 const glowMat=new THREE.MeshStandardMaterial({color:lin('#fff1cf'),emissive:lin('#ffd58a'),emissiveIntensity:0.6,roughness:1,side:THREE.DoubleSide});
 add(new THREE.CircleGeometry(0.55,12),glowMat,0,-0.001,0,{parent:ML,rx:PI/2,line:false,cast:false});
 add(C(0.12,0.15,0.3,8),glowMat,0,-0.15,0,{parent:ML,line:false,cast:false});
-const lampLight=new THREE.PointLight(rawLin(0xffb866),0.6,9,2);lampLight.position.set(0.55,3.1,0.75);scene.add(lampLight);
+const lampLight=new THREE.PointLight(rawLin(0xffb866),0.6,9,2);lampLight.position.set(0.55,3.1,0.75);root.add(lampLight);
 const lampHit=[];ML.traverse(o=>{if(o.isMesh){lampHit.push(o);o.castShadow=false;}});
 const poolTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,214,140,0.9)');gr.addColorStop(1,'rgba(255,214,140,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(cv);})();
 const poolMat=new THREE.MeshBasicMaterial({map:poolTex,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-3});
-const pool=new THREE.Mesh(new THREE.PlaneGeometry(4.6,4.6),poolMat);pool.rotation.x=-PI/2;pool.position.set(0.55,0.05,0.75);scene.add(pool);
+const pool=new THREE.Mesh(new THREE.PlaneGeometry(4.6,4.6),poolMat);pool.rotation.x=-PI/2;pool.position.set(0.55,0.05,0.75);root.add(pool);
 
 /* ---------- 지구본 ---------- */
 const gb=group(3.6,0,0.6,0);const gbWood=M('#a97a52','wood');
@@ -302,7 +305,7 @@ const leafM=[leafMat('#5fa457'),leafMat('#78b863'),leafMat('#9ccd78')];const ste
   const N=5;for(let i=0;i<N;i++){
     const t=0.3+i/(N-1)*0.7;const p=curve.getPoint(t);
     const dir=a+(i%2?1.25:-1.25)+rnd(-0.25,0.25);
-    const lg=new THREE.Group();lg.position.copy(p);lg.rotation.y=PI/2-dir;scene.add(lg);
+    const lg=new THREE.Group();lg.position.copy(p);lg.rotation.y=PI/2-dir;root.add(lg);
     const top=i===N-1;const L=top?0.4:0.7-i*0.04,W=top?0.13:0.26-i*0.01;
     add(leafGeo(L,W),leafM[top?2:(i<2?0:(i%2?1:0))],0,0,0,{parent:lg,rx:top?0.35:1.3-t*0.5,ry:rnd(-0.2,0.2),thr:20});
   }
@@ -320,7 +323,45 @@ blob(3.85,3.55,0.6,0.6,0.35);
 /* ---------- 김 ---------- */
 const steamTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=64;const g=cv.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,0.8)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(cv);})();
 const steams=[];
-function steamAt(x,y,z,n){for(let i=0;i<n;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:steamTex,transparent:true,depthWrite:false,opacity:0}));s.userData={x,y,z,ph:i/n,sw:rnd(0,9)};scene.add(s);steams.push(s);}}
+function steamAt(x,y,z,n){for(let i=0;i<n;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:steamTex,transparent:true,depthWrite:false,opacity:0}));s.userData={x,y,z,ph:i/n,sw:rnd(0,9)};root.add(s);steams.push(s);}}
 steamAt(-0.12,DT+0.2,-3.9,5);
 steamAt(0.3+Math.cos(-0.4)*0.33,TT+0.33,0.65-Math.sin(-0.4)*0.33,5);
-export {DUST,ML,beamLen,beamMat2,beamStart,capMat,crateLight,dustGeo,dustMat,dustPos,dustSeed,glowMat,lampHit,lampLight,minute,perpA,perpB,poolMat,skyNight,steams,sunDir};
+
+/* ---------- 구역 정보 ---------- */
+let lampOn=true,lampLevel=1;
+return {
+  name:'베이스캠프',kind:'indoor',
+  spawn:{x:1.1,z:2.5,ry:0.8},
+  areas:{main:{
+    // 걸을 수 있는 범위와 장애물(r: 사각형 [x0,x1,z0,z1], c: 원 [x,z,반지름])
+    bounds:[-4.65,4.75,-4.6,4.75],
+    obstacles:[{r:[-4.95,-3.2,-3.65,-0.35]},{r:[-0.55,2.15,-4.9,-3.6]},{r:[-4.65,-3.45,2.8,4.0]},{c:[0.7,-3.12,0.5]},{c:[3.05,-3.65,0.65]},{c:[4.2,-1.75,0.6]},{c:[3.6,0.6,0.42]},{c:[0.55,0.75,0.78]},{c:[-3.85,1.4,0.6]},{c:[2.7,2.9,0.4]},{c:[3.85,3.55,0.48]},{c:[-3.4,3.75,0.35]},{c:[-4.3,2.35,0.2]}],
+    // 카메라: 방 전체를 볼 때 바라보는 점·거리, 돌려 볼 수 있는 각도(인형의 집처럼 벽 두 면이 열린 쪽에서만)
+    camera:{target:[0,1.5,-0.2],dist:27,polar:[0.55,1.32],azimuth:[0.12,1.45],start:[0.98,0.8],minDist:3,maxDist:48}}},
+  sun:{dir:sunDir,shadow:8,follow:false},  // 해 방향, 그림자 범위(반지름), 그림자가 원더룹을 따라갈지(야외)
+  keepOut:[ML,minute],          // 정적 병합에서 뺄 것(움직이거나 클릭하는 것)
+  lights:[lampLight,crateLight], // 08이 옛 조명 단위 → 물리 단위(π)로 바꿀 구역 조명
+  click(ray){if(ray.intersectObjects(lampHit,false).length){lampOn=!lampOn;return true;}return false;},
+  // 조명 단계(env: night 저녁 정도, cave 어두운 굴 정도, flick 깜빡임) — 08의 해·하늘빛 계산과 같은 프레임에 부른다
+  light(env,dt){const n=env.night;lampLevel+=((lampOn?1:0)-lampLevel)*Math.min(1,dt*6);
+    poolMat.opacity=(0.08+0.32*n)*lampLevel;beamMat2.opacity=0.22*(1-n);dustMat.opacity=0.85*(1-n);skyNight.opacity=n;
+    lampLight.intensity=(0.55+0.95*n)*lampLevel*env.flick;
+    glowMat.emissiveIntensity=0.15+(0.55+0.6*n)*lampLevel;capMat.emissiveIntensity=0.05+0.3*n*lampLevel;
+    crateLight.intensity=(0.25+0.6*n)*env.flick;
+    if(env.cave>0.001){lampLight.intensity*=1-.85*env.cave;crateLight.intensity*=1-.5*env.cave;}},
+  update(dt,t,env){const tmp=_tmp;
+    // 먼지
+    for(let i=0;i<DUST;i++){const d=dustSeed[i];if(!env.reduce){d.t+=d.sp*dt;if(d.t>1)d.t-=1;}
+      const wob=Math.sin(t*0.6+d.ph)*0.08;
+      tmp.copy(beamStart).addScaledVector(sunDir,d.t*beamLen).addScaledVector(perpA,Math.cos(d.a)*d.r*(0.85+d.t*0.2)+wob).addScaledVector(perpB,Math.sin(d.a)*d.r*(0.85+d.t*0.2));
+      dustPos[i*3]=tmp.x;dustPos[i*3+1]=tmp.y;dustPos[i*3+2]=tmp.z;}
+    dustGeo.attributes.position.needsUpdate=true;
+    // 김
+    steams.forEach(s=>{const u=s.userData;const p=((t*0.28)+u.ph)%1;
+      s.position.set(u.x+Math.sin(t*1.3+u.sw)*0.06*p,u.y+p*0.75,u.z+Math.cos(t*1.1+u.sw)*0.04*p);
+      const sc=0.12+p*0.28;s.scale.set(sc,sc,sc);s.material.opacity=Math.sin(p*PI)*0.55*(env.reduce?0.6:1);});
+    // 시계
+    minute.rotation.x=-t*0.15;},
+};
+}
+const _tmp=new THREE.Vector3();

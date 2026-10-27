@@ -1,0 +1,290 @@
+{
+ "데스크톱 | 네트워크 제한 없음 | 베이스캠프 시작 hand | 첫 방문": {
+  "loaded": 843,
+  "frame": 843,
+  "drawMs": 175,
+  "loadMs": 128,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "데스크톱 | 네트워크 제한 없음 | 베이스캠프 시작 hand | 다시 방문": {
+  "loaded": 438,
+  "frame": 438,
+  "drawMs": 160,
+  "loadMs": 116,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "데스크톱 | 네트워크 제한 없음 | 베이스캠프 시작 all | 첫 방문": {
+  "loaded": 608,
+  "frame": 608,
+  "drawMs": 0,
+  "loadMs": 134,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "데스크톱 | 네트워크 제한 없음 | 베이스캠프 시작 all | 다시 방문": {
+  "loaded": 266,
+  "frame": 266,
+  "drawMs": 0,
+  "loadMs": 77,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "데스크톱 | 네트워크 제한 없음 | 야외 견본 시작 hand | 첫 방문": {
+  "loaded": 562,
+  "frame": 562,
+  "drawMs": 80,
+  "loadMs": 115,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "데스크톱 | 네트워크 제한 없음 | 야외 견본 시작 hand | 다시 방문": {
+  "loaded": 247,
+  "frame": 247,
+  "drawMs": 71,
+  "loadMs": 104,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "데스크톱 | 네트워크 제한 없음 | 야외 견본 시작 all | 첫 방문": {
+  "loaded": 496,
+  "frame": 496,
+  "drawMs": 0,
+  "loadMs": 74,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ },
+ "데스크톱 | 네트워크 제한 없음 | 야외 견본 시작 all | 다시 방문": {
+  "loaded": 191,
+  "frame": 191,
+  "drawMs": 0,
+  "loadMs": 50,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 hand | 첫 방문": {
+  "loaded": 1835,
+  "frame": 1835,
+  "drawMs": 197,
+  "loadMs": 243,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 hand | 다시 방문": {
+  "loaded": 420,
+  "frame": 420,
+  "drawMs": 158,
+  "loadMs": 109,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 all | 첫 방문": {
+  "loaded": 5402,
+  "frame": 5402,
+  "drawMs": 0,
+  "loadMs": 3894,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 all | 다시 방문": {
+  "loaded": 267,
+  "frame": 267,
+  "drawMs": 0,
+  "loadMs": 75,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 hand | 첫 방문": {
+  "loaded": 1676,
+  "frame": 1675,
+  "drawMs": 108,
+  "loadMs": 246,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 hand | 다시 방문": {
+  "loaded": 255,
+  "frame": 254,
+  "drawMs": 74,
+  "loadMs": 109,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 all | 첫 방문": {
+  "loaded": 3015,
+  "frame": 3015,
+  "drawMs": 0,
+  "loadMs": 1552,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ },
+ "데스크톱 | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 all | 다시 방문": {
+  "loaded": 189,
+  "frame": 189,
+  "drawMs": 0,
+  "loadMs": 50,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 베이스캠프 시작 hand | 첫 방문": {
+  "loaded": 1475,
+  "frame": 1475,
+  "drawMs": 626,
+  "loadMs": 430,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 베이스캠프 시작 hand | 다시 방문": {
+  "loaded": 1308,
+  "frame": 1308,
+  "drawMs": 647,
+  "loadMs": 445,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 베이스캠프 시작 all | 첫 방문": {
+  "loaded": 882,
+  "frame": 882,
+  "drawMs": 0,
+  "loadMs": 258,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 베이스캠프 시작 all | 다시 방문": {
+  "loaded": 672,
+  "frame": 670,
+  "drawMs": 0,
+  "loadMs": 215,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 야외 견본 시작 hand | 첫 방문": {
+  "loaded": 1053,
+  "frame": 1053,
+  "drawMs": 305,
+  "loadMs": 441,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 야외 견본 시작 hand | 다시 방문": {
+  "loaded": 830,
+  "frame": 830,
+  "drawMs": 291,
+  "loadMs": 459,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 야외 견본 시작 all | 첫 방문": {
+  "loaded": 736,
+  "frame": 736,
+  "drawMs": 0,
+  "loadMs": 188,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ },
+ "휴대폰(CPU 4배 느림) | 네트워크 제한 없음 | 야외 견본 시작 all | 다시 방문": {
+  "loaded": 528,
+  "frame": 528,
+  "drawMs": 0,
+  "loadMs": 167,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 hand | 첫 방문": {
+  "loaded": 2631,
+  "frame": 2631,
+  "drawMs": 659,
+  "loadMs": 536,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 hand | 다시 방문": {
+  "loaded": 1315,
+  "frame": 1314,
+  "drawMs": 660,
+  "loadMs": 433,
+  "drawn": 145,
+  "baked": 0,
+  "texKB": 24
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 all | 첫 방문": {
+  "loaded": 5626,
+  "frame": 5625,
+  "drawMs": 0,
+  "loadMs": 3901,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 베이스캠프 시작 all | 다시 방문": {
+  "loaded": 685,
+  "frame": 685,
+  "drawMs": 0,
+  "loadMs": 215,
+  "drawn": 0,
+  "baked": 145,
+  "texKB": 2901
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 hand | 첫 방문": {
+  "loaded": 2166,
+  "frame": 2165,
+  "drawMs": 312,
+  "loadMs": 538,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 hand | 다시 방문": {
+  "loaded": 868,
+  "frame": 868,
+  "drawMs": 318,
+  "loadMs": 475,
+  "drawn": 46,
+  "baked": 0,
+  "texKB": 8
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 all | 첫 방문": {
+  "loaded": 3198,
+  "frame": 3198,
+  "drawMs": 0,
+  "loadMs": 1588,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ },
+ "휴대폰(CPU 4배 느림) | 4G(9Mbps·RTT 85ms) | 야외 견본 시작 all | 다시 방문": {
+  "loaded": 531,
+  "frame": 530,
+  "drawMs": 0,
+  "loadMs": 174,
+  "drawn": 0,
+  "baked": 46,
+  "texKB": 1070
+ }
+}

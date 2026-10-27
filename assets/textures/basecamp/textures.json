@@ -856,38 +856,6 @@
    "h": 256,
    "px": "f37fec4f3c13badf",
    "bytes": 13192
-  },
-  {
-   "key": "pencil|#36aaa0|plain|{\"hatch\":0.45}",
-   "file": "plain-36aaa0-2589.webp",
-   "w": 256,
-   "h": 256,
-   "px": "b012407efa07edc6",
-   "bytes": 9546
-  },
-  {
-   "key": "pencil|#744631|plain|{\"hatch\":0.5}",
-   "file": "plain-744631-2c8d.webp",
-   "w": 256,
-   "h": 256,
-   "px": "915be0853a174154",
-   "bytes": 10138
-  },
-  {
-   "key": "pencil|#5c3625|plain|{\"hatch\":0.4}",
-   "file": "plain-5c3625-a864.webp",
-   "w": 256,
-   "h": 256,
-   "px": "1c38531a6fc2640b",
-   "bytes": 9494
-  },
-  {
-   "key": "pencil|#f3ead6|plain|{\"hatch\":0.45}",
-   "file": "plain-f3ead6-33e7.webp",
-   "w": 256,
-   "h": 256,
-   "px": "3ff3eb32087d39eb",
-   "bytes": 8692
   }
  ]
 }

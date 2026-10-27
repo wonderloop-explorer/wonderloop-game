@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import {PI,blobTex,lin,pencil,rng,scene,softMat} from './01-textures.js';
 const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로딩 뒤 첫 난수를 이어 썼다)
+import {blocked,groundY} from './02-zone.js';
 import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
 /* 작은 부품은 그림자를 드리우지 않게 (그림자용으로 한 번 더 그리는 비용 절약) */
 WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.isMesh||!o.castShadow)return;o.geometry.computeBoundingSphere();o.getWorldScale(sc);if(o.geometry.boundingSphere.radius*Math.max(sc.x,sc.y,sc.z)<.1)o.castShadow=false;});}
@@ -16,13 +17,10 @@ const wlBlob=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.95),softMat(blobTex,0
 const wlHit=[];WL.traverse(o=>{if(o.isMesh)wlHit.push(o);});
 const marker=new THREE.Mesh(new THREE.RingGeometry(0.16,0.24,24),new THREE.MeshBasicMaterial({color:lin('#3fb5a8'),transparent:true,opacity:0,depthWrite:false}));marker.rotation.x=-PI/2;scene.add(marker);
 let wlTarget=null,wlHop=0,wlPhase=0,blinkT=2.5,markerA=0;
-const obstacles=[{r:[-4.95,-3.2,-3.65,-0.35]},{r:[-0.55,2.15,-4.9,-3.6]},{r:[-4.65,-3.45,2.8,4.0]},{c:[0.7,-3.12,0.5]},{c:[3.05,-3.65,0.65]},{c:[4.2,-1.75,0.6]},{c:[3.6,0.6,0.42]},{c:[0.55,0.75,0.78]},{c:[-3.85,1.4,0.6]},{c:[2.7,2.9,0.4]},{c:[3.85,3.55,0.48]},{c:[-3.4,3.75,0.35]},{c:[-4.3,2.35,0.2]}];
-const WR=0.28;
-function blocked(x,z){if(x<-4.65||x>4.75||z<-4.6||z>4.75)return true;
-  for(const o of obstacles){if(o.r){if(x>o.r[0]-WR&&x<o.r[1]+WR&&z>o.r[2]-WR&&z<o.r[3]+WR)return true;}else{const dx=x-o.c[0],dz=z-o.c[1];if(dx*dx+dz*dz<(o.c[2]+WR)*(o.c[2]+WR))return true;}}
-  return false;}
+// 걸을 수 있는 곳·장애물·땅 높이는 지금 구역이 정한다 (02 blocked·groundY)
 function hopWL(){if(wlHop<=0)wlHop=1;}
-function setWalkTarget(x,z){wlTarget={x,z};marker.position.set(x,0.06,z);markerA=1;}
+function stopWalk(){wlTarget=null;markerA=0;} // 구역을 옮길 때
+function setWalkTarget(x,z){wlTarget={x,z};marker.position.set(x,groundY(x,z)+0.06,z);markerA=1;}
 /* ---------- 동작 세트 ---------- */
 const ACTIONS=['서기','걷기','뛰기','두리번','들여다보기','기어오르기','멈칫','나침반 보기','손 흔들기'];
 const ACT_FACE={'뛰기':'신남','두리번':'궁금','들여다보기':'궁금','멈칫':'놀람','나침반 보기':'궁금','손 흔들기':'기쁨'};
@@ -185,6 +183,7 @@ function updateWL(dt,t){
       else if(!blocked(nx,WL.position.z)){WL.position.x=nx;moving=true;}
       else if(!blocked(WL.position.x,nz)){WL.position.z=nz;moving=true;}
       else wlTarget=null;}}
+  const GY=groundY(WL.position.x,WL.position.z); // 땅 높이 (평평한 방은 0)
   if(moving)wlPhase+=dt*11*(WL.userData.action==='뛰기'?1.6:1);
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
@@ -193,14 +192,14 @@ function updateWL(dt,t){
   body.rotation.z=sw*0.06;
   body.position.y=moving?Math.abs(Math.cos(wlPhase))*0.05:Math.sin(t*2.2)*0.012;
   let hopY=0,wave=0;if(wlHop>0){wlHop=Math.max(0,wlHop-dt*1.6);wave=Math.sin((1-wlHop)*PI);hopY=wave*0.4;}
-  WL.position.y=hopY*WLS;arms[0].rotation.z=-0.32-wave*2.2;arms[1].rotation.z=0.32+wave*2.2;
+  WL.position.y=GY+hopY*WLS;arms[0].rotation.z=-0.32-wave*2.2;arms[1].rotation.z=0.32+wave*2.2;
   {const th=(moving?0:Math.sin(t*0.9)*0.05)+(WL.userData.headTilt||0);neck.rotation.z=th;}
   {const C=WL.userData.charm;if(C&&C.g.visible){const tx=moving?.25+Math.sin(wlPhase*2)*.35:Math.sin(t*1.3)*.05,tz=moving?Math.sin(wlPhase)*.4:Math.sin(t*.9)*.04;
     C.vx+=((tx-C.ax)*60-C.vx*5)*dt;C.vz+=((tz-C.az)*60-C.vz*5)*dt;if(wlHop>.95)C.vx+=6*dt*20;
     C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=WL.userData.charmNeedle;if(N)N.rotation.z=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;}}
   antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1;});
   blinkT-=dt;if(blinkT<0)blinkT=2.5+2.5*blinkR();const bl=blinkT<0.12?0.15:1;eyes.forEach(e=>e.scale.y=bl);
-  wlBlob.position.set(WL.position.x,0.046,WL.position.z);wlBlob.scale.setScalar((1-hopY*0.8)*WLS*0.8);
+  wlBlob.position.set(WL.position.x,GY+0.046,WL.position.z);wlBlob.scale.setScalar((1-hopY*0.8)*WLS*0.8);
   markerA=Math.max(0,markerA-dt*1.2);marker.material.opacity=markerA*0.9;marker.scale.setScalar(1+(1-markerA)*0.6);
   {const U=WL.userData,A=U.action||'서기';U.at=(U.at||0)+dt;const at=U.at;
    let T=null;if(moving){if(A==='뛰기')T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at);
@@ -213,7 +212,7 @@ function updateWL(dt,t){
      arms[0].rotation.x=L('ax0');arms[1].rotation.x=L('ax1');arms[0].rotation.z=L('az0');arms[1].rotation.z=L('az1');arms.forEach((ap,i)=>ap.userData.elbow.rotation.set(L(i?'ex1':'ex0'),0,L(i?'ez1':'ez0')));
      {const bxv=L('bx');body.rotation.x=bxv;body.rotation.z=L('bz');body.position.y=L('by')+.3-.3*Math.cos(bxv);body.position.z=-.3*Math.sin(bxv);}
      neck.rotation.set(L('hx'),L('hy'),L('hz'));
-     WL.position.y=L('wy')*WLS;}
+     WL.position.y=GY+L('wy')*WLS;}
    else{U.pc=Object.assign({},base);body.rotation.x=0;body.position.z=0;neck.rotation.x=0;neck.rotation.y=0;legs.forEach(lg=>{lg.userData.knee.rotation.x=0;lg.userData.boot.rotation.x=-lg.rotation.x*.6;});arms.forEach(ap=>ap.userData.elbow.rotation.set(-.12,0,0));}
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
@@ -223,4 +222,4 @@ function updateWL(dt,t){
   spine.rotation.copy(body.rotation);spine.position.copy(body.position).add(_hv.set(0,HIP,0).applyEuler(body.rotation));spine.position.y-=HIP;
   rigSync();
 }
-export {hopWL,setWalkTarget,updateWL,wlHit};
+export {hopWL,setWalkTarget,stopWalk,updateWL,wlHit};

@@ -1,14 +1,14 @@
-/* 원더룹 베이스캠프 — 입력·조명 단계·카메라 따라가기·애니메이션 루프 */
+/* 원더룹 — 입력·조명 단계·카메라 따라가기·구역 오가기·애니메이션 루프 */
 import * as THREE from 'three';
 import {PI,rawLin,rngLoaded,scene} from './01-textures.js';
-import {DUST,beamLen,beamMat2,beamStart,capMat,crateLight,dustGeo,dustMat,dustPos,dustSeed,glowMat,lampHit,lampLight,minute,perpA,perpB,poolMat,skyNight,steams,sunDir} from './02-room.js';
-import {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,statsEl,sun,ui} from './03-scene.js';
+import {ZONES,areaAt,doorAt,groundY,loadZone,unloadZone,zone} from './02-zone.js';
+import {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui} from './03-scene.js';
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
-import {hopWL,setWalkTarget,updateWL,wlHit} from './07-actions.js';
+import {hopWL,setWalkTarget,stopWalk,updateWL,wlHit} from './07-actions.js';
 /* ---------- 상호작용 ---------- */
-let cave=0,caveTarget=0,lightState=0,emph=true,night=0,nightTarget=0,lampOn=true,lampLevel=1,spin=false,spinDir=1;
+let cave=0,caveTarget=0,lightState=0,emph=true,night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
 dayBtn.addEventListener('click',()=>{lightState=(lightState+1)%3;nightTarget=lightState>=1?1:0;caveTarget=lightState===2?1:0;dayBtn.textContent=['저녁으로 바꾸기','어두운 굴로 바꾸기','낮으로 바꾸기'][lightState];});
 {const eb=document.getElementById('emphBtn');eb.addEventListener('click',()=>{emph=!emph;eb.textContent=emph?'캐릭터 강조: 켜짐':'캐릭터 강조: 꺼짐';});}
@@ -19,10 +19,28 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6)return;
   const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
   ray.setFromCamera(ptr,camera);
-  if(ray.intersectObjects(lampHit,false).length){lampOn=!lampOn;return;}
+  if(zone.cur.click&&zone.cur.click(ray))return; // 구역의 클릭할 것 (베이스캠프: 버섯 램프)
   if(ray.intersectObjects(wlHit,false).length){hopWL();return;}
+  if(zone.cur.ground){const h=ray.intersectObjects(zone.cur.ground,false)[0];if(h)setWalkTarget(h.point.x,h.point.z);return;} // 높낮이 있는 땅
   const r0=ray.ray;if(r0.direction.y<-0.01){const tt=-r0.origin.y/r0.direction.y;setWalkTarget(r0.origin.x+r0.direction.x*tt,r0.origin.z+r0.direction.z*tt);}
 });
+/* ---------- 구역 오가기 ----------
+   goZone(이름, 자리): 새 구역을 만들고 → 지금 구역을 비우고 → 원더룹을 자리에 세우고 → 해·카메라·병합을 맞춘다.
+   문(doors)을 밟으면 저절로 부른다. 들어온 문 위에 서 있는 동안은 다시 넘어가지 않는다. 탈 교체 영역(아틀라스)은 새로 채운다 */
+let zoneBusy=false,doorLock=true;
+async function goZone(id,spawn){
+  if(zoneBusy||!ZONES[id])return false;zoneBusy=true;
+  try{const nz=await loadZone(id),old=zone.cur;unloadZone(old);zone.cur=nz;
+    const sp=spawn||nz.spawn;stopWalk();WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;
+    zone.area=areaAt(sp.x,sp.z)||Object.keys(nz.areas)[0];setupView(nz,zone.area);
+    WL.userData.atlas.clear('swap');doorLock=true;
+    const zb=document.getElementById('zoneBtn');if(zb)zb.textContent='구역: '+nz.name;
+  }finally{zoneBusy=false;}
+  return true;}
+window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES)};
+// 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
+if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;
+  document.querySelector('.bar').appendChild(b);b.addEventListener('click',()=>{const L=Object.keys(ZONES);goZone(L[(L.indexOf(zone.cur.id)+1)%L.length]);});}
 const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- 애니메이션 ---------- */
@@ -33,32 +51,24 @@ const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0;
 function tick(){
   let dt,t;if(SHOT){dt=1/60;shotT+=dt;t=shotT;}else{clock.update();dt=Math.min(clock.getDelta(),0.05);t=clock.getElapsed();}
   night+=(nightTarget-night)*Math.min(1,dt*2.2);
-  lampLevel+=((lampOn?1:0)-lampLevel)*Math.min(1,dt*6);
   const n=night,flick=reduce?1:(1+Math.sin(t*7.3)*0.04+Math.sin(t*13.1)*0.03);
-  hemi.intensity=0.62-0.4*n;poolMat.opacity=(0.08+0.32*n)*lampLevel;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
+  hemi.intensity=0.62-0.4*n;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
   sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
-  beamMat2.opacity=0.22*(1-n);dustMat.opacity=0.85*(1-n);skyNight.opacity=n;
-  lampLight.intensity=(0.55+0.95*n)*lampLevel*flick;
-  glowMat.emissiveIntensity=0.15+(0.55+0.6*n)*lampLevel;capMat.emissiveIntensity=0.05+0.3*n*lampLevel;
-  crateLight.intensity=(0.25+0.6*n)*flick;
   cave+=(caveTarget-cave)*Math.min(1,dt*2.2);
-  if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;lampLight.intensity*=1-.85*cave;crateLight.intensity*=1-.5*cave;}
+  if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}
+  const Z=zone.cur,env={night:n,cave,flick,reduce};
+  if(Z.light)Z.light(env,dt); // 구역 조명(램프·등불 등)과 효과의 밝기
   {const dark=Math.min(1,Math.max(0,1-hemi.intensity/.62));const U=WL.userData;if(U.rimU){U.rimU.value=emph?.08+.45*dark:0;U.liftU.value=emph?.02+.17*dark:0;}}
   // 위 세기는 r128 옛 조명 단위 → 물리 단위로 (옛 방식은 셰이더에서 π를 곱했다)
-  [hemi,sun,fill,lampLight,crateLight].forEach(l=>l.intensity*=PI);
-  // 먼지
-  for(let i=0;i<DUST;i++){const d=dustSeed[i];if(!reduce){d.t+=d.sp*dt;if(d.t>1)d.t-=1;}
-    const wob=Math.sin(t*0.6+d.ph)*0.08;
-    tmp.copy(beamStart).addScaledVector(sunDir,d.t*beamLen).addScaledVector(perpA,Math.cos(d.a)*d.r*(0.85+d.t*0.2)+wob).addScaledVector(perpB,Math.sin(d.a)*d.r*(0.85+d.t*0.2));
-    dustPos[i*3]=tmp.x;dustPos[i*3+1]=tmp.y;dustPos[i*3+2]=tmp.z;}
-  dustGeo.attributes.position.needsUpdate=true;
-  // 김
-  steams.forEach(s=>{const u=s.userData;const p=((t*0.28)+u.ph)%1;
-    s.position.set(u.x+Math.sin(t*1.3+u.sw)*0.06*p,u.y+p*0.75,u.z+Math.cos(t*1.1+u.sw)*0.04*p);
-    const sc=0.12+p*0.28;s.scale.set(sc,sc,sc);s.material.opacity=Math.sin(p*PI)*0.55*(reduce?0.6:1);});
-  // 시계
-  minute.rotation.x=-t*0.15;
+  [hemi,sun,fill,...Z.lights].forEach(l=>l.intensity*=PI);
+  if(Z.update)Z.update(dt,t,env); // 구역 움직임 (베이스캠프: 먼지·김·시계)
   updateWL(dt,t);
+  // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
+  {const a=areaAt(WL.position.x,WL.position.z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(Z.areas[a].camera,false);}
+   const d=doorAt(WL.position.x,WL.position.z);if(!d)doorLock=false;else if(!doorLock&&!zoneBusy){doorLock=true;goZone(d.to,d.spawn);}}
+  // 넓은 야외: 그림자 범위가 원더룹을 따라감 (그림자 지도 한 칸 단위로 맞춰 떨림 없게)
+  if(Z.sun.follow){const s=Z.sun.shadow,st=2*s/sun.shadow.mapSize.x,cx=Math.round(WL.position.x/st)*st,cz=Math.round(WL.position.z/st)*st;
+    sun.target.position.set(cx,0,cz);sun.position.set(cx,0,cz).sub(tmp.copy(Z.sun.dir).multiplyScalar(16));}
   // 천천히 둘러보기
   if(spin){const off=camera.position.clone().sub(controls.target);const s=new THREE.Spherical().setFromVector3(off);
     s.theta+=spinDir*dt*0.18;if(s.theta>controls.maxAzimuthAngle-0.02){spinDir=-1;}if(s.theta<controls.minAzimuthAngle+0.02){spinDir=1;}

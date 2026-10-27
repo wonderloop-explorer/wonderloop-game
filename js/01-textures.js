@@ -62,20 +62,23 @@ function wavyLine(g,S,y,amp,freq,ph){g.beginPath();g.moveTo(0,y);for(let x=0;x<=
    포토샵으로 고친 파일도 그대로 쓰도록 색 변환 없이 픽셀 값 그대로 읽는다(포토샵 작업 색공간은 sRGB).
    ?nobake 를 붙이면 구운 파일을 안 쓰고 모두 그린다(굽기 도구가 쓴다). 목록의 이름(key)이 텍스처를 찾는 열쇠다. */
 // 불러오기 방식: 'all' = 구운 파일 모두(다시 방문·느린 CPU에서 빠름, 첫 방문에 약 3MB 더 받음), 'hand' = 손으로 고친 파일만(나머지는 그림)
-const BAKE_LOAD='hand';
-const BAKE_SETS=['character','basecamp'],BAKED=new Map(),TEXREG=new Map(),wlTex={drawMs:0,drawn:0,baked:0,loadMs:0};window.wlTex=wlTex;
-if(!RREC&&!new URLSearchParams(location.search).has('nobake')){const t0=performance.now();
-  await Promise.all(BAKE_SETS.map(async set=>{const dir=new URL(`../assets/textures/${set}/`,import.meta.url),v='?v='+(window.WL_V||'');
-    const list=await fetch(new URL('textures.json',dir)+v).then(r=>r.ok?r.json():null).catch(()=>null);if(!list)return;
-    await Promise.all(list.textures.filter(e=>BAKE_LOAD==='all'||e.hand).map(async e=>{try{
+const BAKE_LOAD=new URLSearchParams(location.search).get('bake')||'hand'; // 주소에 ?bake=all 을 붙이면 'all'로 (측정용)
+const BAKED=new Map(),TEXREG=new Map(),TEXSET=new Map(),wlTex={drawMs:0,drawn:0,baked:0,loadMs:0};window.wlTex=wlTex;
+const NOBAKE=RREC||new URLSearchParams(location.search).has('nobake'),bakeLoaded=new Set();
+// 묶음 하나 읽기: 캐릭터는 시작할 때, 구역 묶음은 그 구역에 들어갈 때(02 loadZone)
+async function loadBaked(set){if(NOBAKE||bakeLoaded.has(set))return;bakeLoaded.add(set);const t0=performance.now();
+  const dir=new URL(`../assets/textures/${set}/`,import.meta.url),v='?v='+(window.WL_V||'');
+  const list=await fetch(new URL('textures.json',dir)+v).then(r=>r.ok?r.json():null).catch(()=>null);
+  if(list)await Promise.all(list.textures.filter(e=>BAKE_LOAD==='all'||e.hand).map(async e=>{try{
       const b=await fetch(new URL(e.file,dir)+v).then(r=>{if(!r.ok)throw r.status;return r.blob();});
       const bm=await createImageBitmap(b,{colorSpaceConversion:'none',premultiplyAlpha:'none'});
       const cv=document.createElement('canvas');cv.width=bm.width;cv.height=bm.height;cv.getContext('2d').drawImage(bm,0,0);bm.close();BAKED.set(e.key,cv);
-    }catch(err){console.warn('원더룹: 구운 텍스처를 못 읽어 대신 그림 —',set,e.file,err);}}));}));
-  wlTex.loadMs=performance.now()-t0;}
+    }catch(err){console.warn('원더룹: 구운 텍스처를 못 읽어 대신 그림 —',set,e.file,err);}}));
+  wlTex.loadMs+=performance.now()-t0;}
+await loadBaked('character');
 // 텍스처 하나: 구운 캔버스가 있으면 그것, 없으면 draw()로 그림 (TEXREG에 이름 → 캔버스를 남겨 굽기 도구가 쓴다)
-function texCanvas(key,draw){let cv=BAKED.get(key);if(cv)wlTex.baked++;else{const t0=performance.now();cv=texRng(key,draw);wlTex.drawMs+=performance.now()-t0;wlTex.drawn++;}
-  TEXREG.set(key,cv);return cv;}
+function texCanvas(key,draw){if(TEXREG.has(key))return TEXREG.get(key);let cv=BAKED.get(key);if(cv)wlTex.baked++;else{const t0=performance.now();cv=texRng(key,draw);wlTex.drawMs+=performance.now()-t0;wlTex.drawn++;}
+  TEXREG.set(key,cv);TEXSET.set(key,BUILD.zone||'character');return cv;}
 const texCache={};
 function pencil(base,kind,o){
   kind=kind||'plain';o=o||{};
@@ -261,13 +264,15 @@ function M(color,kind,o){
 const lineMats={};
 function lineMat(c){if(!lineMats[c])lineMats[c]=new THREE.LineBasicMaterial({color:lin(shade(c,-0.38)),transparent:true,opacity:0.5});return lineMats[c];}
 const scene=new THREE.Scene();
+/* 구역을 만드는 동안 add·group·blob·aoPlane이 붙일 곳 (02 loadZone이 구역 뿌리로 바꿔 둔다, 평소엔 장면) */
+const BUILD={root:null,zone:null};const host=()=>BUILD.root||scene;
 function add(geo,mat,x,y,z,o){
   o=o||{};const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);
   if(o.rx)m.rotation.x=o.rx;if(o.ry)m.rotation.y=o.ry;if(o.rz)m.rotation.z=o.rz;
   if(o.s)m.scale.set(o.s[0],o.s[1],o.s[2]);
   m.castShadow=o.cast!==false;m.receiveShadow=true;
   if(o.line!==false&&mat.userData.base){m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,o.thr||28),lineMat(mat.userData.base)));}
-  (o.parent||scene).add(m);return m;
+  (o.parent||host()).add(m);return m;
 }
 /* 회전체(상체·조끼·모자): r128처럼 면 법선을 평균하고 이음매 법선을 맞춘다 — 새 LatheGeometry 법선은 음영이 달라진다 */
 function lathe(points,segments,phiStart,phiLength=PI*2){
@@ -286,7 +291,7 @@ function cylBetween(p1,p2,r,mat,parent,seg){
   const m=add(C(r,r,L,seg||6),mat,0,0,0,{parent,thr:50});m.position.copy(a.clone().add(b).multiplyScalar(0.5));
   m.quaternion.setFromUnitVectors(UP,dir.normalize());return m;
 }
-function group(x,y,z,ry){const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=ry||0;scene.add(g);return g;}
+function group(x,y,z,ry){const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=ry||0;host().add(g);return g;}
 
 /* 부드러운 그림자 / AO */
 function gradTex(radial,strong){
@@ -297,6 +302,6 @@ function gradTex(radial,strong){
 }
 const blobTex=gradTex(true,0.6),aoTex=gradTex(false,0.6);
 function softMat(t,op){return new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
-function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,op||0.35));m.rotation.x=-PI/2;m.position.set(x,0.045,z);scene.add(m);}
-function aoPlane(w,h,rot,pos,op){const geo=new THREE.PlaneGeometry(w,h);rot(geo);const m=new THREE.Mesh(geo,softMat(aoTex,op));m.position.set(...pos);scene.add(m);}
-export {B,C,M,PI,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,pencil,TEXREG,rawLin,rng,rngLoaded,scene,shade,skyTex,softMat};
+function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,op||0.35));m.rotation.x=-PI/2;m.position.set(x,0.045,z);host().add(m);}
+function aoPlane(w,h,rot,pos,op){const geo=new THREE.PlaneGeometry(w,h);rot(geo);const m=new THREE.Mesh(geo,softMat(aoTex,op));m.position.set(...pos);host().add(m);}
+export {B,BUILD,C,M,PI,TEXSET,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,loadBaked,pencil,TEXREG,rawLin,rng,rngLoaded,scene,shade,skyTex,softMat};

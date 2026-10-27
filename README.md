@@ -44,6 +44,28 @@ Claude Code는 시작할 때 `CLAUDE.md`를 읽고 프로젝트 규칙과 다음
 | `assets/models/` | 확정 캐릭터 GLB (평상복, 탐험복, 탐험복+모자)와 뼈대 포함 GLB(`wonderloop-rigged*.glb`) |
 | `CLAUDE.md` | 프로젝트 규칙과 다음 작업 로드맵 (Claude Code용) |
 
+## 새 구역 추가하기
+
+탐험지(세계)는 구역(zone) 단위로 만들어요. 베이스캠프가 첫 구역이고, `js/zones/`에 야외·실내 견본이 있어요. 견본 구역은 확인용이라 주소 끝에 `?zonetest`를 붙였을 때만 들어갈 수 있어요. 그때 구역을 차례로 바꾸는 단추가 나오고, `?zonetest&zone=sample-outdoor`처럼 붙이면 그 구역에서 시작해요. 실제 구역은 목록에 넣으면 일반 주소에서도 열려요.
+
+1. 견본을 복사해 `js/zones/<이름>.js`를 만듭니다. 넓은 땅이면 `sample-outdoor.js`, 방 여러 개면 `sample-indoor.js`를 복사해요.
+2. `js/02-zone.js`의 `ZONES` 목록에 한 줄 더합니다.
+
+```js
+'ant-tunnel':()=>import('./zones/ant-tunnel.js'),
+```
+
+3. `build()` 안에서 소품을 만들고, 끝에서 구역 정보를 돌려줍니다.
+   - `spawn`: 원더룹이 처음 서는 자리
+   - `areas`: 방마다 걸을 수 있는 범위·장애물·카메라. 실내는 방 여러 개, 야외는 하나
+   - `doors`: 밟으면 다른 구역으로 넘어가는 자리
+   - `sun`: 해 방향과 그림자 범위
+   - `groundY`: (야외) 땅 높이
+   - 난수는 `rng('<이름>:…')`처럼 이름을 붙여 씁니다. 그래야 다른 구역 그림이 바뀌지 않아요.
+4. 다른 구역에서 들어오는 문을 만듭니다. 예를 들어 베이스캠프의 `doors`에 `{rect:[…], to:'<이름>'}`을 더해요.
+5. 텍스처를 굽습니다(`tools/bake-textures.js`). 구역마다 `assets/textures/<이름>/` 묶음이 생겨요.
+6. 기준 스크린샷을 찍어 `docs/baseline/<이름>/`에 남깁니다.
+
 ## 텍스처를 포토샵으로 고치는 방법
 
 색연필 텍스처는 `assets/textures/<묶음>/`(캐릭터는 `character`, 베이스캠프는 `basecamp`)에 WebP 파일로 구워져 있어요. 어떤 파일이 어떤 텍스처인지는 `docs/bake/texture-index.jpg`에서 볼 수 있어요.

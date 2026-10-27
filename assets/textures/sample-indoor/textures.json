@@ -1,0 +1,61 @@
+{
+ "note": "원더룹 구운 텍스처 목록 — tools/bake-textures.js가 쓴다. hand: true = 손으로 고친 파일(다시 구워도 덮어쓰지 않음). key는 텍스처를 찾는 열쇠라 고치지 않는다.",
+ "textures": [
+  {
+   "key": "pencil|#e2c29a|planks|{\"rep\":[2,2]}",
+   "file": "planks-e2c29a-r2x2-4d99.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c4d5d26498b774e2",
+   "bytes": 22268
+  },
+  {
+   "key": "pencil|#efe0c4|plaster|{\"rep\":[2,1]}",
+   "file": "plaster-efe0c4-r2x1-4402.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1f84256037bd7fcb",
+   "bytes": 40912
+  },
+  {
+   "key": "pencil|#d7e6dc|plaster|{\"rep\":[2,1]}",
+   "file": "plaster-d7e6dc-r2x1-6ba0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "6acc80ab261aa429",
+   "bytes": 28972
+  },
+  {
+   "key": "pencil|#c98a6a|plain|{}",
+   "file": "plain-c98a6a-14aa.webp",
+   "w": 256,
+   "h": 256,
+   "px": "55a2d12763405378",
+   "bytes": 13668
+  },
+  {
+   "key": "pencil|#b57a5c|plain|{}",
+   "file": "plain-b57a5c-99af.webp",
+   "w": 256,
+   "h": 256,
+   "px": "fd68d920d4987eba",
+   "bytes": 13732
+  },
+  {
+   "key": "pencil|#7d8bd0|plain|{}",
+   "file": "plain-7d8bd0-87cd.webp",
+   "w": 256,
+   "h": 256,
+   "px": "9c69e2cb5c46155a",
+   "bytes": 13920
+  },
+  {
+   "key": "pencil|#3fa89b|plain|{}",
+   "file": "plain-3fa89b-53bc.webp",
+   "w": 256,
+   "h": 256,
+   "px": "e348a8fa02dc6e8e",
+   "bytes": 13812
+  }
+ ]
+}
