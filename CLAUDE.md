@@ -5,9 +5,11 @@
 - 이 저장소는 화풍과 캐릭터의 **기준 빌드**다. 이후 모든 세계·배경·오브젝트는 여기 정한 색감·재질·규칙을 따른다.
 - 기존 게임 "앤트빌리지"(개미굴 편)는 별도의 단일 HTML로 존재한다. 로드맵 6번에서 이 구조로 이식한다.
 
-## 실행
-- `python3 -m http.server 8000` 후 `http://localhost:8000`.
-- 배포: GitHub Pages (main 브랜치 루트).
+## 실행과 배포
+- 로컬: `python3 -m http.server 8000` 후 `http://localhost:8000`.
+- 저장소: `wonderloop-explorer/wonderloop-game` (원더룹 전용 GitHub 조직).
+- 배포: GitHub Pages, `main` 브랜치 루트 → https://wonderloop-explorer.github.io/wonderloop-game/
+- 작업을 마치면 변경 내용을 요약한 커밋 메시지로 `main`에 푸시한다. 푸시 전에 로컬에서 동작을 확인한다.
 
 ## 코드 구조 (중요)
 - three.js r128 (UMD, cdnjs) + OrbitControls(jsDelivr). 빌드 도구 없음.

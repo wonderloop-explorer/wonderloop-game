@@ -1,5 +1,7 @@
 # 원더룹 게임 (베이스캠프 기준 빌드)
 
+**플레이 주소:** https://wonderloop-explorer.github.io/wonderloop-game/
+
 원더룹 탐험 게임과 탐방 영상의 기준이 되는 3D 장면입니다. 파스텔 색연필 로우폴리 화풍의 베이스캠프 방과, 확정된 원더룹 캐릭터(지그재그 단발, 평상복/탐험복, 탈, 표정 6종, 동작 9종)가 들어 있습니다.
 
 ## 바로 실행하기
@@ -12,16 +14,15 @@ python3 -m http.server 8000
 # 브라우저에서 http://localhost:8000 열기
 ```
 
-## GitHub Pages로 올리기
+## 저장소와 배포
 
-1. GitHub에서 새 저장소를 만듭니다 (예: `wonderloop-game`).
-2. 이 폴더의 파일을 모두 올립니다 (`index.html`이 저장소 맨 위에 있어야 해요).
-3. 저장소 **Settings → Pages**에서 Source를 `main` 브랜치 `/ (root)`로 지정합니다.
-4. 1~2분 뒤 `https://<아이디>.github.io/wonderloop-game/`에서 열립니다.
+- 저장소: https://github.com/wonderloop-explorer/wonderloop-game (원더룹 전용 조직 `wonderloop-explorer`)
+- 배포: GitHub Pages (`main` 브랜치, `/ (root)`). `main`에 올리면 1~2분 뒤 자동으로 반영됩니다.
 
 ## Claude Code로 이어서 작업하기
 
 ```bash
+git clone https://github.com/wonderloop-explorer/wonderloop-game.git
 cd wonderloop-game
 claude
 ```
