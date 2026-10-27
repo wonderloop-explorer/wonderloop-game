@@ -1,6 +1,7 @@
 /* 원더룹 베이스캠프 — 베이스캠프 방과 소품 */
 import * as THREE from 'three';
-import {B,C,M,PI,R,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rawLin,rnd,scene,shade,skyTex} from './01-textures.js';
+import {B,C,M,PI,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rawLin,rng,scene,shade,skyTex} from './01-textures.js';
+const R=rng('room'),rnd=(a,b)=>a+(b-a)*R(); // 방 소품 배치용 난수
 /* ---------- 방 ---------- */
 // 바닥
 add(new THREE.PlaneGeometry(10,10),M('#e6bd92','planks',{rep:[2.5,2.5]}),0,0,0,{rx:-PI/2,cast:false,line:false});

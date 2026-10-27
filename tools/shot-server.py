@@ -4,12 +4,13 @@
 페이지는 http://localhost:8000/?shot 으로 열고, 브라우저에서
   fetch('/save?path=baseline/r128/room-day.png', {method:'POST', body: wlShot.capture()})
 처럼 data URL을 보내면 docs/baseline/r128/room-day.png 로 저장된다.
+path가 ../assets/로 시작하면 assets/ 아래 정해진 곳에 저장한다 (models: .glb, rand: .json, textures: .webp·.json).
 """
 import base64, http.server, os, sys, urllib.parse
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DOCS = os.path.join(ROOT, 'docs')
-MODELS = os.path.join(ROOT, 'assets', 'models')
+ASSETS = {os.path.join(ROOT, 'assets', d): ext for d, ext in {'models': ('.glb',), 'rand': ('.json',), 'textures': ('.webp', '.json')}.items()}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -24,7 +25,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         u = urllib.parse.urlparse(self.path)
         rel = urllib.parse.parse_qs(u.query).get('path', [''])[0]
         dest = os.path.abspath(os.path.join(DOCS, rel))
-        ok = (dest.startswith(DOCS + os.sep) and dest.endswith(('.png', '.json'))) or (dest.startswith(MODELS + os.sep) and dest.endswith('.glb'))
+        ok = (dest.startswith(DOCS + os.sep) and dest.endswith(('.png', '.json'))) or any(dest.startswith(d + os.sep) and dest.endswith(ext) for d, ext in ASSETS.items())
         if u.path != '/save' or not ok:
             self.send_error(400, 'bad path')
             return

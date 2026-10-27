@@ -1,8 +1,31 @@
 /* 원더룹 베이스캠프 — 색연필 텍스처·재질·메쉬 헬퍼 */
 import * as THREE from 'three';
 const PI=Math.PI;
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-const R=mulberry32(11);
+/* ---------- 난수: 용도별 시드 ----------
+   예전엔 시드 난수 R() 하나를 01~07이 차례로 꺼내 써서, 어디에 무언가를 더하면 그 뒤 텍스처·소품이 모두 바뀌었다.
+   이제 용도마다 따로 꺼낸다: 텍스처는 텍스처 이름마다, 소품은 rng('room'), 머리카락은 rng('hair'), 깜빡임은 rng('blink').
+   지금 그림을 그대로 두려고, 예전 순서로 한 번 돌려 용도별로 꺼낸 값(텍스처는 시작 상태)을 assets/rand/recorded.json에 기록해 두고
+   그대로 다시 쓴다. 기록에 없는 것(새 텍스처·소품·구역)은 이름에서 만든 시드를 쓰므로 순서와 상관없이 늘 같은 그림이 나온다.
+   기록 다시 만들기: tools/shot-server.py로 띄우고 http://localhost:8000/?rngrec 를 열면 저장된다(예전 R() 순서를 다시 만들 때만). */
+function mulberry32(a){const f=function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};f.state=()=>a|0;return f;}
+const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h|0;};
+const RREC=new URLSearchParams(location.search).has('rngrec');
+const REC=RREC?{tex:{},vals:{},loadEnd:0}:await fetch(new URL('../assets/rand/recorded.json',import.meta.url)+'?v='+(window.WL_V||'')).then(r=>r.json()).catch(()=>{console.warn('원더룹: 난수 기록(assets/rand/recorded.json)을 못 읽어 새 난수로 그림');return{tex:{},vals:{}};});
+const OLD=RREC?mulberry32(11):null;let loaded=false;
+/* rng(이름): 그 용도의 난수 함수. opt.afterLoad: 예전에 로딩이 끝난 뒤 첫 난수를 이어 쓰던 것(깜빡임) */
+function rng(name,opt){
+  if(RREC)return()=>{const v=OLD();if(!loaded)(REC.vals[name]=REC.vals[name]||[]).push(v);return v;};
+  const vals=REC.vals[name]||[];let i=0,s=null;
+  return()=>i<vals.length?vals[i++]:(s=s||mulberry32(opt&&opt.afterLoad&&REC.loadEnd!=null?REC.loadEnd:hash(name)))();
+}
+/* 로딩 끝(08 맨 끝에서 부름): 기록 모드면 기록을 저장 */
+function rngLoaded(){if(!RREC||loaded)return;loaded=true;REC.loadEnd=OLD.state();
+  fetch('/save?path=../assets/rand/recorded.json',{method:'POST',body:JSON.stringify(REC)}).then(r=>console.log('원더룹: 난수 기록 저장',r.status));}
+// 텍스처 그리기는 텍스처마다 자기 난수(이름이 같으면 #2, #3…)로
+const texSeen={};let R=rng('misc');
+function texRng(key,draw){const k=key+(texSeen[key]?'#'+(++texSeen[key]):(texSeen[key]=1,''));const prev=R;
+  if(RREC){REC.tex[k]=OLD.state();R=OLD;}else R=mulberry32(REC.tex[k]!=null?REC.tex[k]:hash('tex:'+k));
+  try{return draw();}finally{R=prev;}}
 const rnd=(a,b)=>a+(b-a)*R();
 const pick=arr=>arr[Math.floor(R()*arr.length)];
 /* 색연필 명암: sRGB 값 그대로 HSL을 다루고, 16진수는 r128처럼 버림(<<)으로 만든다 — 반올림하면 텍스처 색이 한 칸씩 어긋난다 */
@@ -39,6 +62,9 @@ function pencil(base,kind,o){
   kind=kind||'plain';o=o||{};
   const key=base+'|'+kind+'|'+JSON.stringify(o);
   if(texCache[key])return texCache[key];
+  return texRng('pencil|'+key,()=>drawPencil(base,kind,o,key));
+}
+function drawPencil(base,kind,o,key){
   const S=o.size||256;const cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
   const dark=shade(base,-0.13),darker=shade(base,-0.25),light=shade(base,0.1);
   g.fillStyle=base;g.fillRect(0,0,S,S);
@@ -187,7 +213,8 @@ function pencil(base,kind,o){
   if(o.rep)t.repeat.set(o.rep[0],o.rep[1]);
   texCache[key]=t;return t;
 }
-function skyTex(night){
+function skyTex(night){return texRng('sky|'+(night?1:0),()=>drawSky(night));}
+function drawSky(night){
   const S=256,cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
   const gr=g.createLinearGradient(0,0,0,S);
   if(night){gr.addColorStop(0,'#28366a');gr.addColorStop(1,'#56649d');}else{gr.addColorStop(0,'#86c9ef');gr.addColorStop(1,'#e6f5ff');}
@@ -253,4 +280,4 @@ const blobTex=gradTex(true,0.6),aoTex=gradTex(false,0.6);
 function softMat(t,op){return new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
 function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,op||0.35));m.rotation.x=-PI/2;m.position.set(x,0.045,z);scene.add(m);}
 function aoPlane(w,h,rot,pos,op){const geo=new THREE.PlaneGeometry(w,h);rot(geo);const m=new THREE.Mesh(geo,softMat(aoTex,op));m.position.set(...pos);scene.add(m);}
-export {B,C,M,PI,R,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,pencil,rawLin,rnd,scene,shade,skyTex,softMat};
+export {B,C,M,PI,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,pencil,rawLin,rng,rngLoaded,scene,shade,skyTex,softMat};

@@ -1,0 +1,4 @@
+#!/bin/sh
+# 커밋 전에 index.html 버전 표시를 새로 하고 커밋에 넣는다.
+# 켜기(한 번만): git config core.hooksPath tools/hooks
+python3 tools/stamp.py >/dev/null && git add index.html

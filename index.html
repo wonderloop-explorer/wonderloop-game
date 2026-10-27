@@ -87,16 +87,25 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
   <div class="hint">끌어서 돌려 보고, 휠이나 두 손가락으로 확대해요. 바닥을 누르면 원더룹이 걸어가고, 원더룹을 누르면 인사해요. 버섯 랜턴은 눌러서 켜고 꺼요.</div>
 </div>
 
+<script>window.WL_V='c01b7f2b98';</script>
 <script type="importmap">
 {
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+    "./js/01-textures.js": "./js/01-textures.js?v=c01b7f2b98",
+    "./js/02-room.js": "./js/02-room.js?v=c01b7f2b98",
+    "./js/03-scene.js": "./js/03-scene.js?v=c01b7f2b98",
+    "./js/04-character.js": "./js/04-character.js?v=c01b7f2b98",
+    "./js/05-hair-headwear.js": "./js/05-hair-headwear.js?v=c01b7f2b98",
+    "./js/06-outfits.js": "./js/06-outfits.js?v=c01b7f2b98",
+    "./js/07-actions.js": "./js/07-actions.js?v=c01b7f2b98",
+    "./js/08-main.js": "./js/08-main.js?v=c01b7f2b98"
   }
 }
 </script>
-<!-- 08-main.js가 01~07을 번호 순서대로 import한다 (실행 순서가 곧 색연필 텍스처 난수 순서) -->
-<script type="module" src="js/08-main.js"></script>
+<!-- 08-main.js가 01~07을 번호 순서대로 import한다. 버전(?v=)과 위 importmap의 js 줄은 tools/stamp.py가 쓴다 -->
+<script type="module" src="js/08-main.js?v=c01b7f2b98"></script>
 
 </body>
 </html>

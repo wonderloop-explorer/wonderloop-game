@@ -1,6 +1,6 @@
 /* 원더룹 베이스캠프 — 입력·조명 단계·카메라 따라가기·애니메이션 루프 */
 import * as THREE from 'three';
-import {PI,rawLin,scene} from './01-textures.js';
+import {PI,rawLin,rngLoaded,scene} from './01-textures.js';
 import {DUST,beamLen,beamMat2,beamStart,capMat,crateLight,dustGeo,dustMat,dustPos,dustSeed,glowMat,lampHit,lampLight,minute,perpA,perpB,poolMat,skyNight,steams,sunDir} from './02-room.js';
 import {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,statsEl,sun,ui} from './03-scene.js';
 import {WL} from './04-character.js';
@@ -97,3 +97,4 @@ if(SHOT){
     info(){const ri=renderer.info.render;return{calls:ri.calls,triangles:ri.triangles};}
   };
 }
+rngLoaded(); // 로딩 끝 (난수 기록 모드면 여기서 기록을 저장)

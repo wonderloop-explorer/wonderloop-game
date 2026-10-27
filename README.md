@@ -18,6 +18,7 @@ python3 -m http.server 8000
 
 - 저장소: https://github.com/wonderloop-explorer/wonderloop-game (원더룹 전용 조직 `wonderloop-explorer`)
 - 배포: GitHub Pages (`main` 브랜치, `/ (root)`). `main`에 올리면 1~2분 뒤 자동으로 반영됩니다.
+- 커밋 전에 `python3 tools/stamp.py`로 파일 버전 표시를 새로 합니다. 방문자 브라우저가 옛 파일을 섞어 쓰지 않게 하는 장치예요. 한 번 `git config core.hooksPath tools/hooks`를 해 두면 커밋할 때 저절로 됩니다.
 
 ## Claude Code로 이어서 작업하기
 
