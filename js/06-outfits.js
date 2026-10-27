@@ -30,7 +30,7 @@ function wlMerge(list){
 {
   const shirtMs=[],pantsMs=[];WL.traverse(o=>{if(o.isMesh&&o.material===tunic)shirtMs.push(o);if(o.isMesh&&o.material===shorts)pantsMs.push(o);});
   const rf=WL.userData.rf||[];const rfBase=rf.map(o=>o.material);
-  const E={shirt:TM('#f7f2e8','linen',{rep:[3,3]}),pants:TM('#8f8558','twill',{rep:[2,3],grain:.35}),roll:TM('#b3a978','twill',{rep:[3,1],grain:.35}),fold:SM('#6c643f')};
+  const E={shirt:TM('#f7f2e8','linen',{rep:[3,3]}),pants:TM('#8f8558','twill',{rep:[2,3],grain:.35}),roll:TM('#b3a978','twill',{rep:[3,1],grain:.35}),fold:SM('#6c643f')};WL.userData.outfitMats=Object.values(E); // 아틀라스가 탐험복 텍스처 층을 미리 잡도록
   const exp=[];const vestM=TM('#c99d5c','canvas',{rep:[3,2]},THREE.DoubleSide);const vestD=TM('#a87e43','canvas',{rep:[2,1]});
   const add2=(m,parent)=>{parent.add(m);exp.push(m);return m;};
   add2(wm(lathe([[.236,.33],[.238,.4],[.24,.45],[.233,.52],[.218,.565],[.185,.603]].map(q=>new THREE.Vector2(q[0],q[1])),30,.32,PI*2-.64),vestM),wlBody);

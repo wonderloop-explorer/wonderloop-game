@@ -1,11 +1,11 @@
 /* 원더룹 베이스캠프 — 어두운 곳 강조(림 라이트)·이동·동작 세트·포즈 */
 import * as THREE from 'three';
 import {PI,blobTex,lin,pencil,rnd,scene,softMat} from './01-textures.js';
-import {HIP,SM,WL,WLS,antennae,arms,eyes,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
+import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
 /* 작은 부품은 그림자를 드리우지 않게 (그림자용으로 한 번 더 그리는 비용 절약) */
 WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.isMesh||!o.castShadow)return;o.geometry.computeBoundingSphere();o.getWorldScale(sc);if(o.geometry.boundingSphere.radius*Math.max(sc.x,sc.y,sc.z)<.1)o.castShadow=false;});}
 /* 어두운 곳 가독성: 캐릭터 재질에 테두리 빛(림 라이트)과 약한 자체 밝기를 더함 — 주변이 어두울수록 강해짐 */
-{const U=WL.userData;U.rimU={value:0};U.liftU={value:0};const rimCol={value:lin('#ffe6c4')};const seen=new Set();
+{const U=WL.userData;U.rimU={value:0};U.liftU={value:0};const rimCol={value:lin('#ffe6c4')};U.rimCol=rimCol;const seen=new Set();
  WL.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(!m||!m.isMeshStandardMaterial||seen.has(m))return;seen.add(m);
    const prev=m.onBeforeCompile;m.onBeforeCompile=(sh,r)=>{if(prev)prev(sh,r);sh.uniforms.uRim=U.rimU;sh.uniforms.uLift=U.liftU;sh.uniforms.uRimCol=rimCol;
      sh.fragmentShader='uniform float uRim;uniform float uLift;uniform vec3 uRimCol;\n'+sh.fragmentShader.replace('#include <dithering_fragment>',
@@ -66,26 +66,87 @@ function actionPose(A,t){
    부품 하나가 잎 뼈 하나 — 위 관절 뼈를 따라 움직이고, 표정·옷·탈 전환으로 숨긴 부품은 크기 0이 된다.
    그래서 setExpr·applyOutfit·pressHair 등은 지금처럼 부품을 다루면 된다. 머리카락은 pressHair가 정점을 고치므로 따로 그린다 */
 const body=new THREE.Object3D(),_hv=new THREE.Vector3();
+/* 텍스처 묶음(아틀라스): 캐릭터 색연필 텍스처(256×256)를 층으로 쌓은 텍스처 배열(DataArrayTexture) 한 장에 모은다.
+   층마다 반복(RepeatWrapping)·밉맵·비등방 필터가 원래 텍스처와 똑같이 동작해 결과 이음매가 그대로 나온다
+   (2D 한 장을 칸으로 나누면 반복할 때 칸 경계가 번지고 먼 거리에서 이웃 칸 색이 섞인다). 0번 층은 흰색(텍스처 없는 색 재질).
+   층 영역: 기본(몸·옷·얼굴·모자·소품) 1~base-1 + 여유, 교체(세계마다 바뀌는 탈·소품) base~. 지금 교체 영역의 기본값은 개미탈.
+   새 탈·소품: 부품을 붙이고 재질은 지금처럼 TM/SM/BM으로 만든 뒤, 처음 그릴 때 저절로 층이 잡힌다(탈은 hoodParts에 넣으면 교체 영역).
+   세계를 바꿀 때 atlas.clear('swap') → 새 탈 부품을 보이게 하면 비운 층에 다시 채운다. 크기가 256이 아닌 텍스처는 넣지 않고 경고 */
+const atlas=(()=>{
+  const S=256,SPARE=4,SWAP=12,layer=new Map(),order=[];let tex=null,base=1,next={},end={};
+  const A={S,layer,order,ver:0,get tex(){return tex;},get count(){return tex?tex.image.depth:0;}};
+  const ok=img=>img&&img.width===S&&img.height===S;
+  // 캔버스 → 층 (CanvasTexture는 위아래를 뒤집어 올리므로 줄 순서를 뒤집어 넣는다)
+  let rd=null;function put(i,img){if(!rd){const c=document.createElement('canvas');c.width=c.height=S;rd=c.getContext('2d',{willReadFrequently:true});}
+    rd.drawImage(img,0,0);const src=rd.getImageData(0,0,S,S).data,dst=tex.image.data,row=S*4;
+    for(let y=0;y<S;y++)dst.set(src.subarray((S-1-y)*row,(S-y)*row),(i*S+y)*row);order[i]=img;tex.needsUpdate=true;}
+  A.build=(baseImgs,swapImgs)=>{base=1+baseImgs.length+SPARE;const n=base+SWAP;
+    tex=new THREE.DataArrayTexture(new Uint8Array(S*S*4*n).fill(255,0,S*S*4),S,S,n);
+    Object.assign(tex,{format:THREE.RGBAFormat,type:THREE.UnsignedByteType,colorSpace:THREE.SRGBColorSpace,wrapS:THREE.RepeatWrapping,wrapT:THREE.RepeatWrapping,
+      magFilter:THREE.LinearFilter,minFilter:THREE.LinearMipmapLinearFilter,generateMipmaps:true,anisotropy:4});
+    next={base:1,swap:base};end={base,swap:n};baseImgs.forEach(img=>A.add(img,'base'));swapImgs.forEach(img=>A.add(img,'swap'));};
+  A.add=(img,region='base')=>{if(!img)return 0;if(layer.has(img))return layer.get(img);
+    if(!ok(img)){console.warn('원더룹: 아틀라스에 넣을 수 없는 텍스처(256×256 캔버스만)',img);return 0;}
+    if(next[region]>=end[region]){console.warn('원더룹: 아틀라스 '+region+' 영역이 가득 참');return 0;}
+    const i=next[region]++;put(i,img);layer.set(img,i);return i;};
+  A.clear=region=>{layer.forEach((i,img)=>{if(i>=(region==='swap'?base:1)&&i<end[region]){layer.delete(img);order[i]=null;}});next[region]=region==='swap'?base:1;A.ver++;};
+  A.region=i=>i===0?'white':i<base?'base':'swap';
+  return A;})();
+WL.userData.atlas=atlas;
+/* 재질 → 정점 값: 층·반복·거칠기(wlAtl), 색·불투명도(wlCol), 발광·림 라이트(wlExt). 원래 재질에서 그대로 읽으므로 옷을 바꿔도 같은 값이 나온다 */
+const minfo=new Map();
+function matInfo(m,region){let r=minfo.get(m);if(r)return r;
+  if(!m.isMeshStandardMaterial||m.metalness||m.flatShading||m.vertexColors||m.normalMap||m.alphaTest||(m.map&&(m.map.offset.x||m.map.offset.y||m.map.rotation)))console.warn('원더룹: 아틀라스가 다루지 않는 재질 설정',m);
+  const L=m.map?atlas.add(m.map.image,region):0,rx=m.map?m.map.repeat.x:1,ry=m.map?m.map.repeat.y:1,e=m.emissive.clone().multiplyScalar(m.emissiveIntensity);
+  r={L,atl:[L,rx,ry,m.roughness],col:[m.color.r,m.color.g,m.color.b,m.transparent?m.opacity:1],ext:[e.r,e.g,e.b,m.customProgramCacheKey()==='wlrim'?1:0],cls:m.side+(m.transparent?'t':''),side:m.side,transparent:m.transparent};
+  minfo.set(m,r);return r;}
+/* 아틀라스 재질: 앞면 불투명 / 양면 불투명 / 반투명(볼 터치) — 셰이더 계산은 원래 재질과 같은 순서라 같은 색이 나온다 */
+const atlasMat=(()=>{const U=WL.userData,C=THREE.ShaderChunk,cache={};
+  const lfb=C.lights_fragment_begin.replaceAll('( directLight.visible && receiveShadow )','( directLight.visible && wlRecv )');
+  return(side,transparent)=>{const k=side+(transparent?'t':'');if(cache[k])return cache[k];
+    const m=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,metalness:0,side,transparent});m.name='wl-atlas-'+k;
+    m.onBeforeCompile=sh=>{sh.uniforms.uWlAtlas={value:atlas.tex};sh.uniforms.uRim=U.rimU;sh.uniforms.uLift=U.liftU;sh.uniforms.uRimCol=U.rimCol;
+      sh.vertexShader='attribute vec4 wlCol;attribute vec4 wlAtl;attribute vec4 wlExt;attribute vec2 wlSh;\nvarying vec2 vWlUv;flat varying vec4 vWlCol;flat varying vec4 vWlAtl;flat varying vec4 vWlExt;flat varying float vWlRecv;\n'+
+        sh.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\nvWlUv=uv*wlAtl.yz;vWlCol=wlCol;vWlAtl=wlAtl;vWlExt=wlExt;vWlRecv=wlSh.x;');
+      sh.fragmentShader='uniform highp sampler2DArray uWlAtlas;uniform float uRim;uniform float uLift;uniform vec3 uRimCol;\nvarying vec2 vWlUv;flat varying vec4 vWlCol;flat varying vec4 vWlAtl;flat varying vec4 vWlExt;flat varying float vWlRecv;\n'+
+        sh.fragmentShader.replace('#include <map_fragment>','diffuseColor*=vWlCol;diffuseColor*=texture(uWlAtlas,vec3(vWlUv,vWlAtl.x));')
+          .replace('#include <roughnessmap_fragment>','float roughnessFactor=vWlAtl.w;')
+          .replace('#include <emissivemap_fragment>','totalEmissiveRadiance=vWlExt.xyz;')
+          .replace('#include <lights_fragment_begin>','bool wlRecv=receiveShadow&&vWlRecv>.5;\n'+lfb)
+          .replace('#include <dithering_fragment>','float wlFr=pow(1.0-clamp(dot(normalize(normal),normalize(vViewPosition)),0.0,1.0),2.2);gl_FragColor.rgb+=(uRimCol*wlFr*uRim+diffuseColor.rgb*uLift)*vWlExt.w;\n#include <dithering_fragment>');};
+    m.customProgramCacheKey=()=>'wlatlas';return cache[k]=m;};})();
+// 그림자: 그림자를 드리우지 않는 부품은 그림자 패스에서만 크기 0으로 접는다
+const atlasDepth=new THREE.MeshDepthMaterial();atlasDepth.onBeforeCompile=sh=>{sh.vertexShader='attribute vec2 wlSh;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed*=wlSh.y;');};
+atlasDepth.customProgramCacheKey=()=>'wlatlasdepth';
 const rigSync=(()=>{
   const keep=new Set([...(WL.userData.hairMeshes||[]),...(WL.userData.noMerge||[])]);
   const parts=[];WL.traverse(o=>{if(o.isMesh&&!keep.has(o))parts.push(o);});
-  const msig=m=>[m.type,m.map?m.map.uuid:'',m.color.getHexString(),m.roughness,m.metalness,m.side,m.transparent,m.opacity,m.emissive?m.emissive.getHexString()+m.emissiveIntensity:'',m.flatShading,m.customProgramCacheKey()].join('|');
-  // 재질·그림자 설정이 같은 조각끼리 묶음 (재질 배열을 쓰는 부품은 그룹별로 나눔)
+  const inHood=o=>{for(let q=o;q&&q!==WL;q=q.parent)if(hoodParts.includes(q))return true;return false;};
+  const mats=o=>Array.isArray(o.material)?o.material:[o.material];
+  // 층 순서: 기본 영역(부품 순서 → 탐험복 재질), 교체 영역(개미탈) — 순서가 정해져 있어 굽기(로드맵 4)에서 그대로 쓴다
+  const baseI=new Set(),swapI=new Set(),img=m=>m&&m.map&&m.map.image;
+  parts.forEach(o=>{if(!inHood(o))mats(o).forEach(m=>img(m)&&baseI.add(img(m)));});(WL.userData.outfitMats||[]).forEach(m=>img(m)&&baseI.add(img(m)));
+  parts.forEach(o=>{if(inHood(o))mats(o).forEach(m=>img(m)&&!baseI.has(img(m))&&swapI.add(img(m)));});
+  atlas.build([...baseI],[...swapI]);
+  const region=o=>inHood(o)?'swap':'base';
+  // 재질 종류(앞면·양면·반투명)별로 부품 조각을 묶음 (재질 배열을 쓰는 부품은 그룹별로 나눔)
   const groups=new Map();
-  parts.forEach((o,bi)=>{const g=o.geometry,ms=Array.isArray(o.material)?o.material:[o.material];
+  parts.forEach((o,bi)=>{const g=o.geometry,ms=mats(o);
     const ranges=g.groups.length&&Array.isArray(o.material)?g.groups:[{start:0,count:g.index?g.index.count:g.attributes.position.count,materialIndex:0}];
-    ranges.forEach(r=>{const k=msig(ms[r.materialIndex])+'#'+o.castShadow+'#'+o.receiveShadow;if(!groups.has(k))groups.set(k,[]);groups.get(k).push({o,bi,r,mi:r.materialIndex});});});
+    ranges.forEach(r=>{const k=matInfo(ms[r.materialIndex],region(o)).cls;if(!groups.has(k))groups.set(k,[]);groups.get(k).push({o,bi,r,mi:r.materialIndex});});});
   const skel=new THREE.Skeleton(parts);
-  const meshes=[];
-  groups.forEach(list=>{const pos=[],nor=[],uv=[],si=[],sw=[],idx=[];let base=0;
-    list.forEach(({o,bi,r})=>{const g=o.geometry,P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv;
-      for(let i=0;i<P.count;i++){pos.push(P.getX(i),P.getY(i),P.getZ(i));if(N)nor.push(N.getX(i),N.getY(i),N.getZ(i));else nor.push(0,1,0);if(U)uv.push(U.getX(i),U.getY(i));else uv.push(0,0);si.push(bi,0,0,0);sw.push(1,0,0,0);}
-      for(let i=r.start;i<r.start+r.count;i++)idx.push(base+(g.index?g.index.getX(i):i));base+=P.count;});
+  const meshes=[],entries=[];
+  groups.forEach((list,cls)=>{const pos=[],nor=[],uv=[],si=[],sw=[],idx=[];let base=0;
+    list.forEach(e=>{const g=e.o.geometry,P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv;e.v0=base;e.n=P.count;
+      for(let i=0;i<P.count;i++){pos.push(P.getX(i),P.getY(i),P.getZ(i));if(N)nor.push(N.getX(i),N.getY(i),N.getZ(i));else nor.push(0,1,0);if(U)uv.push(U.getX(i),U.getY(i));else uv.push(0,0);si.push(e.bi,0,0,0);sw.push(1,0,0,0);}
+      e.i0=idx.length;for(let i=e.r.start;i<e.r.start+e.r.count;i++)idx.push(base+(g.index?g.index.getX(i):i));e.ic=idx.length-e.i0;base+=P.count;});
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
-    g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(sw,4));g.setIndex(idx);
-    const f=list[0],m=new THREE.SkinnedMesh(g,Array.isArray(f.o.material)?f.o.material[f.mi]:f.o.material);
-    m.name='wl:'+(m.material.name||meshes.length);m.castShadow=f.o.castShadow;m.receiveShadow=f.o.receiveShadow;m.frustumCulled=false;
-    m.bindMode=THREE.DetachedBindMode;m.bind(skel,new THREE.Matrix4());m.userData.list=list;WL.add(m);meshes.push(m);});
+    g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(sw,4));
+    g.userData.idx=base>65535?new Uint32Array(idx):new Uint16Array(idx);g.setIndex(new THREE.BufferAttribute(g.userData.idx.slice(),1));
+    ['wlCol','wlAtl','wlExt'].forEach(a=>g.setAttribute(a,new THREE.Float32BufferAttribute(new Float32Array(base*4),4)));g.setAttribute('wlSh',new THREE.Float32BufferAttribute(new Float32Array(base*2),2));
+    const f=matInfo(mats(list[0].o)[list[0].mi]),m=new THREE.SkinnedMesh(g,atlasMat(f.side,f.transparent));
+    m.name='wl:'+m.material.name;m.castShadow=list.some(e=>e.o.castShadow);m.receiveShadow=true;m.customDepthMaterial=atlasDepth;m.frustumCulled=false;
+    m.bindMode=THREE.DetachedBindMode;m.bind(skel,new THREE.Matrix4());m.userData.list=list;list.forEach(e=>{e.mesh=m;e.cls=cls;entries.push(e);});WL.add(m);meshes.push(m);});
   // 원래 부품은 화면·그림자에서 빼고(레이어 1) 클릭 판정에만 쓴다
   parts.forEach(o=>o.layers.set(1));
   // 잎 뼈 행렬 = 원더룹 기준 부품 행렬 (숨은 부품은 0) — 렌더러가 프레임마다 부른다
@@ -93,9 +154,20 @@ const rigSync=(()=>{
   skel.update=function(){inv.copy(WL.matrixWorld).invert();const bm=this.boneMatrices;
     for(let i=0;i<parts.length;i++){if(vis[i])tmp.multiplyMatrices(inv,parts[i].matrixWorld).toArray(bm,i*16);else bm.set(Z,i*16);}
     if(this.boneTexture)this.boneTexture.needsUpdate=true;};
-  WL.userData.rig={skeleton:skel,meshes,parts};
-  return()=>{for(let i=0;i<parts.length;i++){let o=parts[i],v=true;while(o&&o!==WL){if(!o.visible){v=false;break;}o=o.parent;}vis[i]=v;}
-    meshes.forEach(m=>{const f=m.userData.list[0];m.material=Array.isArray(f.o.material)?f.o.material[f.mi]:f.o.material;m.visible=m.userData.list.some(e=>vis[e.bi]);});};})();
+  // 부품 재질이 바뀌면(옷 전환·탈 교체) 그 부품 정점의 재질 값만 다시 쓴다
+  const write=e=>{const m=mats(e.o)[e.mi],f=matInfo(m,region(e.o));e.mat=m;e.ver=atlas.ver;
+    if(f.cls!==e.cls){console.warn('원더룹: 부품 재질 종류(앞면·양면·반투명)가 바뀌어 아틀라스로 못 그림',e.o,m);return;}
+    if(!f.L&&m.map){minfo.delete(m);return;}
+    const a=e.mesh.geometry.attributes;for(let i=e.v0;i<e.v0+e.n;i++){a.wlCol.array.set(f.col,i*4);a.wlAtl.array.set(f.atl,i*4);a.wlExt.array.set(f.ext,i*4);a.wlSh.array.set([e.o.receiveShadow?1:0,e.o.castShadow?1:0],i*2);}
+    ['wlCol','wlAtl','wlExt','wlSh'].forEach(k=>a[k].needsUpdate=true);};
+  // 보이는 부품의 삼각형만 그리도록 인덱스를 앞으로 모은다 (보이는 부품이 바뀔 때만 — 옷·탈·표정 전환)
+  const pack=m=>{const g=m.geometry,src=g.userData.idx,I=g.index;let n=0;for(const e of m.userData.list)if(vis[e.bi]){I.array.set(src.subarray(e.i0,e.i0+e.ic),n);n+=e.ic;}
+    g.setDrawRange(0,n);I.clearUpdateRanges();I.addUpdateRange(0,n);I.needsUpdate=true;m.visible=n>0;};
+  WL.userData.rig={skeleton:skel,meshes,parts,entries};
+  return()=>{let changed=false;for(let i=0;i<parts.length;i++){let o=parts[i],v=1;while(o&&o!==WL){if(!o.visible){v=0;break;}o=o.parent;}if(vis[i]!==v){vis[i]=v;changed=true;}}
+    if(atlas.ver!==entries.ver){minfo.clear();entries.ver=atlas.ver;}
+    for(const e of entries)if(vis[e.bi]&&(e.mat!==mats(e.o)[e.mi]||e.ver!==atlas.ver))write(e);
+    if(changed)meshes.forEach(pack);};})();
 /* 스키닝 법선: three.js는 뼈 행렬을 법선에 그대로 곱한다. 부품 잎 뼈에는 납작하게 누른 크기가 들어 있어(귀·눈 등)
    보통 메시와 같은 역전치 행렬로 바꾼다 — 한 정점이 뼈 하나에만 붙어 있어 예전과 같은 법선이 나온다 */
 {const c=THREE.ShaderChunk,from='objectNormal = vec4( skinMatrix * vec4( objectNormal, 0.0 ) ).xyz;';
