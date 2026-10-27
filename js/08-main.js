@@ -13,7 +13,7 @@ const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('
 dayBtn.addEventListener('click',()=>{lightState=(lightState+1)%3;nightTarget=lightState>=1?1:0;caveTarget=lightState===2?1:0;dayBtn.textContent=['저녁으로 바꾸기','어두운 굴로 바꾸기','낮으로 바꾸기'][lightState];});
 {const eb=document.getElementById('emphBtn');eb.addEventListener('click',()=>{emph=!emph;eb.textContent=emph?'캐릭터 강조: 켜짐':'캐릭터 강조: 꺼짐';});}
 spinBtn.addEventListener('click',()=>{spin=!spin;spinBtn.textContent=spin?'멈추기':'천천히 둘러보기';});
-const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();let downAt=null;
+const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();let downAt=null;ray.layers.enable(1); // 레이어 1: 원더룹 원래 부품(클릭 판정용, 화면엔 SkinnedMesh가 그려짐)
 renderer.domElement.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
 renderer.domElement.addEventListener('pointerup',e=>{
   if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6)return;
@@ -84,6 +84,8 @@ if(SHOT){
       if(o.action)clickUntil('actBtn',()=>WL.userData.action===o.action);
       if(o.expr)clickUntil('exprBtn',()=>document.getElementById('exprBtn').textContent==='표정: '+o.expr);
       if(o.follow!=null&&o.follow!==follow)document.getElementById('camBtn').click();
+      if(o.walk)setWalkTarget(o.walk[0],o.walk[1]);
+      if(o.hop)hopWL();
       if(o.view)this.view(o.view);
     },
     /* az: 원더룹이 보는 방향 기준 각도(0 정면, π/2 측면, π 뒷면), pol: 위에서 내려다보는 각, dist: 거리 */

@@ -1,4 +1,4 @@
-"""원더룹 촬영 서버 — 정적 파일 서버 + 캡처한 PNG를 docs/ 아래에 저장.
+"""원더룹 촬영 서버 — 정적 파일 서버 + 캡처한 PNG·JSON을 docs/ 아래에, 내보낸 GLB를 assets/models/ 아래에 저장.
 
 사용: python3 tools/shot-server.py  (저장소 루트에서, 기본 포트 8000)
 페이지는 http://localhost:8000/?shot 으로 열고, 브라우저에서
@@ -9,6 +9,7 @@ import base64, http.server, os, sys, urllib.parse
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DOCS = os.path.join(ROOT, 'docs')
+MODELS = os.path.join(ROOT, 'assets', 'models')
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -23,11 +24,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         u = urllib.parse.urlparse(self.path)
         rel = urllib.parse.parse_qs(u.query).get('path', [''])[0]
         dest = os.path.abspath(os.path.join(DOCS, rel))
-        if u.path != '/save' or not dest.startswith(DOCS + os.sep) or not dest.endswith(('.png', '.json')):
+        ok = (dest.startswith(DOCS + os.sep) and dest.endswith(('.png', '.json'))) or (dest.startswith(MODELS + os.sep) and dest.endswith('.glb'))
+        if u.path != '/save' or not ok:
             self.send_error(400, 'bad path')
             return
-        body = self.rfile.read(int(self.headers.get('Content-Length', 0))).decode()
-        data = base64.b64decode(body.split(',', 1)[1]) if body.startswith('data:') else body.encode()
+        body = self.rfile.read(int(self.headers.get('Content-Length', 0)))
+        data = base64.b64decode(body.split(b',', 1)[1]) if body.startswith(b'data:') else body
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         with open(dest, 'wb') as f:
             f.write(data)

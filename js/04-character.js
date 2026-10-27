@@ -3,7 +3,13 @@ import * as THREE from 'three';
 import {PI,lathe,lin,pencil,scene} from './01-textures.js';
 /* ---------- 원더룹 (탐험가) ---------- */
 const WLS=1;const WL=new THREE.Group();WL.position.set(1.1,0,2.5);WL.rotation.y=0.8;WL.scale.setScalar(WLS);scene.add(WL);
-const wlBody=new THREE.Group();WL.add(wlBody);
+/* 뼈대: 블렌더 이름 규칙(좌우 .L/.R, 원더룹 기준 왼쪽이 +x). 부품 좌표는 발바닥 기준으로 적혀 있어,
+   엉덩이(hips) 아래에 엉덩이 높이만큼 내린 자리(wlBase·wlBody)를 두고 그 안에 붙인다 */
+const HIP=.3;const hips=new THREE.Bone();hips.name='hips';hips.position.y=HIP;WL.add(hips);
+const wlBase=new THREE.Group();wlBase.position.y=-HIP;hips.add(wlBase);
+const spine=new THREE.Bone();spine.name='spine';hips.add(spine);
+const wlBody=new THREE.Group();wlBody.position.y=-HIP;spine.add(wlBody);
+const side=s=>s>0?'L':'R';
 /* 게임(앤트빌리지)에서 확정한 원더룹 모델을 그대로 옮김 — 재질만 색연필 결로 */
 function TM(c,kind,o,side){return new THREE.MeshStandardMaterial({map:pencil(c,kind,o||{}),roughness:.9,metalness:0,side:side||THREE.FrontSide});}
 function SM(c,o){o=o||{};const m=new THREE.MeshStandardMaterial({map:pencil(c,'plain',{hatch:0.45}),roughness:0.9,metalness:0,side:o.side||THREE.FrontSide});return m;}
@@ -21,11 +27,11 @@ const skin=SM('#ffc9a0'),hairA=SM('#4e2e22'),scarfM=SM('#36aaa0'),tunic=TM('#f3e
       bootM=TM('#7a4a32','suede',{rep:[2,2],grain:.4}),soleM=SM('#4e2e22'),beltM=SM('#7a4a32'),buckM=SM('#f2b63c');
 const eyeM=BM('#2a1a24'),whiteM=BM('#ffffff');
 const legs=[],arms=[],eyes=[],antennae=[],hoodParts=[],hairParts=[];
-[-1,1].forEach(s=>{const pv=new THREE.Group();pv.position.set(s*.11,.3,0);WL.add(pv);
+[-1,1].forEach(s=>{const pv=new THREE.Bone();pv.name='thigh.'+side(s);pv.position.set(s*.11,.3,0);wlBase.add(pv);
   pv.add(wm(new THREE.CylinderGeometry(.058,.061,.135,14).translate(0,-.0675,0),skin));
-  const kn=new THREE.Group();kn.position.y=-.125;pv.add(kn);pv.userData.knee=kn;
+  const kn=new THREE.Bone();kn.name='shin.'+side(s);kn.position.y=-.125;pv.add(kn);pv.userData.knee=kn;
   kn.add(wm(new THREE.SphereGeometry(.061,14,10),skin));kn.add(wm(new THREE.CylinderGeometry(.061,.064,.13,14).translate(0,-.065,0),skin));
-  const boot=new THREE.Group();boot.position.set(0,-.075,.02);kn.add(boot);pv.userData.boot=boot;
+  const boot=new THREE.Bone();boot.name='foot.'+side(s);boot.position.set(0,-.075,.02);kn.add(boot);pv.userData.boot=boot;
   const up=wm(new THREE.SphereGeometry(.08,22,14),bootM);up.scale.set(1,.55,1.5);up.position.set(0,-.052,.03);boot.add(up);
   const sole=wm(new THREE.SphereGeometry(.08,22,14),TM('#f3ead6','rubber',{grain:.3}));sole.scale.set(1.08,.32,1.56);sole.position.set(0,-.08,.03);boot.add(sole);
   legs.push(pv);});
@@ -33,21 +39,23 @@ const legs=[],arms=[],eyes=[],antennae=[],hoodParts=[],hairParts=[];
   const sh=wm(new THREE.SphereGeometry(.11,18,12),shorts);sh.scale.set(1.25,.7,.85);sh.position.y=.3;body.add(sh);
   const torso=wm(lathe([[0,.31],[.2,.31],[.205,.36],[.207,.45],[.2,.52],[.186,.565],[.155,.605],[.11,.632],[0,.64]].map(q=>new THREE.Vector2(q[0],q[1])),30),tunic);torso.scale.set(1.1,1,1.1);body.add(torso);
   const neck=wm(new THREE.TorusGeometry(.112,.022,10,28),TM('#d9cdb3','jersey',{rep:[6,1]}));neck.rotation.x=PI/2;neck.position.set(0,.628,0);body.add(neck);
-  [-1,1].forEach(s=>{const ap=new THREE.Group();ap.position.set(s*.2,.555,0);ap.rotation.z=s*.32;body.add(ap);
+  [-1,1].forEach(s=>{const ap=new THREE.Bone();ap.name='upperarm.'+side(s);ap.position.set(s*.2,.555,0);ap.rotation.z=s*.32;body.add(ap);
     ap.add(wm(new THREE.SphereGeometry(.082,18,14),tunic));
     ap.add(wm(new THREE.CylinderGeometry(.08,.074,.12,16).translate(0,-.06,0),tunic));
-    const eb=new THREE.Group();eb.position.y=-.12;ap.add(eb);ap.userData.elbow=eb;
+    const eb=new THREE.Bone();eb.name='forearm.'+side(s);eb.position.y=-.12;ap.add(eb);ap.userData.elbow=eb;
     ap.add(wm(new THREE.CylinderGeometry(.052,.05,.08,12).translate(0,-.08,0),skin));eb.add(wm(new THREE.SphereGeometry(.05,12,10),skin));eb.add(wm(new THREE.CylinderGeometry(.05,.046,.15,12).translate(0,-.075,0),skin));
     const hd=wm(new THREE.SphereGeometry(.068,12,10),skin);hd.position.y=-.18;eb.add(hd);arms.push(ap);});
 }
 /* 턱과 턱선: 얼굴 아래쪽을 앞·옆으로 둥글게 채워 입에서 목까지 매끄럽게 이어지게 */
 function WL_CHIN(yw,xw,zw){const r=Math.hypot(xw,zw)||1e-6,w=.5+.5*zw/r,q=(yw+.2)/.19;return 1+.085*Math.exp(-q*q)*w*w;}
-const head=new THREE.Group();head.position.y=.97;wlBody.add(head);
+/* 고개는 목(neck)을 축으로 기울인다 */
+const neck=new THREE.Bone();neck.name='neck';neck.position.y=.59;wlBody.add(neck);
+const head=new THREE.Bone();head.name='head';head.position.y=.38;neck.add(head);
 {const skG=new THREE.SphereGeometry(.41,56,42);
   {const p=skG.attributes.position;for(let i=0;i<p.count;i++){const m=WL_CHIN(p.getY(i)*.98,p.getX(i)*1.04,p.getZ(i)*.9);p.setX(i,p.getX(i)*m);p.setZ(i,p.getZ(i)*m);}skG.computeVertexNormals();}
   const skull=wm(skG,skin);skull.scale.set(1.04,.98,.9);head.add(skull);
   [-1,1].forEach(s=>{const ear=wm(new THREE.SphereGeometry(.105,20,16),skin);ear.scale.set(.42,.95,.78);ear.position.set(s*.425,-.085,0);ear.rotation.set(0,s*.35,-s*.32);head.add(ear);
-    const eg=new THREE.Group();eg.position.set(s*.115,-.055,.346);eg.rotation.y=s*.28;head.add(eg);
+    const eg=new THREE.Bone();eg.name='eye.'+side(s);eg.position.set(s*.115,-.055,.346);eg.rotation.y=s*.28;head.add(eg);
     const e=new THREE.Mesh(new THREE.SphereGeometry(.068,14,12),BM('#4a2e24'));e.scale.set(.74,1.15,.28);eg.add(e);eyes.push(eg);
     const br=new THREE.Mesh(new THREE.BoxGeometry(.078,.02,.014),hairA);br.position.set(s*.12,.048,.35);br.rotation.z=s*.15;head.add(br);(WL.userData.brows=WL.userData.brows||[]).push(br);});
   const nose=new THREE.Mesh(new THREE.SphereGeometry(.019,8,6),SM('#f2a27e'));nose.position.set(0,-.115,.36);head.add(nose);
@@ -73,7 +81,7 @@ const head=new THREE.Group();head.position.y=.97;wlBody.add(head);
     hood.add(decal(dir,.18,.21,0,0,.506,eyeM));
     hood.add(decal(dir,.062,.062,-.065,.09,.509,whiteM));
     hood.add(decal(dir,.028,.028,.075,-.09,.509,whiteM));
-    const base=new THREE.Vector3(s*.13,.5,-.02);const ag=new THREE.Group();ag.position.copy(base);head.add(ag);
+    const base=new THREE.Vector3(s*.13,.5,-.02);const ag=new THREE.Bone();ag.name='antenna.'+side(s);ag.position.copy(base);head.add(ag);
     const pts=[base,new THREE.Vector3(s*.2,.9,.05),new THREE.Vector3(s*.38,1.02,.2),new THREE.Vector3(s*.5,.98,.34)].map(v=>v.clone().sub(base));
     ag.add(wm(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.022,6),hoodD));
     const tip=wm(new THREE.SphereGeometry(.055,10,8),hoodM);tip.position.copy(pts[3]);ag.add(tip);antennae.push(ag);hoodParts.push(ag);
@@ -108,4 +116,4 @@ head.children.forEach(c=>{if(c.position.z>.2&&c.position.y<.1){const m=WL_CHIN(c
    sweat.visible=!!e.sweat;blush.forEach((b,i)=>b.scale.copy(blushBase[i]).multiplyScalar(e.blush||1));U.headTilt=e.tilt||0;}
  U.setExpr=setExpr;U.exprNames=NAMES;setExpr('기본');
  const btn=document.getElementById('exprBtn');let ei=0;btn.addEventListener('click',()=>{ei=(ei+1)%NAMES.length;setExpr(NAMES[ei]);btn.textContent='표정: '+NAMES[ei];});}
-export {SM,TM,WL,WLS,antennae,arms,eyes,hairParts,head,hoodParts,legs,roundBox,shirtU,shorts,skin,tunic,wlBody,wm,wmList};
+export {HIP,SM,TM,WL,WLS,antennae,arms,eyes,hairParts,head,hips,hoodParts,legs,neck,roundBox,shirtU,shorts,skin,spine,tunic,wlBase,wlBody,wm,wmList};

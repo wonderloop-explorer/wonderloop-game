@@ -1,7 +1,7 @@
 /* 원더룹 베이스캠프 — 바지·관절·캐릭터 병합·평상복/탐험복·탐험 모자·키링·탈 카테고리 */
 import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
-import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBody,wm,wmList} from './04-character.js';
+import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
 /* 디테일: 옷 구조 + 탐험대 패치 */
 {
   const cream=SM('#f3ead6');
@@ -9,7 +9,7 @@ import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBody,wm,wmList} fro
     kn.add(wm(new THREE.SphereGeometry(.081,16,12),shorts));kn.add(wm(new THREE.CylinderGeometry(.081,.078,.085,16).translate(0,-.0425,0),shorts));
     const roll=wm(new THREE.CylinderGeometry(.086,.086,.04,18),TM('#7d96cc','denim',{rep:[3,1],grain:.35}));roll.position.y=-.06;kn.add(roll);
     const fold=wm(new THREE.TorusGeometry(.086,.008,6,22),SM('#3f5a9c'));fold.rotation.x=PI/2;fold.position.y=-.04;kn.add(fold);(WL.userData.rf=WL.userData.rf||[]).push(roll,fold);});
-  {const pel=wm(new THREE.SphereGeometry(.12,22,16),shorts);pel.scale.set(1.55,.78,1.15);pel.position.set(0,.33,-.01);WL.add(pel);}
+  {const pel=wm(new THREE.SphereGeometry(.12,22,16),shorts);pel.scale.set(1.55,.78,1.15);pel.position.set(0,.33,-.01);wlBase.add(pel);}
 }
 /* 캐릭터 최적화: 같은 부모·같은 재질의 고정 부품을 한 덩어리로 합침 (움직이는 관절, 전환되는 부품, 머리카락은 그대로) */
 function wlMerge(list){
@@ -86,7 +86,7 @@ function wlMerge(list){
    [-.11,.11].forEach(x=>{const t=add2(wm(new THREE.TorusGeometry(.073,.013,6,16),pd),wlBody);t.rotation.y=PI/2;t.position.set(x,.26,-.34);});}
   legs.forEach((lg,i)=>{const s=i?1:-1;add2(wm(roundBox(.022,.045,.042,.4),E.fold),lg).position.set(s*.08,-.05,0);});
   // 여왕개미가 준 나침반 키링: 배낭 버클에 매달려 걸을 때 달랑달랑
-  {const brassM=SM('#d8b36a');const ch=new THREE.Group();ch.position.set(0,.476,-.468);wlBody.add(ch);exp.push(ch);
+  {const brassM=SM('#d8b36a');const ch=new THREE.Bone();ch.name='charm';ch.position.set(0,.476,-.468);wlBody.add(ch);exp.push(ch);
    const ring=wm(new THREE.TorusGeometry(.016,.0045,8,18),brassM);ring.position.y=-.014;ch.add(ring);
    [-.036,-.054].forEach((y,i)=>{const l=wm(new THREE.TorusGeometry(.0095,.0035,6,14),brassM);l.position.y=y;if(i===0)l.rotation.y=PI/2;ch.add(l);});
    const bail=wm(new THREE.TorusGeometry(.012,.004,6,14),brassM);bail.position.y=-.07;ch.add(bail);
@@ -96,7 +96,7 @@ function wlMerge(list){
     cg.add(wm(new THREE.TorusGeometry(.42,.07,10,32),gold));
     cg.add(new THREE.Mesh(new THREE.CircleGeometry(.4,32),SM('#fff3d8')));
     const back=new THREE.Mesh(new THREE.CircleGeometry(.46,32),gold);back.position.z=-.04;back.rotation.y=PI;cg.add(back);
-    const nd=new THREE.Group();nd.position.z=.04;cg.add(nd);
+    const nd=new THREE.Bone();nd.name='charm_needle';nd.position.z=.04;cg.add(nd);
     const n1=new THREE.Mesh(new THREE.ConeGeometry(.07,.3,8),SM('#e85a5a'));n1.position.y=.15;nd.add(n1);
     const n2=new THREE.Mesh(new THREE.ConeGeometry(.07,.3,8),SM('#5a6a9a'));n2.position.y=-.15;n2.rotation.z=PI;nd.add(n2);
     const hub=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),gold);hub.position.z=.07;cg.add(hub);
