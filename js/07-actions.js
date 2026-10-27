@@ -93,12 +93,13 @@ const atlas=(()=>{
   A.region=i=>i===0?'white':i<base?'base':'swap';
   return A;})();
 WL.userData.atlas=atlas;
-/* 재질 → 정점 값: 층·반복·거칠기(wlAtl), 색·불투명도(wlCol), 발광·림 라이트(wlExt). 원래 재질에서 그대로 읽으므로 옷을 바꿔도 같은 값이 나온다 */
+/* 재질 → 정점 값: 층·반복·거칠기(wlAtl), 색·불투명도(wlCol), 발광·림 라이트(wlExt). 원래 재질에서 그대로 읽으므로 옷을 바꿔도 같은 값이 나온다.
+   림 라이트는 캐릭터 부품 모두에 켠다 — 예전엔 07 림 셰이더를 붙일 때 원더룹에 없던 재질(탐험복 셔츠·바지·롤업 단, 손 나침반)이 빠져 있었다 */
 const minfo=new Map();
 function matInfo(m,region){let r=minfo.get(m);if(r)return r;
   if(!m.isMeshStandardMaterial||m.metalness||m.flatShading||m.vertexColors||m.normalMap||m.alphaTest||(m.map&&(m.map.offset.x||m.map.offset.y||m.map.rotation)))console.warn('원더룹: 아틀라스가 다루지 않는 재질 설정',m);
   const L=m.map?atlas.add(m.map.image,region):0,rx=m.map?m.map.repeat.x:1,ry=m.map?m.map.repeat.y:1,e=m.emissive.clone().multiplyScalar(m.emissiveIntensity);
-  r={L,atl:[L,rx,ry,m.roughness],col:[m.color.r,m.color.g,m.color.b,m.transparent?m.opacity:1],ext:[e.r,e.g,e.b,m.customProgramCacheKey()==='wlrim'?1:0],cls:m.side+(m.transparent?'t':''),side:m.side,transparent:m.transparent};
+  r={L,atl:[L,rx,ry,m.roughness],col:[m.color.r,m.color.g,m.color.b,m.transparent?m.opacity:1],ext:[e.r,e.g,e.b,1],cls:m.side+(m.transparent?'t':''),side:m.side,transparent:m.transparent};
   minfo.set(m,r);return r;}
 /* 아틀라스 재질: 앞면 불투명 / 양면 불투명 / 반투명(볼 터치) — 셰이더 계산은 원래 재질과 같은 순서라 같은 색이 나온다 */
 const atlasMat=(()=>{const U=WL.userData,C=THREE.ShaderChunk,cache={};
