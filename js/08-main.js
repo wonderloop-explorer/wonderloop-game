@@ -20,8 +20,10 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
 /* ---------- 애니메이션 ---------- */
 const cDaySky=new THREE.Color(0xfff3dc),cNightSky=new THREE.Color(0x8b92c8),cDayG=new THREE.Color(0xd2ab88),cNightG=new THREE.Color(0x5a4a5e);
 const clock=new THREE.Clock();const tmp=new THREE.Vector3();
+/* 촬영 모드(?shot): 고정 시간 간격으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
+const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0;
 function tick(){
-  const dt=Math.min(clock.getDelta(),0.05),t=clock.elapsedTime;
+  let dt,t;if(SHOT){dt=1/60;shotT+=dt;t=shotT;}else{dt=Math.min(clock.getDelta(),0.05);t=clock.elapsedTime;}
   night+=(nightTarget-night)*Math.min(1,dt*2.2);
   lampLevel+=((lampOn?1:0)-lampLevel)*Math.min(1,dt*6);
   const n=night,flick=reduce?1:(1+Math.sin(t*7.3)*0.04+Math.sin(t*13.1)*0.03);
@@ -55,6 +57,31 @@ function tick(){
    if(camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-camGoal)<.05)camGoal=0;}}
   controls.update();renderer.render(scene,camera);
   statT+=dt;if(statT>0.5){statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회, 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
-  requestAnimationFrame(tick);
+  if(!SHOT)requestAnimationFrame(tick);
 }
 tick();
+if(SHOT){
+  /* 콘솔·자동화에서 쓰는 촬영 도구: wlShot.setup({...}) → wlShot.step(n) → wlShot.capture() */
+  renderer.setPixelRatio(1);
+  const clickUntil=(id,ok)=>{const b=document.getElementById(id);for(let i=0;i<12&&!ok();i++)b.click();};
+  window.wlShot={
+    revision:THREE.REVISION,
+    size(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();},
+    setup(o){
+      if(o.light!=null)clickUntil('dayBtn',()=>lightState===o.light);
+      if(o.hood!=null)clickUntil('hoodBtn',()=>WL.userData.hw===o.hood);
+      if(o.outfit!=null)clickUntil('outfitBtn',()=>!!WL.userData.outfit===!!o.outfit);
+      if(o.action)clickUntil('actBtn',()=>WL.userData.action===o.action);
+      if(o.expr)clickUntil('exprBtn',()=>document.getElementById('exprBtn').textContent==='표정: '+o.expr);
+      if(o.follow!=null&&o.follow!==follow)document.getElementById('camBtn').click();
+      if(o.view)this.view(o.view);
+    },
+    /* az: 원더룹이 보는 방향 기준 각도(0 정면, π/2 측면, π 뒷면), pol: 위에서 내려다보는 각, dist: 거리 */
+    view(v){Object.assign(controls,{minAzimuthAngle:-Infinity,maxAzimuthAngle:Infinity,minPolarAngle:0,maxPolarAngle:PI,minDistance:0.5});camGoal=0;
+      const tg=v.room?ROOM_T.clone():new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z);if(v.ty!=null)tg.y=v.ty;
+      controls.target.copy(tg);camera.position.copy(new THREE.Vector3().setFromSpherical(new THREE.Spherical(v.dist,v.pol,(v.room?0:WL.rotation.y)+v.az)).add(tg));controls.update();},
+    step(n){for(let i=0;i<n;i++)tick();},
+    capture(){renderer.render(scene,camera);return renderer.domElement.toDataURL('image/png');},
+    info(){const ri=renderer.info.render;return{calls:ri.calls,triangles:ri.triangles};}
+  };
+}
