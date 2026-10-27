@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>원더룹 베이스캠프 — 화풍 실험</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#efe2c9; --bg2:#e6d3b2; --ink:#4b3a2b; --soft:#7a6450;
+  --chip:#fbf3e2; --chipline:#c8ab83; --teal:#2f9e92;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#2a2420; --bg2:#201b18; --ink:#f2e5cf; --soft:#c5b096;
+    --chip:#3a3029; --chipline:#6f5b46; --teal:#5cc7ba; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#2a2420; --bg2:#201b18; --ink:#f2e5cf; --soft:#c5b096;
+  --chip:#3a3029; --chipline:#6f5b46; --teal:#5cc7ba; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:radial-gradient(120% 90% at 50% 40%, var(--bg) 0%, var(--bg2) 100%);
+  color:var(--ink);
+  font-family:'Gaegu','Nanum Pen Script','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  overflow:hidden;
+}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#stage canvas:active{cursor:grabbing}
+.grain{
+  position:fixed;inset:0;pointer-events:none;opacity:.2;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+header{
+  position:fixed;top:0;left:0;right:0;
+  padding:calc(14px + env(safe-area-inset-top,0px)) 20px 0;
+  pointer-events:none;
+}
+h1{margin:0;font-size:clamp(26px,4vw,38px);font-weight:700;line-height:1.05;letter-spacing:-.01em}
+header p{margin:4px 0 0;font-size:18px;color:var(--soft)}
+.bar{
+  position:fixed;left:0;right:0;bottom:0;
+  padding:10px 16px calc(14px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+}
+button{
+  font:inherit;font-size:20px;font-weight:700;color:var(--ink);
+  background:var(--chip);border:2px solid var(--chipline);
+  border-radius:16px 13px 17px 12px;padding:6px 16px 7px;cursor:pointer;
+  box-shadow:2px 3px 0 var(--chipline);
+}
+button:active{transform:translate(1px,2px);box-shadow:1px 1px 0 var(--chipline)}
+button:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
+.hint{width:100%;text-align:center;font-size:17px;color:var(--soft)}
+@media (max-width:520px){ button{font-size:18px} .hint{font-size:15px} }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="grain"></div>
+<header>
+  <h1>원더룹 베이스캠프</h1>
+  <p>파스텔 색연필 로우폴리, 소품·텍스처 디테일 실험</p>
+</header>
+<div class="bar">
+  <button id="dayBtn" type="button">저녁으로 바꾸기</button>
+  <button id="spinBtn" type="button">천천히 둘러보기</button>
+  <button id="camBtn" type="button">카메라: 따라가기</button>
+  <button id="optBtn" type="button">최적화 끄기</button>
+  <button id="hoodBtn" type="button">탈: 없음</button>
+  <button id="hairBtn" type="button">머리: 지그재그 단발</button>
+  <button id="exprBtn" type="button">표정: 기본</button>
+  <button id="actBtn" type="button">동작: 서기</button>
+  <button id="emphBtn" type="button">캐릭터 강조: 켜짐</button>
+  <button id="outfitBtn" type="button">옷: 평상복</button>
+  <div class="hint" id="stats" aria-live="polite"></div>
+  <div class="hint">끌어서 돌려 보고, 휠이나 두 손가락으로 확대해요. 바닥을 누르면 원더룹이 걸어가고, 원더룹을 누르면 인사해요. 버섯 랜턴은 눌러서 켜고 꺼요.</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="js/01-textures.js"></script>
+<script src="js/02-room.js"></script>
+<script src="js/03-scene.js"></script>
+<script src="js/04-character.js"></script>
+<script src="js/05-hair-headwear.js"></script>
+<script src="js/06-outfits.js"></script>
+<script src="js/07-actions.js"></script>
+<script src="js/08-main.js"></script>
+
+</body>
+</html>

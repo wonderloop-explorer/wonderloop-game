@@ -1,0 +1,60 @@
+/* 원더룹 베이스캠프 — 입력·조명 단계·카메라 따라가기·애니메이션 루프 */
+/* ---------- 상호작용 ---------- */
+let cave=0,caveTarget=0,lightState=0,emph=true,night=0,nightTarget=0,lampOn=true,lampLevel=1,spin=false,spinDir=1;
+const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
+dayBtn.addEventListener('click',()=>{lightState=(lightState+1)%3;nightTarget=lightState>=1?1:0;caveTarget=lightState===2?1:0;dayBtn.textContent=['저녁으로 바꾸기','어두운 굴로 바꾸기','낮으로 바꾸기'][lightState];});
+{const eb=document.getElementById('emphBtn');eb.addEventListener('click',()=>{emph=!emph;eb.textContent=emph?'캐릭터 강조: 켜짐':'캐릭터 강조: 꺼짐';});}
+spinBtn.addEventListener('click',()=>{spin=!spin;spinBtn.textContent=spin?'멈추기':'천천히 둘러보기';});
+const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();let downAt=null;
+renderer.domElement.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6)return;
+  const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ptr,camera);
+  if(ray.intersectObjects(lampHit,false).length){lampOn=!lampOn;return;}
+  if(ray.intersectObjects(wlHit,false).length){if(wlHop<=0)wlHop=1;return;}
+  const r0=ray.ray;if(r0.direction.y<-0.01){const tt=-r0.origin.y/r0.direction.y;setWalkTarget(r0.origin.x+r0.direction.x*tt,r0.origin.z+r0.direction.z*tt);}
+});
+const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- 애니메이션 ---------- */
+const cDaySky=new THREE.Color(0xfff3dc),cNightSky=new THREE.Color(0x8b92c8),cDayG=new THREE.Color(0xd2ab88),cNightG=new THREE.Color(0x5a4a5e);
+const clock=new THREE.Clock();const tmp=new THREE.Vector3();
+function tick(){
+  const dt=Math.min(clock.getDelta(),0.05),t=clock.elapsedTime;
+  night+=(nightTarget-night)*Math.min(1,dt*2.2);
+  lampLevel+=((lampOn?1:0)-lampLevel)*Math.min(1,dt*6);
+  const n=night,flick=reduce?1:(1+Math.sin(t*7.3)*0.04+Math.sin(t*13.1)*0.03);
+  hemi.intensity=0.62-0.4*n;poolMat.opacity=(0.08+0.32*n)*lampLevel;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
+  sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
+  beamMat2.opacity=0.22*(1-n);dustMat.opacity=0.85*(1-n);skyNight.opacity=n;
+  lampLight.intensity=(0.55+0.95*n)*lampLevel*flick;
+  glowMat.emissiveIntensity=0.15+(0.55+0.6*n)*lampLevel;capMat.emissiveIntensity=0.05+0.3*n*lampLevel;
+  crateLight.intensity=(0.25+0.6*n)*flick;
+  cave+=(caveTarget-cave)*Math.min(1,dt*2.2);
+  if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(new THREE.Color(0x6b4a3a),cave);hemi.groundColor.lerp(new THREE.Color(0x2a1d16),cave);fill.intensity*=1-.75*cave;lampLight.intensity*=1-.85*cave;crateLight.intensity*=1-.5*cave;}
+  {const dark=Math.min(1,Math.max(0,1-hemi.intensity/.62));const U=WL.userData;if(U.rimU){U.rimU.value=emph?.08+.45*dark:0;U.liftU.value=emph?.02+.17*dark:0;}}
+  // 먼지
+  for(let i=0;i<DUST;i++){const d=dustSeed[i];if(!reduce){d.t+=d.sp*dt;if(d.t>1)d.t-=1;}
+    const wob=Math.sin(t*0.6+d.ph)*0.08;
+    tmp.copy(beamStart).addScaledVector(sunDir,d.t*beamLen).addScaledVector(perpA,Math.cos(d.a)*d.r*(0.85+d.t*0.2)+wob).addScaledVector(perpB,Math.sin(d.a)*d.r*(0.85+d.t*0.2));
+    dustPos[i*3]=tmp.x;dustPos[i*3+1]=tmp.y;dustPos[i*3+2]=tmp.z;}
+  dustGeo.attributes.position.needsUpdate=true;
+  // 김
+  steams.forEach(s=>{const u=s.userData;const p=((t*0.28)+u.ph)%1;
+    s.position.set(u.x+Math.sin(t*1.3+u.sw)*0.06*p,u.y+p*0.75,u.z+Math.cos(t*1.1+u.sw)*0.04*p);
+    const sc=0.12+p*0.28;s.scale.set(sc,sc,sc);s.material.opacity=Math.sin(p*PI)*0.55*(reduce?0.6:1);});
+  // 시계
+  minute.rotation.x=-t*0.15;
+  updateWL(dt,t);
+  // 천천히 둘러보기
+  if(spin){const off=camera.position.clone().sub(controls.target);const s=new THREE.Spherical().setFromVector3(off);
+    s.theta+=spinDir*dt*0.18;if(s.theta>controls.maxAzimuthAngle-0.02){spinDir=-1;}if(s.theta<controls.minAzimuthAngle+0.02){spinDir=1;}
+    camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));}
+  {const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
+   if(camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-camGoal)<.05)camGoal=0;}}
+  controls.update();renderer.render(scene,camera);
+  statT+=dt;if(statT>0.5){statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회, 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
+  requestAnimationFrame(tick);
+}
+tick();
