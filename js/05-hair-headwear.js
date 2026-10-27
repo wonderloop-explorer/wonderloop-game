@@ -1,4 +1,7 @@
 /* 원더룹 베이스캠프 — 헤어(지그재그 단발 등)·탈 아래 앞머리·헤어 전환 */
+import * as THREE from 'three';
+import {PI,R,pencil,rnd} from './01-textures.js';
+import {WL,hairParts,head,hoodParts,wm} from './04-character.js';
 /* 머리카락 (탈 벗은 모습) — 두 층: 윗층(지그재그 앞머리·옆머리, 끝이 살짝 들림) + 아래층(뒷머리·목덜미) */
 {
   const hairTexM=new THREE.MeshStandardMaterial({map:pencil('#7e4c33','hair',{size:512}),roughness:.8,metalness:0});

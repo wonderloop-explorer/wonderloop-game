@@ -1,4 +1,6 @@
 /* 원더룹 베이스캠프 — 베이스캠프 방과 소품 */
+import * as THREE from 'three';
+import {B,C,M,PI,R,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rnd,scene,shade,skyTex} from './01-textures.js';
 /* ---------- 방 ---------- */
 // 바닥
 add(new THREE.PlaneGeometry(10,10),M('#e6bd92','planks',{rep:[2.5,2.5]}),0,0,0,{rx:-PI/2,cast:false,line:false});
@@ -320,3 +322,4 @@ const steams=[];
 function steamAt(x,y,z,n){for(let i=0;i<n;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:steamTex,transparent:true,depthWrite:false,opacity:0}));s.userData={x,y,z,ph:i/n,sw:rnd(0,9)};scene.add(s);steams.push(s);}}
 steamAt(-0.12,DT+0.2,-3.9,5);
 steamAt(0.3+Math.cos(-0.4)*0.33,TT+0.33,0.65-Math.sin(-0.4)*0.33,5);
+export {DUST,ML,beamLen,beamMat2,beamStart,capMat,crateLight,dustGeo,dustMat,dustPos,dustSeed,glowMat,lampHit,lampLight,minute,perpA,perpB,poolMat,skyNight,steams,sunDir};

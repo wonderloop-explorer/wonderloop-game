@@ -1,4 +1,12 @@
 /* 원더룹 베이스캠프 — 입력·조명 단계·카메라 따라가기·애니메이션 루프 */
+import * as THREE from 'three';
+import {PI,scene} from './01-textures.js';
+import {DUST,beamLen,beamMat2,beamStart,capMat,crateLight,dustGeo,dustMat,dustPos,dustSeed,glowMat,lampHit,lampLight,minute,perpA,perpB,poolMat,skyNight,steams,sunDir} from './02-room.js';
+import {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,statsEl,sun,ui} from './03-scene.js';
+import {WL} from './04-character.js';
+import './05-hair-headwear.js';
+import './06-outfits.js';
+import {hopWL,setWalkTarget,updateWL,wlHit} from './07-actions.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph=true,night=0,nightTarget=0,lampOn=true,lampLevel=1,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
@@ -12,7 +20,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
   ray.setFromCamera(ptr,camera);
   if(ray.intersectObjects(lampHit,false).length){lampOn=!lampOn;return;}
-  if(ray.intersectObjects(wlHit,false).length){if(wlHop<=0)wlHop=1;return;}
+  if(ray.intersectObjects(wlHit,false).length){hopWL();return;}
   const r0=ray.ray;if(r0.direction.y<-0.01){const tt=-r0.origin.y/r0.direction.y;setWalkTarget(r0.origin.x+r0.direction.x*tt,r0.origin.z+r0.direction.z*tt);}
 });
 const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -54,9 +62,9 @@ function tick(){
     s.theta+=spinDir*dt*0.18;if(s.theta>controls.maxAzimuthAngle-0.02){spinDir=-1;}if(s.theta<controls.minAzimuthAngle+0.02){spinDir=1;}
     camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));}
   {const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
-   if(camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-camGoal)<.05)camGoal=0;}}
+   if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
   controls.update();renderer.render(scene,camera);
-  statT+=dt;if(statT>0.5){statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회, 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
+  ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회, 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
   if(!SHOT)requestAnimationFrame(tick);
 }
 tick();
@@ -77,7 +85,7 @@ if(SHOT){
       if(o.view)this.view(o.view);
     },
     /* az: 원더룹이 보는 방향 기준 각도(0 정면, π/2 측면, π 뒷면), pol: 위에서 내려다보는 각, dist: 거리 */
-    view(v){Object.assign(controls,{minAzimuthAngle:-Infinity,maxAzimuthAngle:Infinity,minPolarAngle:0,maxPolarAngle:PI,minDistance:0.5});camGoal=0;
+    view(v){Object.assign(controls,{minAzimuthAngle:-Infinity,maxAzimuthAngle:Infinity,minPolarAngle:0,maxPolarAngle:PI,minDistance:0.5});ui.camGoal=0;
       const tg=v.room?ROOM_T.clone():new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z);if(v.ty!=null)tg.y=v.ty;
       controls.target.copy(tg);camera.position.copy(new THREE.Vector3().setFromSpherical(new THREE.Spherical(v.dist,v.pol,(v.room?0:WL.rotation.y)+v.az)).add(tg));controls.update();},
     step(n){for(let i=0;i<n;i++)tick();},

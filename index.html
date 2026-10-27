@@ -87,16 +87,16 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
   <div class="hint">끌어서 돌려 보고, 휠이나 두 손가락으로 확대해요. 바닥을 누르면 원더룹이 걸어가고, 원더룹을 누르면 인사해요. 버섯 랜턴은 눌러서 켜고 꺼요.</div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="js/01-textures.js"></script>
-<script src="js/02-room.js"></script>
-<script src="js/03-scene.js"></script>
-<script src="js/04-character.js"></script>
-<script src="js/05-hair-headwear.js"></script>
-<script src="js/06-outfits.js"></script>
-<script src="js/07-actions.js"></script>
-<script src="js/08-main.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
+  }
+}
+</script>
+<!-- 08-main.js가 01~07을 번호 순서대로 import한다 (실행 순서가 곧 색연필 텍스처 난수 순서) -->
+<script type="module" src="js/08-main.js"></script>
 
 </body>
 </html>

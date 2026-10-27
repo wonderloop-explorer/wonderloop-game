@@ -6,7 +6,7 @@
 
 ## 바로 실행하기
 
-브라우저 보안 때문에 `index.html`을 더블클릭하면 스크립트가 안 열릴 수 있어요. 폴더에서 간단한 로컬 서버를 띄워 주세요.
+브라우저 보안 때문에 `index.html`을 더블클릭하면 스크립트(ES 모듈)가 열리지 않아요. 폴더에서 간단한 로컬 서버를 띄워 주세요.
 
 ```bash
 cd wonderloop-game
@@ -36,7 +36,9 @@ Claude Code는 시작할 때 `CLAUDE.md`를 읽고 프로젝트 규칙과 다음
 | 경로 | 내용 |
 |---|---|
 | `index.html` | 페이지 뼈대, 화면 UI, 스크립트 불러오기 |
-| `js/01-textures.js` ~ `js/08-main.js` | 장면 코드 (번호 순서대로 불러옴) |
+| `js/01-textures.js` ~ `js/08-main.js` | 장면 코드 (ES 모듈, `08-main.js`가 01~07을 번호 순서대로 import) |
+| `tools/` | 촬영 서버, 기준 스크린샷 촬영 목록, 픽셀 비교 도구 |
+| `docs/baseline/` | 비교 기준 스크린샷과 드로우콜 통계 |
 | `assets/sheets/` | 캐릭터 시트 v2, 표정·동작 세트, 어두운 곳 가독성 비교 |
 | `assets/models/` | 확정 캐릭터 GLB (평상복, 탐험복, 탐험복+모자) |
 | `CLAUDE.md` | 프로젝트 규칙과 다음 작업 로드맵 (Claude Code용) |

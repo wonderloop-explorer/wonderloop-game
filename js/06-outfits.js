@@ -1,4 +1,7 @@
 /* 원더룹 베이스캠프 — 바지·관절·캐릭터 병합·평상복/탐험복·탐험 모자·키링·탈 카테고리 */
+import * as THREE from 'three';
+import {PI,lin,pencil} from './01-textures.js';
+import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBody,wm,wmList} from './04-character.js';
 /* 디테일: 옷 구조 + 탐험대 패치 */
 {
   const cream=SM('#f3ead6');

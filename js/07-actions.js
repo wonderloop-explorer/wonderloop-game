@@ -1,4 +1,7 @@
 /* 원더룹 베이스캠프 — 어두운 곳 강조(림 라이트)·이동·동작 세트·포즈 */
+import * as THREE from 'three';
+import {PI,blobTex,lin,pencil,rnd,scene,softMat} from './01-textures.js';
+import {SM,WL,WLS,antennae,arms,eyes,head,legs,shirtU,skin,wlBody} from './04-character.js';
 /* 작은 부품은 그림자를 드리우지 않게 (그림자용으로 한 번 더 그리는 비용 절약) */
 WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.isMesh||!o.castShadow)return;o.geometry.computeBoundingSphere();o.getWorldScale(sc);if(o.geometry.boundingSphere.radius*Math.max(sc.x,sc.y,sc.z)<.1)o.castShadow=false;});}
 /* 어두운 곳 가독성: 캐릭터 재질에 테두리 빛(림 라이트)과 약한 자체 밝기를 더함 — 주변이 어두울수록 강해짐 */
@@ -17,6 +20,7 @@ const WR=0.28;
 function blocked(x,z){if(x<-4.65||x>4.75||z<-4.6||z>4.75)return true;
   for(const o of obstacles){if(o.r){if(x>o.r[0]-WR&&x<o.r[1]+WR&&z>o.r[2]-WR&&z<o.r[3]+WR)return true;}else{const dx=x-o.c[0],dz=z-o.c[1];if(dx*dx+dz*dz<(o.c[2]+WR)*(o.c[2]+WR))return true;}}
   return false;}
+function hopWL(){if(wlHop<=0)wlHop=1;}
 function setWalkTarget(x,z){wlTarget={x,z};marker.position.set(x,0.06,z);markerA=1;}
 /* ---------- 동작 세트 ---------- */
 const ACTIONS=['서기','걷기','뛰기','두리번','들여다보기','기어오르기','멈칫','나침반 보기','손 흔들기'];
@@ -92,3 +96,4 @@ function updateWL(dt,t){
    if(U.thumbs)U.thumbs.forEach(th=>th.visible=U.holdW>.5);
    if(U.charm)U.charm.g.visible=!!U.outfit&&!(U.holdW>.5);}
 }
+export {hopWL,setWalkTarget,updateWL,wlHit};

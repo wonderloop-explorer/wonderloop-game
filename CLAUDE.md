@@ -12,8 +12,11 @@
 - 작업을 마치면 변경 내용을 요약한 커밋 메시지로 `main`에 푸시한다. 푸시 전에 로컬에서 동작을 확인한다.
 
 ## 코드 구조 (중요)
-- three.js r128 (UMD, cdnjs) + OrbitControls(jsDelivr). 빌드 도구 없음.
-- `js/01~08`은 **일반 스크립트**이며 번호 순서대로 불러온다. 파일 최상위의 `const`/`function`은 전역으로 공유된다. 순서를 바꾸거나 `type="module"`로 바꾸면 깨진다 (로드맵 1번에서 정식 모듈로 전환 예정).
+- three.js r128 ES 모듈 + OrbitControls(`three/addons/`), `index.html`의 importmap으로 jsDelivr에서 불러온다. 빌드 도구 없음.
+- `js/01~08`은 **ES 모듈**이다. `index.html`은 `08-main.js` 하나만 불러오고, 08이 01~07을 번호 순서대로 import한다. 각 파일은 앞 번호 파일에서만 import한다.
+  - **실행 순서를 바꾸지 말 것.** 색연필 텍스처·소품 배치가 시드 난수(`R()`)를 순서대로 꺼내 쓰므로, 순서가 바뀌면 그림이 달라진다.
+  - import한 변수에는 값을 다시 넣을 수 없다. 여러 파일이 바꾸는 값은 객체에 담거나(`ui.camGoal`, `ui.statT`) 함수로 바꾼다(`hopWL()`).
+  - 모듈은 `file://`로 열리지 않으므로 반드시 로컬 서버로 연다.
   - 01 텍스처·재질 헬퍼: `pencil()`(캔버스 색연필 텍스처), `M()`, `SM()`, `TM()`, `BM()`
   - 02 방과 소품
   - 03 조명, 렌더러, 카메라, 방 정적 병합
@@ -23,6 +26,9 @@
   - 07 어두운 곳 강조(림 라이트 셰이더), 이동, 동작 세트(`actionPose`, `runPose`), `updateWL`
   - 08 입력, 조명 단계(낮/저녁/어두운 굴), 따라가기 카메라, 애니메이션 루프
 - 캐릭터 상태는 `WL.userData`에 모여 있다 (`action`, `setExpr`, `hw`(탈), `outfit`, `charm`, `rimU` 등).
+- 촬영 모드 `?shot`: 고정 1/60초 간격으로 진행하고 `window.wlShot`(`setup`/`view`/`step`/`capture`)을 연다. 로드맵 7번(영상 캡처)에서도 쓰므로 지우지 않는다.
+  - `python3 tools/shot-server.py`로 띄우면 캡처 PNG를 `docs/` 아래에 저장할 수 있다.
+  - 기준 스크린샷: `docs/baseline/r128/` (촬영 목록 `tools/baseline-shots.js`, 픽셀 비교 `tools/compare-shots.js`). 모습에 영향을 주는 변경 뒤에는 다시 찍어 비교한다.
 
 ## 아트 디렉션 (반드시 지킬 것)
 - 화풍: 파스텔 색연필 손그림 + 로우폴리. 투박하고 손맛 있는 느낌을 유지한다.

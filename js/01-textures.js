@@ -1,4 +1,5 @@
 /* 원더룹 베이스캠프 — 색연필 텍스처·재질·메쉬 헬퍼 */
+import * as THREE from 'three';
 const PI=Math.PI;
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const R=mulberry32(11);
@@ -239,3 +240,4 @@ const blobTex=gradTex(true,0.6),aoTex=gradTex(false,0.6);
 function softMat(t,op){return new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
 function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,op||0.35));m.rotation.x=-PI/2;m.position.set(x,0.045,z);scene.add(m);}
 function aoPlane(w,h,rot,pos,op){const geo=new THREE.PlaneGeometry(w,h);rot(geo);const m=new THREE.Mesh(geo,softMat(aoTex,op));m.position.set(...pos);scene.add(m);}
+export {B,C,M,PI,R,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lin,pencil,rnd,scene,shade,skyTex,softMat};

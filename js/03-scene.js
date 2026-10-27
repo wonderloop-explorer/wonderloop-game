@@ -1,4 +1,8 @@
 /* 원더룹 베이스캠프 — 조명·렌더러·카메라·방 최적화(병합) */
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {scene} from './01-textures.js';
+import {ML,minute,sunDir} from './02-room.js';
 /* ---------- 조명 ---------- */
 const hemi=new THREE.HemisphereLight(0xfff3dc,0xd2ab88,0.62);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xffe0b0,0.72);
@@ -18,7 +22,7 @@ renderer.setClearColor(0x000000,0);
 stage.appendChild(renderer.domElement);
 const camera=new THREE.PerspectiveCamera(30,1,1,120);
 const target=new THREE.Vector3(0,1.5,-0.2);
-const controls=new THREE.OrbitControls(camera,renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);
 controls.target.copy(target);controls.enableDamping=true;controls.dampingFactor=0.08;controls.enablePan=false;
 controls.minDistance=3;controls.maxDistance=48;controls.minPolarAngle=0.55;controls.maxPolarAngle=1.32;
 controls.minAzimuthAngle=0.12;controls.maxAzimuthAngle=1.45;
@@ -29,8 +33,8 @@ function placeCamera(){
 }
 const asp0=placeCamera();
 let dist=27*(asp0<1.25?Math.min(2.1,1.25/asp0):1);
-const ROOM_T=new THREE.Vector3(0,1.5,-0.2);let follow=true,camGoal=7.5;
-{const cb=document.getElementById('camBtn');cb.addEventListener('click',()=>{follow=!follow;camGoal=follow?7.5:dist;cb.textContent=follow?'카메라: 따라가기':'카메라: 방 전체';});}
+const ROOM_T=new THREE.Vector3(0,1.5,-0.2);let follow=true;const ui={camGoal:7.5,statT:1};
+{const cb=document.getElementById('camBtn');cb.addEventListener('click',()=>{follow=!follow;ui.camGoal=follow?7.5:dist;cb.textContent=follow?'카메라: 따라가기':'카메라: 방 전체';});}
 const sph=new THREE.Spherical(dist,0.98,0.8);
 camera.position.copy(new THREE.Vector3().setFromSpherical(sph).add(target));
 controls.update();
@@ -65,5 +69,6 @@ buckets.forEach(list=>{
 let optimized=true;
 function setOpt(on){optimized=on;originals.forEach(o=>o.visible=!on);mergedRoot.visible=on;}
 setOpt(true);
-const optBtn=document.getElementById('optBtn'),statsEl=document.getElementById('stats');let statT=1;
-optBtn.addEventListener('click',()=>{setOpt(!optimized);optBtn.textContent=optimized?'최적화 끄기':'최적화 켜기';statT=1;});
+const optBtn=document.getElementById('optBtn'),statsEl=document.getElementById('stats');
+optBtn.addEventListener('click',()=>{setOpt(!optimized);optBtn.textContent=optimized?'최적화 끄기':'최적화 켜기';ui.statT=1;});
+export {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,statsEl,sun,ui};

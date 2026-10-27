@@ -1,4 +1,6 @@
 /* 원더룹 베이스캠프 — 원더룹 몸·얼굴·표정·개미탈 */
+import * as THREE from 'three';
+import {PI,lin,pencil,scene} from './01-textures.js';
 /* ---------- 원더룹 (탐험가) ---------- */
 const WLS=1;const WL=new THREE.Group();WL.position.set(1.1,0,2.5);WL.rotation.y=0.8;WL.scale.setScalar(WLS);scene.add(WL);
 const wlBody=new THREE.Group();WL.add(wlBody);
@@ -106,3 +108,4 @@ head.children.forEach(c=>{if(c.position.z>.2&&c.position.y<.1){const m=WL_CHIN(c
    sweat.visible=!!e.sweat;blush.forEach((b,i)=>b.scale.copy(blushBase[i]).multiplyScalar(e.blush||1));U.headTilt=e.tilt||0;}
  U.setExpr=setExpr;U.exprNames=NAMES;setExpr('기본');
  const btn=document.getElementById('exprBtn');let ei=0;btn.addEventListener('click',()=>{ei=(ei+1)%NAMES.length;setExpr(NAMES[ei]);btn.textContent='표정: '+NAMES[ei];});}
+export {SM,TM,WL,WLS,antennae,arms,eyes,hairParts,head,hoodParts,legs,roundBox,shirtU,shorts,skin,tunic,wlBody,wm,wmList};
