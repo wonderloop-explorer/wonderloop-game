@@ -32,7 +32,7 @@ for(let i=0;i<24;i++){const a=rnd(0,PI*2),d=rnd(4,30);rock(Math.cos(a)*d,Math.si
   boxAt(0.6,1.1,0.06,M('#7a4a32','wood'),0,0,1.02,{parent:g});
   obstacles.push({r:[hx-1.5,hx+1.5,hz-1.3,hz+1.1]});}
 return {
-  name:'견본 야외',kind:'outdoor',
+  name:'견본 야외',kind:'outdoor',start:{compass:true},
   spawn:{x:0,z:3,ry:PI},
   areas:{field:{bounds:[-SIZE/2+2,SIZE/2-2,-SIZE/2+2,SIZE/2-2],obstacles,
     camera:{target:[0,1,0],dist:42,polar:[0.45,1.3],azimuth:null,start:[0.95,0.7],minDist:3,maxDist:70}}},

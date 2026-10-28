@@ -13,9 +13,13 @@
      sun: {dir, shadow, follow}           해 방향, 그림자 범위(반지름), follow: 그림자 범위가 원더룹을 따라감(넓은 야외)
      groundY(x,z), ground: [메시]          (선택) 땅 높이, 클릭해서 걸을 때 맞힐 땅
      lights: [점광원]  light(env,dt)  update(dt,t,env)  click(ray)  keepOut: [병합에서 뺄 것]  dispose()
+     start: {compass:true}               들어올 때 이미 그런 진행 상태(game/state)
+     NPC·이벤트는 build 안에서 js/game/의 dialog.npc()·events.area()로 등록한다(구역을 떠나면 비워진다)
    새 구역 추가: README "새 구역 추가하기". */
 import * as THREE from 'three';
 import {BUILD,loadBaked,scene} from './01-textures.js';
+import {clearZoneGame} from './game/index.js';
+import {applyStart} from './game/state.js';
 // 구역 목록 — 새 구역은 여기에 한 줄 더한다
 const ZONES={
   basecamp:()=>import('./zones/basecamp.js'),
@@ -31,10 +35,12 @@ async function loadZone(id){
   if(!ZONES[id])throw new Error('원더룹: 없는 구역 '+id);
   const [mod]=await Promise.all([ZONES[id](),loadBaked(id)]); // 구역 코드와 그 구역의 구운 텍스처
   const root=new THREE.Group();root.name='zone:'+id;scene.add(root);
+  clearZoneGame(); // 앞 구역의 NPC·트리거·이벤트 줄을 비우고 새 구역이 등록한다
   BUILD.root=root;BUILD.zone=id;let z;try{z=mod.build({root,id});}finally{BUILD.root=null;BUILD.zone=null;}
   Object.assign(z,{id,root});z.lights=z.lights||[];z.keepOut=z.keepOut||[];
   z.doors=(z.doors||[]).filter(d=>ZONES[d.to]); // 목록에 없는 구역으로 가는 문은 없앤다
   for(const a of Object.values(z.areas))a.obstacles=a.obstacles||[];
+  applyStart(z.start); // 이 구역에 들어올 때 이미 그런 이야기 상태 (예: 나침반을 받음)
   return z;}
 function unloadZone(z){
   scene.remove(z.root);const seen=new Set();

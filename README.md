@@ -66,6 +66,22 @@ Claude Code는 시작할 때 `CLAUDE.md`를 읽고 프로젝트 규칙과 다음
 5. 텍스처를 굽습니다(`tools/bake-textures.js`). 구역마다 `assets/textures/<이름>/` 묶음이 생겨요.
 6. 기준 스크린샷을 찍어 `docs/baseline/<이름>/`에 남깁니다.
 
+## 애프터이펙트로 소리 배치하기
+
+영상 캡처 모드는 영상과 함께 소리 시점 기록(`<대본>-16x9.cues.json`, `<대본>-9x16.cues.json`)을 남겨요. 나레이션·대사·효과음이 몇 초에, 얼마 동안, 누구의 어떤 대사로 나왔는지 적힌 파일이에요. 이걸 애프터이펙트 스크립트로 바꾸면 소리를 손으로 맞출 필요가 없어요.
+
+```bash
+python3 tools/cues-to-ae.py captures/santa/opening-16x9.cues.json captures/santa/opening-9x16.cues.json --sounds assets/sounds/santa
+```
+
+1. 위 명령이 cues.json 옆에 `opening.jsx`를 만들어요.
+2. 애프터이펙트에서 **파일 → 스크립트 → 스크립트 파일 실행**으로 `opening.jsx`를 열어요.
+3. 화면비마다 컴포지션이 하나씩 생겨요(16:9, 9:16). 맨 아래에 녹화 영상이 깔리고, 나레이션(초록)·대사(주황)·효과음(노랑) 파일이 기록된 시점에 레이어로 놓여요.
+4. 대사·나레이션마다 마커에 "말한 이: 대사"가 적혀 있고, 마커 길이가 대사 길이예요. 아직 녹음하지 않은 대사는 영상 레이어에 마커만 있어요.
+5. 못 찾은 파일이 있으면 마지막에 목록을 알려 줘요. 영상·소리를 다른 곳으로 옮겼다면 `.jsx` 옆에 같은 이름으로 두면 찾아요.
+
+영상·소리 시점 기록·`.jsx`는 공개 저장소에 올리지 않아요(`captures/`는 `.gitignore`). 보관은 비공개 저장소 `wonderloop-studio`나 PC에 해요.
+
 ## 텍스처를 포토샵으로 고치는 방법
 
 색연필 텍스처는 `assets/textures/<묶음>/`(캐릭터는 `character`, 베이스캠프는 `basecamp`)에 WebP 파일로 구워져 있어요. 어떤 파일이 어떤 텍스처인지는 `docs/bake/texture-index.jpg`에서 볼 수 있어요.

@@ -2,9 +2,12 @@
    - 방마다 영역(areas) 하나: 걸을 수 있는 범위(bounds)·장애물·카메라. 두 방의 범위가 문간에서 겹쳐 오갈 수 있다.
    - 원더룹이 다른 방으로 들어가면 카메라가 그 방 기준으로 바뀐다('방 전체' 카메라도 그 방을 본다).
    - 방 조명은 lights에 넣고 light(env)에서 밝기를 정한다(08이 옛 단위 → 물리 단위로 바꿈).
-   - 문: 거실 왼쪽 앞 문 → 견본 야외, 서재 오른쪽 앞 문 → 베이스캠프. */
+   - 문: 거실 왼쪽 앞 문 → 견본 야외, 서재 오른쪽 앞 문 → 베이스캠프.
+   - 공통 시스템(js/game/) 견본: 서재의 견본 손님(대화, 나침반 받은 뒤 다른 대사), 말 없는 손님(대사 묶음이 비어도 멈추지 않음),
+     거실 한가운데를 밟으면 나레이션 → 안내 카드(이벤트 줄), 거실을 오가는 먼지 뭉치(위협 견본 — 대화·카드가 열리면 멈춘다). */
 import * as THREE from 'three';
 import {M,PI,add,blob,boxAt,cylAt,group,rawLin,rng} from '../01-textures.js';
+import * as G from '../game/index.js';
 export function build({root}){
 const R=rng('sample-indoor:props'),rnd=(a,b)=>a+(b-a)*R();
 const W=6,D=4,H=2.8; // 방 하나 가로 6, 깊이 ±4
@@ -29,16 +32,29 @@ const lamp=new THREE.PointLight(rawLin(0xffc27a),0.5,7,2);lamp.position.set(3.2,
 add(new THREE.SphereGeometry(0.16,12,8),new THREE.MeshStandardMaterial({color:0xfff1cf,emissive:0xffd58a,emissiveIntensity:0.6}),3.2,2.25,-2.6,{line:false,cast:false});
 // 문틀 (밟는 자리 표시)
 boxAt(0.9,2,0.08,M('#7a4a32','wood'),-5.3,0,D-0.1);boxAt(0.9,2,0.08,M('#7a4a32','wood'),5.3,0,D-0.1);
+// 공통 시스템 견본
+const person=(x,z,ry,c)=>{const g=group(x,0,z,ry);cylAt(.17,.22,.62,M(c,'plain'),0,0,0,{parent:g});add(new THREE.SphereGeometry(.21,12,8),M('#ffd6b0','plain'),0,.82,0,{parent:g});blob(x,z,.35,.35,.25);return g;};
+const guest=person(3.7,0.4,-0.7,'#7d8bd0'),quiet=person(-1.6,2.6,2.4,'#b7ab9a');
+G.dialog.npc({name:'견본 손님',root:guest,lines:['어서 와, 여기는 견본 실내야.','방마다 카메라가 바뀌는 거 봤어?'],
+  variants:[{when:()=>G.state.flags.compass,lines:['어서 와! 배낭에 나침반 키링이 달려 있네.','방마다 카메라가 바뀌는 거 봤어?']}]});
+G.dialog.npc({name:'말 없는 손님',root:quiet,lines:[]}); // 대사 묶음이 비어 있음 → 말 걸 상대로 고르지 않는다
+G.events.area({rect:[-3.6,-2.4,0.4,1.6],event:{id:'sample-hall',run:async e=>{
+  await e.narrate({text:'견본 실내예요. 방마다 카메라가 따로 있어요.'});
+  await e.notice({kicker:'견본',title:'서재로 가 봐요',text:'문간을 지나면 카메라가 서재를 비춰요. 서재의 견본 손님에게 말을 걸어 보세요.'});
+  G.ui.setQuest('서재의 견본 손님과 이야기해요');}}});
+const dust=add(new THREE.IcosahedronGeometry(.22,0),M('#8a7a6a','plain'),-3.4,.24,-1.6,{line:false});let dustT=0;
 const cam=x=>({target:[x,1.2,-0.4],dist:19,polar:[0.55,1.32],azimuth:[0.12,1.45],start:[0.98,0.8],minDist:3,maxDist:34});
 return {
-  name:'견본 실내',kind:'indoor',
+  name:'견본 실내',kind:'indoor',start:{compass:true},
   spawn:{x:-4,z:2.6,ry:PI*0.9},
   areas:{
     hall:{bounds:[-W+0.35,0.4,-D+0.35,D-0.3],obstacles:[...obsHall,{r:[-0.12,0.12,-D,-1.1]},{r:[-0.12,0.12,1.1,D]}],camera:cam(-3)},
     study:{bounds:[-0.4,W-0.35,-D+0.35,D-0.3],obstacles:obsStudy,camera:cam(3)}},
   doors:[{rect:[-5.8,-4.8,3.2,3.7],to:'sample-outdoor',spawn:{x:-3.6,z:-2.6,ry:0.3}},{rect:[4.8,5.8,3.2,3.7],to:'basecamp'}],
   sun:{dir:new THREE.Vector3(3,-12,12).normalize(),shadow:9,follow:false},
-  lights:[lamp],
+  lights:[lamp],keepOut:[guest,quiet,dust],
+  update(dt){if(!G.events.threatsPaused())dustT+=dt;dust.position.x=-3.4+Math.sin(dustT*.9)*1.6;dust.rotation.y=dustT*2;}, // 위협 견본: 막히면 멈춤
+  dust,guest,quiet,
   light(env){lamp.intensity=(0.35+0.9*env.night)*env.flick*(1-.6*env.cave);},
 };
 }

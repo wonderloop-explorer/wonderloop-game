@@ -330,7 +330,7 @@ steamAt(0.3+Math.cos(-0.4)*0.33,TT+0.33,0.65-Math.sin(-0.4)*0.33,5);
 /* ---------- 구역 정보 ---------- */
 let lampOn=true,lampLevel=1;
 return {
-  name:'베이스캠프',kind:'indoor',
+  name:'베이스캠프',kind:'indoor',start:{compass:true},
   spawn:{x:1.1,z:2.5,ry:0.8},
   areas:{main:{
     // 걸을 수 있는 범위와 장애물(r: 사각형 [x0,x1,z0,z1], c: 원 [x,z,반지름])

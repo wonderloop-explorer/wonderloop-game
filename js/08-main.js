@@ -7,6 +7,7 @@ import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
 import {hopWL,setWalkTarget,stopWalk,updateWL,wlHit} from './07-actions.js';
+import * as GAME from './game/index.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph=true,night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
@@ -19,6 +20,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6)return;
   const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
   ray.setFromCamera(ptr,camera);
+  if(GAME.clickNPC(ray))return; // 대화 중이면 다음 대사, NPC를 누르면 말 걸기
   if(zone.cur.click&&zone.cur.click(ray))return; // 구역의 클릭할 것 (베이스캠프: 버섯 램프)
   if(ray.intersectObjects(wlHit,false).length){hopWL();return;}
   if(zone.cur.ground){const h=ray.intersectObjects(zone.cur.ground,false)[0];if(h)setWalkTarget(h.point.x,h.point.z);return;} // 높낮이 있는 땅
@@ -37,6 +39,7 @@ async function goZone(id,spawn){
     const zb=document.getElementById('zoneBtn');if(zb)zb.textContent='구역: '+nz.name;
   }finally{zoneBusy=false;}
   return true;}
+GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES)};
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
 if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;
@@ -48,7 +51,11 @@ const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88)
 const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector3();
 /* 촬영 모드(?shot): 고정 시간 간격으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
 const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0;
-function tick(){
+/* 안전장치: 프레임 안에서 오류가 나도 멈추지 않게 — 콘솔에 한 번 남기고, 이번 화면은 그려 두고, 다음 프레임을 잇는다 */
+const tickErrSeen=new Set();
+function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
+  try{renderer.render(scene,camera);}catch(e2){}}if(!ok&&!SHOT)requestAnimationFrame(tick);}
+function tickBody(){
   let dt,t;if(SHOT){dt=1/60;shotT+=dt;t=shotT;}else{clock.update();dt=Math.min(clock.getDelta(),0.05);t=clock.getElapsed();}
   night+=(nightTarget-night)*Math.min(1,dt*2.2);
   const n=night,flick=reduce?1:(1+Math.sin(t*7.3)*0.04+Math.sin(t*13.1)*0.03);
@@ -63,6 +70,7 @@ function tick(){
   [hemi,sun,fill,...Z.lights].forEach(l=>l.intensity*=PI);
   if(Z.update)Z.update(dt,t,env); // 구역 움직임 (베이스캠프: 먼지·김·시계)
   updateWL(dt,t);
+  GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩)
   // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
   {const a=areaAt(WL.position.x,WL.position.z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(Z.areas[a].camera,false);}
    const d=doorAt(WL.position.x,WL.position.z);if(!d)doorLock=false;else if(!doorLock&&!zoneBusy){doorLock=true;goZone(d.to,d.spawn);}}
@@ -86,7 +94,7 @@ if(SHOT){
   renderer.setPixelRatio(1);
   const clickUntil=(id,ok)=>{const b=document.getElementById(id);for(let i=0;i<12&&!ok();i++)b.click();};
   window.wlShot={
-    revision:THREE.REVISION,scene,renderer,camera,WL,
+    revision:THREE.REVISION,scene,renderer,camera,WL,game:GAME,
     size(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();},
     setup(o){
       if(o.light!=null)clickUntil('dayBtn',()=>lightState===o.light);

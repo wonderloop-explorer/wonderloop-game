@@ -62,7 +62,9 @@ function wavyLine(g,S,y,amp,freq,ph){g.beginPath();g.moveTo(0,y);for(let x=0;x<=
    포토샵으로 고친 파일도 그대로 쓰도록 색 변환 없이 픽셀 값 그대로 읽는다(포토샵 작업 색공간은 sRGB).
    ?nobake 를 붙이면 구운 파일을 안 쓰고 모두 그린다(굽기 도구가 쓴다). 목록의 이름(key)이 텍스처를 찾는 열쇠다. */
 // 불러오기 방식: 'all' = 구운 파일 모두(다시 방문·느린 CPU에서 빠름, 첫 방문에 약 3MB 더 받음), 'hand' = 손으로 고친 파일만(나머지는 그림)
-const BAKE_LOAD=new URLSearchParams(location.search).get('bake')||'hand'; // 주소에 ?bake=all 을 붙이면 'all'로 (측정용)
+// 촬영 모드(?shot)는 늘 'all' — 캔버스 그리기는 크롬이 GPU·CPU 중 무엇으로 그리느냐에 따라 1단계씩 달라질 때가 있어(스웨이드 등 잔점이 많은 결),
+// 영상·기준 촬영은 구운 파일로 늘 같은 그림을 쓴다. 주소에 ?bake=all|hand 를 붙이면 그것으로 (측정용)
+const BAKE_LOAD=new URLSearchParams(location.search).get('bake')||(new URLSearchParams(location.search).has('shot')?'all':'hand');
 const BAKED=new Map(),TEXREG=new Map(),TEXSET=new Map(),wlTex={drawMs:0,drawn:0,baked:0,loadMs:0};window.wlTex=wlTex;
 const NOBAKE=RREC||new URLSearchParams(location.search).has('nobake'),bakeLoaded=new Set();
 // 묶음 하나 읽기: 캐릭터는 시작할 때, 구역 묶음은 그 구역에 들어갈 때(02 loadZone)
