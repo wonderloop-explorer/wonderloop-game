@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {PI,rawLin,rngLoaded,scene} from './01-textures.js';
 import {ZONES,areaAt,doorAt,groundY,loadZone,unloadZone,zone} from './02-zone.js';
-import {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui} from './03-scene.js';
+import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui} from './03-scene.js';
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
@@ -95,8 +95,8 @@ if(SHOT){
   const clickUntil=(id,ok)=>{const b=document.getElementById(id);for(let i=0;i<12&&!ok();i++)b.click();};
   window.wlShot={
     revision:THREE.REVISION,scene,renderer,camera,WL,game:GAME,
-    /* 화면 크기(영상 캡처: 1920×1080, 1080×1920). 방 카메라 거리도 새 화면비로 다시 잡는다(세로 화면은 멀리) */
-    size(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const A=zone.cur.areas[zone.area];if(A){setAreaCamera(A.camera,false);if(!follow)ui.camGoal=ui.dist;}},
+    /* 화면 크기(영상 캡처: 1920×1080, 1080×1920). 방 카메라·따라가기 거리도 새 화면비로 다시 잡는다(세로 화면은 멀리) */
+    size(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const A=zone.cur.areas[zone.area];if(A){setAreaCamera(A.camera,false);ui.camGoal=follow?followDist():ui.dist;}},
     /* 원더룹을 그 자리에 세운다 (영상 캡처 구간 시작) */
     place(x,z,ry){stopWalk();WL.position.set(x,groundY(x,z),z);if(ry!=null)WL.rotation.y=ry;const a=areaAt(x,z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(zone.cur.areas[a].camera,false);}},
     walking,go:goZone,get follow(){return follow;},

@@ -98,7 +98,7 @@ function closeBook(){if(cardShown()!=='book')return;book.style.display='none';bl
 $('#wlBook .x').addEventListener('click',closeBook);cardCloser('book',closeBook);
 /* 엔딩 */
 const end=$('#wlEnd');let endCue=null;
-function ending({ribbon='탐험가의 대모험',logo='',sub='',buttons=[{label:'처음으로'}]}={}){return cardSlot('ending',r=>{const L=$('#wlEnd .logo');L.innerHTML='';L.appendChild(logoEl({ribbon,logo,sub}));
+function ending({ribbon='탐험가의 대모험',logo='',sub='',buttons=[{label:'처음으로'}]}={}){return cardSlot('ending',r=>{const L=$('#wlEnd .logo');L.innerHTML='';L.appendChild(logoEl({ribbon,logo,sub,kind:'ending'}));
   const p=progress();$('#wlEnd .stat').textContent=[W.cards.length?`${W.name} ${p.cards[0]}/${p.cards[1]}`:'',secretLine()].filter(Boolean).join(' · ');
   ['.b1','.b2'].forEach((s,i)=>{const b=$('#wlEnd '+s),B=buttons[i];b.style.display=B?'':'none';if(!B)return;b.textContent=B.label;
     b.onclick=()=>{closeEnding();try{B.act&&B.act();}finally{r(i);}};});

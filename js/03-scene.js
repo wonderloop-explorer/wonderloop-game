@@ -37,8 +37,11 @@ function placeCamera(){
 }
 placeCamera();window.addEventListener('resize',placeCamera);
 // ROOM_T: '방 전체' 카메라가 바라보는 점 (구역·방마다 바뀜), ui.dist: 그때의 거리
-const ROOM_T=new THREE.Vector3();let follow=true;const ui={camGoal:7.5,statT:1,dist:27};
-{const cb=document.getElementById('camBtn');cb.addEventListener('click',()=>{follow=!follow;ui.camGoal=follow?7.5:ui.dist;cb.textContent=follow?'카메라: 따라가기':'카메라: 방 전체';});}
+// 따라가기 카메라 거리: 가로 화면은 7.5, 세로처럼 좁은 화면(화면비 1.25 미만)은 방 카메라와 같은 규칙으로 1.25/화면비배(최대 2.1배) 멀리
+const followDist=()=>{const asp=camera.aspect;return 7.5*(asp<1.25?Math.min(2.1,1.25/asp):1);};
+const ROOM_T=new THREE.Vector3();let follow=true;const ui={camGoal:followDist(),statT:1,dist:27};
+{const cb=document.getElementById('camBtn');cb.addEventListener('click',()=>{follow=!follow;ui.camGoal=follow?followDist():ui.dist;cb.textContent=follow?'카메라: 따라가기':'카메라: 방 전체';});}
+window.addEventListener('resize',()=>{if(follow)ui.camGoal=followDist();}); // 휴대폰을 돌리면 거리도 다시
 /* 방(영역) 카메라: 바라보는 점·거리·돌려 볼 수 있는 각도. start가 있으면 그 각도로 카메라를 옮긴다 */
 function setAreaCamera(c,place){
   const asp=camera.aspect;ui.dist=c.dist*(asp<1.25?Math.min(2.1,1.25/asp):1);ROOM_T.set(...c.target);
@@ -86,4 +89,4 @@ function setupView(z,area){
   setAreaCamera(z.areas[area].camera,true);
   mergeStatic(z);setOpt(optimized);}
 setupView(zone.cur,zone.area);
-export {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui};
+export {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui};

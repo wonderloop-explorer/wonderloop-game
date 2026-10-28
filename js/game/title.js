@@ -1,7 +1,7 @@
 /* 원더룹 — 타이틀·엔딩 로고 (개미굴 게임 첫 화면 .logo2 모양: 리본 + 글자마다 색·기울기·두꺼운 갈색 테두리, 튀어 오르며 등장)
    - drawTitle(g, W, H, o, t, a): 캔버스에 그린다 → 영상 캡처 모드가 영상에 직접 그려 넣는다(09, 대본 c.title·c.ending, burn).
      o = {ribbon:'원더룹', logo:'산타 마을 탐방', sub, sub2, kind:'title'|'ending', deco(g, 첫글자 정보)}, t = 나온 뒤 흐른 초, a = 불투명도.
-   - logoEl({ribbon, logo, sub}): 같은 모양의 HTML(게임 첫 화면·엔딩 화면용).
+   - logoEl({ribbon, logo, sub, kind}): 같은 모양의 HTML(게임 첫 화면·엔딩 화면용, kind:'ending'이면 게임 엔딩 로고 크기).
    세계마다 다른 꾸밈(개미굴의 첫 글자 더듬이 같은 것)은 deco로 넘긴다. 이 파일에는 세계 전용 그림을 넣지 않는다. */
 const FONT='"Jua","Gowun Dodum",sans-serif';
 const RIB_FONT='"Gowun Dodum","Apple SD Gothic Neo",sans-serif';   // 리본 글씨: 개미굴 게임 .ribbon과 같이 Gowun Dodum 보통 굵기(400)
@@ -33,8 +33,10 @@ function shade(g,W,H,a){g.save();g.globalAlpha=a*.55;const gr=g.createLinearGrad
 /* 로고 크기: 기준 높이 1080에서 타이틀 190px·엔딩 170px, 화면 폭의 86%를 넘지 않게(세로 영상) */
 function fit(g,text,base,W){g.save();g.font=base+'px '+FONT;const w=[...text].reduce((s,c)=>s+(c===' '?base*.28:g.measureText(c).width*1.02),0);g.restore();return Math.min(base,base*W*.86/Math.max(1,w));}
 function drawTitle(g,W,H,o,t,a){if(a<=0)return;const u=Math.min(W,H)/1080,end=o.kind==='ending';
-  shade(g,W,H,a);const sz=fit(g,o.logo||'',(end?170:190)*u,W),top=H*(end?.27:.29),mid=H*(end?.44:.47);
-  const k=clamp(t/.35);if(o.ribbon)ribbon(g,o.ribbon,W/2,top+(1-k)*-40*u,a*k,(end?36:40)*u);
+  // 크기: 개미굴 녹화 페이지에서 실제로 쓴 값(1080 기준 타이틀 리본 40·로고 190, 엔딩 36·170). 로고가 화면 폭에 맞춰 줄면 리본도 같은 배율로
+  // 리본과 로고 사이 간격도 1080 기준 값(타이틀 29%→47%, 엔딩 27%→44%)을 로고 크기에 비례해서 — 세로 화면에서 리본이 떠 보이지 않게
+  const base=(end?170:190)*u,sz=fit(g,o.logo||'',base,W),rs=sz/base,mid=H*(end?.44:.47),gap=(end?.17:.18)*1080*u*rs;
+  shade(g,W,H,a);const k=clamp(t/.35);if(o.ribbon)ribbon(g,o.ribbon,W/2,mid-gap+(1-k)*-40*u,a*k,(end?36:40)*u*rs);
   logo(g,o.logo||'',W/2,mid,t,a,sz,o.deco);
   if(o.sub)subText(g,o.sub,W/2,mid+sz*.95,a*clamp((t-1.6)/.6),(end?54:46)*u);
   if(o.sub2)subText(g,o.sub2,W/2,mid+sz*.95+70*u,a*clamp((t-2.2)/.6),34*u);}
@@ -49,11 +51,12 @@ function css(){if(cssDone)return;cssDone=true;const st=document.createElement('s
   text-shadow:.045em 0 ${INK},-.045em 0 ${INK},0 .045em ${INK},0 -.045em ${INK},.032em .032em ${INK},-.032em .032em ${INK},.032em -.032em ${INK},-.032em -.032em ${INK},0 .085em 0 ${INK},.03em .1em 0 ${INK},-.03em .1em 0 ${INK},0 .13em 0 ${INK},0 .2em .28em rgba(30,14,36,.55);
   animation:wlPop .75s cubic-bezier(.2,1.6,.4,1) both,wlWave 3s ease-in-out infinite;animation-delay:calc(var(--i)*.09s),calc(.9s + var(--i)*.15s)}
 .wl-logo .sub{margin:.4rem 0 0;font-size:1.2rem;color:#fff8ec;text-shadow:0 0 .25em rgba(60,32,18,.8)}
+.wl-logo.ending .logo2{font-size:clamp(2.5rem,10.5vw,5.4rem)}
 @keyframes wlPop{from{opacity:0;transform:translateY(.7em) scale(.2) rotate(var(--r))}to{opacity:1;transform:translateY(0) scale(1) rotate(var(--r))}}
 @keyframes wlWave{0%,100%{transform:translateY(0) rotate(var(--r))}50%{transform:translateY(-.07em) rotate(calc(var(--r) * -1))}}
 @keyframes wlDrop{from{opacity:0;transform:translateY(-1em)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){.wl-logo .logo2 span,.wl-logo .ribbon{animation:none}}`;document.head.appendChild(st);}
-function logoEl({ribbon:rb,logo:text='',sub}={}){css();const el=document.createElement('div');el.className='wl-logo';
+function logoEl({ribbon:rb,logo:text='',sub,kind}={}){css();const el=document.createElement('div');el.className='wl-logo'+(kind==='ending'?' ending':''); // 크기·리본 비율은 개미굴 첫 화면 CSS 그대로(엔딩은 게임 엔딩 로고 크기)
   if(rb){const r=document.createElement('div');r.className='ribbon';const s=document.createElement('span');s.textContent=rb;r.appendChild(s);el.appendChild(r);}
   const h=document.createElement('h2');h.className='logo2';h.setAttribute('aria-label',text);let ci=0;
   [...text].forEach((ch,i)=>{if(ch===' '){h.lastChild&&(h.lastChild.dataset.gap='1');return;}const s=document.createElement('span');s.setAttribute('aria-hidden','true');s.textContent=ch;
