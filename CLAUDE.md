@@ -12,6 +12,7 @@
 - 저장소: `wonderloop-explorer/wonderloop-game` (원더룹 전용 GitHub 조직).
 - 배포: GitHub Pages, `main` 브랜치 루트 → https://wonderloop-explorer.github.io/wonderloop-game/
 - 작업을 마치면 변경 내용을 요약한 커밋 메시지로 `main`에 푸시한다. 푸시 전에 로컬에서 동작을 확인한다.
+- **영상 제작 결과물은 공개 저장소에 커밋하지 않는다.** 영상 캡처 모드로 만든 영상·소리 시점 기록·자막 같은 영상 제작 결과물은 `.gitignore`로 막고(`captures/`, `*.mp4` 등), 보관은 비공개 저장소 `wonderloop-studio`(세계마다 폴더 하나)나 PC에 한다.
 - **버전 표시(캐시):** 커밋 전에 `python3 tools/stamp.py`를 돌린다. `js/`·`assets/`의 실행용 파일 내용 해시를 `index.html`의 importmap(js 파일마다 `?v=`), 시작 모듈 주소, `window.WL_V`(fetch 주소에 붙임)에 써서, Pages에 올리면 방문자가 옛 파일과 새 파일을 섞어 받지 않는다. `git config core.hooksPath tools/hooks`를 켜 두면 커밋할 때 저절로 돈다. 새로 fetch하는 파일 주소에는 `'?v='+window.WL_V`를 붙인다.
 
 ## 코드 구조 (중요)
