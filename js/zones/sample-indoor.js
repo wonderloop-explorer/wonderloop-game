@@ -4,7 +4,8 @@
    - 방 조명은 lights에 넣고 light(env)에서 밝기를 정한다(08이 옛 단위 → 물리 단위로 바꿈).
    - 문: 거실 왼쪽 앞 문 → 견본 야외, 서재 오른쪽 앞 문 → 베이스캠프.
    - 공통 시스템(js/game/) 견본: 서재의 견본 손님(대화, 나침반 받은 뒤 다른 대사), 말 없는 손님(대사 묶음이 비어도 멈추지 않음),
-     거실 한가운데를 밟으면 나레이션 → 안내 카드(이벤트 줄), 거실을 오가는 먼지 뭉치(위협 견본 — 대화·카드가 열리면 멈춘다). */
+     거실 한가운데를 밟으면 나레이션 → 안내 카드(이벤트 줄), 거실을 오가는 먼지 뭉치(위협 견본 — 대화·카드가 열리면 멈춘다),
+     도감 견본(손님과 대화를 마치면 카드 한 장), 숨겨진 비밀 견본(서재 안쪽 책장 옆 — 다가가면 금빛 반짝임). */
 import * as THREE from 'three';
 import {M,PI,add,blob,boxAt,cylAt,group,rawLin,rng} from '../01-textures.js';
 import * as G from '../game/index.js';
@@ -35,7 +36,12 @@ boxAt(0.9,2,0.08,M('#7a4a32','wood'),-5.3,0,D-0.1);boxAt(0.9,2,0.08,M('#7a4a32',
 // 공통 시스템 견본
 const person=(x,z,ry,c)=>{const g=group(x,0,z,ry);cylAt(.17,.22,.62,M(c,'plain'),0,0,0,{parent:g});add(new THREE.SphereGeometry(.21,12,8),M('#ffd6b0','plain'),0,.82,0,{parent:g});blob(x,z,.35,.35,.25);return g;};
 const guest=person(3.7,0.4,-0.7,'#7d8bd0'),quiet=person(-1.6,2.6,2.4,'#b7ab9a');
-G.dialog.npc({name:'견본 손님',root:guest,lines:['어서 와, 여기는 견본 실내야.','방마다 카메라가 바뀌는 거 봤어?'],
+G.codex.setup({world:'sample',name:'견본 도감',
+  cards:[{id:'camera',t:'방마다 카메라',f:'실내 구역은 방마다 카메라가 따로 있어요. 문간을 지나면 그 방을 비춰요.',x:'방 카메라는 방의 가운데와 거리, 돌려 볼 수 있는 각도를 구역 정보에 적어 두고 써요.',where:'견본 실내'},
+         {id:'door',t:'문으로 오가기',f:'문을 밟으면 다른 구역으로 가요.',where:'견본 실내'}],
+  secrets:[{id:'shelf',t:'책장 앞 먼지',f:'오래된 책장 앞에는 먼지가 소복이 쌓여 있어요. 아무도 이 책들을 꺼내 보지 않았나 봐요.',where:'서재'}]});
+G.codex.spot({id:'shelf',pos:[4.8,0,-2.6]}); // 서재 안쪽 구석 (손님과 멀리)
+G.dialog.npc({name:'견본 손님',root:guest,onDone:()=>G.codex.find('camera'),lines:['어서 와, 여기는 견본 실내야.','방마다 카메라가 바뀌는 거 봤어?'],
   variants:[{when:()=>G.state.flags.compass,lines:['어서 와! 배낭에 나침반 키링이 달려 있네.','방마다 카메라가 바뀌는 거 봤어?']}]});
 G.dialog.npc({name:'말 없는 손님',root:quiet,lines:[]}); // 대사 묶음이 비어 있음 → 말 걸 상대로 고르지 않는다
 G.events.area({rect:[-3.6,-2.4,0.4,1.6],event:{id:'sample-hall',run:async e=>{

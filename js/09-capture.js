@@ -4,17 +4,21 @@
    - 게임은 촬영 모드처럼 1/60초씩, 영상 한 프레임(1/30초) = 두 걸음. 기기 성능과 상관없이 끊김 없는 영상.
    - 영상에는 3D 장면(+ 페이지 배경·종이결)만 들어간다. 대화창·안내 카드·결과창·말풍선·걷기 표시 같은 게임 안내는 그리지 않고,
      대사·나레이션·효과음·카드·타이틀은 시점 기록(cues.json)에 남겨 편집 때 놓는다(tools/cues-to-ae.py).
+   - 타이틀·엔딩 로고(js/game/title.js, 개미굴 .logo2 모양)는 영상에 직접 그려 넣을 수 있다. 켜고 끄기: 대본 burnTitles(기본 켜짐)
+     → 구간 burnTitles → c.title/c.ending의 {burn}. 그려 넣어도 시점 기록에는 남는다(burned:true).
    - 구간마다 자동 확인표(check.json): 게임 표시 숨김, 카메라 가림, 원더룹이 잘 보이는지, 같은 장면 반복, 소리 끊김, 타이틀 3초 이상, 나레이션 뒤 3초 여운.
    결과: captures/<세계>/<대본>-<화면비>.mp4 · .cues.json · .check.json (&png 를 붙이면 프레임 PNG도 <대본>-<화면비>-png/ 에)
 
    대본 모양 (견본: tools/capture/sample-indoor.js, 세계 대본은 wonderloop-studio/<세계>/capture/ — 촬영 서버가 /studio/ 로 보여 준다)
-     export default {world:'santa', script:'opening', zone:'basecamp', setup:{outfit:1}, flags:{compass:true},
+     export default {world:'santa', script:'opening', zone:'basecamp', setup:{outfit:1}, flags:{compass:true}, burnTitles:true, titleRibbon:'원더룹', titleDeco:(g,ch)=>{…},
        segments:[{name:'도착', noWL:false, async run(c){ c.place(0,2,0); c.camera('follow'); await c.walk(1,0); await c.settle(); }}]}
    c(구간 안에서 쓰는 것): wait(초) until(조건,최대초) place(x,z,방향) walk(x,z) go(구역,자리) talk(NPC 이름) say(누가,대사,초,소리id)
-     narrate(대사 또는 {text,id}) title(글자,{sec,sub}) camera('follow'|'room'|{az,pol,dist}) set({action,expr,outfit,light,hood})
+     narrate(대사 또는 {text,id}) title(로고 글자,{sec,ribbon,sub,burn}) ending(로고 글자,{sec,ribbon,sub,sub2,burn}) camera('follow'|'room'|{az,pol,dist}) set({action,expr,outfit,light,hood})
      settle(초=3: 나레이션·대화·카드·이벤트가 다 끝난 뒤 여운) flag(이름,값) auto{dialog, linePad, card, result, resultHold} G S WL
-   저절로 하는 것: 대사는 목소리 길이 + 0.6초 뒤 넘김, 안내 카드는 읽을 시간(최소 3.5초) 뒤 닫음, 결과창은 4초 뒤 첫 단추. */
+   저절로 하는 것: 대사는 목소리 길이 + 0.6초 뒤 넘김, 안내 카드·비밀 카드·도감 카드는 읽을 시간(최소 3.5초) 뒤 닫음, 결과창은 4초 뒤 첫 단추, 엔딩 화면은 6초 뒤 첫 단추. */
 import * as THREE from 'three';
+import {drawTitle,fontsReady} from './game/title.js';
+const clamp01=x=>Math.max(0,Math.min(1,x));
 const MUXER='https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.mjs';
 const FPS=30,STEPS=2,ASPECTS={'16x9':[1920,1080],'9x16':[1080,1920]};
 const Q=new URLSearchParams(location.search);
@@ -26,10 +30,12 @@ const yieldTask=()=>new Promise(r=>{const ch=new MessageChannel();ch.port1.onmes
 const frame=document.createElement('canvas'),fg=frame.getContext('2d');
 let grain=null;{const im=new Image();im.onload=()=>{grain=im;};
   im.src="data:image/svg+xml;utf8,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>");}
+const overlays=[];   // 영상에 그려 넣는 타이틀·엔딩 {o, t0(게임 시각), sec}
 function compose(){const W=frame.width,H=frame.height;
   const r=Math.hypot(W*1.2,H*.9)/2,gr=fg.createRadialGradient(W/2,H*.4,0,W/2,H*.4,r);gr.addColorStop(0,'#efe2c9');gr.addColorStop(1,'#e6d3b2');
   fg.globalCompositeOperation='source-over';fg.globalAlpha=1;fg.fillStyle=gr;fg.fillRect(0,0,W,H);
   fg.drawImage(renderer.domElement,0,0,W,H);
+  for(const ov of overlays){const t=G.clock.t-ov.t0;if(t<0||t>ov.sec)continue;drawTitle(fg,W,H,ov.o,t,clamp01(t/.45)*clamp01((ov.sec-t)/.45));}
   if(grain){fg.globalCompositeOperation='multiply';fg.globalAlpha=.2;fg.fillStyle=fg.createPattern(grain,'repeat');fg.fillRect(0,0,W,H);fg.globalCompositeOperation='source-over';fg.globalAlpha=1;}}
 
 /* ---------- 확인표용 기록: 원더룹 화면 위치·가림(0.1초마다), 작은 화면(0.5초마다) ---------- */
@@ -152,7 +158,7 @@ async function take(aspect,opt={}){
   const enc=await encoder(W,H);
   const t0=G.clock.t,n0=G.cues.length,vt=()=>+(G.clock.t-t0).toFixed(4);
   const auto={dialog:true,linePad:.6,card:null,result:0,resultHold:4};let cardT=null,resT=null;
-  const ctx={aspect,samples:[],thumbs:[],cues:[],duration:0};const segs=[];let curSeg=null;
+  const ctx={aspect,samples:[],thumbs:[],cues:[],duration:0};const segs=[];let curSeg=null,curDef=null;overlays.length=0;await fontsReady();
   const c={G,S,WL,auto,get zone(){return window.wlZone.cur;},
     wait:s=>G.core.wait(s),until:(fn,max=60)=>G.core.until(fn,max),
     place:(x,z,ry)=>S.place(x,z,ry),
@@ -164,14 +170,24 @@ async function take(aspect,opt={}){
       if(!G.dialog.startTalk(n))throw new Error('말을 걸 수 없어요: '+name);await G.core.until(()=>!G.dialog.talking(),120);},
     say:(who,text,sec,id)=>G.dialog.say(who,text,sec,id),
     narrate:l=>G.sound.narrate(typeof l==='string'?{text:l}:l),
-    async title(text,o={}){const sec=o.sec??3.5;G.core.cue({kind:'title',text,sub:o.sub||'',dur:sec});await G.core.wait(sec);},
+    title:(text,o={})=>showTitle('title',text,o),ending:(text,o={})=>showTitle('ending',text,o),
     camera(v){if(v==='follow'||v==='room')S.setup({follow:v==='follow'});else S.view(v);},
     set:o=>S.setup(o),flag:(k,v)=>G.state.setFlag(k,v),
-    async settle(sec=3){await G.core.until(()=>!G.sound.narrating()&&!G.dialog.talking()&&!G.ui.noticeShown()&&!G.ui.resultShown()&&!G.events.eventBusy(),120);await G.core.wait(sec);}};
+    async settle(sec=3){await G.core.until(()=>!G.sound.narrating()&&!G.dialog.talking()&&!G.ui.cardShown()&&!G.ui.cardsQueued()&&!G.events.eventBusy(),120);await G.core.wait(sec);}};
+  // 타이틀·엔딩: 그려 넣을지는 호출 {burn} → 구간 burnTitles → 대본 burnTitles(기본 켜짐)
+  async function showTitle(kind,text,o){const end=kind==='ending',sec=o.sec??(end?6:3.5);
+    const burn=o.burn??(curDef&&curDef.burnTitles)??sc.burnTitles??true;
+    const ob={kind,logo:text,ribbon:o.ribbon??(end?(sc.endingRibbon||'탐험가의 대모험'):(sc.titleRibbon||'원더룹')),sub:o.sub||'',sub2:o.sub2||'',deco:o.deco||sc.titleDeco||null};
+    G.core.cue({kind:'title',text,who:end?'엔딩':'타이틀',sub:[ob.sub,ob.sub2].filter(Boolean).join(' / '),dur:sec,burned:!!burn});
+    if(burn)overlays.push({o:ob,t0:G.clock.t,sec});
+    await G.core.wait(sec);}
   function autoTick(){const t=G.clock.t,U=G.ui;
     if(auto.dialog&&G.dialog.talking()){const e=G.dialog.lineEnd();if(e!=null&&t>=e+auto.linePad)G.dialog.act();}
-    if(U.noticeShown()){if(cardT==null)cardT=t;const txt=document.querySelector('#wlNotice .t').textContent+document.querySelector('#wlNotice .s').textContent;
-      const hold=auto.card??Math.max(3.5,txt.replace(/\s+/g,'').length*.07+1.5);if(t-cardT>=hold)U.closeNotice();}else cardT=null;
+    const read=sel=>Math.max(3.5,[...document.querySelectorAll(sel)].map(e=>e.textContent).join('').replace(/\s+/g,'').length*.07+1.5); // 읽을 시간
+    const kind=U.cardShown();if(kind==='notice'||kind==='secret'){if(cardT==null)cardT=t;
+      const hold=auto.card??read(kind==='notice'?'#wlNotice .t,#wlNotice .s':'#wlSecret h2,#wlSecret .f');if(t-cardT>=hold)kind==='notice'?U.closeNotice():U.closeSecret();}
+    else if(kind==='dex'||kind==='book'||kind==='ending'){if(cardT==null)cardT=t;const hold=auto.card??(kind==='ending'?6:read('#wlDex h2,#wlDex .fact'));if(t-cardT>=hold&&U.cardClosers[kind])U.cardClosers[kind]();}
+    else cardT=null;
     if(U.resultShown()){if(resT==null)resT=t;if(auto.result!=null&&t-resT>=auto.resultHold)U.chooseResult(auto.result);}else resT=null;}
   let fi=0,pngQ=[];
   async function grab(){if(renderer.domElement.width!==W||renderer.domElement.height!==H)S.size(W,H);
@@ -183,7 +199,7 @@ async function take(aspect,opt={}){
   // 시작 화면 → 구간들을 차례로
   renderer.render(S.scene,S.camera);await grab();
   let done=false,err=null;const MAX=(sc.max||600)*FPS;
-  (async()=>{for(const sg of sc.segments){curSeg={name:sg.name,t0:vt(),noWL:!!sg.noWL};segs.push(curSeg);msg(`${sg.name} 녹화 중…`);await sg.run(c);curSeg.t1=vt();}})()
+  (async()=>{for(const sg of sc.segments){curDef=sg;curSeg={name:sg.name,t0:vt(),noWL:!!sg.noWL};segs.push(curSeg);msg(`${sg.name} 녹화 중…`);await sg.run(c);curSeg.t1=vt();}})()
     .catch(e=>{err=e;}).finally(()=>{done=true;});
   await yieldTask();
   while(!done&&!stop&&fi<MAX){S.step(STEPS);await grab();autoTick();await yieldTask();

@@ -9,7 +9,8 @@
   - 화면비마다 컴포지션 하나(16:9, 9:16)를 만들고, 녹화 영상을 맨 아래 레이어로 놓는다.
   - 나레이션·대사·효과음 파일을 기록된 시점(t)에 레이어로 놓는다. 끊긴 나레이션은 끊긴 곳에서 자른다.
   - 대사·나레이션마다 마커에 "말한 이: 대사"를 적는다(영상 레이어와 소리 레이어 둘 다, 마커 길이 = 대사 길이).
-  - 타이틀·안내 카드는 영상에 그려지지 않으므로 영상 레이어 마커("타이틀: …", "카드 · 미션: 제목 / 설명")로 남긴다.
+  - 안내 카드는 영상에 그려지지 않으므로 영상 레이어 마커("카드 · 미션: 제목 / 설명")로 남긴다. 타이틀·엔딩도 마커로 남기고,
+    영상에 직접 그려 넣은 것은 "(영상에 그림)"을 붙인다.
   - 구간(segments)은 컴포지션 마커로 놓는다(구간 이름, 길이).
   - 파일이 없는 대사(아직 녹음 전)는 마커만 놓고, 끝나면 못 찾은 파일 목록을 알려 준다.
   - 프로젝트 패널에 "원더룹 <대본>" 폴더를 만들어 영상·소리를 정리한다.
@@ -85,7 +86,7 @@ JSX = r'''// 원더룹 — 소리 시점 기록을 애프터이펙트에 놓는 
     var it = app.project.importFile(new ImportOptions(f)); it.parentFolder = bin; cache[p.abs] = it; return it;
   }
   function mark(layer, time, c) {
-    var t = c.kind === "title" ? c.kindKo + ": " + c.text + (c.sub ? " / " + c.sub : "")
+    var t = c.kind === "title" ? (c.who || c.kindKo) + ": " + c.text + (c.sub ? " / " + c.sub : "") + (c.burned ? " (영상에 그림)" : "")
           : c.kind === "card" ? c.kindKo + " \u00b7 " + (c.who ? c.who + ": " : "") + c.text + (c.sub ? " / " + c.sub : "")
           : (c.who || c.kindKo) + ": " + c.text;
     var m = new MarkerValue(t);
@@ -147,7 +148,7 @@ def main():
                       'width': d['width'], 'height': d['height'], 'fps': d['fps'], 'duration': round(d['duration'], 4), 'video': d['videoPath'],
                       'cues': [{'t': c['t'], 'dur': c.get('dur') or 0, 'cut': c.get('cut'), 'kind': c.get('kind', 'sfx'), 'kindKo': KIND_KO.get(c.get('kind'), c.get('kind')),
                                 'label': LABEL.get(c.get('kind'), 0), 'id': c.get('id') or '', 'text': c.get('text') or '', 'who': c.get('who') or '',
-                                'sub': c.get('sub') or '', 'path': c['path']}
+                                'sub': c.get('sub') or '', 'burned': bool(c.get('burned')), 'path': c['path']}
                                for c in sorted(d.get('cues', []), key=lambda c: c['t'])],
                       'segments': [{'name': s.get('name', ''), 't': s.get('t', 0), 'dur': s.get('dur', 0)} for s in d.get('segments', [])]})
     first = json.load(open(a.cues[0], encoding='utf-8'))

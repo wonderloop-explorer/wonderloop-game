@@ -1,5 +1,6 @@
 /* 공통 시스템(js/game/) 규칙 자동 시험 — http://localhost:8000/?shot&zonetest&zone=sample-indoor 에서 (페이지가 다 뜬 뒤)
    (await import('/tools/game-tests.js')).run()  →  [{규칙, 통과, 내용}]
+   규칙 12개(대사 묶음·혼잣말·이벤트 줄·위협 멈춤·나레이션 다시·나레이션 기다림·프레임 오류·안내 표시·나침반 키링·영역 트리거·카드 줄 세우기·도감과 비밀).
    촬영 모드라 게임 시간은 wlShot.step(n)으로만 흐른다(1/60초씩) → 매번 같은 결과. 견본 실내의 NPC·이벤트·먼지 뭉치를 쓴다. */
 const STEP = 1 / 60;
 export async function run() {
@@ -9,7 +10,7 @@ export async function run() {
   const press = () => { for (const ty of ['keydown', 'keyup']) window.dispatchEvent(new KeyboardEvent(ty, { code: 'KeyE' })); };
   const stand = (o, dx = .9) => { const w = o.getWorldPosition(WL.position.clone()); WL.position.set(w.x + dx, 0, w.z); sec(.1); };
   const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
-  const reset = async () => { G.dialog.endTalk(); G.ui.closeNotice(); sec(.5); await flush(); };
+  const reset = async () => { G.dialog.endTalk(); G.ui.clearCards(); sec(.5); await flush(); };
   s.setup({ outfit: 1 }); sec(.5);
 
   // 1. 대사 묶음이 비어 있어도 멈추지 않는다
@@ -19,7 +20,7 @@ export async function run() {
   // 2. 대화 중에는 혼잣말이 끼어들지 않는다
   { await reset(); stand(Z.guest); press(); sec(.2); const who = () => document.querySelector('#wlDlg .who').textContent;
     let said = false; G.dialog.say('먼지 뭉치', '콜록콜록!', 1.5).then(() => said = true); sec(2);
-    const during = who(); press(); sec(.3); press(); sec(.3); const after = G.dialog.talking(); sec(.2); const shown = who(); sec(3); await flush();
+    const during = who(); press(); sec(.3); press(); sec(.3); const after = G.dialog.talking(); if (G.ui.cardShown() === 'dex') G.codex.closeDex(); /* 대화를 마치면 도감 카드(견본) */ sec(.2); const shown = who(); sec(3); await flush();
     ok('대화 중 혼잣말 끼어들지 않기', during === '견본 손님' && !after && shown === '먼지 뭉치' && said, `대화 중 화면: ${during} → 대화 끝난 뒤: ${shown}`); }
 
   // 3. 동시에 일어난 이벤트는 줄을 서서 하나씩
@@ -68,5 +69,33 @@ export async function run() {
   { await reset(); const n0 = G.cues.length; WL.position.set(-3, 0, 1); for (let i = 0; i < 8 * 60 && !G.ui.noticeShown(); i++) { sec(STEP); await flush(); }
     const nar = G.cues.slice(n0).find(c => c.kind === 'narration'); const card = G.ui.noticeShown(); G.ui.closeNotice(); sec(.2); await flush();
     ok('영역 트리거 → 나레이션 → 카드', !!nar && card && document.getElementById('wlQuest').textContent.includes('견본 손님'), `나레이션 ${nar ? nar.t + '초' : '없음'}, 카드 ${card}, 할 일 문구 바뀜`); }
+
+  // 11. 결과창과 비밀 카드는 동시에 표시하지 않는다 (줄 세우기)
+  { await reset(); const log = []; const shown = () => ['notice', 'result', 'secret'].filter(k => document.getElementById({ notice: 'wlNotice', result: 'wlResult', secret: 'wlSecret' }[k])
+      .matches(k === 'notice' ? '.on' : '[style*="grid"]'));
+    G.ui.result({ title: '탐험 성공', text: '', buttons: [{ label: '계속' }] }).then(() => log.push('결과 닫힘'));
+    G.ui.secret({ title: '숨겨진 비밀', text: '시험 비밀' }).then(() => log.push('비밀 닫힘'));
+    G.ui.notice({ title: '안내', text: '' }).then(() => log.push('안내 닫힘'));
+    sec(1); const a = shown(); G.ui.chooseResult(0); await flush(); sec(.2); const b = shown(); G.ui.closeSecret(); await flush(); sec(.2); const c = shown(); const blockedC = G.core.blocking();
+    G.ui.closeNotice(); await flush(); sec(.2); const d = shown();
+    const one = [a, b, c].every(x => x.length === 1);
+    ok('결과창·비밀 카드 줄 세우기', one && a[0] === 'result' && b[0] === 'secret' && c[0] === 'notice' && !d.length && blockedC && log.join() === '결과 닫힘,비밀 닫힘,안내 닫힘',
+      `보인 카드: ${[a, b, c, d].map(x => x.join('+') || '없음').join(' → ')} (한 번에 하나, 들어온 순서)`); }
+
+  // 12. 도감·비밀·엔딩: 카드는 한 번만, 결과창과 줄 서기, 비밀 반짝임(영상에서 숨김)과 찾기, 엔딩 개수
+  { await reset(); const C = G.codex, notes = []; const p0 = C.progress();
+    const first = C.find('door'), again = C.find('door'); sec(.3); await flush(); const dexOn = G.ui.cardShown() === 'dex';
+    G.ui.result({ title: '결과', text: '', buttons: [{ label: '계속' }], note: C.secretLine() }); sec(.5); const resWaits = G.ui.cardShown() === 'dex' && G.ui.cardsQueued() === 1;
+    C.closeDex(); await flush(); sec(.2); const resNow = G.ui.cardShown() === 'result'; const note = document.querySelector('#wlResult p.sec').textContent; G.ui.chooseResult(0); await flush();
+    notes.push(`도감 ${p0.cards[0]}→${C.progress().cards[0]}/${p0.cards[1]}, 다시 찾기 ${again === false ? '막힘' : '열림'}, 결과창 줄 서기 ${resWaits && resNow}, 결과창 비밀 줄 "${note}"`);
+    // 비밀: 5m → 반짝임, 영상 모드에서 숨김, 1m → 비밀 카드
+    WL.position.set(4.8 - 4.5, 0, -2.6); sec(.2); const sp = [...G.ui.hintObjs].find(o => o.isSprite && o.material.blending === 2);
+    const glow = !!(sp && sp.visible && sp.parent && sp.material.opacity > 0); G.ui.setHints(false); sec(.1); const hid = !(sp && sp.visible && sp.parent); G.ui.setHints(true);
+    WL.position.set(4.8 - .8, 0, -2.6); sec(.3); await flush(); const sec1 = G.ui.cardShown() === 'secret' && document.querySelector('#wlSecret .n').textContent;
+    G.ui.closeSecret(); await flush(); sec(.3); const noAgain = !G.ui.cardShown() && !(sp && sp.parent);
+    notes.push(`반짝임 ${glow}·영상에서 숨김 ${hid}, 비밀 카드 "${sec1}", 찾은 뒤 반짝임 없음 ${noAgain}`);
+    let ended = -1; C.ending({ logo: '견본 탐험 끝', buttons: [{ label: '처음으로' }] }).then(i => ended = i); sec(.2); const stat = document.querySelector('#wlEnd .stat').textContent;
+    G.ui.cardClosers.ending(); await flush(); notes.push(`엔딩 "${stat}" → 닫힘 ${ended === 0}`);
+    ok('도감·비밀·엔딩', first && again === false && dexOn && resWaits && resNow && note === '✦ 발견한 비밀 0/1' && glow && hid && sec1 === '✦ 발견한 비밀 1/1' && noAgain && /견본 도감 \d\/2 · ✦ 발견한 비밀 1\/1/.test(stat) && ended === 0, notes.join(' / ')); }
   return out;
 }
