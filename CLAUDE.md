@@ -95,6 +95,23 @@
   - 어두운 곳에서는 림 라이트로 캐릭터를 강조한다. 얼굴 부품도 빛을 받는 재질이어야 한다.
 - 색·재질 값은 캐릭터 시트 오른쪽 패널을 따른다.
 
+## 작업별로 쓸 스킬
+해당 작업을 시작하기 전에 그 스킬의 SKILL.md를 먼저 읽고 따른다(`~/.claude/skills/`, 받아 둔 묶음 `~/Downloads/Ref/*-skills-bundle`). 스킬은 일반 지침이라, 이 파일의 원더룹 규칙(화면 기준 유지, 요청한 부분만, 기준 촬영 비교, 시험 브라우저 소리 끄기 등)과 부딪치면 이 파일이 먼저다.
+
+| 작업 | 먼저 읽을 스킬 | 원더룹에서 닿는 곳 |
+|---|---|---|
+| 새 세계 기획·대본·도감 문구·녹음·자막·영상 확인 | `wonderloop` (원더룹 제작 기준서, wonderloop-studio — 이 세션에서 고치지 않음) | 세계 콘텐츠 전부 |
+| 카메라(방 카메라·따라가기·가림·세로/가로 구도) | `build-game-camera-controls` | 03 `setAreaCamera`·`followDist`, 08 따라가기, 영상 확인표 "카메라 가림" |
+| 휴대폰 화면·터치·세로/가로·안전 영역 | `build-mobile-threejs-games` | "휴대폰 확인 순서", `tools/phone-check.js`, `js/game/ui.js` 카드 |
+| 성능(드로우콜·삼각형·모바일 품질 단계, 로드맵 6) | `optimize-threejs-games` | 성능 예산, 화면 통계, 03 병합, 07 아틀라스 |
+| 소리(효과음·대사·나레이션·무음 모드·소리 깨우기) | `build-game-audio-feedback` | `js/game/sound.js`, 휴대폰 무음 모드 확인 |
+| 플레이 시험·회귀 확인 | `test-playable-web-games` | `tools/game-tests.js`, 기준 촬영(`baseline-shots`·`rig-shots`), 견본 구역 |
+| 브라우저 자동화 스크립트 | `webapp-testing` (Playwright: `python3`에 설치됨, 헤드리스 + `--mute-audio`, 끝나면 닫기) | 위 시험들을 돌리는 도구 |
+| 배포·Pages 확인 | `ship-web-games` | `tools/stamp.py` → 커밋·푸시 → Pages에서 콘솔·404·규칙 시험 |
+| 영상 자르기·변환·프레임 뽑기 | `ffmpeg-cli` | `captures/` 영상, PNG 프레임 → mp4, 확인용 장면 뽑기 |
+| 화면·로고·카드를 새로 만들거나 바꾸기 | `frontend-design` → 만드는 동안 `no-ai-design-slop` | `js/game/title.js`·`ui.js`·`codex.js`, 게임 첫 화면 |
+| 디자인 점검(평가만, 고치지 않음) | `audit-ai-design-slop` | 시안·카드·대화창 점검 |
+
 ## 작업 방식
 - 보고와 설명은 항상 한국어로 한다.
 - 사용자가 요청한 부분만 바꾼다. 형태나 디자인을 임의로 바꾸지 않는다 (예: "모자를 머리에 맞게 씌워 줘"는 모자 모양을 바꾸라는 뜻이 아니다).
