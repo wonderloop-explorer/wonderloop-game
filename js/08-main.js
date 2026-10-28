@@ -6,7 +6,7 @@ import {ROOM_T,camera,controls,fill,follow,hemi,optimized,renderer,setAreaCamera
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
-import {hopWL,setWalkTarget,stopWalk,updateWL,wlHit} from './07-actions.js';
+import {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph=true,night=0,nightTarget=0,spin=false,spinDir=1;
@@ -95,7 +95,11 @@ if(SHOT){
   const clickUntil=(id,ok)=>{const b=document.getElementById(id);for(let i=0;i<12&&!ok();i++)b.click();};
   window.wlShot={
     revision:THREE.REVISION,scene,renderer,camera,WL,game:GAME,
-    size(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();},
+    /* 화면 크기(영상 캡처: 1920×1080, 1080×1920). 방 카메라 거리도 새 화면비로 다시 잡는다(세로 화면은 멀리) */
+    size(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const A=zone.cur.areas[zone.area];if(A){setAreaCamera(A.camera,false);if(!follow)ui.camGoal=ui.dist;}},
+    /* 원더룹을 그 자리에 세운다 (영상 캡처 구간 시작) */
+    place(x,z,ry){stopWalk();WL.position.set(x,groundY(x,z),z);if(ry!=null)WL.rotation.y=ry;const a=areaAt(x,z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(zone.cur.areas[a].camera,false);}},
+    walking,go:goZone,get follow(){return follow;},
     setup(o){
       if(o.light!=null)clickUntil('dayBtn',()=>lightState===o.light);
       if(o.hood!=null)clickUntil('hoodBtn',()=>WL.userData.hw===o.hood);
@@ -117,3 +121,5 @@ if(SHOT){
   };
 }
 rngLoaded(); // 로딩 끝 (난수 기록 모드면 여기서 기록을 저장)
+// 영상 캡처 모드(?shot&capture=대본.js): 촬영 도구가 다 준비된 뒤에 불러온다 (09-capture.js)
+if(SHOT&&new URLSearchParams(location.search).has('capture'))import('./09-capture.js');

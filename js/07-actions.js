@@ -4,6 +4,7 @@ import {PI,blobTex,lin,pencil,rng,scene,softMat} from './01-textures.js';
 const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로딩 뒤 첫 난수를 이어 썼다)
 import {blocked,groundY} from './02-zone.js';
 import {flags} from './game/state.js';
+import {hint} from './game/ui.js';
 import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
 /* 작은 부품은 그림자를 드리우지 않게 (그림자용으로 한 번 더 그리는 비용 절약) */
 WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.isMesh||!o.castShadow)return;o.geometry.computeBoundingSphere();o.getWorldScale(sc);if(o.geometry.boundingSphere.radius*Math.max(sc.x,sc.y,sc.z)<.1)o.castShadow=false;});}
@@ -16,7 +17,7 @@ WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.i
    m.customProgramCacheKey=()=> 'wlrim';});});}
 const wlBlob=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.95),softMat(blobTex,0.45));wlBlob.rotation.x=-PI/2;scene.add(wlBlob);
 const wlHit=[];WL.traverse(o=>{if(o.isMesh)wlHit.push(o);});
-const marker=new THREE.Mesh(new THREE.RingGeometry(0.16,0.24,24),new THREE.MeshBasicMaterial({color:lin('#3fb5a8'),transparent:true,opacity:0,depthWrite:false}));marker.rotation.x=-PI/2;scene.add(marker);
+const marker=new THREE.Mesh(new THREE.RingGeometry(0.16,0.24,24),new THREE.MeshBasicMaterial({color:lin('#3fb5a8'),transparent:true,opacity:0,depthWrite:false}));marker.rotation.x=-PI/2;scene.add(marker);hint(marker); // 걷기 목표 표시 = 안내 표시(영상에서는 숨김)
 let wlTarget=null,wlHop=0,wlPhase=0,blinkT=2.5,markerA=0;
 // 걸을 수 있는 곳·장애물·땅 높이는 지금 구역이 정한다 (02 blocked·groundY)
 function hopWL(){if(wlHop<=0)wlHop=1;}
@@ -223,4 +224,5 @@ function updateWL(dt,t){
   spine.rotation.copy(body.rotation);spine.position.copy(body.position).add(_hv.set(0,HIP,0).applyEuler(body.rotation));spine.position.y-=HIP;
   rigSync();
 }
-export {hopWL,setWalkTarget,stopWalk,updateWL,wlHit};
+const walking=()=>!!wlTarget; // 영상 캡처: 걸어가서 도착했는지
+export {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit};

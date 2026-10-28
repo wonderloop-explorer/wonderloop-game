@@ -49,4 +49,6 @@ function initDialog(c){ctx=c;makeBubble(c.scene);
   document.getElementById('wlAct').addEventListener('pointerdown',e=>{e.preventDefault();act();});}
 function clearDialog(){if(talk)endTalk();NPCS.length=0;near=null;}
 const talking=()=>!!talk;
-export {act,clearDialog,clickNPC,endTalk,initDialog,linesOf,npc,say,startTalk,talkable,talking,tickDialog};
+const findNPC=name=>NPCS.find(n=>n.name===name)||null;
+const lineEnd=()=>talk&&talk.h?talk.h.end:null; // 지금 대사(목소리)가 끝나는 게임 시각 — 영상 캡처가 대사를 저절로 넘길 때
+export {act,clearDialog,clickNPC,endTalk,findNPC,initDialog,lineEnd,linesOf,npc,say,startTalk,talkable,talking,tickDialog};

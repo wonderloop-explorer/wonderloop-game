@@ -1,8 +1,9 @@
 /* 원더룹 — 화면 카드: 대화창·안내 카드·결과 화면·할 일 문구·말 걸기 안내 (개미굴 편 카드 모양을 옮긴 것)
    카드가 열려 있는 동안은 core.block()으로 "막힘"을 알린다 → 위협 멈춤, 나레이션 다시, 혼잣말·이벤트 기다림.
    안내 표시(hint): 돋보기·말풍선·!·이름표·길 안내 점선 같은 게임 안내는 hint()로 등록한다.
-   setHints(false) 한 번으로 모두 숨긴다(영상 캡처 모드). three 물체는 hint 레이어(5)에도 넣어 둔다. */
-import {block} from './core.js';
+   setHints(false) 한 번으로 모두 숨긴다(영상 캡처 모드). three 물체는 hint 레이어(5)에도 넣어 둔다.
+   안내 카드·결과 화면이 열린 때와 길이는 시점 기록(kind 'card')에 남는다 → 영상에는 카드가 그려지지 않으므로 편집 때 마커로 다시 얹는다. */
+import {block,clock,cue} from './core.js';
 const HINT_LAYER=5;
 const css=`
 .wlg{--panel:rgba(255,246,234,.96);--bubble:#fffaf2;--ink:#3e2834;--ink-soft:#75565e;--accent:#3f9fa0;--accent-ink:#fffaf2;--tag:#f2b63c;--tag-ink:#3e2834;
@@ -52,20 +53,24 @@ function showDialog(who,text,more){dlg.querySelector('.who').textContent=who||''
 function hideDialog(){dlg.style.display='none';}
 const dialogShown=()=>dlg.style.display==='block';
 /* 안내 카드 (미션·알림): 아무 키나 누르면 닫힘. 닫힐 때 resolve */
-const nt=$('#wlNotice');let ntDone=null,ntOpenT=0;
+const nt=$('#wlNotice');let ntDone=null,ntOpenT=0,ntCue=null;
+const endCue=c=>{if(c)c.dur=+(clock.t-c.t).toFixed(4);};
 function notice({kicker='미션',title='',text='',icon=null}){return new Promise(r=>{if(ntDone)ntDone();ntDone=r;nt.querySelector('.k').textContent=kicker;nt.querySelector('.t').textContent=title;nt.querySelector('.s').textContent=text;
   const img=nt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');nt.querySelector('.h').textContent=coarse?'화면을 누르면 닫혀요':'아무 키나 누르면 닫혀요';
+  endCue(ntCue);ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});
   nt.classList.add('on');ntOpenT=performance.now();block('notice',true);});}
-function closeNotice(){if(!nt.classList.contains('on'))return;nt.classList.remove('on');block('notice',false);const d=ntDone;ntDone=null;if(d)d();}
+function closeNotice(){if(!nt.classList.contains('on'))return;nt.classList.remove('on');endCue(ntCue);ntCue=null;block('notice',false);const d=ntDone;ntDone=null;if(d)d();}
 const noticeShown=()=>nt.classList.contains('on');
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,e=>{if(noticeShown()&&performance.now()-ntOpenT>600&&!(e.target&&e.target.closest&&e.target.closest('#wlResult')))closeNotice();}));
 /* 결과 화면: result({title,text,buttons:[{label,act}]}) → 누른 단추의 번호로 resolve */
-const rs=$('#wlResult');
+const rs=$('#wlResult');let rsCue=null;
 function result({title,text,buttons=[]}){return new Promise(r=>{rs.querySelector('h2').textContent=title;rs.querySelector('p').textContent=text;
   ['.b1','.b2'].forEach((s,i)=>{const b=rs.querySelector(s),B=buttons[i];b.style.display=B?'':'none';if(!B)return;b.textContent=B.label;
-    b.onclick=()=>{rs.style.display='none';block('result',false);try{B.act&&B.act();}finally{r(i);}};});
+    b.onclick=()=>{rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;try{B.act&&B.act();}finally{r(i);}};});
+  endCue(rsCue);rsCue=cue({kind:'card',who:'결과',text:title,sub:text,dur:0});
   rs.style.display='grid';block('result',true);});}
 const resultShown=()=>rs.style.display==='grid';
+function chooseResult(i=0){if(!resultShown())return false;const b=rs.querySelector(i?'.b2':'.b1');if(b.style.display==='none'||!b.onclick)return false;b.onclick();return true;} // 영상 캡처·시험용
 /* 할 일 문구·말 걸기 안내 */
 const quest=$('#wlQuest'),prompt=$('#wlPrompt'),act=$('#wlAct');
 function setQuest(t){quest.textContent=t||'';quest.style.display=t?'block':'none';}
@@ -75,4 +80,4 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {HINT_LAYER,act as actButton,closeNotice,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {HINT_LAYER,act as actButton,chooseResult,closeNotice,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};

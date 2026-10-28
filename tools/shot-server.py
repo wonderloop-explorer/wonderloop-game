@@ -5,17 +5,29 @@
   fetch('/save?path=baseline/r128/room-day.png', {method:'POST', body: wlShot.capture()})
 처럼 data URL을 보내면 docs/baseline/r128/room-day.png 로 저장된다.
 path가 ../assets/로 시작하면 assets/ 아래 정해진 곳에 저장한다 (models: .glb, rand: .json, textures: .webp·.json).
+path가 ../captures/로 시작하면 저장소 captures/ 아래에 저장한다 (영상 캡처 모드: .mp4·.json·.png — 공개 저장소에 올리지 않는 폴더).
+/studio/ 주소는 비공개 저장소 wonderloop-studio(저장소 옆 폴더, 또는 환경 변수 WL_STUDIO)를 보여 준다 → 세계 대본 ?capture=/studio/santa/capture/opening.js
 """
 import base64, http.server, os, sys, urllib.parse
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DOCS = os.path.join(ROOT, 'docs')
 ASSETS = {os.path.join(ROOT, 'assets', d): ext for d, ext in {'models': ('.glb',), 'rand': ('.json',), 'textures': ('.webp', '.json')}.items()}
+ASSETS[os.path.join(ROOT, 'captures')] = ('.mp4', '.json', '.png')
+STUDIO = os.path.abspath(os.environ.get('WL_STUDIO') or os.path.join(ROOT, '..', 'wonderloop-studio'))
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
+
+    def translate_path(self, path):
+        p = urllib.parse.unquote(urllib.parse.urlparse(path).path)
+        if p.startswith('/studio/') and os.path.isdir(STUDIO):
+            dest = os.path.abspath(os.path.join(STUDIO, p[len('/studio/'):]))
+            if dest.startswith(STUDIO + os.sep):
+                return dest
+        return super().translate_path(path)
 
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store')

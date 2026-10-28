@@ -23,7 +23,7 @@ function tts(text,who){if(!S.tts||!('speechSynthesis' in window)||!text)return;t
 /* 목소리 하나 (대사·나레이션 공통): {id,text,who,kind} → {dur, stop()} */
 function voice(v){const dur=LEN[v.id]||estimate(v.text);const src=v.id?play(v.id):null;if(!src){if(v.id&&SRC[v.id])load(v.id);tts(v.text,v.who);}
   const c=cue({kind:v.kind||'dialogue',id:v.id||null,file:SRC[v.id]||null,text:v.text||'',who:v.who||'',dur:+dur.toFixed(3)});
-  return {dur,end:clock.t+dur,cue:c,stop(){if(src)try{src.stop();}catch(e){}if(S.tts)try{speechSynthesis.cancel();}catch(e){}c.cut=+(clock.t-c.t).toFixed(4);}};}
+  return {dur,end:clock.t+dur,cue:c,stop(){if(src)try{src.stop();}catch(e){}if(S.tts)try{speechSynthesis.cancel();}catch(e){}if(clock.t<c.t+dur-1e-3)c.cut=+(clock.t-c.t).toFixed(4);}};} // 다 끝난 뒤 멈추면 끊김 아님
 /* 나레이션 줄 */
 const NQ=[];let cur=null;
 function narrate(line){return new Promise(done=>{NQ.push(Object.assign({},line,{done,plays:0}));});}

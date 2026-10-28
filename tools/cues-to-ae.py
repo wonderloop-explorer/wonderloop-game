@@ -9,6 +9,8 @@
   - 화면비마다 컴포지션 하나(16:9, 9:16)를 만들고, 녹화 영상을 맨 아래 레이어로 놓는다.
   - 나레이션·대사·효과음 파일을 기록된 시점(t)에 레이어로 놓는다. 끊긴 나레이션은 끊긴 곳에서 자른다.
   - 대사·나레이션마다 마커에 "말한 이: 대사"를 적는다(영상 레이어와 소리 레이어 둘 다, 마커 길이 = 대사 길이).
+  - 타이틀·안내 카드는 영상에 그려지지 않으므로 영상 레이어 마커("타이틀: …", "카드 · 미션: 제목 / 설명")로 남긴다.
+  - 구간(segments)은 컴포지션 마커로 놓는다(구간 이름, 길이).
   - 파일이 없는 대사(아직 녹음 전)는 마커만 놓고, 끝나면 못 찾은 파일 목록을 알려 준다.
   - 프로젝트 패널에 "원더룹 <대본>" 폴더를 만들어 영상·소리를 정리한다.
 
@@ -17,13 +19,14 @@ cues.json 모양 (영상 캡처 모드가 쓴다):
    "video":"opening-16x9.mp4",
    "cues":[{"t":1.2,"dur":2.4,"kind":"narration|dialogue|sfx|music","id":"n01","file":"assets/sounds/santa/n01.mp3","text":"…","who":"…","cut":null}]}
   video·file 경로는 cues.json이 있는 폴더 기준, 아니면 저장소 기준, 아니면 --sounds 폴더에서 파일 이름으로 찾는다.
-  .jsx에는 찾은 파일의 절대 경로를 적고, 애프터이펙트에서 그 경로에 없으면 .jsx 옆에서 같은 이름을 찾는다.
+  .jsx에는 찾은 파일의 절대 경로와 .jsx 기준 상대 경로를 적는다. 애프터이펙트에서 절대 경로에 없으면
+  .jsx 기준 상대 경로, 그다음 .jsx 옆의 같은 이름 순서로 찾는다(폴더째 옮겨도 열리게).
 """
 import argparse, json, os, re, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 LABEL = {'narration': 9, 'dialogue': 11, 'sfx': 2, 'music': 5}   # 애프터이펙트 라벨 색: 9 초록, 11 주황, 2 노랑, 5 라벤더
-KIND_KO = {'narration': '나레이션', 'dialogue': '대사', 'sfx': '효과음', 'music': '음악'}
+KIND_KO = {'narration': '나레이션', 'dialogue': '대사', 'sfx': '효과음', 'music': '음악', 'title': '타이틀', 'card': '카드'}
 
 
 def js_ascii(s):
@@ -69,19 +72,23 @@ JSX = r'''// 원더룹 — 소리 시점 기록을 애프터이펙트에 놓는 
 (function () {
   var DATA = __DATA__;
   var here = new File($.fileName).parent;
-  function pick(p) {                       // 적힌 경로 → 없으면 .jsx 옆에서 같은 이름
+  function pick(p) {                       // 적힌 경로 → .jsx 기준 상대 경로 → .jsx 옆의 같은 이름
     if (!p) return null;
-    var f = new File(p); if (f.exists) return f;
+    var f = new File(p.abs); if (f.exists) return f;
+    if (p.rel) { var r = new File(here.fsName + "/" + p.rel); if (r.exists) return r; }
     var g = new File(here.fsName + "/" + f.name); return g.exists ? g : null;
   }
   var cache = {}, missing = [];
   function footage(p, bin) {
-    if (cache[p]) return cache[p];
-    var f = pick(p); if (!f) { missing.push(p); return null; }
-    var it = app.project.importFile(new ImportOptions(f)); it.parentFolder = bin; cache[p] = it; return it;
+    if (cache[p.abs]) return cache[p.abs];
+    var f = pick(p); if (!f) { missing.push(p.rel || p.abs); return null; }
+    var it = app.project.importFile(new ImportOptions(f)); it.parentFolder = bin; cache[p.abs] = it; return it;
   }
   function mark(layer, time, c) {
-    var m = new MarkerValue((c.who ? c.who + ": " : "") + c.text);
+    var t = c.kind === "title" ? c.kindKo + ": " + c.text + (c.sub ? " / " + c.sub : "")
+          : c.kind === "card" ? c.kindKo + " \u00b7 " + (c.who ? c.who + ": " : "") + c.text + (c.sub ? " / " + c.sub : "")
+          : (c.who || c.kindKo) + ": " + c.text;
+    var m = new MarkerValue(t);
     m.duration = c.cut != null ? c.cut : c.dur;
     layer.property("Marker").setValueAtTime(time, m);
   }
@@ -97,9 +104,13 @@ JSX = r'''// 원더룹 — 소리 시점 기록을 애프터이펙트에 놓는 
     var video = D.video ? footage(D.video, top) : null;
     var vl = video ? comp.layers.add(video) : comp.layers.addNull(D.duration);
     vl.name = video ? "녹화 영상" : "녹화 영상 (파일 없음 — 마커만)";
+    var segMarks = comp.markerProperty || vl.property("Marker");   // 구간: 컴포지션 마커 (옛 버전은 영상 레이어)
+    for (var s = 0; s < D.segments.length; s++) {
+      var sm = new MarkerValue("\u25b6 " + D.segments[s].name); sm.duration = D.segments[s].dur; segMarks.setValueAtTime(D.segments[s].t, sm);
+    }
     for (var k = 0; k < D.cues.length; k++) {
       var c = D.cues[k];
-      if (c.kind === "dialogue" || c.kind === "narration") mark(vl, c.t, c);
+      if (c.kind === "dialogue" || c.kind === "narration" || c.kind === "title" || c.kind === "card") mark(vl, c.t, c);
       if (!c.path) continue;
       var it = footage(c.path, bin); if (!it) continue;
       var l = comp.layers.add(it);
@@ -135,11 +146,19 @@ def main():
         comps.append({'name': f"원더룹 {d.get('script', '')} {aspect.replace('x', ':')}".strip(), 'aspect': aspect.replace('x', ':'),
                       'width': d['width'], 'height': d['height'], 'fps': d['fps'], 'duration': round(d['duration'], 4), 'video': d['videoPath'],
                       'cues': [{'t': c['t'], 'dur': c.get('dur') or 0, 'cut': c.get('cut'), 'kind': c.get('kind', 'sfx'), 'kindKo': KIND_KO.get(c.get('kind'), c.get('kind')),
-                                'label': LABEL.get(c.get('kind'), 0), 'id': c.get('id') or '', 'text': c.get('text') or '', 'who': c.get('who') or '', 'path': c['path']}
-                               for c in sorted(d.get('cues', []), key=lambda c: c['t'])]})
+                                'label': LABEL.get(c.get('kind'), 0), 'id': c.get('id') or '', 'text': c.get('text') or '', 'who': c.get('who') or '',
+                                'sub': c.get('sub') or '', 'path': c['path']}
+                               for c in sorted(d.get('cues', []), key=lambda c: c['t'])],
+                      'segments': [{'name': s.get('name', ''), 't': s.get('t', 0), 'dur': s.get('dur', 0)} for s in d.get('segments', [])]})
     first = json.load(open(a.cues[0], encoding='utf-8'))
     title = f"원더룹 {first.get('world', '')} {first.get('script', '')}".strip()
     out = a.out or os.path.join(os.path.dirname(os.path.abspath(a.cues[0])), (first.get('script') or 'cues') + '.jsx')
+    jdir = os.path.dirname(os.path.abspath(out))
+    ref = lambda p: p and {'abs': p, 'rel': os.path.relpath(p, jdir).replace(os.sep, '/')}
+    for c in comps:
+        c['video'] = ref(c['video'])
+        for q in c['cues']:
+            q['path'] = ref(q['path'])
     data = json.dumps({'title': title, 'comps': comps}, ensure_ascii=True)   # 한글은 \uXXXX로 → 애프터이펙트 인코딩과 상관없이 안전
     # 따옴표 안 글자만 \\uXXXX로 (화면에 나오는 이름·대사가 애프터이펙트 인코딩과 상관없이 안전), 주석은 한국어 그대로 — UTF-8 BOM으로 저장
     src = re.sub(r'"(?:[^"\\\n]|\\.)*"', lambda m: js_ascii(m.group(0)), JSX.replace('__DATA__', data))
