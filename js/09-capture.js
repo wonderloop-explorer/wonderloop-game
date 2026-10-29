@@ -6,7 +6,7 @@
      대사·나레이션·효과음·카드·타이틀은 시점 기록(cues.json)에 남겨 편집 때 놓는다(tools/cues-to-ae.py).
    - 타이틀·엔딩 로고(js/game/title.js, 개미굴 .logo2 모양)는 영상에 직접 그려 넣을 수 있다. 켜고 끄기: 대본 burnTitles(기본 켜짐)
      → 구간 burnTitles → c.title/c.ending의 {burn}. 그려 넣어도 시점 기록에는 남는다(burned:true).
-   - 구간마다 자동 확인표(check.json): 게임 표시 숨김, 카메라 가림, 원더룹이 잘 보이는지, 같은 장면 반복, 소리 끊김, 타이틀 3초 이상, 나레이션 뒤 3초 여운.
+   - 구간마다 자동 확인표(check.json): 게임 표시 숨김, 카메라 가림, 타이틀과 원더룹 겹침, 원더룹이 잘 보이는지, 같은 장면 반복, 소리 끊김, 타이틀 3초 이상, 나레이션 뒤 3초 여운.
    결과: captures/<세계>/<대본>-<화면비>.mp4 · .cues.json · .check.json (&png 를 붙이면 프레임 PNG도 <대본>-<화면비>-png/ 에)
 
    대본 모양 (견본: tools/capture/sample-indoor.js, 세계 대본은 wonderloop-studio/<세계>/capture/ — 촬영 서버가 /studio/ 로 보여 준다)
@@ -30,12 +30,12 @@ const yieldTask=()=>new Promise(r=>{const ch=new MessageChannel();ch.port1.onmes
 const frame=document.createElement('canvas'),fg=frame.getContext('2d');
 let grain=null;{const im=new Image();im.onload=()=>{grain=im;};
   im.src="data:image/svg+xml;utf8,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>");}
-const overlays=[];   // 영상에 그려 넣는 타이틀·엔딩 {o, t0(게임 시각), sec}
+const overlays=[],titleRects=[];   // 영상에 그려 넣는 타이틀·엔딩 {o, t0(게임 시각), sec}, 이번 프레임에 그린 타이틀 영역(픽셀)
 function compose(){const W=frame.width,H=frame.height;
   const r=Math.hypot(W*1.2,H*.9)/2,gr=fg.createRadialGradient(W/2,H*.4,0,W/2,H*.4,r);gr.addColorStop(0,'#efe2c9');gr.addColorStop(1,'#e6d3b2');
   fg.globalCompositeOperation='source-over';fg.globalAlpha=1;fg.fillStyle=gr;fg.fillRect(0,0,W,H);
   fg.drawImage(renderer.domElement,0,0,W,H);
-  for(const ov of overlays){const t=G.clock.t-ov.t0;if(t<0||t>ov.sec)continue;drawTitle(fg,W,H,ov.o,t,clamp01(t/.45)*clamp01((ov.sec-t)/.45));}
+  titleRects.length=0;for(const ov of overlays){const t=G.clock.t-ov.t0;if(t<0||t>ov.sec)continue;const a=clamp01(t/.45)*clamp01((ov.sec-t)/.45),r=drawTitle(fg,W,H,ov.o,t,a);if(r&&a>.5)titleRects.push(r);}
   if(grain){fg.globalCompositeOperation='multiply';fg.globalAlpha=.2;fg.fillStyle=fg.createPattern(grain,'repeat');fg.fillRect(0,0,W,H);fg.globalCompositeOperation='source-over';fg.globalAlpha=1;}}
 
 /* ---------- 확인표용 기록: 원더룹 화면 위치·가림(0.1초마다), 작은 화면(0.5초마다) ---------- */
@@ -57,7 +57,9 @@ function wlSample(){WL.updateMatrixWorld(true);box.makeEmpty();
   const head=bones.head?bones.head.getWorldPosition(new THREE.Vector3()):WL.position.clone().setY(1.2);
   const chest=bones.spine?bones.spine.getWorldPosition(new THREE.Vector3()):WL.position.clone().setY(.7);
   const hintOn=[...G.ui.hintObjs].filter(o=>o.visible&&o.parent).length+(document.body.classList.contains('wl-nohints')?0:1); // 안내 표시가 장면에 남았는지
-  return {inside,h:(y1-y0)/2,cy:1-((y0+y1)/2+1)/2,occ:blockedTo(head)&&blockedTo(chest),hint:hintOn};}
+  const W=frame.width,H=frame.height,rx0=(x0+1)/2*W,rx1=(x1+1)/2*W,ry0=(1-y1)/2*H,ry1=(1-y0)/2*H,parea=Math.max(1,(rx1-rx0)*(ry1-ry0));
+  let tcover=0;for(const r of titleRects){const ix=Math.max(0,Math.min(rx1,r.x1)-Math.max(rx0,r.x0)),iy=Math.max(0,Math.min(ry1,r.y1)-Math.max(ry0,r.y0));tcover=Math.max(tcover,ix*iy/parea);}
+  return {inside,h:(y1-y0)/2,cy:1-((y0+y1)/2+1)/2,occ:blockedTo(head)&&blockedTo(chest),hint:hintOn,title:titleRects.length>0,tcover};}
 const thumbC=document.createElement('canvas'),tg=thumbC.getContext('2d',{willReadFrequently:true});
 function thumb(){tg.drawImage(frame,0,0,thumbC.width,thumbC.height);const d=tg.getImageData(0,0,thumbC.width,thumbC.height).data,g=new Uint8Array(d.length/4);
   for(let i=0;i<g.length;i++)g[i]=(d[i*4]*.3+d[i*4+1]*.59+d[i*4+2]*.11)|0;return g;}
@@ -107,6 +109,10 @@ function checkSegment(seg,all,ctx){const R=[];const inSeg=x=>x.t>=seg.t0-1e-6&&x
   // 5. 타이틀·카드 3초 이상
   {const cs=cues.filter(c=>c.kind==='title'||c.kind==='card');const short=cs.filter(c=>c.dur<3);
     add('타이틀 3초 이상',!cs.length?NA:short.length?FIX:OK,!cs.length?'타이틀·카드 없음':short.length?short.map(c=>`"${c.text}" ${f1(c.dur)}초`).join(', '):cs.map(c=>`"${c.text}" ${f1(c.dur)}초`).join(', '));}
+  // 7. 타이틀과 원더룹 겹침: 영상에 그려 넣은 타이틀·엔딩이 원더룹을 가리는지 (타이틀이 다 나타난 동안)
+  {const ts=smp.filter(s=>s.title);if(seg.noWL||!ts.length)add('타이틀과 원더룹 겹침',NA,seg.noWL?'풍경 구간':'그려 넣은 타이틀 없음');
+    else{const r=runs(ts,s=>s.tcover>.3),mx=Math.max(...ts.map(s=>s.tcover));
+      add('타이틀과 원더룹 겹침',r&&r.b-r.a>=.5?FIX:mx>.05?WARN:OK,mx>.05?`타이틀이 원더룹을 최대 ${Math.round(mx*100)}% 가림${r?` (${f1(r.a)}~${f1(r.b)}초 30% 넘게)`:''} — 카메라를 비키거나 원더룹을 옮기기`:'겹치지 않음');}}
   // 6. 나레이션 뒤 3초 여운
   {const ns=cues.filter(c=>c.kind==='narration');if(!ns.length)add('나레이션 뒤 여운',NA,'나레이션 없음');
     else{const e=Math.max(...ns.map(endOf)),tail=seg.t1-e;add('나레이션 뒤 여운',tail>=3-1e-3?OK:FIX,tail>=0?`마지막 나레이션 뒤 ${f1(tail)}초`:`나레이션이 구간 끝을 ${f1(-tail)}초 넘김`);}}

@@ -16,13 +16,16 @@ export default {
       await c.settle(1.5);
     } },
     { name: '방 전체', async run(c) {
-      c.camera('room'); c.set({ action: '손 흔들기' });
+      c.camera('room');
+      await c.walk(3.4, 3.2);       // 타이틀(화면 가운데 띠) 아래로 비켜 서기 — 확인표 "타이틀과 원더룹 겹침"
+      c.set({ action: '손 흔들기' });
       await c.title('견본 실내 탐방', { sec: 3.5 });   // 영상에 그려 넣음 (대본 burnTitles 기본 켜짐)
       await c.narrate('여기까지가 영상 캡처 견본이에요.');
       await c.settle(3);
       c.set({ action: '서기' });
     } },
     { name: '엔딩', burnTitles: true, async run(c) {   // 구간마다 burnTitles:false로 끄면 마커로만 남는다
+      await c.walk(1.4, 3.6);       // 엔딩은 아래 두 줄까지 내려오므로 더 앞쪽으로
       await c.ending('견본 탐험 끝', { sub: '다음 세계에서 만나요', sub2: '@wonderloop_explorer' });
     } },
   ],

@@ -10,7 +10,7 @@ const css=`
 .wlg{--panel:rgba(255,246,234,.96);--bubble:#fffaf2;--ink:#3e2834;--ink-soft:#75565e;--accent:#3f9fa0;--accent-ink:#fffaf2;--tag:#f2b63c;--tag-ink:#3e2834;
   font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;color:var(--ink)}
 .wlg button{all:unset;box-sizing:border-box;cursor:pointer;font-family:inherit}
-#wlDlg{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 132px);width:min(30rem,calc(100vw - 32px));box-sizing:border-box;
+#wlDlg{cursor:pointer;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 132px);width:min(30rem,calc(100vw - 32px));box-sizing:border-box;
   background:var(--bubble);border-radius:20px;padding:1.3rem 1.2rem .9rem;box-shadow:0 14px 40px rgba(30,14,36,.35);display:none;z-index:20}
 #wlDlg .who{position:absolute;left:16px;top:-14px;background:var(--tag);color:var(--tag-ink);border-radius:999px;padding:.25rem .75rem;font-size:.9rem;font-family:"Jua",sans-serif}
 #wlDlg .line{margin:0;font-size:1.16rem;line-height:1.62}
@@ -43,7 +43,10 @@ const css=`
 #wlSecret .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.95rem}#wlSecret img{width:96px;height:96px;margin:.5rem auto 0;display:block}#wlSecret img:not([src]){display:none}
 #wlSecret h2{margin:.5rem 0 .4rem;font-size:1.45rem;font-weight:400;font-family:"Jua",sans-serif}#wlSecret .f{margin:0;line-height:1.65}#wlSecret .n{margin:.6rem 0 0;color:#9a6a18;font-size:.9rem}#wlSecret .n:empty{display:none}
 #wlSecret button{display:block;width:100%;margin-top:1rem;text-align:center;border-radius:14px;background:#e3ad35;color:#fffaf2;font-size:1.05rem;padding:.75rem 1.2rem}
+#wlAct.below{bottom:calc(env(safe-area-inset-bottom,0px) + 40px);width:68px;height:68px}
 body.wl-nohints .wl-hint{visibility:hidden!important}
+.wlg button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){#wlNotice{transition:none}#wlNotice:not(.on){transform:translate(-50%,0)}}
 @media (max-width:600px){#wlDlg .line{font-size:1.1rem}}`;
 const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="who"></span><p class="line"></p><p class="more"></p></div>
@@ -102,7 +105,8 @@ function clearCards(){CQ.splice(0).forEach(c=>c.r(-1));closeNotice();closeSecret
 /* 할 일 문구·말 걸기 안내 */
 const quest=$('#wlQuest'),prompt=$('#wlPrompt'),act=$('#wlAct');
 function setQuest(t){quest.textContent=t||'';quest.style.display=t?'block':'none';}
-function setPrompt(t){prompt.textContent=t||'';prompt.style.display=t&&!coarse?'block':'none';act.style.display=t&&coarse?'grid':'none';if(t)act.textContent=t.replace(/^E\s*/,'');}
+/* setPrompt(글자, 터치 단추 글자): 키보드 화면은 안내 문구, 터치 화면은 말 걸기 단추. 대화 중에는 문구 없이 터치 단추만("다음"·"닫기") */
+function setPrompt(t,touchOnly){prompt.textContent=t||'';prompt.style.display=t&&!coarse?'block':'none';const b=touchOnly||t;act.style.display=b&&coarse?'grid':'none';if(b)act.textContent=b.replace(/^E\s*/,'');act.classList.toggle('below',!!touchOnly);} // 대화 중에는 대화창 아래로 (대화창이 단추를 덮지 않게)
 /* 안내 표시 묶음 */
 const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}

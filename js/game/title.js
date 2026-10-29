@@ -1,5 +1,5 @@
 /* 원더룹 — 타이틀·엔딩 로고 (개미굴 게임 첫 화면 .logo2 모양: 리본 + 글자마다 색·기울기·두꺼운 갈색 테두리, 튀어 오르며 등장)
-   - drawTitle(g, W, H, o, t, a): 캔버스에 그린다 → 영상 캡처 모드가 영상에 직접 그려 넣는다(09, 대본 c.title·c.ending, burn).
+   - drawTitle(g, W, H, o, t, a) → 그린 영역 {x0,y0,x1,y1}: 캔버스에 그린다 → 영상 캡처 모드가 영상에 직접 그려 넣는다(09, 대본 c.title·c.ending, burn).
      o = {ribbon:'원더룹', logo:'산타 마을 탐방', sub, sub2, kind:'title'|'ending', deco(g, 첫글자 정보)}, t = 나온 뒤 흐른 초, a = 불투명도.
    - logoEl({ribbon, logo, sub, kind}): 같은 모양의 HTML(게임 첫 화면·엔딩 화면용, kind:'ending'이면 게임 엔딩 로고 크기).
    세계마다 다른 꾸밈(개미굴의 첫 글자 더듬이 같은 것)은 deco로 넘긴다. 이 파일에는 세계 전용 그림을 넣지 않는다. */
@@ -37,9 +37,12 @@ function drawTitle(g,W,H,o,t,a){if(a<=0)return;const u=Math.min(W,H)/1080,end=o.
   // 리본과 로고 사이 간격도 1080 기준 값(타이틀 29%→47%, 엔딩 27%→44%)을 로고 크기에 비례해서 — 세로 화면에서 리본이 떠 보이지 않게
   const base=(end?170:190)*u,sz=fit(g,o.logo||'',base,W),rs=sz/base,mid=H*(end?.44:.47),gap=(end?.17:.18)*1080*u*rs;
   shade(g,W,H,a);const k=clamp(t/.35);if(o.ribbon)ribbon(g,o.ribbon,W/2,mid-gap+(1-k)*-40*u,a*k,(end?36:40)*u*rs);
-  logo(g,o.logo||'',W/2,mid,t,a,sz,o.deco);
+  const tw=logo(g,o.logo||'',W/2,mid,t,a,sz,o.deco);
   if(o.sub)subText(g,o.sub,W/2,mid+sz*.95,a*clamp((t-1.6)/.6),(end?54:46)*u);
-  if(o.sub2)subText(g,o.sub2,W/2,mid+sz*.95+70*u,a*clamp((t-2.2)/.6),34*u);}
+  if(o.sub2)subText(g,o.sub2,W/2,mid+sz*.95+70*u,a*clamp((t-2.2)/.6),34*u);
+  // 그린 영역(영상 확인표 "타이틀과 원더룹 겹침"용): 리본 위 ~ 로고·부제 아래, 로고 폭
+  const bottom=o.sub2?mid+sz*.95+90*u:o.sub?mid+sz*.95+35*u:mid+sz*.62;
+  return {x0:W/2-tw/2,x1:W/2+tw/2,y0:mid-gap-(end?36:40)*u*rs,y1:bottom};}
 /* HTML 로고 (게임 화면용) */
 let cssDone=false;
 function css(){if(cssDone)return;cssDone=true;const st=document.createElement('style');st.textContent=`

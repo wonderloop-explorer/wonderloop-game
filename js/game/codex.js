@@ -14,7 +14,7 @@ import {block,clock,cue} from './core.js';
 import {sfx,voice} from './sound.js';
 import {cardCloser,cardDone,cardShown,cardSlot,hint,hintsVisible,secret as secretCard} from './ui.js';
 import {logoEl} from './title.js';
-const KEY='wl-codex',SHOT=new URLSearchParams(location.search).has('shot');
+const REDUCE=matchMedia('(prefers-reduced-motion: reduce)'),KEY='wl-codex',SHOT=new URLSearchParams(location.search).has('shot');
 let store={};if(!SHOT)try{store=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}
 const W={world:'',name:'자연 도감',cards:[],secrets:[]},BY={},SBY={};let found=new Set(),sfound=new Set(),ctx=null;
 function save(){if(SHOT||!W.world)return;store[W.world]={cards:[...found],secrets:[...sfound]};try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
@@ -43,6 +43,7 @@ const css=`
 #wlBook .dsec{grid-column:1/-1;margin-top:.7rem;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.1rem;color:#c08a20}
 #wlEnd{background:radial-gradient(ellipse at 50% 45%,rgba(40,50,90,.35),rgba(30,14,36,.7))}#wlEnd .in{text-align:center;color:#fff8ec;width:min(30rem,100%)}
 #wlEnd .stat{margin:1rem 0 0;font-size:1.05rem;text-shadow:0 0 .3em rgba(30,14,36,.8)}#wlEnd .b2{display:block;width:100%;margin-top:.6rem;text-align:center;border:2px solid #fff8ec;border-radius:14px;padding:.7rem 1.2rem;color:#fff8ec}
+@media (prefers-reduced-motion: reduce){#wlDex .dcard{animation:none}}
 @keyframes wlRise{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:none}}`;
 const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDex" role="dialog" aria-modal="true" aria-label="새 도감 카드"><div class="dcard"><p class="k2"></p><img alt=""><h2></h2><p class="fact"></p>
@@ -81,7 +82,7 @@ const _p=new THREE.Vector3();
 function tickCodex(){if(!ctx)return;const P=ctx.WL.position;
   for(const s of SPOTS){const sp=s.sprite;if(sfound.has(s.id)){if(sp.parent)sp.parent.remove(sp);continue;}
     if(s.root)s.root.getWorldPosition(_p);else _p.set(...s.pos);const d=Math.hypot(_p.x-P.x,_p.z-P.z),k=Math.max(0,Math.min(1,(s.near-d)/(s.near-s.reach)));
-    sp.material.opacity=k*(.75+.25*Math.sin(clock.t*5));sp.position.set(_p.x,_p.y+s.y+Math.sin(clock.t*2)*.06,_p.z);
+    const still=REDUCE.matches;sp.material.opacity=k*(still?.9:.75+.25*Math.sin(clock.t*5));sp.position.set(_p.x,_p.y+s.y+(still?0:Math.sin(clock.t*2)*.06),_p.z); // 움직임 줄이기: 반짝임 깜빡임·흔들림 없이
     const show=k>.01&&hintsVisible();sp.visible=show;if(show&&!sp.parent)ctx.scene.add(sp);else if(!show&&sp.parent)sp.parent.remove(sp); // 보일 때만 장면에
     if(d<=s.reach&&!cardShown())findSecret(s.id);}}
 /* 도감 목록 */
