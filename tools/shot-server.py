@@ -6,6 +6,7 @@
 처럼 data URL을 보내면 docs/baseline/r128/room-day.png 로 저장된다.
 path가 ../assets/로 시작하면 assets/ 아래 정해진 곳에 저장한다 (models: .glb, rand: .json, textures: .webp·.json).
 path가 ../captures/로 시작하면 저장소 captures/ 아래에 저장한다 (영상 캡처 모드: .mp4·.json·.png — 공개 저장소에 올리지 않는 폴더).
+영상 캡처는 녹화하는 동안 &at=<바이트 위치>로 조각을 보낸다(&new면 새 파일, 그 밖에는 그 위치에 이어·덮어 씀) — 긴 영상도 브라우저 메모리에 쌓지 않는다.
 /studio/ 주소는 비공개 저장소 wonderloop-studio(저장소 옆 폴더, 또는 환경 변수 WL_STUDIO)를 보여 준다 → 세계 대본 ?capture=/studio/santa/capture/opening.js
 """
 import base64, http.server, os, sys, urllib.parse
@@ -41,11 +42,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if u.path != '/save' or not ok:
             self.send_error(400, 'bad path')
             return
-        body = self.rfile.read(int(self.headers.get('Content-Length', 0)))
-        data = base64.b64decode(body.split(b',', 1)[1]) if body.startswith(b'data:') else body
+        n = int(self.headers.get('Content-Length', 0))
+        q = urllib.parse.parse_qs(u.query, keep_blank_values=True)
+        at = q.get('at', [None])[0]   # 영상 조각: &at=<위치>에 이어 쓰기(이미 쓴 앞쪽을 고쳐 쓸 때도), &new면 빈 파일로 새로 시작
         os.makedirs(os.path.dirname(dest), exist_ok=True)
-        with open(dest, 'wb') as f:
-            f.write(data)
+        if at is None:
+            body = self.rfile.read(n)
+            data = base64.b64decode(body.split(b',', 1)[1]) if body.startswith(b'data:') else body
+            with open(dest, 'wb') as f:
+                f.write(data)
+        else:
+            with open(dest, 'r+b' if 'new' not in q and os.path.exists(dest) else 'wb') as f:
+                f.seek(int(at))
+                while n > 0:                                  # 16MB씩 읽어 쓴다 (한 번에 읽으면 2GB가 넘는 몸통에서 실패)
+                    buf = self.rfile.read(min(n, 16 << 20))
+                    if not buf:
+                        break
+                    f.write(buf)
+                    n -= len(buf)
         self.send_response(204)
         self.end_headers()
 

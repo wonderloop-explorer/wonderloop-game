@@ -1,7 +1,10 @@
 /* 원더룹 — 영상 캡처 모드: http://localhost:8000/?shot&capture=<대본.js>[&aspect=16x9|9x16][&go][&png]
    (python3 tools/shot-server.py 로 띄운다 → 결과를 captures/<세계>/ 에 저장. 서버가 없으면 내려받기)
    - 대본(촬영 순서) = 구간 목록. 화면비마다 새 페이지에서 한 번씩 찍는다(매번 같은 그림 → 16:9와 9:16의 시점이 같다).
-   - 게임은 촬영 모드처럼 1/60초씩, 영상 한 프레임(1/30초) = 두 걸음. 기기 성능과 상관없이 끊김 없는 영상.
+   - 영상: 16:9 2560×1440(유튜브가 1440p부터 좋은 압축을 쓴다) · 9:16 1080×1920, 24fps, H.264(High) MP4, 애프터이펙트용 중간 파일이라 높은 비트레이트(16:9 50Mbps·9:16 30Mbps).
+     H.264로 그 크기를 못 만드는 브라우저면 멈춘다(VP9 MP4는 애프터이펙트가 못 읽는다). 녹화하는 동안 64MB씩 촬영 서버로 보내 메모리에 쌓지 않는다. 한 대본 최대 길이는 README "영상 캡처하기".
+   - 게임은 녹화하는 동안 1/72초씩(wlShot.dt), 영상 한 프레임(1/24초) = 세 걸음. 기기 성능과 상관없이 끊김 없는 영상. 기준 스크린샷·규칙 시험은 그대로 1/60초씩.
+   - 타이틀(title.js)·종이결은 짧은 변 1080 기준 크기를 화면 크기에 비례해서 그린다 → 1440p에서도 1080p와 같은 비율로 보인다.
    - 영상에는 3D 장면(+ 페이지 배경·종이결)만 들어간다. 대화창·안내 카드·결과창·말풍선·걷기 표시 같은 게임 안내는 그리지 않고,
      대사·나레이션·효과음·카드·타이틀은 시점 기록(cues.json)에 남겨 편집 때 놓는다(tools/cues-to-ae.py).
    - 타이틀·엔딩 로고(js/game/title.js, 개미굴 .logo2 모양)는 영상에 직접 그려 넣을 수 있다. 켜고 끄기: 대본 burnTitles(기본 켜짐)
@@ -20,7 +23,8 @@ import * as THREE from 'three';
 import {drawTitle,fontsReady} from './game/title.js';
 const clamp01=x=>Math.max(0,Math.min(1,x));
 const MUXER='https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.mjs';
-const FPS=30,STEPS=2,ASPECTS={'16x9':[1920,1080],'9x16':[1080,1920]};
+const FPS=24,STEPS=3,DT=1/72,ASPECTS={'16x9':[2560,1440],'9x16':[1080,1920]},BITRATE={'16x9':50e6,'9x16':30e6};
+const SMP=2,THUMB=12;   // 확인표 기록 간격(프레임): 원더룹 위치·가림 1/12초, 작은 화면 0.5초
 const Q=new URLSearchParams(location.search);
 const S=window.wlShot,G=S.game,WL=S.WL,renderer=S.renderer;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -28,8 +32,10 @@ const yieldTask=()=>new Promise(r=>{const ch=new MessageChannel();ch.port1.onmes
 
 /* ---------- 영상 한 프레임 = 배경 그라데이션 + 3D 장면 + 종이결 (게임 화면과 같게, 밝은 테마) ---------- */
 const frame=document.createElement('canvas'),fg=frame.getContext('2d');
-let grain=null;{const im=new Image();im.onload=()=>{grain=im;};
-  im.src="data:image/svg+xml;utf8,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>");}
+// 종이결: 게임 화면과 같은 220px 무늬를 짧은 변 1080 기준으로(타이틀과 같은 min(W,H)/1080) — 1440p에서는 무늬도 같은 배율로 크게(화면에 대한 결의 크기는 1080p와 같게)
+let grain=null;
+function makeGrain(W,H){const n=Math.round(220*Math.max(1,Math.min(W,H)/1080)),f=(.85*220/n).toFixed(4);return new Promise(r=>{const im=new Image();im.onload=()=>{grain=im;r();};im.onerror=()=>r();
+  im.src="data:image/svg+xml;utf8,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${n}' height='${n}'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='${f}' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`);});}
 const overlays=[],titleRects=[];   // 영상에 그려 넣는 타이틀·엔딩 {o, t0(게임 시각), sec}, 이번 프레임에 그린 타이틀 영역(픽셀)
 function compose(){const W=frame.width,H=frame.height;
   const r=Math.hypot(W*1.2,H*.9)/2,gr=fg.createRadialGradient(W/2,H*.4,0,W/2,H*.4,r);gr.addColorStop(0,'#efe2c9');gr.addColorStop(1,'#e6d3b2');
@@ -38,7 +44,7 @@ function compose(){const W=frame.width,H=frame.height;
   titleRects.length=0;for(const ov of overlays){const t=G.clock.t-ov.t0;if(t<0||t>ov.sec)continue;const a=clamp01(t/.45)*clamp01((ov.sec-t)/.45),r=drawTitle(fg,W,H,ov.o,t,a);if(r&&a>.5)titleRects.push(r);}
   if(grain){fg.globalCompositeOperation='multiply';fg.globalAlpha=.2;fg.fillStyle=fg.createPattern(grain,'repeat');fg.fillRect(0,0,W,H);fg.globalCompositeOperation='source-over';fg.globalAlpha=1;}}
 
-/* ---------- 확인표용 기록: 원더룹 화면 위치·가림(0.1초마다), 작은 화면(0.5초마다) ---------- */
+/* ---------- 확인표용 기록: 원더룹 화면 위치·가림(SMP 프레임 = 1/12초마다), 작은 화면(THUMB 프레임 = 0.5초마다) ---------- */
 const bones={};WL.traverse(o=>{if(o.isBone)bones[o.name]=o;});
 const ray=new THREE.Raycaster(),_a=new THREE.Vector3(),_b=new THREE.Vector3(),box=new THREE.Box3();
 let occList=null,occZone=null;
@@ -69,7 +75,7 @@ const tdiff=(a,b)=>{let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);re
 const OK='통과',WARN='주의',FIX='고칠 것',NA='해당 없음';
 const VOICE=k=>k==='narration'||k==='dialogue';
 const endOf=c=>c.t+(c.cut!=null?c.cut:(c.dur||0));
-function runs(samples,test,dt=.1){let best=null,cur=null;for(const s of samples){if(test(s)){if(!cur)cur={a:s.t,b:s.t};cur.b=s.t+dt;if(!best||cur.b-cur.a>best.b-best.a)best={...cur};}else cur=null;}return best;}
+function runs(samples,test,dt=SMP/FPS){let best=null,cur=null;for(const s of samples){if(test(s)){if(!cur)cur={a:s.t,b:s.t};cur.b=s.t+dt;if(!best||cur.b-cur.a>best.b-best.a)best={...cur};}else cur=null;}return best;}
 const f1=x=>(Math.round(x*10)/10).toFixed(1);
 function checkSegment(seg,all,ctx){const R=[];const inSeg=x=>x.t>=seg.t0-1e-6&&x.t<seg.t1-1e-6;
   const smp=ctx.samples.filter(inSeg),th=ctx.thumbs.filter(inSeg),cues=ctx.cues.filter(inSeg);
@@ -118,24 +124,50 @@ function checkSegment(seg,all,ctx){const R=[];const inSeg=x=>x.t>=seg.t0-1e-6&&x
     else{const e=Math.max(...ns.map(endOf)),tail=seg.t1-e;add('나레이션 뒤 여운',tail>=3-1e-3?OK:FIX,tail>=0?`마지막 나레이션 뒤 ${f1(tail)}초`:`나레이션이 구간 끝을 ${f1(-tail)}초 넘김`);}}
   return R;}
 
-/* ---------- 영상 인코딩 (WebCodecs → MP4, 소리 없음: 소리는 편집 때 시점 기록으로 놓는다) ---------- */
-async function encoder(W,H){
+/* ---------- 영상 인코딩 (WebCodecs → MP4, 소리 없음: 소리는 편집 때 시점 기록으로 놓는다) ----------
+   H.264만 쓴다: High 5.1·5.0(2560×1440까지), 4.2·4.0(1080×1920), Main 5.1. VP9로 내려가지 않는다(애프터이펙트가 VP9 MP4를 못 읽는다) */
+const CODECS=['avc1.640033','avc1.640032','avc1.64002a','avc1.640028','avc1.4d0033'];
+/* 영상 조각: mp4-muxer StreamTarget이 넘기는 조각을 64MB씩 모아 녹화하는 동안 촬영 서버로 보낸다(&at=위치에 이어 쓰기) → 길이와 상관없이 메모리가 거의 늘지 않는다.
+   촬영 서버가 없으면 조각을 메모리에 모아 끝에 Blob으로 내려받는다 — 앱 내장 브라우저에서 1.26GB Blob의 중간이 읽히지 않았으므로(2026-10-29) 500MB에서 멈춘다.
+   (예전 ArrayBufferTarget은 버퍼를 두 배씩 키워서 1GB→2GB에서 'Array buffer allocation failed': 1440p로 4분 남짓이 한계였다)
+   이미 보낸 앞쪽을 고쳐 쓰는 조각(mdat 길이)은 그 위치로 따로 보내고, 아직 안 보낸 조각이면 덮어쓴다 */
+let server=true;
+const PART=64<<20;
+// 보낼 몸통은 Blob이 아니라 바이트 배열로: 앱 내장 브라우저는 보낸 Blob이 바로 풀리지 않아 약 550MB 쌓이면 다음 Blob이 읽히지 않았다(2026-10-29)
+const join=parts=>{const u=new Uint8Array(parts.reduce((n,p)=>n+p.length,0));let o=0;for(const p of parts){u.set(p,o);o+=p.length;}return u;};
+const saveUrl=(rel,q)=>'/save?path='+encodeURIComponent('../captures/'+rel)+(q||'');
+const post=(rel,q,body)=>fetch(saveUrl(rel,q),{method:'POST',body}).then(r=>{if(!r.ok)throw new Error('촬영 서버에 저장하지 못했어요 ('+r.status+')');});
+async function pieces(rel){const P=[];let end=0,sent=0,q=Promise.resolve(),busy=0,fail=null;
+  let live=server&&await post(rel,'&at=0&new',new Blob([])).then(()=>true,()=>false);if(!live)server=false;
+  const send=(at,parts)=>{busy++;q=q.then(()=>fail?null:post(rel,'&at='+at,join(parts))).catch(e=>{fail=fail||new Error(`녹화하는 동안 촬영 서버에 저장하지 못했어요(${e.message}). 촬영 서버가 켜져 있는지 확인하고 다시 녹화해 주세요.`);}).finally(()=>{busy--;});};
+  return {live,
+    onData(d,pos){if(pos>end)throw new Error('영상 조각 순서가 어긋났어요');
+      if(pos<end){if(pos<sent){const n=Math.min(d.length,sent-pos);send(pos,[d.slice(0,n)]);}
+        for(const p of P){const a=Math.max(pos,p.pos),b=Math.min(pos+d.length,p.pos+p.d.length);if(a<b)p.d.set(d.subarray(a-pos,b-pos),a-p.pos);}
+        if(pos+d.length<=end)return;d=d.subarray(end-pos);pos=end;}
+      P.push({pos,d});end=pos+d.length;
+      if(live&&end-sent>=PART){send(sent,P.splice(0).map(p=>p.d));sent=end;}
+      if(!live&&end>5e8)fail=fail||new Error('촬영 서버 없이 내려받기로는 500MB(1440p 약 1분 20초)까지만 녹화해요. python3 tools/shot-server.py로 띄워서 열어 주세요.');},
+    async drain(){while(busy>2)await sleep(5);if(fail)throw fail;},     // 보내는 줄이 길면 녹화를 잠깐 기다린다
+    async close(){if(live){if(P.length){send(sent,P.splice(0).map(p=>p.d));sent=end;}await q;if(fail)throw fail;return 'captures/'+rel;}
+      const b=new Blob(P.map(p=>p.d),{type:'video/mp4'});P.length=0;return b;}};}
+async function encoder(W,H,bitrate,rel){
   if(!window.VideoEncoder)throw new Error('이 브라우저는 영상 인코딩(WebCodecs)을 지원하지 않아요. 최신 Chrome에서 열어 주세요.');
-  const {Muxer,ArrayBufferTarget}=await import(MUXER);let cfg=null;
-  for(const codec of ['avc1.640033','avc1.640028','avc1.4d0033','vp09.00.41.08']){const c={codec,width:W,height:H,bitrate:16e6,framerate:FPS};
+  const {Muxer,StreamTarget}=await import(MUXER);let cfg=null;
+  for(const codec of CODECS){const c={codec,width:W,height:H,bitrate,framerate:FPS};
     try{if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break;}}catch(e){}}
-  if(!cfg)throw new Error('쓸 수 있는 영상 코덱이 없어요.');
-  const muxer=new Muxer({target:new ArrayBufferTarget(),video:{codec:cfg.codec.startsWith('avc')?'avc':'vp9',width:W,height:H,frameRate:FPS},fastStart:'in-memory'});
+  if(!cfg)throw new Error(`이 브라우저는 ${W}×${H} H.264 영상을 만들지 못해요 — 애프터이펙트용 파일을 만들 수 없어요. 최신 Chrome(맥)에서 열어 주세요.`);
+  const out=await pieces(rel),muxer=new Muxer({target:new StreamTarget({onData:(d,pos)=>out.onData(d,pos)}),video:{codec:'avc',width:W,height:H,frameRate:FPS},fastStart:false});
   let err=null;const venc=new VideoEncoder({output:(c,m)=>muxer.addVideoChunk(c,m),error:e=>{err=e;}});venc.configure(cfg);
-  return {codec:cfg.codec,
+  return {codec:cfg.codec,live:out.live,
     async add(src,i){if(err)throw err;const vf=new VideoFrame(src,{timestamp:Math.round(i*1e6/FPS),duration:Math.round(1e6/FPS)});venc.encode(vf,{keyFrame:i%(FPS*2)===0});vf.close();
-      while(venc.encodeQueueSize>6)await sleep(2);},
-    async finish(){await venc.flush();if(err)throw err;muxer.finalize();return new Blob([muxer.target.buffer],{type:'video/mp4'});}};}
+      while(venc.encodeQueueSize>6)await sleep(2);await out.drain();},
+    /* 끝: 촬영 서버로 다 보냈으면 저장 위치(문자열), 아니면 내려받을 Blob */
+    async finish(){await venc.flush();if(err)throw err;muxer.finalize();return out.close();}};}
 
 /* ---------- 저장: 촬영 서버(captures/) → 없으면 내려받기 ---------- */
-let server=true;
 async function save(rel,blob){
-  if(server)try{const r=await fetch('/save?path='+encodeURIComponent('../captures/'+rel),{method:'POST',body:blob});if(r.ok)return 'captures/'+rel;server=false;}catch(e){server=false;}
+  if(server)try{await post(rel,'',blob);return 'captures/'+rel;}catch(e){server=false;}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=rel.replace(/\//g,'_');document.body.appendChild(a);a.click();a.remove();return '내려받기: '+a.download;}
 const json=o=>new Blob([JSON.stringify(o,null,1)],{type:'application/json'});
 
@@ -146,14 +178,14 @@ panel.innerHTML=`<style>#wlCapture{position:fixed;left:12px;top:12px;z-index:50;
  #wlCapture button{all:unset;cursor:pointer;background:#3f9fa0;color:#fffaf2;border-radius:9px;padding:5px 11px;margin:6px 6px 0 0}#wlCapture button.sec{background:#b7a690}
  #wlCapture table{border-collapse:collapse;margin-top:8px;width:100%;font-size:12.5px}#wlCapture td,#wlCapture th{border-top:1px solid #e3d4bd;padding:3px 5px;text-align:left;vertical-align:top}
  #wlCapture .통과{color:#2f7d5b}#wlCapture .주의{color:#a9701c}#wlCapture .고칠{color:#c0392b;font-weight:700}#wlCapture code{background:#efe2c9;border-radius:4px;padding:0 4px;font-size:12px;word-break:break-all}</style>
- <b>원더룹 영상 캡처</b> <span id="wcName"></span><div id="wcBtns"></div><div id="wcMsg"></div><div id="wcOut"></div>`;
+ <b>원더룹 영상 캡처</b> <span id="wcName"></span><div id="wcWarn" style="color:#c0392b;font-weight:700"></div><div id="wcBtns"></div><div id="wcMsg"></div><div id="wcOut"></div>`;
 document.body.appendChild(panel);
 const $=s=>panel.querySelector(s),msg=t=>{$('#wcMsg').textContent=t;};
 
 /* ---------- 녹화 한 번 (화면비 하나) ---------- */
 let script=null,busy=false,stop=false;
 async function take(aspect,opt={}){
-  if(busy)return null;busy=true;stop=false;const [W,H]=ASPECTS[aspect];const png=opt.png??Q.has('png');
+  if(busy)return null;busy=true;stop=false;const [W,H]=ASPECTS[aspect];S.dt=DT;const png=opt.png??Q.has('png');
   try{
   const sc=script,base=`${sc.world}/${sc.script}-${aspect}`;
   if(sc.zone&&window.wlZone.cur.id!==sc.zone)await S.go(sc.zone);
@@ -161,7 +193,7 @@ async function take(aspect,opt={}){
   for(const k in (sc.flags||{}))G.state.setFlag(k,sc.flags[k]);
   if(sc.setup)S.setup(sc.setup);
   S.size(W,H);frame.width=W;frame.height=H;thumbC.width=aspect==='9x16'?18:32;thumbC.height=aspect==='9x16'?32:18;
-  const enc=await encoder(W,H);
+  const enc=await encoder(W,H,BITRATE[aspect],base+'.mp4');await makeGrain(W,H);
   const t0=G.clock.t,n0=G.cues.length,vt=()=>+(G.clock.t-t0).toFixed(4);
   const auto={dialog:true,linePad:.6,card:null,result:0,resultHold:4};let cardT=null,resT=null;
   const ctx={aspect,samples:[],thumbs:[],cues:[],duration:0};const segs=[];let curSeg=null,curDef=null;overlays.length=0;await fontsReady();
@@ -198,8 +230,8 @@ async function take(aspect,opt={}){
   let fi=0,pngQ=[];
   async function grab(){if(renderer.domElement.width!==W||renderer.domElement.height!==H)S.size(W,H);
     compose();const at=fi/FPS;
-    if(fi%3===0)ctx.samples.push({t:at,...wlSample()});
-    if(fi%15===0)ctx.thumbs.push({t:at,g:thumb()});
+    if(fi%SMP===0)ctx.samples.push({t:at,...wlSample()});
+    if(fi%THUMB===0)ctx.thumbs.push({t:at,g:thumb()});
     if(png){const b=await new Promise(r=>frame.toBlob(r,'image/png'));pngQ.push(save(`${base}-png/${String(fi).padStart(5,'0')}.png`,b));if(pngQ.length>8)await pngQ.shift();}
     await enc.add(frame,fi);fi++;}
   // 시작 화면 → 구간들을 차례로
@@ -209,7 +241,7 @@ async function take(aspect,opt={}){
     .catch(e=>{err=e;}).finally(()=>{done=true;});
   await yieldTask();
   while(!done&&!stop&&fi<MAX){S.step(STEPS);await grab();autoTick();await yieldTask();
-    if(fi%15===0)msg(`${curSeg?curSeg.name:''} 녹화 중… ${(fi/FPS).toFixed(1)}초`);}
+    if(fi%THUMB===0)msg(`${curSeg?curSeg.name:''} 녹화 중… ${(fi/FPS).toFixed(1)}초`);}
   if(curSeg&&curSeg.t1==null)curSeg.t1=vt();
   await Promise.all(pngQ);
   if(err)throw err;if(stop)throw new Error('멈췄어요');if(fi>=MAX)throw new Error(`대본이 ${sc.max||600}초 안에 끝나지 않았어요 ('${curSeg&&curSeg.name}' 구간)`);
@@ -220,9 +252,10 @@ async function take(aspect,opt={}){
   const name=`${sc.script}-${aspect}`;
   const cueDoc={world:sc.world,script:sc.script,aspect,width:W,height:H,fps:FPS,duration:ctx.duration,video:name+'.mp4',codec:enc.codec,zone:window.wlZone.cur.id,version:window.WL_V,
     segments:segs.map(s=>({name:s.name,t:s.t0,dur:+(s.t1-s.t0).toFixed(4)})),cues:ctx.cues};
-  const where=[await save(base+'.mp4',await enc.finish()),await save(base+'.cues.json',json(cueDoc)),await save(base+'.check.json',json({world:sc.world,script:sc.script,aspect,duration:ctx.duration,check}))];
+  const video=await enc.finish();
+  const where=[typeof video==='string'?video:await save(base+'.mp4',video),await save(base+'.cues.json',json(cueDoc)),await save(base+'.check.json',json({world:sc.world,script:sc.script,aspect,duration:ctx.duration,check}))];
   return {aspect,where,check,cues:cueDoc,frames:fi};
-  }finally{busy=false;}}
+  }finally{busy=false;S.dt=1/60;}}
 
 function show(res){const rows=[];
   for(const s of res.check){rows.push(`<tr><th colspan="3">${s.구간} <small>(${s.시작.toFixed(1)}~${s.끝.toFixed(1)}초)</small></th></tr>`);
@@ -236,11 +269,14 @@ async function start(){
   if(!src){msg('주소에 &capture=대본.js 를 붙여 주세요 (견본: tools/capture/sample-indoor.js)');return;}
   try{script=(await import(new URL(src,location.origin+'/').href)).default;}catch(e){msg('대본을 못 읽었어요: '+e);console.error(e);return;}
   $('#wcName').textContent=`${script.world} · ${script.script} (구간 ${script.segments.length}개)`;
+  // 촬영 서버 확인: 없으면(일반 http 서버로 열었으면) 녹화 전에 알린다 — 조용히 내려받기로 바뀌지 않게
+  if(!await fetch(saveUrl('.server-check.json'),{method:'POST',body:'{}'}).then(r=>r.ok,()=>false)){server=false;
+    $('#wcWarn').textContent='촬영 서버로 열지 않았어요. 이대로 녹화하면 captures/에 저장되지 않고 내려받기로 저장되며, 500MB(16:9 약 1분 20초)에서 멈춰요. 터미널에서 wonderloop-game 폴더로 가서 python3 tools/shot-server.py 를 켜고 http://localhost:8000 으로 다시 열어 주세요.';}
   const url=(aspect,then)=>{const q=new URLSearchParams(location.search);q.set('aspect',aspect);q.set('go','');if(then)q.set('then',then);else q.delete('then');return location.pathname+'?'+q.toString().replace(/=(&|$)/g,'$1');};
   const B=$('#wcBtns');[['16:9 녹화',()=>location.href=url('16x9')],['9:16 녹화',()=>location.href=url('9x16')],['둘 다 녹화',()=>location.href=url('16x9','9x16')]]
     .forEach(([t,f])=>{const b=document.createElement('button');b.textContent=t;b.onclick=f;B.appendChild(b);});
   {const b=document.createElement('button');b.className='sec';b.textContent='멈추기';b.onclick=()=>{stop=true;};B.appendChild(b);}
-  window.wlCapture={script,take,ASPECTS,FPS,checkSegment};
+  window.wlCapture={script,take,ASPECTS,FPS,BITRATE,checkSegment};
   const aspect=Q.get('aspect');
   if(Q.has('go')&&ASPECTS[aspect]){
     try{const res=await take(aspect);window.wlCapture.result=res;show(res);

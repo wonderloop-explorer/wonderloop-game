@@ -16,7 +16,7 @@
   - 프로젝트 패널에 "원더룹 <대본>" 폴더를 만들어 영상·소리를 정리한다.
 
 cues.json 모양 (영상 캡처 모드가 쓴다):
-  {"world":"santa","script":"opening","aspect":"16x9","width":1920,"height":1080,"fps":30,"duration":12.5,
+  {"world":"santa","script":"opening","aspect":"16x9","width":2560,"height":1440,"fps":24,"duration":12.5,
    "video":"opening-16x9.mp4",
    "cues":[{"t":1.2,"dur":2.4,"kind":"narration|dialogue|sfx|music","id":"n01","file":"assets/sounds/santa/n01.mp3","text":"…","who":"…","cut":null}]}
   video·file 경로는 cues.json이 있는 폴더 기준, 아니면 저장소 기준, 아니면 --sounds 폴더에서 파일 이름으로 찾는다.

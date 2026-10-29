@@ -49,14 +49,14 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
 /* ---------- 애니메이션 ---------- */
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
 const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector3();
-/* 촬영 모드(?shot): 고정 시간 간격으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
-const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0;
+/* 촬영 모드(?shot): 고정 시간 간격(기본 1/60초, 영상 캡처 중에는 wlShot.dt=1/72)으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
+const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1/60;
 /* 안전장치: 프레임 안에서 오류가 나도 멈추지 않게 — 콘솔에 한 번 남기고, 이번 화면은 그려 두고, 다음 프레임을 잇는다 */
 const tickErrSeen=new Set();
 function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
   try{renderer.render(scene,camera);}catch(e2){}}if(!ok&&!SHOT)requestAnimationFrame(tick);}
 function tickBody(){
-  let dt,t;if(SHOT){dt=1/60;shotT+=dt;t=shotT;}else{clock.update();dt=Math.min(clock.getDelta(),0.05);t=clock.getElapsed();}
+  let dt,t;if(SHOT){dt=shotDt;shotT+=dt;t=shotT;}else{clock.update();dt=Math.min(clock.getDelta(),0.05);t=clock.getElapsed();}
   night+=(nightTarget-night)*Math.min(1,dt*2.2);
   const n=night,flick=reduce?1:(1+Math.sin(t*7.3)*0.04+Math.sin(t*13.1)*0.03);
   hemi.intensity=0.62-0.4*n;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
@@ -70,7 +70,7 @@ function tickBody(){
   [hemi,sun,fill,...Z.lights].forEach(l=>l.intensity*=PI);
   if(Z.update)Z.update(dt,t,env); // 구역 움직임 (베이스캠프: 먼지·김·시계)
   updateWL(dt,t);
-  GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩)
+  GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩, 영상 캡처 중에는 1/72초씩)
   // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
   {const a=areaAt(WL.position.x,WL.position.z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(Z.areas[a].camera,false);}
    const d=doorAt(WL.position.x,WL.position.z);if(!d)doorLock=false;else if(!doorLock&&!zoneBusy){doorLock=true;goZone(d.to,d.spawn);}}
@@ -95,7 +95,9 @@ if(SHOT){
   const clickUntil=(id,ok)=>{const b=document.getElementById(id);for(let i=0;i<12&&!ok();i++)b.click();};
   window.wlShot={
     revision:THREE.REVISION,scene,renderer,camera,WL,game:GAME,
-    /* 화면 크기(영상 캡처: 1920×1080, 1080×1920). 방 카메라·따라가기 거리도 새 화면비로 다시 잡는다(세로 화면은 멀리) */
+    /* 한 걸음 시간(초). 기본 1/60(기준 스크린샷·규칙 시험), 영상 캡처는 1/72 × 3걸음 = 24fps 한 프레임 */
+    get dt(){return shotDt;},set dt(v){shotDt=v;},
+    /* 화면 크기(영상 캡처: 2560×1440, 1080×1920). 방 카메라·따라가기 거리도 새 화면비로 다시 잡는다(세로 화면은 멀리) */
     size(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const A=zone.cur.areas[zone.area];if(A){setAreaCamera(A.camera,false);ui.camGoal=follow?followDist():ui.dist;}},
     /* 원더룹을 그 자리에 세운다 (영상 캡처 구간 시작) */
     place(x,z,ry){stopWalk();WL.position.set(x,groundY(x,z),z);if(ry!=null)WL.rotation.y=ry;const a=areaAt(x,z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(zone.cur.areas[a].camera,false);}},
