@@ -29,6 +29,7 @@ const ZONETEST=new URLSearchParams(location.search).has('zonetest');
 if(ZONETEST)Object.assign(ZONES,{
   'sample-outdoor':()=>import('./zones/sample-outdoor.js'),
   'sample-indoor':()=>import('./zones/sample-indoor.js'),
+  'sample-fairy-fx':()=>import('./zones/sample-fairy-fx.js'), // 요정의 숲 휴대폰 시험 장면(날개·등불 빛·낙엽·첫눈·여러 개 배치)
 });
 const zone={cur:null,area:null}; // 지금 구역과 원더룹이 있는 방(영역) — 03·07·08이 읽는다
 async function loadZone(id){
