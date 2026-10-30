@@ -135,20 +135,28 @@ const meter=()=>{const now=performance.now(),d=now-last;last=now;fN++;fT+=d;fWor
 /* 자동 측정: 조건마다 준비(최근 30프레임에 튀는 프레임이 없을 때까지, 최대 12초) + 1초 + 4초 측정. 끝나면 처음 상태로 되돌린다.
    그림자·빛 개수가 바뀌면 셰이더를 모두 다시 만들어 휴대폰에서 몇 초 멈춘다 — 예전처럼 2.5초만 기다리면 그 멈춤이 측정에 섞였다
    (2026-10-30 아이폰 '픽셀 1.5' 13프레임·최악 3.7초: '모두 끔' 바로 뒤라 셰이더를 다시 만드는 중이었음). 준비가 3초를 넘은 조건은 * 표시.
-   순서도 셰이더가 덜 바뀌게: 모두 켬 → 픽셀 비율들(셰이더 그대로) → 항목 하나씩 끔 → 모두 끔.
+   순서도 셰이더가 덜 바뀌게: 모두 켬 → 픽셀 비율들(셰이더 그대로) → 그림자 가볍게(지도 1024, 단순) → 항목 하나씩 끔 → 모두 끔.
+   그림자 가볍게: '그림자 지도 1024' = 해 그림자 지도 2048→1024(그리는 양 1/4, 가장자리는 그대로 부드럽게),
+   '그림자 단순' = 2048 그대로 PCF 대신 BasicShadowMap(가장자리 계산을 한 번만 — 계단이 보일 수 있음). 모바일 품질 단계(로드맵 6) 후보.
    표: 평균 프레임 간격(ms)·초당 프레임, 느린 5% 프레임(95번째 백분위 ms), 가장 느린 프레임, '모두 켬'보다 빨라진 ms.
    아이폰 사파리는 초당 60프레임(16.7ms)이 한계라, 60에 닿은 조건은 그 항목이 남은 부담을 모두 차지한다는 뜻. */
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));let measuring=false;const results=[];
+// 해 그림자 지도 크기·방식 바꾸기: 지도는 버려서 새 크기로 다시 만들고, 방식이 바뀌면 재질 셰이더도 다시 만든다
+function setShadow({size,type}){if(!sunL||!gl)return;const sh=sunL.shadow;let typeCh=gl.shadowMap.type!==type;
+  if(sh.mapSize.x!==size||typeCh){sh.mapSize.set(size,size);if(sh.map){sh.map.dispose();sh.map=null;}}
+  if(typeCh){gl.shadowMap.type=type;scn.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});}}
 async function autoMeasure(){if(measuring)return;hook();if(!gl){stat.textContent='렌더러를 아직 못 받았어요. 잠시 뒤 다시 눌러 주세요.';return;}
   measuring=true;row.style.pointerEvents='none';row.style.opacity='.5';results.length=0;resEl.textContent='';
-  const keep={...on},keepPr=gl.getPixelRatio(),dpr=window.devicePixelRatio||1,items=Object.keys(NAMES);
+  const keep={...on},keepPr=gl.getPixelRatio(),keepSh={size:sunL?sunL.shadow.mapSize.x:2048,type:gl.shadowMap.type},dpr=window.devicePixelRatio||1,items=Object.keys(NAMES);
   const conds=[{name:'모두 켬'}],tail=[...items.map(k=>({name:NAMES[k]+' 끔',off:[k]})),{name:'모두 끔',off:items}];
   // 픽셀 비율: 지금 값(03이 기기 값을 2로 제한) 말고 1.5·1, 기기 값이 2보다 크면 제한을 푼 값도
-  [...new Set([dpr>keepPr+.01?dpr:null,2,1.5,1].filter(v=>v&&Math.abs(v-keepPr)>.01&&v<=dpr+.01))].forEach(pr=>conds.push({name:'모두 켬, 픽셀 '+pr,pr}));conds.push(...tail);
+  [...new Set([dpr>keepPr+.01?dpr:null,2,1.5,1].filter(v=>v&&Math.abs(v-keepPr)>.01&&v<=dpr+.01))].forEach(pr=>conds.push({name:'모두 켬, 픽셀 '+pr,pr}));
+  if(sunL)conds.push({name:'그림자 지도 1024',sh:{size:1024,type:keepSh.type}},{name:'그림자 단순',sh:{size:keepSh.size,type:THREE.BasicShadowMap}});
+  conds.push(...tail);
   const db=document.getElementById('dayBtn'),stage=db?({'저녁으로 바꾸기':'낮','어두운 굴로 바꾸기':'저녁','낮으로 바꾸기':'어두운 굴'}[db.textContent]||''):'';
   const head=`${stage} 조명 · 기기 픽셀 비율 ${dpr} · 지금 ${keepPr}${dpr>keepPr?' (2로 제한 중)':''} · 화면 ${innerWidth}×${innerHeight}`;
   try{for(let i=0;i<conds.length;i++){const c=conds[i];items.forEach(k=>on[k]=!(c.off||[]).includes(k));apply(); // 그 조건에서 끄는 항목만 빼고 모두 켬
-      gl.setPixelRatio(c.pr||keepPr);
+      gl.setPixelRatio(c.pr||keepPr);setShadow(c.sh||keepSh);
       stat.textContent=`자동 측정 ${i+1}/${conds.length}: ${c.name}\n휴대폰을 건드리지 말고 기다려 주세요 (약 ${Math.ceil((conds.length-i)*6.5)}초 남음)`;
       // 안정: 최근 30프레임 중 튀는 프레임(그 30프레임 가운뎃값의 2.5배·50ms 넘는 것)이 없을 때 — 셰이더를 다시 만드는 멈춤은 수백 ms라 잡힌다
       const t0=performance.now();rec=[];let win=[];while(performance.now()-t0<12000){await sleep(100);win=win.concat(rec.splice(0)).slice(-30);
@@ -156,7 +164,7 @@ async function autoMeasure(){if(measuring)return;hook();if(!gl){stat.textContent
       const prep=(performance.now()-t0)/1000;await sleep(1000);rec=[];await sleep(4000);const a=rec.slice().sort((x,y)=>x-y);rec=null;
       const avg=a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
       results.push({조건:c.name+(prep>3?' *':''),prep:+prep.toFixed(1),ms:+avg.toFixed(1),fps:+(1000/avg).toFixed(1),p95:+(a[Math.floor(a.length*.95)]||0).toFixed(1),worst:+(a[a.length-1]||0).toFixed(1),n:a.length});}}
-  finally{Object.assign(on,keep);apply();gl.setPixelRatio(keepPr);rec=null;measuring=false;row.style.pointerEvents='';row.style.opacity='';}
+  finally{Object.assign(on,keep);apply();gl.setPixelRatio(keepPr);setShadow(keepSh);rec=null;measuring=false;row.style.pointerEvents='';row.style.opacity='';}
   const b=results[0].ms;results.forEach(r=>r.빨라짐=+(b-r.ms).toFixed(1));
   // 휴대폰 세로 한 화면(390px)에 표 전체가 들어가게: 짧은 머리글, 숫자 칸은 오른쪽 맞춤
   const cell=(v,th,left)=>`<${th?'th':'td'} style="padding:2px 3px;text-align:${left?'left':'right'};${th?'border-bottom:1px solid #c9b8a8;font-weight:normal;color:#75565e':''}">${v}</${th?'th':'td'}>`;
@@ -167,7 +175,7 @@ async function autoMeasure(){if(measuring)return;hook();if(!gl){stat.textContent
     '<div style="margin-top:4px;color:#75565e">빨라짐 = \'모두 켬\'보다 줄어든 한 프레임 시간. 60프레임 = 16.7ms'+
     (results.some(r=>r.prep>3)?'<br>* 셰이더를 다시 만드느라 준비가 오래 걸린 조건(측정에는 안 섞임): '+results.filter(r=>r.prep>3).map(r=>r.prep+'초').join(', '):'')+'</div>';
   console.table(results);}
-window.wlFx={get fps(){return fpsLog.slice();},on,apply,autoMeasure,results};
+window.wlFx={get fps(){return fpsLog.slice();},on,apply,autoMeasure,results,setShadow:o=>{hook();setShadow(o);}};
 /* ---------- 움직임 ---------- */
 const o3=new THREE.Object3D(),o4=new THREE.Object3D(),R2=rng('sample-fairy-fx:respawn'),rnd2=(a,b)=>a+(b-a)*R2();let WL=null;
 function update(dt,t){meter();hook();
