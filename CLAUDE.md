@@ -35,11 +35,11 @@
   - 05 헤어: 지그재그 앞머리 / 둥근 단발 / **지그재그 단발(기본)**, 탈 아래 앞머리, `applyLook`
   - 06 바지·무릎·엉덩이, 캐릭터 병합(`wlMerge`), 평상복/탐험복(`applyOutfit`), 탐험 모자와 머리 눌림(`pressHair`), 나침반 키링, 탈 목록(`HOODS`·`setHood`)
   - **탈 교체** (06 맨 위 주석): 탈 번호 `hw` 0 없음 · 1 개미탈(04) · 2 탐험 모자 · 3 도토리 깍정이(`js/hoods/acorn.js`, 요정의 숲). 새 세계 탈은 `js/hoods/<이름>.js`의 `build({head,wm,TM,SM})`→`{g,profile,top}`을 `HOODS` 끝에 더한다(0~2번은 기준 촬영·대본이 쓰므로 번호를 바꾸지 않는다). 06이 `hoodParts`(아틀라스 교체 영역)에 넣고 `userData.hw`로 번호를 붙여 05 `applyLook`이 그 번호일 때만 보인다. 모자형 탈은 안쪽 머리만 `profile`대로 눌러 넣어 띠 아래로 앞머리·옆·뒷머리가 보인다. 구역 정보 `hood:'acorn'`이면 들어올 때 그 탈(08), 코드에서는 `WL.userData.setHood('acorn')`. 탈 시트(wonderloop-studio `<세계>/`)를 기준으로 네 각도·동작을 확인한다.
-  - 07 어두운 곳 강조(림 라이트 셰이더), 이동, 동작 세트(`actionPose`, `runPose`), `updateWL`
+  - 07 어두운 곳 강조(림 라이트 셰이더), 이동, 높이 이동(`WL.userData.vert` — 떨어짐·튀는 발판·활공), 동작 세트(`actionPose`, `runPose`), `updateWL`
   - 08 입력, 조명 단계(낮/저녁/어두운 굴), 따라가기 카메라, 구역 오가기(`goZone`, 문, `window.wlZone`), 애니메이션 루프
   - 09 영상 캡처 모드(`?shot&capture=…`일 때만 08이 불러온다, 아래 "영상 캡처 모드")
 - 캐릭터 상태는 `WL.userData`에 모여 있다 (`action`, `setExpr`, `hw`(탈), `outfit`, `charm`, `rimU`, `rig` 등).
-- **뼈대** (07 "뼈대" 주석에 이름·동작 키 대응표): 관절은 블렌더 이름의 `THREE.Bone`이다 — `hips`, `spine`, `thigh/shin/foot.L·R`, `upperarm/forearm.L·R`, `neck`, `head`, `eye.L·R`, `antenna.L·R`, `charm`, `charm_needle`, `charm_lastLeaf`(받은 아이템 키링), `prop`, `prop_needle`. 좌우는 원더룹 기준(왼쪽 L = +x).
+- **뼈대** (07 "뼈대" 주석에 이름·동작 키 대응표): 관절은 블렌더 이름의 `THREE.Bone`이다 — `hips`, `spine`, `thigh/shin/foot.L·R`, `upperarm/forearm.L·R`, `neck`, `head`, `eye.L·R`, `antenna.L·R`, `charm`, `charm_needle`, `charm_lastLeaf`(받은 아이템 키링), `glide_leaf`(활공할 때 머리 위 잎 우산), `prop`, `prop_needle`. 좌우는 원더룹 기준(왼쪽 L = +x).
   - 부품 좌표는 발바닥 기준으로 적혀 있어 `wlBase`(다리)·`wlBody`(몸통 부품)를 엉덩이 높이(`HIP`)만큼 내려 붙였다. 몸통 부품은 계속 `wlBody`에 붙인다.
   - 07은 몸 숙임을 `body`(발바닥 기준 값)에 계산한 뒤 `spine`으로 옮기고, 고개는 `neck`을 돌린다.
   - 그리기: 원래 부품 메시는 레이어 1(화면·그림자 밖, 클릭 판정용)에 남기고, 재질 종류(앞면·양면·반투명)별 SkinnedMesh 3개로 합쳐 그린다(아래 아틀라스). 부품 하나가 잎 뼈 하나라 `setExpr`·`applyOutfit`·`pressHair`·`visible` 전환은 지금처럼 부품을 다루면 된다(숨은 부품은 크기 0). 머리카락·탈 앞머리는 `pressHair`가 정점을 고치므로 따로 그린다.
@@ -51,6 +51,7 @@
   - 기준 스크린샷: `docs/baseline/r128/`(r128 시절), `docs/baseline/r186/`(뼈대화 직전), `docs/baseline/r186-pack/`(**지금 기준**, 2026-10-31 평상복 배낭 — 헤드리스 크롬 소프트웨어 그리기 `--use-angle=swiftshader`로 찍었으니 비교도 같은 방식으로. r186과는 그리는 방식 차이로 약 1% 화소가 다르다) — 촬영 목록 `tools/baseline-shots.js`, 픽셀 비교 `tools/compare-shots.js`. 모습에 영향을 주는 변경 뒤에는 다시 찍어 비교한다.
 - **구역** (02 맨 위 주석에 구역 정보 약속): 구역 하나 = `js/zones/<이름>.js`의 `build({root})`. 그 안에서 `add`·`boxAt`·`group`·`blob` 등으로 만든 것은 구역 뿌리에 붙고, 떠날 때 GPU 메모리를 비운다(구역을 다시 만들어도 같은 그림 — 난수·텍스처가 이름 시드).
   - 구역 정보: `spawn`, `areas`(방마다 `bounds`·`obstacles`·`camera` — 실내는 방 여러 개, 야외는 넓은 하나), `doors`(밟으면 다른 구역), `sun`(해 방향·그림자 범위·`follow`), `groundY`·`ground`(야외 높낮이), `lights`·`light(env,dt)`·`update(dt,t,env)`·`click(ray)`·`keepOut`.
+  - **높이 이동** (02 `platforms`·`bouncers`·`floorAt`, 07): 높은 발판 `platforms:[{c|r, top}]` 위에 서고, 발보다 0.22 넘게 높은 발판 옆면은 막힌다. 튀는 발판 `bouncers:[{c, top, height, to}]`(버섯 갓)은 밟기만 하면 `top+height`까지 튀어 `to`에 내려앉는다(조작은 밟기만). 발판 가장자리를 걸어 나가면 떨어진다. `glide:true` 구역에서는 떨어질 때 마지막 잎을 머리 위로 펼쳐 천천히 내려온다(이번 편은 시험 구역 `sample-fairy-fx`만). 튈 때 구역의 `bounce(b)`를 부른다(갓 출렁임). 발판·튀는 발판이 없는 구역은 예전과 똑같이 움직인다(기준 촬영 그대로). 바람 구역(잎으로 바람 막기)은 아직 없다.
   - 구역 전용 조명·효과는 구역 모듈 안에 둔다. 03·07·08은 구역을 이름으로 알지 않는다. 오가기 `wlZone.go('이름')`, 시작 구역 `?zone=이름`, 시험 단추 `?zonetest`. **견본 구역은 `?zonetest` 주소에서만 목록에 들어간다** — 일반 주소에서는 어떤 길로도 못 가고, 목록에 없는 구역으로 가는 문은 저절로 없어진다.
   - 새 구역 추가 방법은 README "새 구역 추가하기". 견본 두 개(`sample-outdoor`·`sample-indoor`)는 본보기라 지우지 않는다(다음 탐험지가 정해지면 복사해서 시작).
   - 휴대폰 시험 장면 `sample-fairy-fx`(`?zonetest&zone=sample-fairy-fx`): 반투명 날개·등불 빛·낙엽·첫눈·여러 개 배치를 한 장면에 모아 아이폰에서 색점·번짐·프레임을 보는 곳. 시험판 "자동 측정"이 항목별·픽셀 비율별 프레임 시간을 표로 보여 준다. 새 효과를 넣기 전에 여기서 먼저 잰다.

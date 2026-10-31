@@ -116,17 +116,25 @@ function wlMerge(list){
       const tp=new THREE.Mesh(new THREE.SphereGeometry(.06,8,6),gold);tp.position.set(s*.42,.86,0);cg.add(tp);});
     WL.userData.charmNeedle=nd;}
    WL.userData.charm={g:ch,ax:0,az:0,vx:0,vz:0};}
+  // 참나무 잎 모양(길이 L): 잎자루에서 끝까지 양쪽 가장자리가 둥근 갈래 네 쌍으로 물결친다. 텍스처는 잎 전체에 한 번(잎맥 결)
+  function oakLeafGeo(L,stalk=true){const sh=new THREE.Shape(),N=40,st=L*.05,sl=stalk?L*.16:0,wd=t=>L*.3*Math.pow(Math.sin(PI*Math.min(1,t*1.05)),.7)*(.6+.4*Math.abs(Math.sin(4*PI*t+.4)));
+    sh.moveTo(-st,-sl);sh.lineTo(-st,0);for(let i=1;i<N;i++){const t=i/N;sh.lineTo(-wd(t),t*L);}sh.lineTo(0,L);for(let i=N-1;i>0;i--){const t=i/N;sh.lineTo(wd(t),t*L);}sh.lineTo(st,0);sh.lineTo(st,-sl);
+    const lg=new THREE.ShapeGeometry(sh);lg.computeBoundingBox();const b=lg.boundingBox,p=lg.attributes.position,uv=lg.attributes.uv;for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)-b.min.x)/(b.max.x-b.min.x),(p.getY(i)-b.min.y)/(b.max.y-b.min.y));return lg;}
   // 할아버지 참나무가 준 마지막 잎(아이템 lastLeaf): 나침반 옆에 나란히. 참나무 잎 모양 — 둥근 갈래가 물결치는 주황 잎(우듬지 장면 그림 2026-10-31)
   {const ch=new THREE.Bone();ch.name='charm_lastLeaf';ch.position.set(.078,.476,-.462);wlBody.add(ch);pack.push(ch);
    const brassM=SM('#d8b36a');const ring=wm(new THREE.TorusGeometry(.012,.0038,8,16),brassM);ring.position.y=-.012;ch.add(ring);
    const link=wm(new THREE.TorusGeometry(.008,.003,6,12),brassM);link.position.y=-.03;link.rotation.y=PI/2;ch.add(link);
    // 잎 모양: 잎자루에서 끝까지 양쪽 가장자리가 둥근 갈래 네 쌍으로 물결친다. 텍스처는 잎 전체에 한 번(잎맥 결)
-   const L=.12,sh=new THREE.Shape(),N=40,wd=t=>L*.3*Math.pow(Math.sin(PI*Math.min(1,t*1.05)),.7)*(.6+.4*Math.abs(Math.sin(4*PI*t+.4)));
-   sh.moveTo(-.006,-L*.16);sh.lineTo(-.006,0);for(let i=1;i<N;i++){const t=i/N;sh.lineTo(-wd(t),t*L);}sh.lineTo(0,L);for(let i=N-1;i>0;i--){const t=i/N;sh.lineTo(wd(t),t*L);}sh.lineTo(.006,0);sh.lineTo(.006,-L*.16);
-   const lg=new THREE.ShapeGeometry(sh);{lg.computeBoundingBox();const b=lg.boundingBox,p=lg.attributes.position,uv=lg.attributes.uv;for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)-b.min.x)/(b.max.x-b.min.x),(p.getY(i)-b.min.y)/(b.max.y-b.min.y));}
-   const leaf=wm(lg,TM('#e9913f','leaf',{},THREE.DoubleSide));leaf.position.y=-.034;leaf.rotation.set(0,PI,PI-.22);ch.add(leaf);
+   const leafM=TM('#dc5a2c','leaf',{},THREE.DoubleSide);WL.userData.leafM=leafM; // 떠나는 잎의 외출복 — 붉은 주황
+   const leaf=wm(oakLeafGeo(.12),leafM);leaf.position.y=-.034;leaf.rotation.set(0,PI,PI-.22);ch.add(leaf);
    WL.userData.leafCharm={g:ch,ax:0,az:0,vx:0,vz:0,flag:'lastLeaf'};}
   WL.userData.charms=[WL.userData.charm,WL.userData.leafCharm];
+  // 활공: 마지막 잎을 우산처럼 머리 위로 크게 펼쳐 든다(활공할 때만 보임 — 07). 잎은 살짝 앞으로 기울고 가장자리가 아래로 휜다
+  {const g=new THREE.Bone();g.name='glide_leaf';g.position.set(0,1.95,.02);g.visible=false;wlBody.add(g);
+   // 낙하산·패러글라이더처럼 둥근 지붕: 옆으로 넓히고, 가운데가 가장 높고 앞뒤·양옆 가장자리가 모두 아래로 휜다
+   const L=2.0,big=oakLeafGeo(L,false);{const p=big.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i)*1.55,y=p.getY(i)-L*.5;p.setX(i,x);p.setZ(i,-(x*x*.5+y*y*.34));}big.computeVertexNormals();}
+   const lf=wm(big,WL.userData.leafM);lf.rotation.set(-PI/2+.12,0,0);lf.position.set(0,.02,L*.5);g.add(lf); // 잎 가운데가 머리 위에 오게(잎자루는 뒤쪽)
+   WL.userData.glideLeaf=g;}
   let outfit=0;
   function applyOutfit(){const e=outfit===1;shirtMs.forEach(o=>o.material=e?E.shirt:tunic);pantsMs.forEach(o=>o.material=e?E.pants:shorts);
     rf.forEach((o,i)=>o.material=e?(i%2?E.fold:E.roll):rfBase[i]);exp.forEach(o=>o.visible=e);pack.forEach(o=>o.visible=true);WL.userData.outfit=e;}

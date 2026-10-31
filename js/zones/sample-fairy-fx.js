@@ -5,6 +5,7 @@
      진짜 조명(점광원)은 원더룹 가까운 버섯 등불 하나에만. (처음엔 버섯마다 점광원이었는데 아이폰에서 프레임 시간 22.7ms 중 6ms를 써서 바꿈)
    - 낙엽·첫눈 파티클: 낙엽은 InstancedMesh(색 3가지), 첫눈은 Points — 원더룹 둘레 상자 안에서 돌고 돈다
    - 같은 모델 여러 개: 꼬마 요정 60(부품마다 InstancedMesh, 날갯짓·통통), 무당벌레 40(통나무 위 계단)
+   - 진짜 점프·활공(07 높이 이동): 튀는 버섯을 밟으면 그루터기 위로, 그루터기에서 걸어 나가면 잎을 펼쳐 활공
    화면 왼쪽 위 시험판: 초당 프레임(평균·가장 느린 프레임), 드로우콜·삼각형, 항목마다 켜고 끄기, 낮/저녁/어두운 굴.
    "자동 측정": 모두 켬 → 항목을 하나씩 끔(날개·등불 빛·빛무리·낙엽·첫눈·요정·무당벌레·그림자) → 모두 끔 → 픽셀 비율 바꾸기를
    차례로 (조건마다 2.5초 준비 + 4초 측정) 재서 표로 보여 준다. 결과는 window.wlFx.results에도. 렌더러는 장면의 onBeforeRender로 받는다(03을 건드리지 않음).
@@ -91,6 +92,17 @@ const bShell=new THREE.InstancedMesh(new THREE.SphereGeometry(0.16,14,8,0,PI*2,0
    o.translateZ(0.15);o.translateY(0.02);o.updateMatrix();bHead.setMatrixAt(i,o.matrix);}}
 // 줄기 모양 기둥 (무당벌레 계단이 닿는 곳)
 cylAt(0.9,1.2,7,M('#7a5a40','wood',{rep:[2,3]}),6.6,0,3.6,{thr:40});obstacles.push({c:[6.6,3.6,1.2]});shadowBlob(6.6,3.6,1.7,1.7,0.45);
+/* ---------- 6. 튀는 버섯 · 높은 그루터기 (점프·활공 시험) ----------
+   버섯 갓을 밟으면(누르면 걸어가서 밟음) 통통 튀어 그루터기 위에 내려앉는다. 그루터기 가장자리를 걸어 나가면
+   마지막 잎을 머리 위로 펼쳐 천천히 내려온다(glide:true — 이번 편은 이 시험 구역에서만). */
+const STUMP={x:1.8,z:5.0,r:1.0,top:1.8},BOUNCE={x:1.8,z:3.2,r:.5,top:.38};
+const stumpG=group(STUMP.x,0,STUMP.z,0.3);cylAt(STUMP.r,STUMP.r*1.12,STUMP.top,M('#8a6244','wood',{rep:[3,1]}),0,0,0,{parent:stumpG,thr:40});
+const stumpTop=add(new THREE.CircleGeometry(STUMP.r*.98,24).rotateX(-PI/2),M('#e1bf92','rings'),0,STUMP.top+.002,0,{parent:stumpG,cast:false,line:false});
+shadowBlob(STUMP.x,STUMP.z,STUMP.r*1.5,STUMP.r*1.5,.45);
+const bounceG=group(BOUNCE.x,0,BOUNCE.z,0);cylAt(.1,.13,.3,M('#f1e2c4','plain'),0,0,0,{parent:bounceG,line:false});
+const bounceCap=add(new THREE.SphereGeometry(.56,16,8,0,PI*2,0,PI*.5),M('#d9573f','dots',{rep:[2,1]}),0,.28,0,{parent:bounceG,s:[1,.45,1],thr:30});
+shadowBlob(BOUNCE.x,BOUNCE.z,.65,.65);
+let squash=0; // 튈 때 갓이 출렁
 /* ---------- 5. 낙엽 (InstancedMesh) · 첫눈 (Points) ---------- */
 const BOX=[14,6,14]; // 원더룹 둘레 x·y·z 범위
 const NL=num('leaves',300),NS=num('snow',800);
@@ -183,6 +195,7 @@ window.wlFx={get fps(){return fpsLog.slice();},on,apply,autoMeasure,results,setS
 /* ---------- 움직임 ---------- */
 const o3=new THREE.Object3D(),o4=new THREE.Object3D(),R2=rng('sample-fairy-fx:respawn'),rnd2=(a,b)=>a+(b-a)*R2();let WL=null;
 function update(dt,t){meter();hook();
+  if(squash>0){squash=Math.max(0,squash-dt*2.5);const k=Math.sin(squash*PI*3)*squash*.35;bounceCap.scale.set(1+k*.6,.45*(1-k),1+k*.6);}
   // 원더룹(장면에 바로 붙은, 표정 함수를 가진 그룹) 둘레에서 낙엽·눈이 돈다
   if(!WL&&root.parent)WL=root.parent.children.find(o=>o.userData&&o.userData.setExpr)||null;const cx=WL?WL.position.x:0,cz=WL?WL.position.z:0;
   // 꼬마 요정: 통통 뛰거나 떠서 날갯짓
@@ -216,8 +229,11 @@ return {
     camera:{target:[0,1,0],dist:22,polar:[0.45,1.35],azimuth:null,start:[1.05,0.5],minDist:3,maxDist:40}}},
   doors:[],
   sun:{dir:new THREE.Vector3(5,-11,6).normalize(),shadow:10,follow:true},
-  groundY:()=>0,ground:[ground],
-  lights:LS.all,keepOut:[crowd,bugs,leaves,snow,wingShow],
+  groundY:()=>0,ground:[ground,stumpTop,bounceCap],
+  platforms:[{c:[STUMP.x,STUMP.z,STUMP.r],top:STUMP.top}],
+  bouncers:[{c:[BOUNCE.x,BOUNCE.z,BOUNCE.r],top:BOUNCE.top,height:STUMP.top+1.1,to:[STUMP.x,STUMP.z-.25]}],
+  bounce(){squash=1;},glide:true, // 활공은 시험 구역에서만(이번 편은 마지막 잎을 받기만 함)
+  lights:LS.all,keepOut:[crowd,bugs,leaves,snow,wingShow,bounceG],
   update,light,
   dispose(){LS.dispose();panel.remove();if(scn)scn.onBeforeRender=prevBR;if(sunL)sunL.castShadow=true;if(gl&&measuring)gl.setPixelRatio(Math.min(window.devicePixelRatio||1,2));pageUi.forEach((e,i)=>e.style.display=uiShown[i]);delete window.wlFx;[wingTex,snowTex,spotTex].forEach(t=>t.dispose());},
 };

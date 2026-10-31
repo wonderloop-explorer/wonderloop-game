@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {PI,QUALITY,blobTex,footTex,lin,pencil,rng,scene,softMat} from './01-textures.js';
 const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로딩 뒤 첫 난수를 이어 썼다)
-import {blocked,groundY} from './02-zone.js';
+import {blocked,bouncerAt,floorAt,groundY,hasHeights,zone} from './02-zone.js';
 import {flags} from './game/state.js';
 import {hint} from './game/ui.js';
 import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
@@ -20,6 +20,15 @@ const wlBlob=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.95),softMat(QUALITY.s
 const wlHit=[];WL.traverse(o=>{if(o.isMesh)wlHit.push(o);});
 const marker=new THREE.Mesh(new THREE.RingGeometry(0.16,0.24,24),new THREE.MeshBasicMaterial({color:lin('#3fb5a8'),transparent:true,opacity:0,depthWrite:false}));marker.rotation.x=-PI/2;scene.add(marker);hint(marker); // 걷기 목표 표시 = 안내 표시(영상에서는 숨김)
 let wlTarget=null,wlHop=0,wlPhase=0,blinkT=2.5,markerA=0;
+/* 높이 이동 (구역에 platforms·bouncers가 있을 때만 — 없으면 예전처럼 땅 높이만):
+   y 발 높이, vy 위아래 속도, air 공중, jump 튀는 발판이 정한 날아가기(가로 속도), glide 활공 정도(0~1).
+   튀는 발판(버섯 갓)을 밟으면 정해진 꼭대기(top+height)까지 튀어 to에 내려앉는다 — 조작은 밟기만(어렵지 않게).
+   발판 가장자리를 걸어 나가면 떨어지고, 구역 정보 glide:true인 곳에서는 떨어질 때 마지막 잎을 머리 위로 펼쳐 천천히 내려온다(이번 편은 시험 구역만). */
+const GRAV=14,GLIDE=.9,V={y:0,vy:0,air:false,jump:null,lastB:null,glide:0,px:0,pz:0,sw:0,swX:0};WL.userData.vert=V;
+function launch(b){const x=WL.position.x,z=WL.position.z,apex=b.top+b.height,vy0=Math.sqrt(2*GRAV*Math.max(.2,apex-V.y));
+  V.lastB=b;V.vy=vy0;V.air=true;V.jump={vx:0,vz:0};wlTarget=null;markerA=0;
+  if(b.to){const yl=floorAt(b.to[0],b.to[1]),T=(vy0+Math.sqrt(2*GRAV*Math.max(0,apex-yl)))/GRAV;V.jump.vx=(b.to[0]-x)/T;V.jump.vz=(b.to[1]-z)/T;if(Math.hypot(V.jump.vx,V.jump.vz)>.01)WL.rotation.y=Math.atan2(V.jump.vx,V.jump.vz);}
+  if(zone.cur.bounce)zone.cur.bounce(b);}
 // 걸을 수 있는 곳·장애물·땅 높이는 지금 구역이 정한다 (02 blocked·groundY)
 function hopWL(){if(wlHop<=0)wlHop=1;}
 function stopWalk(){wlTarget=null;markerA=0;} // 구역을 옮길 때
@@ -182,15 +191,30 @@ const rigSync=(()=>{
  else console.warn('원더룹: 스키닝 법선 패치 실패');}
 function updateWL(dt,t){
   shirtU.uInv.value.copy(wlBody.matrixWorld).invert();
-  let moving=false;
-  if(wlTarget){const dx=wlTarget.x-WL.position.x,dz=wlTarget.z-WL.position.z,d=Math.hypot(dx,dz);
+  let moving=false;const H=hasHeights();
+  if(V.jump){WL.position.x+=V.jump.vx*dt;WL.position.z+=V.jump.vz*dt;} // 튀어 날아가는 중: 걷기 대신
+  else if(wlTarget){const dx=wlTarget.x-WL.position.x,dz=wlTarget.z-WL.position.z,d=Math.hypot(dx,dz);
     if(d<0.06)wlTarget=null;else{const st=Math.min(1.5*dt*(WL.userData.action==='뛰기'?1.9:1),d),nx=WL.position.x+dx/d*st,nz=WL.position.z+dz/d*st;
       let diff=Math.atan2(dx,dz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);
-      if(!blocked(nx,nz)){WL.position.x=nx;WL.position.z=nz;moving=true;}
-      else if(!blocked(nx,WL.position.z)){WL.position.x=nx;moving=true;}
-      else if(!blocked(WL.position.x,nz)){WL.position.z=nz;moving=true;}
+      const fy=H?V.y:undefined; // 높이가 있는 구역: 발보다 높은 발판 옆면은 막힘
+      if(!blocked(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}
+      else if(!blocked(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}
+      else if(!blocked(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}
       else wlTarget=null;}}
-  const GY=groundY(WL.position.x,WL.position.z); // 땅 높이 (평평한 방은 0)
+  let GY;const X=WL.position.x,Z=WL.position.z;
+  if(!H){GY=groundY(X,Z);V.y=GY;V.vy=0;V.air=false;V.jump=null;V.glide=0;if(V.swX){V.swX=0;WL.rotation.z=0;}} // 땅 높이 (평평한 방은 0)
+  else{if(Math.hypot(X-V.px,Z-V.pz)>.5&&!V.jump){V.y=floorAt(X,Z);V.air=false;V.vy=0;} // 자리를 옮겼으면(구역 오가기·촬영) 그 자리 가장 높은 바닥에
+    if(!V.air){const f=floorAt(X,Z,V.y);if(V.y-f>.3){V.air=true;V.vy=0;}else V.y=f; // 가장자리를 걸어 나가면 떨어짐
+      const b=!V.air&&bouncerAt(X,Z);if(b&&b!==V.lastB)launch(b);else if(!b)V.lastB=null;}
+    if(V.air){const prev=V.y;V.vy-=GRAV*dt;const gl=!!zone.cur.glide&&!V.jump&&V.vy<-.5;V.glide+=((gl?1:0)-V.glide)*Math.min(1,dt*8);
+      if(gl){V.sw+=dt*2.6;V.vy=Math.max(V.vy,-GLIDE*(1+.45*Math.sin(V.sw*2)));} // 활공: 떨어지는 속도를 GLIDE(초당 0.9) 언저리로 — 둥실둥실 빨라졌다 느려졌다
+      V.y+=V.vy*dt;const f=floorAt(X,Z,prev);if(V.vy<=0&&V.y<=f){V.y=f;V.air=false;V.vy=0;V.jump=null;}}
+    else V.glide=Math.max(0,V.glide-dt*8);
+    // 활공하는 동안 낙엽처럼 양옆으로 왔다 갔다(옆으로 실제로 움직이고, 움직이는 쪽으로 몸을 기울임)
+    {const sx=Math.sin(V.sw)*.5*V.glide,d=sx-V.swX;V.swX=sx;if(d){const c=Math.cos(WL.rotation.y),sn=Math.sin(WL.rotation.y);WL.position.x+=c*d;WL.position.z-=sn*d;}
+     WL.rotation.z=-Math.cos(V.sw)*.28*V.glide;if(!V.glide)V.swX=0;}
+    GY=V.y;}
+  V.px=X;V.pz=Z;
   if(moving)wlPhase+=dt*11*(WL.userData.action==='뛰기'?1.6:1);
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
@@ -199,6 +223,8 @@ function updateWL(dt,t){
   body.rotation.z=sw*0.06;
   body.position.y=moving?Math.abs(Math.cos(wlPhase))*0.05:Math.sin(t*2.2)*0.012;
   let hopY=0,wave=0;if(wlHop>0){wlHop=Math.max(0,wlHop-dt*1.6);wave=Math.sin((1-wlHop)*PI);hopY=wave*0.4;}
+  if(H){const U=WL.userData;U.airW=(U.airW||0)+((V.air?1:0)-(U.airW||0))*Math.min(1,dt*10);wave=Math.max(wave,U.airW*.55,V.glide); // 공중에서는 팔을 들고, 활공은 두 팔로 잎을 받침
+    if(U.glideLeaf)U.glideLeaf.visible=V.glide>.4;}
   WL.position.y=GY+hopY*WLS;arms[0].rotation.z=-0.32-wave*2.2;arms[1].rotation.z=0.32+wave*2.2;
   {const th=(moving?0:Math.sin(t*0.9)*0.05)+(WL.userData.headTilt||0);neck.rotation.z=th;}
   // 배낭 키링(나침반·받은 아이템): 걸을 때 달랑달랑. 나침반 계산은 예전 그대로, 다른 키링도 같은 식으로 따로 흔들린다
@@ -207,7 +233,8 @@ function updateWL(dt,t){
     C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=C===WL.userData.charm&&WL.userData.charmNeedle;if(N)N.rotation.z=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;}}
   antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1;});
   blinkT-=dt;if(blinkT<0)blinkT=2.5+2.5*blinkR();const bl=blinkT<0.12?0.15:1;eyes.forEach(e=>e.scale.y=bl);
-  wlBlob.position.set(WL.position.x,GY+0.046,WL.position.z);wlBlob.scale.setScalar((1-hopY*0.8)*WLS*0.8);
+  if(!H){wlBlob.position.set(WL.position.x,GY+0.046,WL.position.z);wlBlob.scale.setScalar((1-hopY*0.8)*WLS*0.8);}
+  else{const f=floorAt(X,Z,V.y);wlBlob.position.set(X,f+0.046,Z);wlBlob.scale.setScalar((1-hopY*0.8-Math.min(.55,(V.y-f)*.18))*WLS*0.8);} // 발밑 그림자는 아래 바닥에, 높을수록 작게
   markerA=Math.max(0,markerA-dt*1.2);marker.material.opacity=markerA*0.9;marker.scale.setScalar(1+(1-markerA)*0.6);
   {const U=WL.userData,A=U.action||'서기';U.at=(U.at||0)+dt;const at=U.at;
    let T=null;if(moving){if(A==='뛰기')T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at);

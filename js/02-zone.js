@@ -15,6 +15,9 @@
      lights: [점광원]  light(env,dt)  update(dt,t,env)  click(ray)  keepOut: [병합에서 뺄 것]  dispose()
      start: {compass:true}               들어올 때 이미 그런 진행 상태(game/state)
      hood: 'acorn'                       들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
+     platforms: [{r:[x0,x1,z0,z1]|c:[x,z,반지름], top}]   높은 발판(버섯 갓·가지 등): 위에 서고, 아래에서 걸어 들어가면 막힘(STEP보다 높으면)
+     bouncers: [{c:[x,z,반지름], top, height, to:[x,z]}]   튀는 발판(버섯 갓): 밟기만 하면 top+height 높이로 튀어 to에 내려앉음(to 없으면 제자리)
+     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true  활공 가능(지금은 시험 구역만 — 07)
      outfit: 'explorer'|'casual'         (선택) 옷. 세계 구역은 js/zones/<세계>/world.js의 기본값을 펼쳐 쓴다(...FAIRY_WORLD)
      NPC·이벤트는 build 안에서 js/game/의 dialog.npc()·events.area()로 등록한다(구역을 떠나면 비워진다)
    새 구역 추가: README "새 구역 추가하기". */
@@ -42,7 +45,7 @@ async function loadZone(id){
   BUILD.root=root;BUILD.zone=id;let z;try{z=mod.build({root,id});}finally{BUILD.root=null;BUILD.zone=null;}
   Object.assign(z,{id,root});z.lights=z.lights||[];z.keepOut=z.keepOut||[];
   z.doors=(z.doors||[]).filter(d=>ZONES[d.to]); // 목록에 없는 구역으로 가는 문은 없앤다
-  for(const a of Object.values(z.areas))a.obstacles=a.obstacles||[];
+  for(const a of Object.values(z.areas))a.obstacles=a.obstacles||[];z.platforms=z.platforms||[];z.bouncers=z.bouncers||[];
   applyStart(z.start); // 이 구역에 들어올 때 이미 그런 이야기 상태 (예: 나침반을 받음)
   return z;}
 function unloadZone(z){
@@ -55,7 +58,14 @@ function unloadZone(z){
 const WR=0.28;
 const inRect=(r,x,z)=>x>=r[0]&&x<=r[1]&&z>=r[2]&&z<=r[3];
 function areaAt(x,z){for(const k in zone.cur.areas)if(inRect(zone.cur.areas[k].bounds,x,z))return k;return null;}
-function blocked(x,z){if(!areaAt(x,z))return true;
+/* 높이: 발판(platforms) 위에 서고, 발보다 STEP 넘게 높은 발판 옆면은 막는다. 발판·튀는 발판이 없는 구역은 예전과 같다(땅 높이만) */
+const STEP=.22;
+const inShape=(o,x,z,m=0)=>o.r?(x>o.r[0]-m&&x<o.r[1]+m&&z>o.r[2]-m&&z<o.r[3]+m):((x-o.c[0])**2+(z-o.c[1])**2<(o.c[2]+m)**2);
+function floorAt(x,z,y=Infinity){let f=groundY(x,z);for(const p of zone.cur.platforms)if(p.top>f&&p.top<=y+STEP&&inShape(p,x,z))f=p.top;return f;}
+const bouncerAt=(x,z)=>zone.cur.bouncers.find(b=>inShape(b,x,z))||null;
+const hasHeights=()=>zone.cur.platforms.length>0||zone.cur.bouncers.length>0;
+function blocked(x,z,y){if(!areaAt(x,z))return true;
+  if(y!=null)for(const p of zone.cur.platforms)if(p.top>y+STEP&&inShape(p,x,z,WR*.6))return true;
   for(const k in zone.cur.areas)for(const o of zone.cur.areas[k].obstacles){
     if(o.r){if(x>o.r[0]-WR&&x<o.r[1]+WR&&z>o.r[2]-WR&&z<o.r[3]+WR)return true;}
     else{const dx=x-o.c[0],dz=z-o.c[1];if(dx*dx+dz*dz<(o.c[2]+WR)*(o.c[2]+WR))return true;}}
@@ -65,4 +75,4 @@ const doorAt=(x,z)=>zone.cur.doors.find(d=>inRect(d.rect,x,z))||null;
 // 처음 구역: 보통 베이스캠프, 주소에 ?zone=이름 을 붙이면 그 구역에서 시작
 {const want=new URLSearchParams(location.search).get('zone');zone.cur=await loadZone(ZONES[want]?want:'basecamp');}
 zone.area=areaAt(zone.cur.spawn.x,zone.cur.spawn.z)||Object.keys(zone.cur.areas)[0];
-export {WR,ZONES,ZONETEST,areaAt,blocked,doorAt,groundY,loadZone,unloadZone,zone};
+export {STEP,WR,ZONES,ZONETEST,areaAt,blocked,bouncerAt,doorAt,floorAt,groundY,hasHeights,loadZone,unloadZone,zone};

@@ -216,6 +216,17 @@ function drawPencil(base,kind,o){
     for(let i=0;i<900;i++){g.fillStyle=hexA(R()<.5?dark:'#ffffff',rnd(.06,.15));g.fillRect(rnd(0,S),rnd(0,S),1.5,1.5);}
     g.strokeStyle=hexA(dark,.3);g.lineWidth=2;for(let y=S*.62;y<S;y+=9){g.beginPath();g.moveTo(0,y);g.lineTo(S,y);g.stroke();}
     hatchAmt*=.2;
+  }else if(kind==='rings'){
+    // 나무 그루터기 윗면: 가운데에서 퍼지는 나이테(조금씩 일그러진 동그라미), 갈라진 금 몇 줄, 바깥 껍질 테
+    const c=S/2;g.lineCap='round';
+    for(let r=5;r<c*.9;r+=rnd(5,9)){const ph=rnd(0,PI*2),wob=rnd(.6,1.6);g.strokeStyle=hexA(R()<.25?darker:dark,rnd(.35,.7));g.lineWidth=rnd(1,2.2);g.beginPath();
+      for(let a=0;a<=64;a++){const t=a/64*PI*2,rr=r+Math.sin(t*3+ph)*wob+Math.sin(t*7+ph*2)*wob*.4;a?g.lineTo(c+Math.cos(t)*rr,c+Math.sin(t)*rr):g.moveTo(c+Math.cos(t)*rr,c+Math.sin(t)*rr);}g.stroke();}
+    g.fillStyle=hexA(darker,.55);g.beginPath();g.arc(c,c,3.5,0,7);g.fill();
+    for(let k=0;k<3;k++){const t=rnd(0,PI*2),r0=rnd(8,c*.3),r1=rnd(c*.45,c*.85);g.strokeStyle=hexA(darker,.6);g.lineWidth=rnd(1.2,2);g.beginPath();g.moveTo(c+Math.cos(t)*r0,c+Math.sin(t)*r0);
+      g.quadraticCurveTo(c+Math.cos(t+.08)*(r0+r1)/2,c+Math.sin(t+.08)*(r0+r1)/2,c+Math.cos(t-.03)*r1,c+Math.sin(t-.03)*r1);g.stroke();}
+    g.strokeStyle=hexA(shade(base,-0.4),.9);g.lineWidth=S*.07;g.beginPath();g.arc(c,c,c*.96,0,7);g.stroke();
+    g.strokeStyle=hexA(darker,.6);g.lineWidth=2;g.beginPath();g.arc(c,c,c*.9,0,7);g.stroke();
+    hatchAmt*=.3;
   }else if(kind==='scales'){
     // 도토리 깍정이 비늘: 끝이 아래(캔버스 아래 = 회전체의 테두리 쪽)를 향한 비늘을 아래 줄부터 그려 윗줄이 아랫줄 끝을 덮는다
     const rows=o.rows||6,cols=o.cols||6,w=S/cols,h=S/rows;
