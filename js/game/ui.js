@@ -5,6 +5,7 @@
    안내 카드·결과창·비밀 카드는 카드 자리 하나를 나눠 쓴다 — 한 번에 하나, 나머지는 줄을 선다(이벤트 공통 규칙 ⑦).
    카드가 열린 때와 길이는 시점 기록(kind 'card')에 남는다 → 영상에는 카드가 그려지지 않으므로 편집 때 마커로 다시 얹는다. */
 import {block,clock,cue} from './core.js';
+import {sfx} from './sound.js';
 const HINT_LAYER=5;
 const css=`
 .wlg{--panel:rgba(255,246,234,.96);--bubble:#fffaf2;--ink:#3e2834;--ink-soft:#75565e;--accent:#3f9fa0;--accent-ink:#fffaf2;--tag:#f2b63c;--tag-ink:#3e2834;
@@ -97,12 +98,12 @@ sc.querySelector('button').addEventListener('click',closeSecret);
   if(cardOn==='notice')closeNotice();else if(cardOn==='secret')closeSecret();}));
 /* 그림 컷 (장면 사이에 넣는 한 장짜리 그림, 예: 요정의 숲 오프닝 편지 클로즈업): cut({src, alt, sec, id})
    화면 전체에 그림을 띄우고 sec초(게임 시간 — 촬영 모드에서도 같은 길이) 뒤나 누르면(0.6초 뒤부터) 닫힌다. 카드 자리를 함께 써서 다른 카드와 겹치지 않는다.
-   영상에는 그리지 않는다(HTML) → 시점 기록 kind 'card'(who '그림', id)로 남겨 편집 때 같은 그림을 얹는다. */
+   영상에는 그리지 않는다(HTML) → 시점 기록 kind 'card'(who '그림', id)로 남겨 편집 때 같은 그림을 얹는다. 열고 닫을 때 종이 스치는 소리(sfx 'cut'). */
 const ct=$('#wlCut');let ctDone=null,ctCue=null,ctEnd=0;
 function cut({src,alt='',sec=4.5,id=''}){return enqueue('cut',r=>{ctDone=r;const img=ct.querySelector('img');img.src=src;img.alt=alt;ct.setAttribute('aria-label',alt);
   ct.querySelector('p').textContent=coarse?'화면을 누르면 넘어가요':'누르거나 아무 키나 누르면 넘어가요';ctEnd=clock.t+sec;
-  ctCue=cue({kind:'card',who:'그림',id,text:alt,dur:0});ct.classList.add('on');block('cut',true);});}
-function closeCut(){if(cardOn!=='cut')return;ct.classList.remove('on');endCue(ctCue);ctCue=null;block('cut',false);const d=ctDone;ctDone=null;cardDone();if(d)d();}
+  ctCue=cue({kind:'card',who:'그림',id,text:alt,dur:0});ct.classList.add('on');block('cut',true);sfx('cut');});}
+function closeCut(){if(cardOn!=='cut')return;ct.classList.remove('on');sfx('cut',{gain:.6});endCue(ctCue);ctCue=null;block('cut',false);const d=ctDone;ctDone=null;cardDone();if(d)d();}
 const tickCut=()=>{if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));

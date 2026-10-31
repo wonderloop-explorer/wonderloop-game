@@ -14,10 +14,12 @@ import {M,PI,add,blob,boxAt,cylAt,group,lathe,lin,rng,shadowBlob} from '../../01
 import * as G from '../../game/index.js';
 import {FAIRY_CODEX,FAIRY_WORLD} from './world.js';
 import {fairy,tori as makeTori} from './fairies.js';
+import {FAIRY_SOUNDS} from './sounds.js';
 export function build({root}){
 const R=rng('fairy-roots:props'),rnd=(a,b)=>a+(b-a)*R();
 const obstacles=[];
 G.codex.setup(FAIRY_CODEX());
+G.sound.synth(FAIRY_SOUNDS);G.sound.bed('amb-roots',{gain:.3,fade:2.5}); // 배경음: 들어오면 서서히 커지고 떠나면 멈춘다(clearZoneGame)
 /* ---------- 바닥·흙벽 ---------- */
 const floor=add(new THREE.CircleGeometry(11,40).rotateX(-PI/2),M('#d9ae80','plain',{rep:[8,8]}),0,0,-1,{cast:false,line:false});
 // 흙벽: 뒤쪽 반을 둘러싼 타원 벽(안쪽 면), 앞쪽은 열어 둔다
@@ -209,6 +211,7 @@ obstacles.push({c:[-2.95,-3.55,.25]});
 const leaves=G.hud.counter({id:'leaves',max:5,value:5,label:'남은 잎'});
 const st={phase:'arrive',k:0,open:-1,lift:0,snap:null};
 G.ui.setQuest('빛을 따라가 봐요');
+const snd={wx:null,wz:null,walk:0,tx:null,tz:null,wing:0}; // 발소리·날갯짓 박자
 let WL=null;const findWL=()=>{if(!WL&&root.parent)WL=root.parent.children.find(o=>o.userData&&o.userData.setExpr)||null;return WL;};
 const act=(a)=>{const w=findWL();if(w){w.userData.action=a;w.userData.at=0;}};
 G.dialog.npc({name:'토리',root:T.root,bubbleY:1.22,lines:['으아, 실이 엉켰어! 오늘은 안 되는데!'],
@@ -239,6 +242,12 @@ const v3=new THREE.Vector3();
 const free=(x,z)=>x>-6.7&&x<6.7&&z>-4.3&&z<3.7&&!obstacles.some(o=>o.r?(x>o.r[0]-.2&&x<o.r[1]+.2&&z>o.r[2]-.2&&z<o.r[3]+.2):Math.hypot(x-o.c[0],z-o.c[1])<o.c[2]+.2);
 function update(dt,t){const w=findWL();
   [T,clerk,porter,elder].forEach(f=>f.update(dt,t,{wl:w,cam:G.view.camera,free}));
+  // 발소리(마른 잎): 원더룹이 땅 위에서 걸은 거리마다 / 토리 날갯짓: 빨리 날거나 허둥댈 때, 원더룹에게서 멀수록 작게 (잦은 소리라 시점 기록에서 뺀다)
+  if(w){const d=snd.wx==null?0:Math.hypot(w.position.x-snd.wx,w.position.z-snd.wz);snd.wx=w.position.x;snd.wz=w.position.z;
+    if(d<.3&&w.position.y<.05){snd.walk+=d;if(snd.walk>.34){snd.walk=0;G.sound.sfx('step-leaf',{gain:.2,minor:true,cue:false});}}else snd.walk=0;
+    const tp=T.root.position,v=snd.tx==null||dt<=0?0:Math.hypot(tp.x-snd.tx,tp.z-snd.tz)/dt;snd.tx=tp.x;snd.tz=tp.z;
+    const near=Math.max(0,1-Math.hypot(tp.x-w.position.x,tp.z-w.position.z)/6),fast=T.mode==='follow'&&v>.3,flap=fast||T.mode==='panic'||T.mode==='beckon';
+    if(flap&&near>0&&(snd.wing-=dt)<0){snd.wing=fast?.14:.22;G.sound.sfx('wing',{gain:(fast?.22:.12)*near,minor:true,cue:false});}}
   [T,clerk,porter].forEach(f=>{if(f.shadow)f.shadow.position.set(f.root.position.x,.045,f.root.position.z);});
   porter.root.position.x=-1.2+Math.sin(t*.35)*.9;porter.root.rotation.y=Math.cos(t*.35)>0?1.4:-1.7;
   clerk.body.rotation.z=Math.sin(t*1.7)*.05;
