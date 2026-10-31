@@ -64,7 +64,9 @@ export async function run() {
   // 9. 나침반 키링: 받은 뒤에만 보인다 — 평상복·탐험복 모두 배낭에 (2026-10-31부터 평상복에도 배낭)
   { await reset(); const ch = WL.userData.charm.g, was = !!WL.userData.outfit; G.state.setFlag('compass', false); sec(.1); const off = !ch.visible; G.state.setFlag('compass', true); sec(.1); const on = ch.visible;
     s.setup({ outfit: was ? 0 : 1 }); sec(.1); const other = ch.visible; s.setup({ outfit: was ? 1 : 0 }); sec(.1);
-    ok('나침반 키링은 받은 뒤에만', off && on && other, `받기 전 숨김 ${off}, 받은 뒤 보임 ${on} (${was ? '탐험복' : '평상복'}), 옷을 바꿔도 보임 ${other}`); }
+    // 받은 아이템(마지막 잎)도 받은 뒤에만 나침반 옆에 — items.give, 다시 숨겨 두어 다른 시험에 영향 없게
+    const lc = WL.userData.leafCharm.g; G.state.setFlag('lastLeaf', false); sec(.1); const lOff = !lc.visible; G.items.give('lastLeaf'); sec(.1); const lOn = lc.visible; G.state.setFlag('lastLeaf', false); sec(.1);
+    ok('나침반 키링은 받은 뒤에만', off && on && other && lOff && lOn, `받기 전 숨김 ${off}, 받은 뒤 보임 ${on} (${was ? '탐험복' : '평상복'}), 옷을 바꿔도 보임 ${other}, 마지막 잎 받기 전 숨김 ${lOff}·받은 뒤 보임 ${lOn}`); }
 
   // 10. 이벤트 트리거(영역) → 나레이션 → 안내 카드
   { await reset(); const n0 = G.cues.length; WL.position.set(-3, 0, 1); for (let i = 0; i < 8 * 60 && !G.ui.noticeShown(); i++) { sec(STEP); await flush(); }

@@ -14,7 +14,8 @@
      groundY(x,z), ground: [메시]          (선택) 땅 높이, 클릭해서 걸을 때 맞힐 땅
      lights: [점광원]  light(env,dt)  update(dt,t,env)  click(ray)  keepOut: [병합에서 뺄 것]  dispose()
      start: {compass:true}               들어올 때 이미 그런 진행 상태(game/state)
-     hood: 'acorn'                       들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나
+     hood: 'acorn'                       들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
+     outfit: 'explorer'|'casual'         (선택) 옷. 세계 구역은 js/zones/<세계>/world.js의 기본값을 펼쳐 쓴다(...FAIRY_WORLD)
      NPC·이벤트는 build 안에서 js/game/의 dialog.npc()·events.area()로 등록한다(구역을 떠나면 비워진다)
    새 구역 추가: README "새 구역 추가하기". */
 import * as THREE from 'three';

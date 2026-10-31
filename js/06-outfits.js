@@ -116,18 +116,31 @@ function wlMerge(list){
       const tp=new THREE.Mesh(new THREE.SphereGeometry(.06,8,6),gold);tp.position.set(s*.42,.86,0);cg.add(tp);});
     WL.userData.charmNeedle=nd;}
    WL.userData.charm={g:ch,ax:0,az:0,vx:0,vz:0};}
+  // 할아버지 참나무가 준 마지막 잎(아이템 lastLeaf): 나침반 옆에 나란히. 참나무 잎 모양 — 둥근 갈래가 물결치는 주황 잎(우듬지 장면 그림 2026-10-31)
+  {const ch=new THREE.Bone();ch.name='charm_lastLeaf';ch.position.set(.078,.476,-.462);wlBody.add(ch);pack.push(ch);
+   const brassM=SM('#d8b36a');const ring=wm(new THREE.TorusGeometry(.012,.0038,8,16),brassM);ring.position.y=-.012;ch.add(ring);
+   const link=wm(new THREE.TorusGeometry(.008,.003,6,12),brassM);link.position.y=-.03;link.rotation.y=PI/2;ch.add(link);
+   // 잎 모양: 잎자루에서 끝까지 양쪽 가장자리가 둥근 갈래 네 쌍으로 물결친다. 텍스처는 잎 전체에 한 번(잎맥 결)
+   const L=.12,sh=new THREE.Shape(),N=40,wd=t=>L*.3*Math.pow(Math.sin(PI*Math.min(1,t*1.05)),.7)*(.6+.4*Math.abs(Math.sin(4*PI*t+.4)));
+   sh.moveTo(-.006,-L*.16);sh.lineTo(-.006,0);for(let i=1;i<N;i++){const t=i/N;sh.lineTo(-wd(t),t*L);}sh.lineTo(0,L);for(let i=N-1;i>0;i--){const t=i/N;sh.lineTo(wd(t),t*L);}sh.lineTo(.006,0);sh.lineTo(.006,-L*.16);
+   const lg=new THREE.ShapeGeometry(sh);{lg.computeBoundingBox();const b=lg.boundingBox,p=lg.attributes.position,uv=lg.attributes.uv;for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)-b.min.x)/(b.max.x-b.min.x),(p.getY(i)-b.min.y)/(b.max.y-b.min.y));}
+   const leaf=wm(lg,TM('#e9913f','leaf',{},THREE.DoubleSide));leaf.position.y=-.034;leaf.rotation.set(0,PI,PI-.22);ch.add(leaf);
+   WL.userData.leafCharm={g:ch,ax:0,az:0,vx:0,vz:0,flag:'lastLeaf'};}
+  WL.userData.charms=[WL.userData.charm,WL.userData.leafCharm];
   let outfit=0;
   function applyOutfit(){const e=outfit===1;shirtMs.forEach(o=>o.material=e?E.shirt:tunic);pantsMs.forEach(o=>o.material=e?E.pants:shorts);
     rf.forEach((o,i)=>o.material=e?(i%2?E.fold:E.roll):rfBase[i]);exp.forEach(o=>o.visible=e);pack.forEach(o=>o.visible=true);WL.userData.outfit=e;}
   applyOutfit();
   {const r=wlMerge(exp.filter(o=>o.isMesh));for(let i=exp.length-1;i>=0;i--)if(r.removed.has(exp[i]))exp.splice(i,1);r.made.forEach(m=>exp.push(m));
    {const r2=wlMerge(pack.filter(o=>o.isMesh));for(let i=pack.length-1;i>=0;i--)if(r2.removed.has(pack[i]))pack.splice(i,1);r2.made.forEach(m=>pack.push(m));}
-   wlMerge(WL.userData.hatG.children.slice());if(WL.userData.charm)wlMerge(WL.userData.charm.g.children.slice());applyOutfit();}
+   wlMerge(WL.userData.hatG.children.slice());if(WL.userData.charm)wlMerge(WL.userData.charm.g.children.slice());wlMerge(WL.userData.leafCharm.g.children.slice());applyOutfit();}
   // 탈 카테고리: 없음 → 개미탈 → 탐험 모자 (옷과 따로 쓰고 벗음)
   {const hwBtn=document.getElementById('hoodBtn');WL.userData.hw=0;
    const applyHW=()=>{const hw=WL.userData.hw;WL.userData.hatG.visible=hw===2;WL.userData.applyLook();pressHair(hw===2||HOODS[hw].press?hw:0);hwBtn.textContent='탈: '+HOODS[hw].name;};
    hwBtn.addEventListener('click',()=>{WL.userData.hw=(WL.userData.hw+1)%HOODS.length;applyHW();});applyHW();
    // 이름으로 탈 쓰기 (구역 정보 hood, 영상 대본): setHood('acorn')
    WL.userData.setHood=key=>{const i=HOODS.findIndex(h=>h.key===key);if(i<0){console.warn('원더룹: 없는 탈',key);return;}WL.userData.hw=i;applyHW();};}
-  const ob=document.getElementById('outfitBtn');ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';});
+  const ob=document.getElementById('outfitBtn');const showOutfit=()=>ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();showOutfit();});
+  // 이름으로 옷 입기 (구역 정보 outfit): setOutfit('explorer'|'casual')
+  WL.userData.setOutfit=key=>{outfit=key==='explorer'?1:0;applyOutfit();showOutfit();};
 }
