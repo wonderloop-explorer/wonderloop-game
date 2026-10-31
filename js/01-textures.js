@@ -304,6 +304,27 @@ function gradTex(radial,strong){
 }
 const blobTex=gradTex(true,0.6),aoTex=gradTex(false,0.6);
 function softMat(t,op){return new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
-function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,op||0.35));m.rotation.x=-PI/2;m.position.set(x,0.045,z);host().add(m);}
+/* 품질 단계 (로드맵 6 모바일 품질 단계) — 게임을 열 때 한 번만 정하고 중간에 바꾸지 않는다.
+   그림자·빛 개수를 실행 중에 바꾸면 모든 셰이더를 다시 만들어 휴대폰이 크게 멈춘다(아이폰 어두운 굴에서 33초, 2026-10-30).
+   'mobile'(휴대폰): 진짜 그림자 끔(03) → 원더룹·캐릭터·소품 발밑에 동그란 그림자(동물의 숲처럼). 아이폰 시험 장면 49→60프레임.
+   'high'(컴퓨터·촬영 모드): 진짜 그림자 그대로 — 기준 촬영·1440p 영상 캡처는 늘 high.
+   정하는 법: 주소 ?quality=mobile|high 가 먼저, 없으면 촬영 모드(?shot)는 high, 손가락이 주 입력(pointer:coarse)인 기기는 mobile. */
+const QUALITY=(()=>{const q=new URLSearchParams(location.search),want=q.get('quality');
+  const coarse=!!(window.matchMedia&&matchMedia('(pointer: coarse)').matches)&&navigator.maxTouchPoints>0;
+  const mobile=want?want==='mobile':!q.has('shot')&&coarse;
+  return Object.freeze({tier:mobile?'mobile':'high',shadows:!mobile});})();
+window.wlQuality=QUALITY;
+/* 진짜 그림자 대신 까는 동그란 그림자: 휴대폰 단계에서만 만든다(컴퓨터는 진짜 그림자가 있으니 null). 움직이는 것은 blobMany */
+/* 발밑 그림자 무늬(휴대폰 단계): 가운데는 고르게 진하고 가장자리만 부드럽게 — 퍼지기만 하는 blobTex보다 '서 있는 그림자'로 읽힌다 */
+const footTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,'rgba(70,45,30,0.62)');gr.addColorStop(0.55,'rgba(70,45,30,0.55)');gr.addColorStop(1,'rgba(70,45,30,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(cv);})();
+function shadowBlob(x,z,rx,rz,op){if(QUALITY.shadows)return null;const m=blob(x,z,rx,rz,0.35);m.material=softMat(footTex,op??0.7);return m;}
+// 휴대폰 단계는 진짜 그림자가 없어 동그란 그림자(blob)가 땅에 붙여 주는 몫을 다 맡는다 → 모든 blob을 1.6배 진하게(컴퓨터 화면은 그대로)
+const BLOB_K=QUALITY.shadows?1:1.6;
+/* 같은 동그란 그림자 n개 (요정 무리 등 InstancedMesh): set(i,x,y,z,r)로 자리·크기. 휴대폰 단계에서만 만든다 */
+function blobMany(n,op){if(QUALITY.shadows||!n)return null;const m=new THREE.InstancedMesh(new THREE.PlaneGeometry(2,2).rotateX(-PI/2),softMat(footTex,op??0.75),n);
+  m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);host().add(m);
+  const o=new THREE.Object3D();m.set=(i,x,y,z,r)=>{o.position.set(x,y+0.045,z);o.scale.set(r,1,r);o.updateMatrix();m.setMatrixAt(i,o.matrix);m.instanceMatrix.needsUpdate=true;};return m;}
+function blob(x,z,rx,rz,op){const m=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,rz*2),softMat(blobTex,Math.min(1,(op||0.35)*BLOB_K)));m.rotation.x=-PI/2;m.position.set(x,0.045,z);host().add(m);return m;}
 function aoPlane(w,h,rot,pos,op){const geo=new THREE.PlaneGeometry(w,h);rot(geo);const m=new THREE.Mesh(geo,softMat(aoTex,op));m.position.set(...pos);host().add(m);}
-export {B,BUILD,C,M,PI,TEXSET,UP,add,aoPlane,blob,blobTex,boxAt,cylAt,cylBetween,group,lathe,lin,loadBaked,pencil,TEXREG,rawLin,rng,rngLoaded,scene,shade,skyTex,softMat};
+export {B,BUILD,C,M,PI,QUALITY,TEXSET,UP,add,aoPlane,blob,blobMany,blobTex,boxAt,footTex,cylAt,cylBetween,group,lathe,lin,loadBaked,pencil,TEXREG,rawLin,rng,rngLoaded,scene,shade,shadowBlob,skyTex,softMat};

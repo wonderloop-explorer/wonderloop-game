@@ -9,9 +9,11 @@
    "자동 측정": 모두 켬 → 항목을 하나씩 끔(날개·등불 빛·빛무리·낙엽·첫눈·요정·무당벌레·그림자) → 모두 끔 → 픽셀 비율 바꾸기를
    차례로 (조건마다 2.5초 준비 + 4초 측정) 재서 표로 보여 준다. 결과는 window.wlFx.results에도. 렌더러는 장면의 onBeforeRender로 받는다(03을 건드리지 않음).
    주소 옵션: &fx=-glow,-snow (처음부터 끌 항목), &leaves=300 &snow=800 &fairies=60 &bugs=40 (개수), &wing=blend|test (날개 투명 방식)
-   원더룹 크기는 그대로, 숲 소품을 크게 만든다(요정의 숲 규칙). 난수는 rng('sample-fairy-fx:…'). */
+   원더룹 크기는 그대로, 숲 소품을 크게 만든다(요정의 숲 규칙). 난수는 rng('sample-fairy-fx:…').
+   품질 단계(01 QUALITY): 휴대폰 단계는 진짜 그림자 대신 동그란 그림자(shadowBlob·blobMany), 시험판에서 그림자 단추·그림자 측정이 빠진다.
+   휴대폰 단계를 컴퓨터에서 보려면 &quality=mobile. */
 import * as THREE from 'three';
-import {M,PI,add,blob,cylAt,group,lin,rng} from '../01-textures.js';
+import {M,PI,QUALITY,add,blob,blobMany,cylAt,group,lin,rng,shadowBlob} from '../01-textures.js';
 import * as G from '../game/index.js';
 export function build({root}){
 const Q=new URLSearchParams(location.search),num=(k,d)=>{const v=parseInt(Q.get(k),10);return Number.isFinite(v)&&v>=0?Math.min(v,5000):d;};
@@ -57,7 +59,7 @@ mushroomLamp(-3.2,-2.6,1.25,'#d9573f');mushroomLamp(3.4,-3.4,1.4,'#c9733d');mush
 // 도토리 등불: 거꾸로 든 깍정이 안에 빛 (빛무리만, 점광원 없음)
 const acornM=M('#9a6a3e','weave',{rep:[2,1]}),acornLit=new THREE.MeshStandardMaterial({color:lin('#fff4d6'),emissive:lin('#ffd08a'),emissiveIntensity:0.8,roughness:1});
 for(let i=0;i<8;i++){const a=i/8*PI*2+0.2,d=6.2,x=Math.cos(a)*d,z=Math.sin(a)*d,g=group(x,0,z,0);
-  cylAt(0.025,0.025,1.1,M('#7c5a3a','wood'),0,0,0,{parent:g,line:false});
+  cylAt(0.025,0.025,1.1,M('#7c5a3a','wood'),0,0,0,{parent:g,line:false});shadowBlob(x,z,0.22,0.22);
   add(new THREE.SphereGeometry(0.16,10,6,0,PI*2,PI*0.5,PI*0.5),acornM,0,1.28,0,{parent:g});
   add(new THREE.SphereGeometry(0.11,10,6),acornLit,0,1.24,0,{parent:g,line:false,cast:false});
   LS.add({x,y:1.24,z,glow:{y:1.24,size:0.9,op:0.55},pool:{r:0.9,op:0.3},emissive:[acornLit]});}
@@ -66,18 +68,19 @@ const wingShow=group(0,0,-5.2,0);
 cylAt(0.05,0.07,1.2,M('#8a6244','wood'),0,0,0,{parent:wingShow});
 [-1,1].forEach(sd=>{const w=new THREE.Mesh(wingGeo,wingMat);w.scale.set(sd*1.4,1.1,1);w.position.set(0,1.15,0);w.rotation.y=sd*0.35;w.castShadow=false;wingShow.add(w);
   const w2=new THREE.Mesh(wingGeo,wingMat);w2.scale.set(sd*0.9,0.7,1);w2.position.set(0,1.0,0.02);w2.rotation.set(0,sd*0.5,-sd*0.9);w2.castShadow=false;wingShow.add(w2);});
-obstacles.push({c:[0,-5.2,0.4]});
+obstacles.push({c:[0,-5.2,0.4]});shadowBlob(0,-5.2,0.9,0.6,0.3);
 /* ---------- 3. 꼬마 요정 무리 (부품마다 InstancedMesh) ---------- */
 const NF=num('fairies',60),crowd=new THREE.Group();root.add(crowd);
 const inst=(geo,mat,n,cast=true)=>{const m=new THREE.InstancedMesh(geo,mat,n);m.castShadow=cast;m.receiveShadow=true;m.frustumCulled=false;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);crowd.add(m);return m;};
 const fBody=inst(new THREE.CapsuleGeometry(0.11,0.14,4,10),M('#9cc08a','plain'),NF),fHead=inst(new THREE.SphereGeometry(0.13,12,10),M('#f3d9c0','plain'),NF),
   fHair=inst(new THREE.SphereGeometry(0.135,12,8,0,PI*2,0,PI*0.55),M('#f6f1e6','wool'),NF),fEar=inst(new THREE.SphereGeometry(0.04,8,6),M('#f0cfb4','plain'),NF*2),
   fWing=inst(wingGeo,wingMat,NF*2,false);
+const fBlob=blobMany(NF,0.4); // 휴대폰 단계: 요정마다 발밑 동그란 그림자(뛰어오르면 작아짐)
 const FAIRY=[];for(let i=0;i<NF;i++){const a=rnd(0,PI*2),d=rnd(2.2,8.5);FAIRY.push({x:Math.cos(a)*d,z:Math.sin(a)*d,ry:rnd(0,PI*2),ph:rnd(0,PI*2),sp:rnd(0.8,1.4),hov:R()<0.35});}
 {const c=new THREE.Color();for(let i=0;i<NF;i++){c.set(['#9cc08a','#e3b25b','#d98a6a','#b7a3d4'][i%4]);fBody.setColorAt(i,c);}fBody.instanceColor.needsUpdate=true;}
 /* ---------- 4. 무당벌레 계단 (통나무 위에 줄지어) ---------- */
 const NB=num('bugs',40),bugs=new THREE.Group();root.add(bugs);
-const logG=group(6.5,0,-0.5,-0.4);cylAt(0.7,0.8,6,M('#8a6244','wood',{rep:[3,1]}),0,0,0,{parent:logG,rx:PI/2,thr:40});obstacles.push({r:[5.6,7.4,-3.6,2.6]});
+const logG=group(6.5,0,-0.5,-0.4);cylAt(0.7,0.8,6,M('#8a6244','wood',{rep:[3,1]}),0,0,0,{parent:logG,rx:PI/2,thr:40});obstacles.push({r:[5.6,7.4,-3.6,2.6]});shadowBlob(6.2,-0.5,1.5,3.4);
 const bShell=new THREE.InstancedMesh(new THREE.SphereGeometry(0.16,14,8,0,PI*2,0,PI*0.5),new THREE.MeshStandardMaterial({map:spotTex,roughness:0.55}),NB),
   bHead=new THREE.InstancedMesh(new THREE.SphereGeometry(0.07,10,8),M('#2a1a18','plain'),NB);
 [bShell,bHead].forEach(m=>{m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;bugs.add(m);});
@@ -87,7 +90,7 @@ const bShell=new THREE.InstancedMesh(new THREE.SphereGeometry(0.16,14,8,0,PI*2,0
    o.position.set(x,y,z);o.rotation.set(0,PI*0.5+rnd(-0.3,0.3),0);o.scale.setScalar(rnd(0.9,1.15));o.updateMatrix();bShell.setMatrixAt(i,o.matrix);
    o.translateZ(0.15);o.translateY(0.02);o.updateMatrix();bHead.setMatrixAt(i,o.matrix);}}
 // 줄기 모양 기둥 (무당벌레 계단이 닿는 곳)
-cylAt(0.9,1.2,7,M('#7a5a40','wood',{rep:[2,3]}),6.6,0,3.6,{thr:40});obstacles.push({c:[6.6,3.6,1.2]});
+cylAt(0.9,1.2,7,M('#7a5a40','wood',{rep:[2,3]}),6.6,0,3.6,{thr:40});obstacles.push({c:[6.6,3.6,1.2]});shadowBlob(6.6,3.6,1.7,1.7,0.45);
 /* ---------- 5. 낙엽 (InstancedMesh) · 첫눈 (Points) ---------- */
 const BOX=[14,6,14]; // 원더룹 둘레 x·y·z 범위
 const NL=num('leaves',300),NS=num('snow',800);
@@ -102,7 +105,8 @@ snowGeo.setAttribute('position',new THREE.BufferAttribute(snowPos,3).setUsage(TH
 const snowMat=new THREE.PointsMaterial({size:0.09,map:snowTex,color:0xffffff,transparent:true,opacity:0.9,depthWrite:false,sizeAttenuation:true});
 const snow=new THREE.Points(snowGeo,snowMat);snow.frustumCulled=false;root.add(snow);
 /* ---------- 시험판 (화면 왼쪽 위) ---------- */
-const parts={wings:[wingShow,fWing],lamps:null,glow:null,leaves:[leaves],snow:[snow],crowd:[crowd,bugs],shadow:null};
+const parts={wings:[wingShow,fWing],lamps:null,glow:null,leaves:[leaves],snow:[snow],crowd:[crowd,bugs,...(fBlob?[fBlob]:[])],shadow:null};
+if(!QUALITY.shadows)delete parts.shadow; // 휴대폰 단계: 진짜 그림자가 없으니 그림자 단추·측정도 없음
 const on={};Object.keys(parts).forEach(k=>on[k]=!OFF.has(k));
 const NAMES={wings:'날개',lamps:'진짜 조명',glow:'빛무리·웅덩이',leaves:'낙엽',snow:'첫눈',crowd:'요정·무당벌레',shadow:'그림자'};
 // 렌더러·해(그림자)는 장면에서 받는다: 그림 그리기 직전 장면의 onBeforeRender가 렌더러를 넘겨준다
@@ -147,14 +151,14 @@ function setShadow({size,type}){if(!sunL||!gl)return;const sh=sunL.shadow;let ty
   if(typeCh){gl.shadowMap.type=type;scn.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});}}
 async function autoMeasure(){if(measuring)return;hook();if(!gl){stat.textContent='렌더러를 아직 못 받았어요. 잠시 뒤 다시 눌러 주세요.';return;}
   measuring=true;row.style.pointerEvents='none';row.style.opacity='.5';results.length=0;resEl.textContent='';
-  const keep={...on},keepPr=gl.getPixelRatio(),keepSh={size:sunL?sunL.shadow.mapSize.x:2048,type:gl.shadowMap.type},dpr=window.devicePixelRatio||1,items=Object.keys(NAMES);
+  const keep={...on},keepPr=gl.getPixelRatio(),keepSh={size:sunL?sunL.shadow.mapSize.x:2048,type:gl.shadowMap.type},dpr=window.devicePixelRatio||1,items=Object.keys(parts);
   const conds=[{name:'모두 켬'}],tail=[...items.map(k=>({name:NAMES[k]+' 끔',off:[k]})),{name:'모두 끔',off:items}];
   // 픽셀 비율: 지금 값(03이 기기 값을 2로 제한) 말고 1.5·1, 기기 값이 2보다 크면 제한을 푼 값도
   [...new Set([dpr>keepPr+.01?dpr:null,2,1.5,1].filter(v=>v&&Math.abs(v-keepPr)>.01&&v<=dpr+.01))].forEach(pr=>conds.push({name:'모두 켬, 픽셀 '+pr,pr}));
   if(sunL)conds.push({name:'그림자 지도 1024',sh:{size:1024,type:keepSh.type}},{name:'그림자 단순',sh:{size:keepSh.size,type:THREE.BasicShadowMap}});
   conds.push(...tail);
   const db=document.getElementById('dayBtn'),stage=db?({'저녁으로 바꾸기':'낮','어두운 굴로 바꾸기':'저녁','낮으로 바꾸기':'어두운 굴'}[db.textContent]||''):'';
-  const head=`${stage} 조명 · 기기 픽셀 비율 ${dpr} · 지금 ${keepPr}${dpr>keepPr?' (2로 제한 중)':''} · 화면 ${innerWidth}×${innerHeight}`;
+  const head=`${QUALITY.tier==='mobile'?'휴대폰 단계(동그란 그림자)':'컴퓨터 단계(진짜 그림자)'} · ${stage} 조명 · 기기 픽셀 비율 ${dpr} · 지금 ${keepPr}${dpr>keepPr?' (2로 제한 중)':''} · 화면 ${innerWidth}×${innerHeight}`;
   try{for(let i=0;i<conds.length;i++){const c=conds[i];items.forEach(k=>on[k]=!(c.off||[]).includes(k));apply(); // 그 조건에서 끄는 항목만 빼고 모두 켬
       gl.setPixelRatio(c.pr||keepPr);setShadow(c.sh||keepSh);
       stat.textContent=`자동 측정 ${i+1}/${conds.length}: ${c.name}\n휴대폰을 건드리지 말고 기다려 주세요 (약 ${Math.ceil((conds.length-i)*6.5)}초 남음)`;
@@ -183,6 +187,7 @@ function update(dt,t){meter();hook();
   if(!WL&&root.parent)WL=root.parent.children.find(o=>o.userData&&o.userData.setExpr)||null;const cx=WL?WL.position.x:0,cz=WL?WL.position.z:0;
   // 꼬마 요정: 통통 뛰거나 떠서 날갯짓
   if(on.crowd)for(let i=0;i<NF;i++){const f=FAIRY[i],ph=t*f.sp*2+f.ph,y=f.hov?0.45+Math.sin(ph*0.5)*0.12:Math.abs(Math.sin(ph))*0.18;
+    if(fBlob)fBlob.set(i,f.x,0,f.z,0.24*(1-y*0.6));
     o3.position.set(f.x,y+0.18,f.z);o3.rotation.set(0,f.ry+Math.sin(ph*0.3)*0.4,0);o3.scale.setScalar(1);o3.updateMatrix();fBody.setMatrixAt(i,o3.matrix);
     o4.copy(o3);o4.translateY(0.27);o4.updateMatrix();fHead.setMatrixAt(i,o4.matrix);o4.translateY(0.02);o4.updateMatrix();fHair.setMatrixAt(i,o4.matrix);
     for(let s=0;s<2;s++){const sd=s?1:-1;o4.copy(o3);o4.translateY(0.27);o4.translateX(sd*0.13);o4.updateMatrix();fEar.setMatrixAt(i*2+s,o4.matrix);

@@ -2,7 +2,7 @@
    방·소품은 예전 그대로 만든다(난수는 rng('room') 기록값 재생이라 다시 만들어도 같은 그림).
    예전에 03(카메라·해 방향)·07(장애물)·08(조명 단계 속 램프·먼지·김·시계)에 흩어져 있던 방 전용 부분도 여기로 모았다. */
 import * as THREE from 'three';
-import {B,C,M,PI,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rawLin,rng,shade,skyTex} from '../01-textures.js';
+import {B,C,M,PI,UP,add,aoPlane,blob,boxAt,cylAt,cylBetween,group,lin,rawLin,rng,shade,shadowBlob,skyTex} from '../01-textures.js';
 export function build({root}){
 const R=rng('room'),rnd=(a,b)=>a+(b-a)*R(); // 방 소품 배치용 난수
 /* ---------- 방 ---------- */
@@ -78,6 +78,7 @@ boxAt(2.6,0.12,1.2,deskMat,DX,1.04,DZ);
 boxAt(0.95,0.38,1.0,M('#d7a274','wood'),DX+0.7,0.62,DZ);
 add(new THREE.IcosahedronGeometry(0.05,0),M('#e3c27a','plain'),DX+0.7,0.81,DZ+0.52);
 boxAt(2.4,0.06,0.06,deskMat,DX,0.3,DZ+0.45);
+shadowBlob(DX,DZ+0.15,1.5,0.75,0.3); // 휴대폰 단계에서만 (진짜 그림자 대신)
 // 지도
 add(new THREE.PlaneGeometry(1.25,0.85),M('#f3e1b9','map',{size:512}),0.75,DT+0.006,-4.2,{rx:-PI/2,rz:0.12,cast:false,line:false});
 // 돋보기 (원더룹 = 루페!)
@@ -107,7 +108,7 @@ const nb=group(1.45,DT+0.01,-4.55,0.3);
 boxAt(0.32,0.02,0.42,M('#fff8ea','paper'),-0.16,0,0,{parent:nb,rz:0.06});
 boxAt(0.32,0.02,0.42,M('#fff8ea','paper'),0.16,0,0,{parent:nb,rz:-0.06});
 // 의자
-const ch=group(0.7,0,-3.12,0.18);const chairMat=M('#b9855a','wood');
+const ch=group(0.7,0,-3.12,0.18);shadowBlob(0.7,-3.12,0.55,0.55);const chairMat=M('#b9855a','wood');
 boxAt(0.85,0.09,0.8,chairMat,0,0.68,0,{parent:ch});
 [[-0.36,-0.34],[0.36,-0.34],[-0.36,0.34],[0.36,0.34]].forEach(p=>boxAt(0.08,0.68,0.08,chairMat,p[0],0,p[1],{parent:ch}));
 [-0.36,0.36].forEach(x=>boxAt(0.08,0.9,0.08,chairMat,x,0.77,0.34,{parent:ch}));
@@ -239,7 +240,7 @@ blob(-4.05,3.4,0.85,0.85,0.4);
 
 /* ---------- 러그 / 방석 / 낮은 탁자 ---------- */
 add(new THREE.CircleGeometry(2.1,22),M('#e9a07c','rug',{size:512}),0.5,0.03,0.8,{rx:-PI/2,cast:false,line:false});
-[[-0.75,1.45,'#c9b6e2'],[1.85,1.35,'#bcd893']].forEach(c=>{add(new THREE.IcosahedronGeometry(0.5,1),M(c[2],'quilt',{pal:[c[2],shade(c[2],0.08),shade(c[2],-0.06)]}),c[0],0.13,c[1],{s:[1,0.3,1],thr:60});blob(c[0],c[1],0.6,0.6,0.25);});
+[[-0.75,1.45,'#c9b6e2'],[1.85,1.35,'#bcd893']].forEach(c=>{shadowBlob(c[0],c[1],0.6,0.6);add(new THREE.IcosahedronGeometry(0.5,1),M(c[2],'quilt',{pal:[c[2],shade(c[2],0.08),shade(c[2],-0.06)]}),c[0],0.13,c[1],{s:[1,0.3,1],thr:60});blob(c[0],c[1],0.6,0.6,0.25);});
 const tb=group(0.55,0,0.75,0);const tbMat=M('#d39a66','wood');
 cylAt(0.72,0.72,0.08,tbMat,0,0.46,0,{parent:tb,seg:12});
 for(let i=0;i<3;i++){const a=i*2*PI/3+0.3;cylAt(0.05,0.04,0.46,tbMat,Math.cos(a)*0.45,0,Math.sin(a)*0.45,{parent:tb,seg:6});}

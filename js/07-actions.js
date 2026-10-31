@@ -1,6 +1,6 @@
 /* 원더룹 베이스캠프 — 어두운 곳 강조(림 라이트)·이동·동작 세트·포즈 */
 import * as THREE from 'three';
-import {PI,blobTex,lin,pencil,rng,scene,softMat} from './01-textures.js';
+import {PI,QUALITY,blobTex,footTex,lin,pencil,rng,scene,softMat} from './01-textures.js';
 const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로딩 뒤 첫 난수를 이어 썼다)
 import {blocked,groundY} from './02-zone.js';
 import {flags} from './game/state.js';
@@ -15,7 +15,8 @@ WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.i
      sh.fragmentShader='uniform float uRim;uniform float uLift;uniform vec3 uRimCol;\n'+sh.fragmentShader.replace('#include <dithering_fragment>',
      'float wlFr=pow(1.0-clamp(dot(normalize(normal),normalize(vViewPosition)),0.0,1.0),2.2);gl_FragColor.rgb+=uRimCol*wlFr*uRim+diffuseColor.rgb*uLift;\n#include <dithering_fragment>');};
    m.customProgramCacheKey=()=> 'wlrim';});});}
-const wlBlob=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.95),softMat(blobTex,0.45));wlBlob.rotation.x=-PI/2;scene.add(wlBlob);
+// 발밑 동그란 그림자: 휴대폰 단계(진짜 그림자 없음)에서는 조금 크고 진하게 — 원더룹이 땅에 서 있어 보이게
+const wlBlob=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.95),softMat(QUALITY.shadows?blobTex:footTex,QUALITY.shadows?0.45:0.9));if(!QUALITY.shadows)wlBlob.geometry.scale(1.35,1.35,1);wlBlob.rotation.x=-PI/2;scene.add(wlBlob);
 const wlHit=[];WL.traverse(o=>{if(o.isMesh)wlHit.push(o);});
 const marker=new THREE.Mesh(new THREE.RingGeometry(0.16,0.24,24),new THREE.MeshBasicMaterial({color:lin('#3fb5a8'),transparent:true,opacity:0,depthWrite:false}));marker.rotation.x=-PI/2;scene.add(marker);hint(marker); // 걷기 목표 표시 = 안내 표시(영상에서는 숨김)
 let wlTarget=null,wlHop=0,wlPhase=0,blinkT=2.5,markerA=0;

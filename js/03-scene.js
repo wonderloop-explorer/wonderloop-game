@@ -1,12 +1,13 @@
 /* 원더룹 — 조명·렌더러·카메라·구역 최적화(병합). 구역마다 다른 값(해 방향·그림자 범위·카메라)은 setupView(구역)이 맞춘다 */
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import {PI,rawLin,scene} from './01-textures.js';
+import {PI,QUALITY,rawLin,scene} from './01-textures.js';
 import {zone} from './02-zone.js';
 /* ---------- 조명 ---------- */
 const hemi=new THREE.HemisphereLight(rawLin(0xfff3dc),rawLin(0xd2ab88),0.62);scene.add(hemi);
 const sun=new THREE.DirectionalLight(rawLin(0xffe0b0),0.72);
-sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);scene.add(sun.target);
+sun.castShadow=QUALITY.shadows;sun.shadow.mapSize.set(2048,2048); // 휴대폰 단계는 진짜 그림자 없음(01 QUALITY) — 열 때 한 번만, 중간에 바꾸지 않는다
+scene.add(sun.target);
 sun.shadow.bias=-0.0006;sun.shadow.normalBias=0.03;sun.shadow.radius=2;scene.add(sun); // radius 2: 없어진 PCFSoftShadowMap의 부드러운 그림자 가장자리에 가장 가깝다
 const fill=new THREE.DirectionalLight(rawLin(0xe2e9ff),0.22);fill.position.set(10,6,9);scene.add(fill);
 /* r128 화면 유지 패치 — 화풍 기준은 r128 화면이라, 그 뒤 three.js가 바꾼 조명 계산을 옛 방식으로 되돌린다.
@@ -24,7 +25,7 @@ const stage=document.getElementById('stage');
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
+renderer.shadowMap.enabled=QUALITY.shadows;renderer.shadowMap.type=THREE.PCFShadowMap;
 renderer.setClearColor(0x000000,0);
 stage.appendChild(renderer.domElement);
 const camera=new THREE.PerspectiveCamera(30,1,1,120);
@@ -58,7 +59,7 @@ function mergeStatic(z){
   const keepOut=new Set();z.keepOut.forEach(k=>k.traverse(o=>keepOut.add(o)));
   const buckets=new Map(),originals=[],origSet=new Set();
   z.root.traverse(o=>{
-    if(!o.isMesh||keepOut.has(o))return;const t=o.material;
+    if(!o.isMesh||o.isInstancedMesh||keepOut.has(o))return;const t=o.material; // InstancedMesh(같은 모델 여러 개)는 합치면 한 개로 뭉개지므로 빼기
     const ok=!t.transparent||(t.isMeshBasicMaterial&&t.polygonOffset&&t.blending===THREE.NormalBlending);
     if(!ok)return;const k=sig(o);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(o);originals.push(o);origSet.add(o);
   });
