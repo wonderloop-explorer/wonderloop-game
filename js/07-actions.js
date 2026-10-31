@@ -220,7 +220,7 @@ function updateWL(dt,t){
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
    if(U.thumbs)U.thumbs.forEach(th=>th.visible=U.holdW>.5);
-   if(U.charm)U.charm.g.visible=!!U.outfit&&!(U.holdW>.5)&&flags.compass;} // 키링은 탐험복 + 나침반을 받은 뒤에만
+   if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass;} // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
   // 몸통: 위 계산은 발바닥 기준 몸 원점의 위치·회전 → 엉덩이 축 뼈(spine)로 옮김 (spine·(0,-HIP,0) = 예전 몸 변환)
   spine.rotation.copy(body.rotation);spine.position.copy(body.position).add(_hv.set(0,HIP,0).applyEuler(body.rotation));spine.position.y-=HIP;
   rigSync();

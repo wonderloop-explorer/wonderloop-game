@@ -61,9 +61,10 @@ export async function run() {
     G.ui.setHints(true); sec(.2);
     ok('안내 표시 한 번에 숨기기', shown && hidden, `말풍선 보임 ${shown} → 숨김 ${hidden}`); }
 
-  // 9. 나침반 키링: 받은 뒤에만 보인다
-  { await reset(); const ch = WL.userData.charm.g; G.state.setFlag('compass', false); sec(.1); const off = !ch.visible; G.state.setFlag('compass', true); sec(.1); const on = ch.visible;
-    ok('나침반 키링은 받은 뒤에만', off && on, `받기 전 숨김 ${off}, 받은 뒤 보임 ${on} (탐험복)`); }
+  // 9. 나침반 키링: 받은 뒤에만 보인다 — 평상복·탐험복 모두 배낭에 (2026-10-31부터 평상복에도 배낭)
+  { await reset(); const ch = WL.userData.charm.g, was = !!WL.userData.outfit; G.state.setFlag('compass', false); sec(.1); const off = !ch.visible; G.state.setFlag('compass', true); sec(.1); const on = ch.visible;
+    s.setup({ outfit: was ? 0 : 1 }); sec(.1); const other = ch.visible; s.setup({ outfit: was ? 1 : 0 }); sec(.1);
+    ok('나침반 키링은 받은 뒤에만', off && on && other, `받기 전 숨김 ${off}, 받은 뒤 보임 ${on} (${was ? '탐험복' : '평상복'}), 옷을 바꿔도 보임 ${other}`); }
 
   // 10. 이벤트 트리거(영역) → 나레이션 → 안내 카드
   { await reset(); const n0 = G.cues.length; WL.position.set(-3, 0, 1); for (let i = 0; i < 8 * 60 && !G.ui.noticeShown(); i++) { sec(STEP); await flush(); }

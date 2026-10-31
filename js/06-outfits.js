@@ -1,4 +1,4 @@
-/* 원더룹 베이스캠프 — 바지·관절·캐릭터 병합·평상복/탐험복·탐험 모자·키링·탈 카테고리 */
+/* 원더룹 베이스캠프 — 바지·관절·캐릭터 병합·평상복/탐험복·탐험 모자·배낭과 키링(두 옷 모두)·탈 카테고리 */
 import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
@@ -33,6 +33,8 @@ function wlMerge(list){
   const E={shirt:TM('#f7f2e8','linen',{rep:[3,3]}),pants:TM('#8f8558','twill',{rep:[2,3],grain:.35}),roll:TM('#b3a978','twill',{rep:[3,1],grain:.35}),fold:SM('#6c643f')};WL.userData.outfitMats=Object.values(E); // 아틀라스가 탐험복 텍스처 층을 미리 잡도록
   const exp=[];const vestM=TM('#c99d5c','canvas',{rep:[3,2]},THREE.DoubleSide);const vestD=TM('#a87e43','canvas',{rep:[2,1]});
   const add2=(m,parent)=>{parent.add(m);exp.push(m);return m;};
+  // 배낭·침낭·나침반 키링은 평상복·탐험복 모두에 (2026-10-31 — 어느 옷이든 받은 아이템이 배낭에 달려 계속 보인다)
+  const pack=[];const add3=(m,parent)=>{parent.add(m);pack.push(m);return m;};
   add2(wm(lathe([[.236,.33],[.238,.4],[.24,.45],[.233,.52],[.218,.565],[.185,.603]].map(q=>new THREE.Vector2(q[0],q[1])),30,.32,PI*2-.64),vestM),wlBody);
   [-1,1].forEach(s=>{const pk=add2(wm(roundBox(.068,.056,.014,.35),vestM),wlBody);pk.position.set(s*.175,.405,.176);pk.rotation.y=s*.82;
     const fl=add2(wm(roundBox(.07,.017,.019,.35),vestD),wlBody);fl.position.set(s*.177,.46,.179);fl.rotation.y=s*.82;});
@@ -78,15 +80,15 @@ function wlMerge(list){
         v.applyMatrix4(Mi);p.setXYZ(i,v.x,v.y,v.z);}
       p.needsUpdate=true;m.geometry.computeVertexNormals();});}
   {const pk=TM('#b8743f','leather2'),pd=TM('#8a5230','leather2'),rl=TM('#f3e3c6','wool',{stripes:['#f3e3c6','#f3e3c6','#d97e6a','#f3e3c6','#5f8f86'],n:10,rep:[1,1]}),bu=SM('#f2b63c');
-   add2(wm(roundBox(.19,.17,.12,.4),pk),wlBody).position.set(0,.45,-.33);
-   add2(wm(roundBox(.195,.075,.13,.4),pd),wlBody).position.set(0,.56,-.33);
-   add2(wm(new THREE.BoxGeometry(.06,.07,.02),bu),wlBody).position.set(0,.51,-.46);
-   [-1,1].forEach(s=>add2(wm(roundBox(.05,.09,.08,.45),pd),wlBody).position.set(s*.21,.42,-.33));
-   const rlCap=TM('#f3e3c6','wool',{stripes:['#f3e3c6'],n:1});const r=add2(wm(new THREE.CylinderGeometry(.07,.07,.44,16),[rl,rlCap,rlCap]),wlBody);r.rotation.z=PI/2;r.position.set(0,.26,-.34);
-   [-.11,.11].forEach(x=>{const t=add2(wm(new THREE.TorusGeometry(.073,.013,6,16),pd),wlBody);t.rotation.y=PI/2;t.position.set(x,.26,-.34);});}
+   add3(wm(roundBox(.19,.17,.12,.4),pk),wlBody).position.set(0,.45,-.33);
+   add3(wm(roundBox(.195,.075,.13,.4),pd),wlBody).position.set(0,.56,-.33);
+   add3(wm(new THREE.BoxGeometry(.06,.07,.02),bu),wlBody).position.set(0,.51,-.46);
+   [-1,1].forEach(s=>add3(wm(roundBox(.05,.09,.08,.45),pd),wlBody).position.set(s*.21,.42,-.33));
+   const rlCap=TM('#f3e3c6','wool',{stripes:['#f3e3c6'],n:1});const r=add3(wm(new THREE.CylinderGeometry(.07,.07,.44,16),[rl,rlCap,rlCap]),wlBody);r.rotation.z=PI/2;r.position.set(0,.26,-.34);
+   [-.11,.11].forEach(x=>{const t=add3(wm(new THREE.TorusGeometry(.073,.013,6,16),pd),wlBody);t.rotation.y=PI/2;t.position.set(x,.26,-.34);});}
   legs.forEach((lg,i)=>{const s=i?1:-1;add2(wm(roundBox(.022,.045,.042,.4),E.fold),lg).position.set(s*.08,-.05,0);});
   // 여왕개미가 준 나침반 키링: 배낭 버클에 매달려 걸을 때 달랑달랑
-  {const brassM=SM('#d8b36a');const ch=new THREE.Bone();ch.name='charm';ch.position.set(0,.476,-.468);wlBody.add(ch);exp.push(ch);
+  {const brassM=SM('#d8b36a');const ch=new THREE.Bone();ch.name='charm';ch.position.set(0,.476,-.468);wlBody.add(ch);pack.push(ch);
    const ring=wm(new THREE.TorusGeometry(.016,.0045,8,18),brassM);ring.position.y=-.014;ch.add(ring);
    [-.036,-.054].forEach((y,i)=>{const l=wm(new THREE.TorusGeometry(.0095,.0035,6,14),brassM);l.position.y=y;if(i===0)l.rotation.y=PI/2;ch.add(l);});
    const bail=wm(new THREE.TorusGeometry(.012,.004,6,14),brassM);bail.position.y=-.07;ch.add(bail);
@@ -106,9 +108,10 @@ function wlMerge(list){
    WL.userData.charm={g:ch,ax:0,az:0,vx:0,vz:0};}
   let outfit=0;
   function applyOutfit(){const e=outfit===1;shirtMs.forEach(o=>o.material=e?E.shirt:tunic);pantsMs.forEach(o=>o.material=e?E.pants:shorts);
-    rf.forEach((o,i)=>o.material=e?(i%2?E.fold:E.roll):rfBase[i]);exp.forEach(o=>o.visible=e);WL.userData.outfit=e;}
+    rf.forEach((o,i)=>o.material=e?(i%2?E.fold:E.roll):rfBase[i]);exp.forEach(o=>o.visible=e);pack.forEach(o=>o.visible=true);WL.userData.outfit=e;}
   applyOutfit();
   {const r=wlMerge(exp.filter(o=>o.isMesh));for(let i=exp.length-1;i>=0;i--)if(r.removed.has(exp[i]))exp.splice(i,1);r.made.forEach(m=>exp.push(m));
+   {const r2=wlMerge(pack.filter(o=>o.isMesh));for(let i=pack.length-1;i>=0;i--)if(r2.removed.has(pack[i]))pack.splice(i,1);r2.made.forEach(m=>pack.push(m));}
    wlMerge(WL.userData.hatG.children.slice());if(WL.userData.charm)wlMerge(WL.userData.charm.g.children.slice());applyOutfit();}
   // 탈 카테고리: 없음 → 개미탈 → 탐험 모자 (옷과 따로 쓰고 벗음)
   {const hwBtn=document.getElementById('hoodBtn');const HW=['없음','개미탈','탐험 모자'];WL.userData.hw=0;

@@ -1,0 +1,101 @@
+{
+  "room-day": {
+    "calls": 241,
+    "triangles": 81406
+  },
+  "room-evening": {
+    "calls": 241,
+    "triangles": 81406
+  },
+  "room-cave": {
+    "calls": 241,
+    "triangles": 81406
+  },
+  "char-casual-front": {
+    "calls": 163,
+    "triangles": 78480
+  },
+  "char-casual-34": {
+    "calls": 142,
+    "triangles": 77022
+  },
+  "char-casual-side": {
+    "calls": 126,
+    "triangles": 76704
+  },
+  "char-casual-back": {
+    "calls": 127,
+    "triangles": 75416
+  },
+  "char-explorer-hat-front": {
+    "calls": 165,
+    "triangles": 101264
+  },
+  "char-explorer-hat-34": {
+    "calls": 144,
+    "triangles": 99806
+  },
+  "char-explorer-hat-side": {
+    "calls": 128,
+    "triangles": 99488
+  },
+  "char-explorer-hat-back": {
+    "calls": 129,
+    "triangles": 98200
+  },
+  "char-explorer-ant-front": {
+    "calls": 165,
+    "triangles": 133308
+  },
+  "char-explorer-ant-34": {
+    "calls": 144,
+    "triangles": 131850
+  },
+  "char-explorer-ant-side": {
+    "calls": 128,
+    "triangles": 131532
+  },
+  "char-explorer-ant-back": {
+    "calls": 129,
+    "triangles": 130244
+  },
+  "cave-explorer-hat-34": {
+    "calls": 144,
+    "triangles": 99806
+  },
+  "cave-explorer-ant-34": {
+    "calls": 144,
+    "triangles": 131850
+  },
+  "act-1": {
+    "calls": 144,
+    "triangles": 131978,
+    "label": "두리번"
+  },
+  "act-2": {
+    "calls": 143,
+    "triangles": 131990,
+    "label": "들여다보기"
+  },
+  "act-3": {
+    "calls": 145,
+    "triangles": 131862,
+    "label": "기어오르기"
+  },
+  "act-4": {
+    "calls": 144,
+    "triangles": 131730,
+    "label": "멈칫"
+  },
+  "act-5": {
+    "calls": 144,
+    "triangles": 131258,
+    "label": "나침반 보기"
+  },
+  "act-6": {
+    "calls": 144,
+    "triangles": 131294,
+    "label": "손 흔들기"
+  },
+  "_three": "186"
+}

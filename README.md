@@ -143,7 +143,7 @@ python3 tools/cues-to-ae.py captures/santa/opening-16x9.cues.json captures/santa
 
 | 파일 | 모습 |
 |---|---|
-| `wonderloop-rigged.glb` | 평상복 |
+| `wonderloop-rigged.glb` | 평상복 (배낭 나침반 키링 뼈 `charm` 포함, 2026-10-31부터) |
 | `wonderloop-rigged-explorer.glb` | 탐험복 (배낭 나침반 키링 뼈 `charm` 포함) |
 | `wonderloop-rigged-explorer-hat.glb` | 탐험복 + 모자 |
 
