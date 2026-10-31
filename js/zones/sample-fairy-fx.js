@@ -128,12 +128,15 @@ const hook=()=>{if(scn||!root.parent)return;scn=root.parent;prevBR=scn.onBeforeR
 const apply=()=>{['wings','leaves','snow','crowd'].forEach(k=>parts[k].forEach(o=>o.visible=on[k]));lampOn.on=on.lamps;glowOn.on=on.glow;if(sunL)sunL.castShadow=on.shadow;
   btns.forEach(b=>{b.setAttribute('aria-pressed',on[b.dataset.k]);b.textContent=NAMES[b.dataset.k]+(on[b.dataset.k]?' 켜짐':' 꺼짐');});};
 const panel=document.createElement('div');panel.id='fxPanel';panel.className='wlg';
-panel.style.cssText='position:fixed;left:calc(env(safe-area-inset-left,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 8px);z-index:30;background:rgba(255,246,234,.92);border-radius:14px;padding:8px 10px;font:13px/1.4 "Gowun Dodum",sans-serif;color:#3e2834;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(30,14,36,.25)';
+panel.style.cssText='position:fixed;left:calc(env(safe-area-inset-left,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:30;background:rgba(255,246,234,.92);border-radius:14px;padding:8px 10px;font:13px/1.4 "Gowun Dodum",sans-serif;color:#3e2834;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(30,14,36,.25)';
 const stat=document.createElement('div');stat.style.cssText='font-variant-numeric:tabular-nums;margin-bottom:6px;white-space:pre';panel.appendChild(stat);
 const row=document.createElement('div');row.style.cssText='display:flex;flex-wrap:wrap;gap:6px';panel.appendChild(row);
 const mkBtn=(txt,fn)=>{const b=document.createElement('button');b.textContent=txt;b.style.cssText='all:unset;cursor:pointer;background:#3f9fa0;color:#fffaf2;border-radius:999px;padding:6px 10px;min-height:20px';b.addEventListener('click',fn);row.appendChild(b);return b;};
 const btns=Object.keys(parts).map(k=>{const b=mkBtn('',()=>{on[k]=!on[k];apply();});b.dataset.k=k;return b;});
 mkBtn('낮/저녁/굴',()=>{const d=document.getElementById('dayBtn');if(d)d.click();});
+// 이야기 시계(남은 잎) 견본: 단추를 누를 때마다 잎이 하나씩 떨어지고, 다 떨어지면 다시 다섯 장
+const leaves5=G.hud.counter({id:'leaves',max:5,value:5,label:'남은 잎'});
+mkBtn('잎 떨어뜨리기',()=>leaves5.set(leaves5.value>0?leaves5.value-1:5));
 // 휴대폰 세로 화면에서는 아래 단추 묶음이 장면 절반을 가린다 → 숨기고 장면만 보기
 const pageUi=[...document.querySelectorAll('.bar,#stats,.hint')];const uiShown=pageUi.map(e=>e.style.display);let uiHidden=false;
 const hideBtn=mkBtn('아래 단추 숨기기',()=>{uiHidden=!uiHidden;pageUi.forEach((e,i)=>e.style.display=uiHidden?'none':uiShown[i]);hideBtn.textContent=uiHidden?'아래 단추 보이기':'아래 단추 숨기기';});
@@ -235,6 +238,6 @@ return {
   bounce(){squash=1;},glide:true, // 활공은 시험 구역에서만(이번 편은 마지막 잎을 받기만 함)
   lights:LS.all,keepOut:[crowd,bugs,leaves,snow,wingShow,bounceG],
   update,light,
-  dispose(){LS.dispose();panel.remove();if(scn)scn.onBeforeRender=prevBR;if(sunL)sunL.castShadow=true;if(gl&&measuring)gl.setPixelRatio(Math.min(window.devicePixelRatio||1,2));pageUi.forEach((e,i)=>e.style.display=uiShown[i]);delete window.wlFx;[wingTex,snowTex,spotTex].forEach(t=>t.dispose());},
+  dispose(){LS.dispose();panel.remove();leaves5.remove();if(scn)scn.onBeforeRender=prevBR;if(sunL)sunL.castShadow=true;if(gl&&measuring)gl.setPixelRatio(Math.min(window.devicePixelRatio||1,2));pageUi.forEach((e,i)=>e.style.display=uiShown[i]);delete window.wlFx;[wingTex,snowTex,spotTex].forEach(t=>t.dispose());},
 };
 }
