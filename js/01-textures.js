@@ -227,6 +227,14 @@ function drawPencil(base,kind,o){
     g.strokeStyle=hexA(shade(base,-0.4),.9);g.lineWidth=S*.07;g.beginPath();g.arc(c,c,c*.96,0,7);g.stroke();
     g.strokeStyle=hexA(darker,.6);g.lineWidth=2;g.beginPath();g.arc(c,c,c*.9,0,7);g.stroke();
     hatchAmt*=.3;
+  }else if(kind==='bark'){
+    // 굵은 나무뿌리 껍질(요정의 숲 뿌리 우체국): 길이 방향(캔버스 가로)으로 흐르는 굵고 가는 결 + 결 사이 어두운 골 + 작은 옹이
+    g.lineCap='round';
+    for(let k=0;k<9;k++){const y=rnd(0,S),ph=rnd(0,PI*2);g.strokeStyle=hexA(darker,rnd(.35,.6));g.lineWidth=rnd(2.5,5);wavyLine(g,S,y,rnd(2,5),PI*2/S*Math.round(rnd(1,3)),ph);}
+    for(let k=0;k<22;k++){const y=rnd(0,S),ph=rnd(0,PI*2);g.strokeStyle=hexA(R()<.5?dark:light,rnd(.3,.6));g.lineWidth=rnd(1,2);wavyLine(g,S,y,rnd(1.5,4),PI*2/S*Math.round(rnd(1,4)),ph);}
+    for(let k=0;k<4;k++){const x=rnd(10,S-10),y=rnd(10,S-10);g.fillStyle=hexA(darker,.5);g.beginPath();g.ellipse(x,y,rnd(6,12),rnd(2.5,4.5),0,0,PI*2);g.fill();
+      g.strokeStyle=hexA(light,.5);g.lineWidth=1.2;g.beginPath();g.ellipse(x,y,rnd(9,15),rnd(4,6),0,0,PI*2);g.stroke();}
+    hatchAmt*=.5;
   }else if(kind==='scales'){
     // 도토리 깍정이 비늘: 끝이 아래(캔버스 아래 = 회전체의 테두리 쪽)를 향한 비늘을 아래 줄부터 그려 윗줄이 아랫줄 끝을 덮는다
     const rows=o.rows||6,cols=o.cols||6,w=S/cols,h=S/rows;

@@ -46,13 +46,17 @@ const css=`
 #wlAct.below{bottom:calc(env(safe-area-inset-bottom,0px) + 40px);width:68px;height:68px}
 body.wl-nohints .wl-hint{visibility:hidden!important}
 .wlg button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-@media (prefers-reduced-motion: reduce){#wlNotice{transition:none}#wlNotice:not(.on){transform:translate(-50%,0)}}
+#wlCut{position:fixed;inset:0;display:none;place-items:center;background:#1e0e24;z-index:45;cursor:pointer}#wlCut.on{display:grid;animation:wlCutIn .6s ease-out}
+#wlCut img{width:100%;height:100%;object-fit:contain}#wlCut p{position:absolute;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);margin:0;font-size:.8rem;color:rgba(255,246,234,.7)}
+@keyframes wlCutIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){#wlNotice{transition:none}#wlNotice:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
 @media (max-width:600px){#wlDlg .line{font-size:1.1rem}}`;
 const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="who"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
+<div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div>
 <p id="wlQuest" class="wl-hint"></p><p id="wlPrompt" class="wl-hint"></p><button id="wlAct" class="wl-hint" type="button">말 걸기</button>`;
 {const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
  if(!document.querySelector('link[data-wl-font]')){const l=document.createElement('link');l.rel='stylesheet';l.dataset.wlFont='1';l.href='https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap';document.head.appendChild(l);}
@@ -91,6 +95,17 @@ const secretShown=()=>cardOn==='secret';
 sc.querySelector('button').addEventListener('click',closeSecret);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,e=>{if(performance.now()-cardOpenT<=600||(e.target&&e.target.closest&&e.target.closest('#wlResult,#wlSecret button')))return;
   if(cardOn==='notice')closeNotice();else if(cardOn==='secret')closeSecret();}));
+/* 그림 컷 (장면 사이에 넣는 한 장짜리 그림, 예: 요정의 숲 오프닝 편지 클로즈업): cut({src, alt, sec, id})
+   화면 전체에 그림을 띄우고 sec초(게임 시간 — 촬영 모드에서도 같은 길이) 뒤나 누르면(0.6초 뒤부터) 닫힌다. 카드 자리를 함께 써서 다른 카드와 겹치지 않는다.
+   영상에는 그리지 않는다(HTML) → 시점 기록 kind 'card'(who '그림', id)로 남겨 편집 때 같은 그림을 얹는다. */
+const ct=$('#wlCut');let ctDone=null,ctCue=null,ctEnd=0;
+function cut({src,alt='',sec=4.5,id=''}){return enqueue('cut',r=>{ctDone=r;const img=ct.querySelector('img');img.src=src;img.alt=alt;ct.setAttribute('aria-label',alt);
+  ct.querySelector('p').textContent=coarse?'화면을 누르면 넘어가요':'누르거나 아무 키나 누르면 넘어가요';ctEnd=clock.t+sec;
+  ctCue=cue({kind:'card',who:'그림',id,text:alt,dur:0});ct.classList.add('on');block('cut',true);});}
+function closeCut(){if(cardOn!=='cut')return;ct.classList.remove('on');endCue(ctCue);ctCue=null;block('cut',false);const d=ctDone;ctDone=null;cardDone();if(d)d();}
+const tickCut=()=>{if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();};
+cardCloser('cut',closeCut);
+['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));
 /* 결과 화면: result({title,text,buttons:[{label,act}],note}) → 누른 단추의 번호로 resolve */
 const rs=$('#wlResult');let rsCue=null;
 function result({title,text,buttons=[],note=''}){return enqueue('result',r=>{rs.querySelector('h2').textContent=title;rs.querySelector('p').textContent=text;rs.querySelector('p.sec').textContent=note; // note: 비밀 개수 줄 (codex.secretLine())
@@ -112,4 +127,4 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {HINT_LAYER,act as actButton,cardCloser,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};

@@ -11,6 +11,7 @@
        obstacles [{r:[x0,x1,z0,z1]} | {c:[x,z,반지름]}], camera {target, dist, polar, azimuth(없으면 한 바퀴), start, minDist, maxDist}
      doors: [{rect:[x0,x1,z0,z1], to, spawn}]  밟으면 다른 구역(to)으로 (spawn이 있으면 그 자리로)
      sun: {dir, shadow, follow}           해 방향, 그림자 범위(반지름), follow: 그림자 범위가 원더룹을 따라감(넓은 야외)
+     mood: {hemi, sun, fill, sky, ground, tint}  (선택) 구역 분위기 — 하늘빛·해·보조광 세기 배율과 하늘빛 물들일 색(땅속은 호박색). 낮·저녁·굴 단계 위에 곱한다
      groundY(x,z), ground: [메시]          (선택) 땅 높이, 클릭해서 걸을 때 맞힐 땅
      lights: [점광원]  light(env,dt)  update(dt,t,env)  click(ray)  keepOut: [병합에서 뺄 것]  dispose()
      start: {compass:true}               들어올 때 이미 그런 진행 상태(game/state)
@@ -28,6 +29,7 @@ import {applyStart} from './game/state.js';
 // 구역 목록 — 새 구역은 여기에 한 줄 더한다
 const ZONES={
   basecamp:()=>import('./zones/basecamp.js'),
+  'fairy-roots':()=>import('./zones/fairy/roots.js'), // 요정의 숲 ① 뿌리 우체국
 };
 // 견본 구역(확인용, 하늘 없음)은 주소에 ?zonetest 를 붙였을 때만 목록에 들어간다 — 일반 주소에서는 문·wlZone.go·?zone= 어느 길로도 못 간다
 const ZONETEST=new URLSearchParams(location.search).has('zonetest');

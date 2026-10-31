@@ -6,13 +6,15 @@ import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,se
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
-import {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
+import {hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
 /* ---------- 상호작용 ---------- */
-let cave=0,caveTarget=0,lightState=0,emph=true,night=0,nightTarget=0,spin=false,spinDir=1;
+let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
 dayBtn.addEventListener('click',()=>{lightState=(lightState+1)%3;nightTarget=lightState>=1?1:0;caveTarget=lightState===2?1:0;dayBtn.textContent=['저녁으로 바꾸기','어두운 굴로 바꾸기','낮으로 바꾸기'][lightState];});
-{const eb=document.getElementById('emphBtn');eb.addEventListener('click',()=>{emph=!emph;eb.textContent=emph?'캐릭터 강조: 켜짐':'캐릭터 강조: 꺼짐';});}
+/* 캐릭터 강조(림 라이트): 기본은 '자동' — 굴·저녁처럼 어두울 때만 켜지고 낮·밝은 곳에서는 꺼진다. 단추로 자동 → 켜짐(늘) → 꺼짐 */
+{const eb=document.getElementById('emphBtn'),L={auto:'캐릭터 강조: 자동',on:'캐릭터 강조: 켜짐',off:'캐릭터 강조: 꺼짐'},N={auto:'on',on:'off',off:'auto'};
+ eb.textContent=L[emph];eb.addEventListener('click',()=>{emph=N[emph];eb.textContent=L[emph];});}
 spinBtn.addEventListener('click',()=>{spin=!spin;spinBtn.textContent=spin?'멈추기':'천천히 둘러보기';});
 const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();let downAt=null;ray.layers.enable(1); // 레이어 1: 원더룹 원래 부품(클릭 판정용, 화면엔 SkinnedMesh가 그려짐)
 renderer.domElement.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
@@ -26,6 +28,14 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(zone.cur.ground){const h=ray.intersectObjects(zone.cur.ground,false)[0];if(h)setWalkTarget(h.point.x,h.point.z);return;} // 높낮이 있는 땅
   const r0=ray.ray;if(r0.direction.y<-0.01){const tt=-r0.origin.y/r0.direction.y;setWalkTarget(r0.origin.x+r0.direction.x*tt,r0.origin.z+r0.direction.z*tt);}
 });
+/* 키보드 이동: WASD·방향키 — 카메라가 보는 쪽을 앞으로 삼아 누르는 동안 걷는다(손을 떼면 멈춤). 입력칸에 쓰는 중이면 무시 */
+const KEYDIR={KeyW:[0,1],ArrowUp:[0,1],KeyS:[0,-1],ArrowDown:[0,-1],KeyA:[-1,0],ArrowLeft:[-1,0],KeyD:[1,0],ArrowRight:[1,0]},held=new Set(),_kf=new THREE.Vector3();
+window.addEventListener('keydown',e=>{if(!KEYDIR[e.code]||e.metaKey||e.ctrlKey||(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)))return;held.add(e.code);e.preventDefault();});
+window.addEventListener('keyup',e=>{if(held.delete(e.code)&&!held.size)stopWalk();});
+window.addEventListener('blur',()=>{if(held.size){held.clear();stopWalk();}});
+function keySteer(){if(!held.size)return;let f=0,r=0;held.forEach(k=>{r+=KEYDIR[k][0];f+=KEYDIR[k][1];});if(!f&&!r)return;
+  camera.getWorldDirection(_kf);_kf.y=0;if(_kf.lengthSq()<1e-6)return;_kf.normalize();
+  const dx=_kf.x*f-_kf.z*r,dz=_kf.z*f+_kf.x*r,L=Math.hypot(dx,dz);steerWalk(WL.position.x+dx/L*.6,WL.position.z+dz/L*.6);}
 /* ---------- 구역 오가기 ----------
    goZone(이름, 자리): 새 구역을 만들고 → 지금 구역을 비우고 → 원더룹을 자리에 세우고 → 해·카메라·병합을 맞춘다.
    문(doors)을 밟으면 저절로 부른다. 들어온 문 위에 서 있는 동안은 다시 넘어가지 않는다. 탈 교체 영역(아틀라스)은 새로 채운다 */
@@ -43,6 +53,7 @@ async function goZone(id,spawn){
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
 function zoneLook(z){const U=WL.userData;if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);}
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
+{const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
 GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES)};
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
@@ -57,8 +68,17 @@ const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector
 const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1/60;
 /* 안전장치: 프레임 안에서 오류가 나도 멈추지 않게 — 콘솔에 한 번 남기고, 이번 화면은 그려 두고, 다음 프레임을 잇는다 */
 const tickErrSeen=new Set();
+/* 플레이 중 아끼기(촬영 모드는 그대로 — 한 걸음씩 직접 진행): 초당 60프레임으로 묶고(120Hz 화면에서도 60번만 그림),
+   창이 가려지거나(document.hidden) 다른 창을 보고 있으면(blur) 그리기를 멈췄다가 돌아오면(focus·누르기) 다시 그린다. 멈춘 동안 게임 시간도 멈춘다(돌아온 첫 프레임 간격은 0.05초로 자른다). */
+let lastFrame=-1e9,paused=false,rafOn=false;
+const schedule=()=>{if(!rafOn){rafOn=true;requestAnimationFrame(frame);}}; // 루프가 두 갈래로 갈라지지 않게 예약은 한 번만
+function frame(now){rafOn=false;if(paused)return;if(now-lastFrame<1000/60-2){schedule();return;}lastFrame=now;tick();}
+const nextFrame=()=>{if(!SHOT&&!paused)schedule();};
+if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
+  document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
+  window.addEventListener('blur',()=>setPaused(true));['focus','pointerdown','keydown'].forEach(ev=>window.addEventListener(ev,()=>setPaused(document.hidden)));}
 function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
-  try{renderer.render(scene,camera);}catch(e2){}}if(!ok&&!SHOT)requestAnimationFrame(tick);}
+  try{renderer.render(scene,camera);}catch(e2){}}if(!ok)nextFrame();}
 function tickBody(){
   let dt,t;if(SHOT){dt=shotDt;shotT+=dt;t=shotT;}else{clock.update();dt=Math.min(clock.getDelta(),0.05);t=clock.getElapsed();}
   night+=(nightTarget-night)*Math.min(1,dt*2.2);
@@ -68,11 +88,15 @@ function tickBody(){
   cave+=(caveTarget-cave)*Math.min(1,dt*2.2);
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}
   const Z=zone.cur,env={night:n,cave,flick,reduce};
+  if(Z.mood){const m=Z.mood;hemi.intensity*=m.hemi??1;sun.intensity*=m.sun??1;fill.intensity*=m.fill??1; // 구역 분위기(땅속 등): 하늘빛·해를 줄이고 색을 물들인다 — 없으면 예전과 같다
+    if(m.sky!=null){hemi.color.lerp(rawLin(m.sky),m.tint??.5);hemi.groundColor.lerp(rawLin(m.ground??m.sky),m.tint??.5);}}
   if(Z.light)Z.light(env,dt); // 구역 조명(램프·등불 등)과 효과의 밝기
-  {const dark=Math.min(1,Math.max(0,1-hemi.intensity/.62));const U=WL.userData;if(U.rimU){U.rimU.value=emph?.08+.45*dark:0;U.liftU.value=emph?.02+.17*dark:0;}}
+  {const dark=Math.min(1,Math.max(0,1-hemi.intensity/.62));const U=WL.userData;const a=emph==='on'?1:emph==='off'?0:Math.min(1,Math.max(0,(dark-.25)/.25)); // 자동: 어두움 .25부터 켜지기 시작해 .5 이상(저녁·굴·땅속)이면 예전 세기 그대로
+   if(U.rimU){U.rimU.value=a*(.08+.45*dark);U.liftU.value=a*(.02+.17*dark);}}
   // 위 세기는 r128 옛 조명 단위 → 물리 단위로 (옛 방식은 셰이더에서 π를 곱했다)
   [hemi,sun,fill,...Z.lights].forEach(l=>l.intensity*=PI);
   if(Z.update)Z.update(dt,t,env); // 구역 움직임 (베이스캠프: 먼지·김·시계)
+  keySteer();
   updateWL(dt,t);
   GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩, 영상 캡처 중에는 1/72초씩)
   // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
@@ -90,7 +114,7 @@ function tickBody(){
   controls.update();renderer.render(scene,camera);
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
-  if(!SHOT)requestAnimationFrame(tick);
+  nextFrame();
 }
 tick();
 if(SHOT){

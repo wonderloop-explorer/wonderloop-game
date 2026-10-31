@@ -23,7 +23,11 @@ const fill=new THREE.DirectionalLight(rawLin(0xe2e9ff),0.22);fill.position.set(1
 /* ---------- 렌더러 / 카메라 ---------- */
 const stage=document.getElementById('stage');
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+/* 그리기 해상도: 기기 픽셀 비율(최대 2)을 쓰되, 그리는 화소가 1440p(2560×1440)를 넘지 않게 낮춘다 — 5K 아이맥 전체 화면이 1470만 화소를 그려 팬이 돌던 문제.
+   휴대폰(390×844 → 2배 130만 화소)은 그대로 2배. 촬영 모드(?shot)는 08이 1로 고정하고 wlShot.size로 크기를 정하므로 건드리지 않는다(1440p 영상 품질 그대로). */
+const MAX_PX=2560*1440,FIXED_PR=new URLSearchParams(location.search).has('shot');
+const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,2);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
+renderer.setPixelRatio(fitPixelRatio(stage.clientWidth,stage.clientHeight));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.shadowMap.enabled=QUALITY.shadows;renderer.shadowMap.type=THREE.PCFShadowMap;
 renderer.setClearColor(0x000000,0);
@@ -33,7 +37,7 @@ const controls=new OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;controls.dampingFactor=0.08;controls.enablePan=false;
 function placeCamera(){
   const w=stage.clientWidth,h=stage.clientHeight;const asp=w/h;
-  camera.aspect=asp;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
+  camera.aspect=asp;camera.updateProjectionMatrix();if(!FIXED_PR)renderer.setPixelRatio(fitPixelRatio(w,h));renderer.setSize(w,h,false);
   return asp;
 }
 placeCamera();window.addEventListener('resize',placeCamera);

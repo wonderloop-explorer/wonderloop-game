@@ -2,6 +2,7 @@
    세계마다 한 번: setup({world, name:'자연 도감', cards:[{id,t,f,x?,where,icon}], secrets:[{id,t,f,where,icon}]})
      t 제목, f 앞면 사실(한두 문장), x 더 알아보기(핵심 카드만), where 만나는 구역, icon 그림(data URL 또는 경로, 없으면 '?')
    - find(id): 새 도감 카드 창(꼬리표 "새 도감 카드" → 그림·제목·사실·[더 알아보기]·개수·"도감에 넣기"). 이미 찾았으면 false.
+   - meet(id): 이야기 장면용 — 처음이면 find, 이미 모았으면 같은 카드를 다시 보여 준다(저장된 진행 때문에 다시 플레이할 때 카드가 안 뜨던 문제).
    - findSecret(id): 비밀 카드(ui.secret 금빛 판, "숨겨진 비밀 발견!", "발견한 비밀 n/N", "비밀 수첩에 넣기"), 나레이션 "비밀 발견! "+사실.
    - spot({id, root 또는 pos:[x,y,z], near:6.5, reach:1.4}): 비밀 장면 자리 — near 안으로 다가가면 금빛 반짝임이 점점 진해지고(안내 표시 = 영상에서 숨김),
      reach 안에 들어오면 findSecret. 찾은 비밀은 다시 반짝이지 않는다. 구역을 떠나면 자리는 지워진다(찾은 기록은 남음).
@@ -30,7 +31,7 @@ const css=`
 #wlDex .dcard{background:var(--panel);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;width:min(22rem,100%);max-height:calc(100vh - 2.4rem);overflow:auto;box-sizing:border-box;text-align:center;
   box-shadow:0 18px 50px rgba(30,14,36,.5);animation:wlRise .45s cubic-bezier(.2,1.4,.4,1)}
 #wlDex .k2{display:inline-block;margin:0;background:var(--tag);color:var(--tag-ink);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;font-family:"Jua",sans-serif}
-#wlDex img{width:132px;height:132px;display:block;margin:.6rem auto 0}#wlDex h2{margin:.5rem 0 .4rem;font-size:1.6rem;font-weight:400;font-family:"Jua",sans-serif}
+#wlDex img{width:70%;height:auto;aspect-ratio:1;object-fit:contain;display:block;margin:.6rem auto 0}#wlDex h2{margin:.5rem 0 .4rem;font-size:1.6rem;font-weight:400;font-family:"Jua",sans-serif}
 #wlDex .fact{margin:0;font-size:1.1rem;line-height:1.7}#wlDex .moreB{display:inline-block;margin-top:.7rem;border:2px solid var(--accent);border-radius:999px;padding:.3rem 1rem;font-size:.95rem}
 #wlDex .more{margin:.7rem 0 0;padding:.75rem .9rem;border-radius:14px;background:rgba(242,182,60,.18);line-height:1.65;font-size:1rem;text-align:left}#wlDex [hidden]{display:none!important}
 #wlDex .cnt{margin:.7rem 0 0;font-size:.85rem;color:var(--ink-soft)}#wlDex .ok,#wlBook .x,#wlEnd .b1{display:block;width:100%;margin-top:.9rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.05rem;padding:.75rem 1.2rem}
@@ -57,6 +58,8 @@ const ICON_Q=(()=>{const c=document.createElement('canvas');c.width=c.height=128
 /* 새 도감 카드 */
 const dex=$('#wlDex');let dexDone=null,dexCue=null,dexVoice=null;
 function find(id){const d=BY[id];if(!d||found.has(id))return false;found.add(id);save();return showCard(id,true);}
+/* 이야기 장면에서 카드를 꼭 보여 줄 때: 처음이면 새 카드(find), 이미 모았으면 같은 카드를 꼬리표 '세계 도감'으로 다시 보여 준다(다시 플레이해도 카드가 뜬다) */
+function meet(id){if(!BY[id])return false;return find(id)||showCard(id,false);}
 function showCard(id,isNew){const d=BY[id];return cardSlot('dex',r=>{dexDone=r;$('#wlDex .k2').textContent=isNew?'새 도감 카드':W.name;const img=$('#wlDex img');img.src=d.icon||ICON_Q;
   $('#wlDex h2').textContent=d.t;$('#wlDex .fact').textContent=d.f;const mb=$('#wlDex .moreB'),mp=$('#wlDex .more');mb.hidden=!d.x;mb.textContent='더 알아보기';mp.hidden=true;mp.textContent=d.x||'';
   $('#wlDex .cnt').textContent=`${W.name} ${found.size}/${W.cards.length}`;$('#wlDex .ok').textContent=isNew?'도감에 넣기':'닫기';
@@ -108,4 +111,4 @@ function closeEnding(){if(cardShown()!=='ending')return;end.style.display='none'
 cardCloser('ending',()=>{const b=$('#wlEnd .b1');if(b.onclick)b.onclick();else closeEnding();});
 function initCodex(c){ctx=c;}
 function clearSpots(){SPOTS.splice(0).forEach(s=>{if(s.sprite.parent)s.sprite.parent.remove(s.sprite);s.sprite.material.dispose();});}
-export {clearSpots,closeBook,closeDex,ending,find,findSecret,has,hasSecret,initCodex,openBook,progress,secretLine,setup,spot,tickCodex};
+export {clearSpots,closeBook,closeDex,ending,find,findSecret,meet,has,hasSecret,initCodex,openBook,progress,secretLine,setup,spot,tickCodex};

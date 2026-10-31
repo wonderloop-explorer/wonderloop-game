@@ -29,11 +29,15 @@ function tickSay(){
     s.end=clock.t+Math.max(s.sec||0,h.dur);saying=s;}}
 /* 말풍선 (안내 표시) */
 let bubble=null;
-function makeBubble(scene){const c=document.createElement('canvas');c.width=128;c.height=96;const g=c.getContext('2d');
-  g.fillStyle='#fffaf2';g.strokeStyle='#3e2834';g.lineWidth=5;g.beginPath();g.roundRect?g.roundRect(8,8,112,62,22):g.rect(8,8,112,62);g.fill();g.stroke();
-  g.beginPath();g.moveTo(44,68);g.lineTo(36,90);g.lineTo(62,69);g.fill();g.fillStyle='#3e2834';[40,64,88].forEach(x=>{g.beginPath();g.arc(x,39,6,0,7);g.fill();});
+function makeBubble(scene){const c=document.createElement('canvas');c.width=256;c.height=200;const g=c.getContext('2d');
+  // 크림 바탕 + 부드러운 갈색 테두리, 꼬리는 몸통에서 둥글게 이어져 아래로 (테두리 한 줄로 그려 이음매가 없다)
+  const L=14,T=12,R=242,B=136,r=40;g.beginPath();g.moveTo(L+r,T);g.lineTo(R-r,T);g.quadraticCurveTo(R,T,R,T+r);g.lineTo(R,B-r);g.quadraticCurveTo(R,B,R-r,B);
+  g.lineTo(150,B);g.bezierCurveTo(136,B+14,132,B+36,112,B+50);g.bezierCurveTo(118,B+30,112,B+12,100,B);
+  g.lineTo(L+r,B);g.quadraticCurveTo(L,B,L,B-r);g.lineTo(L,T+r);g.quadraticCurveTo(L,T,L+r,T);g.closePath();
+  g.fillStyle='#fff6e6';g.fill();g.lineJoin='round';g.lineWidth=7;g.strokeStyle='#a5795a';g.stroke();
+  g.fillStyle='#8c6248';[88,128,168].forEach(x=>{g.beginPath();g.arc(x,74,10,0,7);g.fill();});
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;bubble=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
-  bubble.scale.set(.5,.38,1);bubble.renderOrder=10;bubble.visible=false;hint(bubble);bubble.userData.scene=scene;} // 장면에는 보일 때만 붙인다 (숨겨 둔 스프라이트도 그림을 1단계 바꾼다)
+  bubble.scale.set(.34,.266,1);bubble.renderOrder=10;bubble.visible=false;hint(bubble);bubble.userData.scene=scene;} // 장면에는 보일 때만 붙인다 (숨겨 둔 스프라이트도 그림을 1단계 바꾼다)
 const _p=new THREE.Vector3(),_q=new THREE.Vector3();
 function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
   // 대화 중 너무 멀어지면 닫음

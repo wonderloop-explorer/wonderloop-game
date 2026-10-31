@@ -32,7 +32,9 @@ function launch(b){const x=WL.position.x,z=WL.position.z,apex=b.top+b.height,vy0
 // 걸을 수 있는 곳·장애물·땅 높이는 지금 구역이 정한다 (02 blocked·groundY)
 function hopWL(){if(wlHop<=0)wlHop=1;}
 function stopWalk(){wlTarget=null;markerA=0;} // 구역을 옮길 때
+WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 때 (예: 매듭 앞에 서기)
 function setWalkTarget(x,z){wlTarget={x,z};marker.position.set(x,groundY(x,z)+0.06,z);markerA=1;}
+function steerWalk(x,z){wlTarget={x,z};} // 키보드 이동: 목표 표시 없이 바로 앞을 목표로 (08이 매 프레임 갱신)
 /* ---------- 동작 세트 ---------- */
 const ACTIONS=['서기','걷기','뛰기','두리번','들여다보기','기어오르기','멈칫','나침반 보기','손 흔들기'];
 const ACT_FACE={'뛰기':'신남','두리번':'궁금','들여다보기':'궁금','멈칫':'놀람','나침반 보기':'궁금','손 흔들기':'기쁨'};
@@ -45,6 +47,9 @@ function actionPose(A,t){
  if(A==='기어오르기'){const ph=t*3.2,s=Math.sin(ph);return{ax0:-1.75+s*.35,ax1:-1.75-s*.35,az0:-.62,az1:.62,ex0:-.25-Math.max(0,-s)*.35,ex1:-.25-Math.max(0,s)*.35,lx0:-.6-s*.55,lx1:-.6+s*.55,kx0:.9+s*.5,kx1:.9-s*.5,ly0:.3+Math.max(0,s)*.1,ly1:.3+Math.max(0,-s)*.1,bx:.08,hx:-.18,by:.02,wy:.03+Math.abs(s)*.02};}
  if(A==='멈칫'){const c=t%2.6,e=Math.min(1,c<.18?c/.18:Math.max(0,1-(c-1.6)/.8));return{wy:c<.3?.07*Math.sin(c/.3*PI):0,ax0:-.4*e,ax1:-.4*e,az0:-1.25*e-.32*(1-e),az1:1.25*e+.32*(1-e),bx:-.16*e,hx:-.18*e,lx0:-.15*e,lx1:.15*e};}
  if(A==='나침반 보기'){const b=Math.sin(t*1.5)*.03;return{ax0:-.75+b,ax1:-.75+b,az0:-.22,az1:.22,ex0:-1.15,ex1:-1.15,ez0:.7,ez1:-.7,hx:.38,hz:Math.sin(t*.7)*.05,bx:.06,by:0};}
+ // 매듭 풀기(게임 로직 전용, 단추 목록 밖): 두 손을 앞으로 뻗어 손 높이의 매듭을 잡고(0.45초) 두어 번 잡아당긴다
+ if(A==='매듭 풀기'){const r=Math.min(1,t/.45),c=Math.max(0,t-.45),tug=Math.abs(Math.sin(c*6.5))*Math.min(1,c*3);
+   return{ax0:-1.3*r+tug*.3,ax1:-1.3*r+tug*.3,az0:-.1,az1:.1,ex0:-.2*r-tug*.6,ex1:-.2*r-tug*.6,ez0:.25*r,ez1:-.25*r,bx:.1*r-tug*.14,hx:.2,lx0:-tug*.12,lx1:-tug*.12};}
  if(A==='손 흔들기')return{az0:-1.5,ex0:-.15,ez0:-.55+Math.sin(t*9)*.3,ax0:-.15,az1:.35,ax1:0,hz:-.14,hx:-.05,bz:-.04};
  return null;}
 /* 손에 드는 더듬이 나침반 + 쥐는 손(엄지) */
@@ -125,12 +130,12 @@ const atlasMat=(()=>{const U=WL.userData,C=THREE.ShaderChunk,cache={};
       sh.vertexShader='attribute vec4 wlCol;attribute vec4 wlAtl;attribute vec4 wlExt;attribute vec2 wlSh;\nvarying vec2 vWlUv;flat varying vec4 vWlCol;flat varying vec4 vWlAtl;flat varying vec4 vWlExt;flat varying float vWlRecv;\n'+
         sh.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\nvWlUv=uv*wlAtl.yz;vWlCol=wlCol;vWlAtl=wlAtl;vWlExt=wlExt;vWlRecv=wlSh.x;');
       sh.fragmentShader='uniform highp sampler2DArray uWlAtlas;uniform float uRim;uniform float uLift;uniform vec3 uRimCol;\nvarying vec2 vWlUv;flat varying vec4 vWlCol;flat varying vec4 vWlAtl;flat varying vec4 vWlExt;flat varying float vWlRecv;\n'+
-        sh.fragmentShader.replace('#include <map_fragment>','diffuseColor*=vWlCol;diffuseColor*=texture(uWlAtlas,vec3(vWlUv,vWlAtl.x));')
+        sh.fragmentShader.replace('#include <map_fragment>','diffuseColor*=vWlCol;diffuseColor*=texture(uWlAtlas,vec3(vWlUv,vWlAtl.x));if(diffuseColor.a<.004)discard;')
           .replace('#include <roughnessmap_fragment>','float roughnessFactor=vWlAtl.w;')
           .replace('#include <emissivemap_fragment>','totalEmissiveRadiance=vWlExt.xyz;')
           .replace('#include <lights_fragment_begin>','bool wlRecv=receiveShadow&&vWlRecv>.5;\n'+lfb)
           .replace('#include <dithering_fragment>','float wlFr=pow(1.0-clamp(dot(normalize(normal),normalize(vViewPosition)),0.0,1.0),2.2);gl_FragColor.rgb+=(uRimCol*wlFr*uRim+diffuseColor.rgb*uLift)*vWlExt.w;\n#include <dithering_fragment>');};
-    m.customProgramCacheKey=()=>'wlatlas';return cache[k]=m;};})();
+    m.customProgramCacheKey=()=>'wlatlas';return cache[k]=m;};})(); // 완전히 투명한 곳(탈 잎 날개 둘레)은 버린다 — 깊이를 써서 뒤의 빛무리를 네모로 가리지 않게
 // 그림자: 그림자를 드리우지 않는 부품은 그림자 패스에서만 크기 0으로 접는다
 const atlasDepth=new THREE.MeshDepthMaterial();atlasDepth.onBeforeCompile=sh=>{sh.vertexShader='attribute vec2 wlSh;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed*=wlSh.y;');};
 atlasDepth.customProgramCacheKey=()=>'wlatlasdepth';
@@ -251,7 +256,7 @@ function updateWL(dt,t){
    else{U.pc=Object.assign({},base);body.rotation.x=0;body.position.z=0;neck.rotation.x=0;neck.rotation.y=0;legs.forEach(lg=>{lg.userData.knee.rotation.x=0;lg.userData.boot.rotation.x=-lg.rotation.x*.6;});arms.forEach(ap=>ap.userData.elbow.rotation.set(-.12,0,0));}
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
-   if(U.thumbs)U.thumbs.forEach(th=>th.visible=U.holdW>.5);
+   if(U.thumbs)U.thumbs.forEach(th=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)); // 쥘 때만 엄지
    if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass; // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
    if(U.leafCharm)U.leafCharm.g.visible=!!flags.lastLeaf;} // 마지막 잎은 받은 뒤에만 (game/items)
   // 몸통: 위 계산은 발바닥 기준 몸 원점의 위치·회전 → 엉덩이 축 뼈(spine)로 옮김 (spine·(0,-HIP,0) = 예전 몸 변환)
@@ -259,4 +264,4 @@ function updateWL(dt,t){
   rigSync();
 }
 const walking=()=>!!wlTarget; // 영상 캡처: 걸어가서 도착했는지
-export {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit};
+export {hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};
