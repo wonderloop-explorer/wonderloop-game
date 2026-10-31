@@ -80,7 +80,10 @@ const atlas=(()=>{
   const ok=img=>img&&img.width===S&&img.height===S;
   // 캔버스 → 층 (CanvasTexture는 위아래를 뒤집어 올리므로 줄 순서를 뒤집어 넣는다)
   let rd=null;function put(i,img){if(!rd){const c=document.createElement('canvas');c.width=c.height=S;rd=c.getContext('2d',{willReadFrequently:true});}
-    rd.drawImage(img,0,0);const src=rd.getImageData(0,0,S,S).data,dst=tex.image.data,row=S*4;
+    rd.clearRect(0,0,S,S);rd.drawImage(img,0,0);const src=rd.getImageData(0,0,S,S).data,dst=tex.image.data,row=S*4;
+    // 투명한 곳(알파 0)은 캔버스가 검정으로 남긴다 → 멀리서 작아지면(밉맵) 날개 가장자리가 검게 번진다. 보이는 곳의 평균 색으로 채운다(불투명 텍스처는 그대로)
+    {let r=0,g=0,b=0,n=0,z=0;for(let k=0;k<src.length;k+=4){if(src[k+3]){r+=src[k];g+=src[k+1];b+=src[k+2];n++;}else z++;}
+     if(z&&n){r=Math.round(r/n);g=Math.round(g/n);b=Math.round(b/n);for(let k=0;k<src.length;k+=4)if(!src[k+3]){src[k]=r;src[k+1]=g;src[k+2]=b;}}}
     for(let y=0;y<S;y++)dst.set(src.subarray((S-1-y)*row,(S-y)*row),(i*S+y)*row);order[i]=img;tex.needsUpdate=true;}
   A.build=(baseImgs,swapImgs)=>{base=1+baseImgs.length+SPARE;const n=base+SWAP;
     tex=new THREE.DataArrayTexture(new Uint8Array(S*S*4*n).fill(255,0,S*S*4),S,S,n);

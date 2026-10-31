@@ -216,6 +216,16 @@ function drawPencil(base,kind,o){
     for(let i=0;i<900;i++){g.fillStyle=hexA(R()<.5?dark:'#ffffff',rnd(.06,.15));g.fillRect(rnd(0,S),rnd(0,S),1.5,1.5);}
     g.strokeStyle=hexA(dark,.3);g.lineWidth=2;for(let y=S*.62;y<S;y+=9){g.beginPath();g.moveTo(0,y);g.lineTo(S,y);g.stroke();}
     hatchAmt*=.2;
+  }else if(kind==='scales'){
+    // 도토리 깍정이 비늘: 끝이 아래(캔버스 아래 = 회전체의 테두리 쪽)를 향한 비늘을 아래 줄부터 그려 윗줄이 아랫줄 끝을 덮는다
+    const rows=o.rows||6,cols=o.cols||6,w=S/cols,h=S/rows;
+    for(let r=rows;r>=-1;r--){const y=r*h,off=(r&1)?w/2:0;
+      for(let c=-1;c<=cols;c++){const x=c*w+off+rnd(-1.5,1.5),k=rnd(-0.06,0.05);
+        g.fillStyle=shade(base,k);g.strokeStyle=hexA(darker,.85);g.lineWidth=2.2;
+        g.beginPath();g.moveTo(x-w*.55,y);g.quadraticCurveTo(x-w*.5,y+h*1.05,x,y+h*1.35);g.quadraticCurveTo(x+w*.5,y+h*1.05,x+w*.55,y);g.closePath();g.fill();g.stroke();
+        g.strokeStyle=hexA(light,.55);g.lineWidth=1.4;g.beginPath();g.moveTo(x,y+h*.15);g.lineTo(x,y+h*1.05);g.stroke();
+        g.strokeStyle=hexA(dark,.35);g.lineWidth=1;g.beginPath();g.moveTo(x-w*.3,y+h*.3);g.quadraticCurveTo(x-w*.15,y+h*.75,x,y+h*1.1);g.moveTo(x+w*.3,y+h*.3);g.quadraticCurveTo(x+w*.15,y+h*.75,x,y+h*1.1);g.stroke();}}
+    hatchAmt*=.35;
   }else if(kind==='dots'){
     for(let y=0;y<S;y+=32)for(let x=((y/32)%2)*16;x<S;x+=32){g.fillStyle=hexA('#fff6ea',.95);g.beginPath();g.arc(x+8,y+8,4.2,0,7);g.fill();
       g.strokeStyle=hexA('#fff6ea',.8);g.lineWidth=1.6;g.beginPath();g.arc(x+8,y+8,8,0,7);g.stroke();}

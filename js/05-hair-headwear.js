@@ -73,7 +73,7 @@ import {WL,hairParts,head,hoodParts,wm} from './04-character.js';
    [zig,bob].forEach(fn=>{const hb=wm(shell(.43,96,a=>ramp(a,fn(a)),.975,.96,0,0),hairTexM);hb.scale.set(1.03,1.0,.93);head.add(hb);hb.visible=false;hoodBangs.push(hb);});}
   let hoodOn=false;const hoodBtn=document.getElementById('hoodBtn');
   const hairStyles=[hairParts.slice(),hairB,hairD];WL.userData.hairMeshes=hairParts.concat(hairB,hairD).filter(o=>o.isMesh);WL.userData.noMerge=hoodBangs.slice();hairC.forEach(o=>o.parent&&o.parent.remove(o));hairC.forEach(o=>o.visible=false);let hairIdx=2;
-  function applyLook(){const hw=WL.userData.hw||0;hoodParts.forEach(o=>o.visible=hw===1);hairStyles.forEach((arr,i)=>arr.forEach(o=>o.visible=hw!==1&&i===hairIdx));hoodBangs.forEach((b,i)=>b.visible=hw===1&&i===[0,1,0][hairIdx]);}
+  function applyLook(){const hw=WL.userData.hw||0;hoodParts.forEach(o=>o.visible=(o.userData.hw??1)===hw);/* 개미탈 부품은 번호 없음 = 1, 다른 탈은 06이 붙인 번호 */hairStyles.forEach((arr,i)=>arr.forEach(o=>o.visible=hw!==1&&i===hairIdx));hoodBangs.forEach((b,i)=>b.visible=hw===1&&i===[0,1,0][hairIdx]);}
   WL.userData.applyLook=applyLook;applyLook();
   const HNAMES=['지그재그 앞머리','둥근 단발','지그재그 단발'];const hairBtn=document.getElementById('hairBtn');
   hairBtn.addEventListener('click',()=>{hairIdx=(hairIdx+1)%hairStyles.length;applyLook();hairBtn.textContent='머리: '+HNAMES[hairIdx];});

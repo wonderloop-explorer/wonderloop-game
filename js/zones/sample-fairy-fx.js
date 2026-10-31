@@ -210,7 +210,7 @@ function light(env){const n=env.night;
   LS.light(WL?WL.position:{x:0,z:0},{light:(0.5+0.9*n)*env.flick*(1-.6*env.cave),emissive:0.25+0.65*n,
     glow:glowOn.on?0.35+0.65*n:0,pool:glowOn.on?(0.12+0.88*n)*(1-.35*env.cave):0,ambient:1-.6*env.cave});} // 굴에서는 따뜻한 기운을 줄여 어두운 맛을 살린다
 return {
-  name:'요정의 숲 휴대폰 시험',kind:'outdoor',start:{compass:true},
+  name:'요정의 숲 휴대폰 시험',kind:'outdoor',start:{compass:true},hood:'acorn', // 도토리 탈 날개도 아이폰에서 같이 본다
   spawn:{x:0,z:1.5,ry:PI},
   areas:{glade:{bounds:[-SIZE/2+2,SIZE/2-2,-SIZE/2+2,SIZE/2-2],obstacles,
     camera:{target:[0,1,0],dist:22,polar:[0.45,1.35],azimuth:null,start:[1.05,0.5],minDist:3,maxDist:40}}},

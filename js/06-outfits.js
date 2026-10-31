@@ -2,6 +2,14 @@
 import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
+import * as acornHood from './hoods/acorn.js';
+/* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래) · 3 도토리 깍정이(js/hoods/acorn.js)
+   새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}. 여기서 hoodParts(아틀라스 교체 영역)에 넣고 userData.hw로 번호를 붙인다(05 applyLook이 그 번호일 때만 보임).
+   머리 처리: 개미탈은 탈 아래 앞머리(05), 모자형 탈은 안쪽 머리만 눌러 넣기(pressHair, 탈의 profile·top). 구역 정보 hood:'acorn' → 들어올 때 그 탈(08).
+   번호 0~2는 기준 촬영·영상 대본(setup({hood}))이 쓰므로 바꾸지 않고 뒤에 붙인다. */
+const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'},{key:'acorn',name:'도토리 탈',mod:acornHood}];
+HOODS.forEach((h,i)=>{if(!h.mod)return;const r=h.mod.build({head,wm,TM,SM});r.g.userData.hw=i;hoodParts.push(r.g);h.press=r;});
+WL.userData.hoods=HOODS;
 /* 디테일: 옷 구조 + 탐험대 패치 */
 {
   const cream=SM('#f3ead6');
@@ -61,7 +69,9 @@ function wlMerge(list){
   const hairMs=WL.userData.hairMeshes||[];const orig=hairMs.map(m=>m.geometry.attributes.position.array.slice());
   const PROF=[[.305,0],[.29,.07],[.262,.16],[.215,.21],[.12,.23],[0,.235]];
   const rc=h=>{if(h<=0)return .305;for(let k=1;k<PROF.length;k++){if(h<=PROF[k][1]){const a=PROF[k-1],b=PROF[k],u=(h-a[1])/(b[1]-a[1]);return a[0]+(b[0]-a[0])*u;}}return 0;};
-  function pressHair(mode){const hatG=WL.userData.hatG;hatG.updateMatrix();const inv=hatG.matrix.clone().invert();const v=new THREE.Vector3();const hood=hoodParts[0];
+  const rcOf=P=>h=>{if(h<=0)return P[0][0];for(let k=1;k<P.length;k++){if(h<=P[k][1]){const a=P[k-1],b=P[k],u=(h-a[1])/(b[1]-a[1]);return a[0]+(b[0]-a[0])*u;}}return 0;};
+  function pressHair(mode){const cap=mode>=3?HOODS[mode].press:null;const hatG=cap?cap.g:WL.userData.hatG;hatG.updateMatrix();const inv=hatG.matrix.clone().invert();const v=new THREE.Vector3();const hood=hoodParts[0];
+    const rcM=cap?rcOf(cap.profile.map(q=>[q[0],q[1]])):rc,topM=(cap?cap.top:.235)*.95;
     hairMs.forEach((m,mi)=>{const p=m.geometry.attributes.position,o=orig[mi];if(!mode){p.array.set(o);p.needsUpdate=true;m.geometry.computeVertexNormals();return;}
       m.updateMatrix();
       if(mode===1){const mInv=m.matrix.clone().invert(),hp=hood.position,hs=hood.scale;
@@ -74,9 +84,9 @@ function wlMerge(list){
         p.needsUpdate=true;m.geometry.computeVertexNormals();return;}
       const M=inv.clone().multiply(m.matrix),Mi=M.clone().invert();
       for(let i=0;i<p.count;i++){v.set(o[i*3],o[i*3+1],o[i*3+2]).applyMatrix4(M);
-        if(v.y>-.005){const top=.235*.95;const h=Math.min(v.y,top);const d=Math.hypot(v.x,v.z),r=rc(h)*.95;
+        if(v.y>-.005){const top=topM;const h=Math.min(v.y,top);const d=Math.hypot(v.x,v.z),r=rcM(h)*.95;
           if(v.y>top||d>r){const s=(d>r&&d>1e-6)?r/d:1;v.x*=s;v.z*=s;v.y=h;}}
-        else{const d=Math.hypot(v.x,v.z);if(d>.29&&d<.49){const u=Math.min(1,(d-.3)/.165);const yb=-.002-.06*u*u-.012;if(v.y>yb)v.y=yb;}}
+        else if(!cap){const d=Math.hypot(v.x,v.z);if(d>.29&&d<.49){const u=Math.min(1,(d-.3)/.165);const yb=-.002-.06*u*u-.012;if(v.y>yb)v.y=yb;}}
         v.applyMatrix4(Mi);p.setXYZ(i,v.x,v.y,v.z);}
       p.needsUpdate=true;m.geometry.computeVertexNormals();});}
   {const pk=TM('#b8743f','leather2'),pd=TM('#8a5230','leather2'),rl=TM('#f3e3c6','wool',{stripes:['#f3e3c6','#f3e3c6','#d97e6a','#f3e3c6','#5f8f86'],n:10,rep:[1,1]}),bu=SM('#f2b63c');
@@ -114,8 +124,10 @@ function wlMerge(list){
    {const r2=wlMerge(pack.filter(o=>o.isMesh));for(let i=pack.length-1;i>=0;i--)if(r2.removed.has(pack[i]))pack.splice(i,1);r2.made.forEach(m=>pack.push(m));}
    wlMerge(WL.userData.hatG.children.slice());if(WL.userData.charm)wlMerge(WL.userData.charm.g.children.slice());applyOutfit();}
   // 탈 카테고리: 없음 → 개미탈 → 탐험 모자 (옷과 따로 쓰고 벗음)
-  {const hwBtn=document.getElementById('hoodBtn');const HW=['없음','개미탈','탐험 모자'];WL.userData.hw=0;
-   const applyHW=()=>{const hw=WL.userData.hw;WL.userData.hatG.visible=hw===2;WL.userData.applyLook();pressHair(hw===2?2:0);hwBtn.textContent='탈: '+HW[hw];};
-   hwBtn.addEventListener('click',()=>{WL.userData.hw=(WL.userData.hw+1)%3;applyHW();});applyHW();}
+  {const hwBtn=document.getElementById('hoodBtn');WL.userData.hw=0;
+   const applyHW=()=>{const hw=WL.userData.hw;WL.userData.hatG.visible=hw===2;WL.userData.applyLook();pressHair(hw===2||HOODS[hw].press?hw:0);hwBtn.textContent='탈: '+HOODS[hw].name;};
+   hwBtn.addEventListener('click',()=>{WL.userData.hw=(WL.userData.hw+1)%HOODS.length;applyHW();});applyHW();
+   // 이름으로 탈 쓰기 (구역 정보 hood, 영상 대본): setHood('acorn')
+   WL.userData.setHood=key=>{const i=HOODS.findIndex(h=>h.key===key);if(i<0){console.warn('원더룹: 없는 탈',key);return;}WL.userData.hw=i;applyHW();};}
   const ob=document.getElementById('outfitBtn');ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';});
 }

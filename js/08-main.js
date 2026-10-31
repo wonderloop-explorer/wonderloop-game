@@ -35,10 +35,11 @@ async function goZone(id,spawn){
   try{const nz=await loadZone(id),old=zone.cur;unloadZone(old);zone.cur=nz;
     const sp=spawn||nz.spawn;stopWalk();WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;
     zone.area=areaAt(sp.x,sp.z)||Object.keys(nz.areas)[0];setupView(nz,zone.area);
-    WL.userData.atlas.clear('swap');doorLock=true;
+    WL.userData.atlas.clear('swap');if(nz.hood)WL.userData.setHood(nz.hood);doorLock=true; // 구역 정보 hood: 그 세계의 탈
     const zb=document.getElementById('zoneBtn');if(zb)zb.textContent='구역: '+nz.name;
   }finally{zoneBusy=false;}
   return true;}
+if(zone.cur.hood)WL.userData.setHood(zone.cur.hood); // 처음 구역의 탈 (?zone=…로 바로 들어와도)
 GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES)};
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)

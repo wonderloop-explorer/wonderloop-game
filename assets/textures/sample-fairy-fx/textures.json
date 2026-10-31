@@ -1,0 +1,125 @@
+{
+ "note": "원더룹 구운 텍스처 목록 — tools/bake-textures.js가 쓴다. hand: true = 손으로 고친 파일(다시 구워도 덮어쓰지 않음). key는 텍스처를 찾는 열쇠라 고치지 않는다.",
+ "textures": [
+  {
+   "key": "pencil|#c99a62|plain|{\"rep\":[10,10]}",
+   "file": "plain-c99a62-r10x10-3117.webp",
+   "w": 256,
+   "h": 256,
+   "px": "7dd82e46b4e3c328",
+   "bytes": 21304
+  },
+  {
+   "key": "pencil|#f1e2c4|plain|{}",
+   "file": "plain-f1e2c4-e9c9.webp",
+   "w": 256,
+   "h": 256,
+   "px": "dc7b0a2461d0b1ed",
+   "bytes": 14800
+  },
+  {
+   "key": "pencil|#d9573f|dots|{\"rep\":[2,1]}",
+   "file": "dots-d9573f-r2x1-f5c2.webp",
+   "w": 256,
+   "h": 256,
+   "px": "0b9f0c9bbd007825",
+   "bytes": 23394
+  },
+  {
+   "key": "pencil|#c9733d|dots|{\"rep\":[2,1]}",
+   "file": "dots-c9733d-r2x1-37dc.webp",
+   "w": 256,
+   "h": 256,
+   "px": "98d46ea9deb0d79d",
+   "bytes": 22764
+  },
+  {
+   "key": "pencil|#e08a4c|dots|{\"rep\":[2,1]}",
+   "file": "dots-e08a4c-r2x1-910e.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c7cba0332dea138a",
+   "bytes": 23438
+  },
+  {
+   "key": "pencil|#cf5a44|dots|{\"rep\":[2,1]}",
+   "file": "dots-cf5a44-r2x1-5a55.webp",
+   "w": 256,
+   "h": 256,
+   "px": "cda3fa70e8f52cda",
+   "bytes": 22962
+  },
+  {
+   "key": "pencil|#9a6a3e|weave|{\"rep\":[2,1]}",
+   "file": "weave-9a6a3e-r2x1-b7ed.webp",
+   "w": 256,
+   "h": 256,
+   "px": "d7a083fb52e5d634",
+   "bytes": 22704
+  },
+  {
+   "key": "pencil|#7c5a3a|wood|{}",
+   "file": "wood-7c5a3a-9a48.webp",
+   "w": 256,
+   "h": 256,
+   "px": "8b7e27fb1609d20f",
+   "bytes": 24726
+  },
+  {
+   "key": "pencil|#9cc08a|plain|{}",
+   "file": "plain-9cc08a-eceb.webp",
+   "w": 256,
+   "h": 256,
+   "px": "7e5873e5d7f3c6c3",
+   "bytes": 15698
+  },
+  {
+   "key": "pencil|#f3d9c0|plain|{}",
+   "file": "plain-f3d9c0-9ec8.webp",
+   "w": 256,
+   "h": 256,
+   "px": "b63a46b8c2186e66",
+   "bytes": 15296
+  },
+  {
+   "key": "pencil|#f6f1e6|wool|{}",
+   "file": "wool-f6f1e6-859d.webp",
+   "w": 256,
+   "h": 256,
+   "px": "895a6d62f11a014a",
+   "bytes": 18666
+  },
+  {
+   "key": "pencil|#f0cfb4|plain|{}",
+   "file": "plain-f0cfb4-7972.webp",
+   "w": 256,
+   "h": 256,
+   "px": "1def6d5def7b9b96",
+   "bytes": 15276
+  },
+  {
+   "key": "pencil|#8a6244|wood|{\"rep\":[3,1]}",
+   "file": "wood-8a6244-r3x1-dfa4.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c89a68d7b9d9712c",
+   "bytes": 25202
+  },
+  {
+   "key": "pencil|#2a1a18|plain|{}",
+   "file": "plain-2a1a18-1daa.webp",
+   "w": 256,
+   "h": 256,
+   "px": "987d1cac01394e61",
+   "bytes": 13270
+  },
+  {
+   "key": "pencil|#7a5a40|wood|{\"rep\":[2,3]}",
+   "file": "wood-7a5a40-r2x3-b67b.webp",
+   "w": 256,
+   "h": 256,
+   "px": "499064bcc82c3765",
+   "bytes": 24740
+  }
+ ]
+}

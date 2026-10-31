@@ -56,6 +56,22 @@
    "h": 256,
    "px": "e348a8fa02dc6e8e",
    "bytes": 13812
+  },
+  {
+   "key": "pencil|#ffd6b0|plain|{}",
+   "file": "plain-ffd6b0-5226.webp",
+   "w": 256,
+   "h": 256,
+   "px": "bf8a7c7b4cf52659",
+   "bytes": 14588
+  },
+  {
+   "key": "pencil|#8a7a6a|plain|{}",
+   "file": "plain-8a7a6a-c57d.webp",
+   "w": 256,
+   "h": 256,
+   "px": "c6a4057683e8d44b",
+   "bytes": 15216
   }
  ]
 }

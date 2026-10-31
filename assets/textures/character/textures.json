@@ -304,6 +304,38 @@
    "h": 256,
    "px": "59e905fc49d5b4ea",
    "bytes": 9156
+  },
+  {
+   "key": "pencil|#a8673e|scales|{\"rep\":[9,2],\"rows\":4,\"cols\":4}",
+   "file": "scales-a8673e-r9x2-f2d2.webp",
+   "w": 256,
+   "h": 256,
+   "px": "98e40de46756f3b1",
+   "bytes": 40462
+  },
+  {
+   "key": "pencil|#f1e3c3|wool|{\"rep\":[8,1]}",
+   "file": "wool-f1e3c3-r8x1-4ed0.webp",
+   "w": 256,
+   "h": 256,
+   "px": "9cae66f901b01354",
+   "bytes": 21426
+  },
+  {
+   "key": "pencil|#7a5236|wood|{\"rep\":[1,1]}",
+   "file": "wood-7a5236-r1x1-b066.webp",
+   "w": 256,
+   "h": 256,
+   "px": "6944adfea36581f3",
+   "bytes": 24442
+  },
+  {
+   "key": "pencil|#8a603f|plain|{\"hatch\":0.45}",
+   "file": "plain-8a603f-39e2.webp",
+   "w": 256,
+   "h": 256,
+   "px": "778fda6031e9a62a",
+   "bytes": 10040
   }
  ]
 }
