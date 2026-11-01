@@ -61,16 +61,31 @@ const css=`
 body.wl-nohints .wl-hint{visibility:hidden!important}
 .wlg button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 #wlCut{position:fixed;inset:0;display:none;place-items:center;background:#1e0e24;z-index:45;cursor:pointer}#wlCut.on{display:grid;animation:wlCutIn .6s ease-out}
+#wlProf{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);width:min(27rem,calc(100vw - 24px));box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:center;gap:1rem;z-index:21;
+  background:var(--panel);color:var(--ink);border-radius:20px;padding:.9rem 1.2rem .9rem .9rem;box-shadow:0 14px 40px rgba(30,14,36,.45);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+/* 카드가 열린 동안 위쪽 할 일 문구는 잠시 숨김(카드 뒤로 비쳐 보이지 않게) */
+.wlg.prof-on #wlQuest{visibility:hidden}
+#wlProf.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto;cursor:pointer}
+#wlProf .ic{flex:none;width:92px;height:92px;box-sizing:border-box;border-radius:50%;background:#f3ead6;border:1.5px solid #a77a52;overflow:hidden}
+#wlProf .ic img{width:100%;height:100%;object-fit:cover;display:block}#wlProf .ic img:not([src]){display:none}
+#wlProf .k{margin:0;display:inline-block;background:var(--tag);color:var(--tag-ink);border-radius:999px;padding:.1rem .65rem;font-size:.8rem}
+#wlProf>div{word-break:keep-all}
+#wlProf .t{margin:.3rem 0 .15rem;font-size:1.2rem}
+#wlProf .s{margin:0;font-size:.9rem;line-height:1.45;color:var(--ink-soft)}
+#wlProf .l{margin:.3rem 0 0;font-size:.86rem;line-height:1.4}
+#wlProf .q{margin:.3rem 0 0;font-size:.95rem;line-height:1.45}
+@media (max-width:600px){#wlProf{gap:.7rem;padding:.7rem .9rem .7rem .7rem}#wlProf .ic{width:68px;height:68px}#wlProf .t{font-size:1.08rem}#wlProf .s,#wlProf .l{font-size:.82rem}#wlProf .q{font-size:.86rem}}
 #wlCut img{width:100%;height:100%;object-fit:contain}#wlCut p{position:absolute;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);margin:0;font-size:.8rem;color:rgba(255,246,234,.7)}
 @keyframes wlCutIn{from{opacity:0}to{opacity:1}}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
-@media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast{transition:none}#wlNotice:not(.on),#wlGet:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
+@media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast,#wlProf{transition:none}#wlNotice:not(.on),#wlGet:not(.on),#wlProf:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
 @media (max-width:600px){#wlDlg .line{font-size:1.12rem}#wlDlg .who{font-size:.95rem}}
 @media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}}`;
 const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="who"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
+<div id="wlProf" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="k">새 친구</p><p class="t"></p><p class="s"></p><p class="l"></p><p class="q"></p></div></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
@@ -139,10 +154,21 @@ function itemCard({title='',text='',icon=null,sec=2.8}){return enqueue('item',r=
   const img=gt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');gtEnd=clock.t+sec;gtCue=cue({kind:'card',who:'아이템',text:title,sub:text,dur:0});gt.classList.add('on');sfx('itemget');});}
 function closeItemCard(){if(cardOn!=='item')return;gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
+/* 캐릭터 소개 카드 (도감 대신 — 요정의 숲부터, game/profile.js가 부른다): profileCard({name, intro, likes, quote, img, sec})
+   아이템 카드와 같은 테두리·글꼴, 왼쪽 동그라미에 초상(img: 2D 그림 경로 또는 게임 안에서 렌더링한 그림). 화면 위 가운데(휴대폰에서 원더룹·대화창을 가리지 않게).
+   막지 않는다: 걷기·대화는 그대로, 아무 키나 누르기·터치로 닫히고(0.6초 뒤부터) sec초(기본 12, 게임 시간) 뒤 저절로. 시점 기록 kind 'card' who '소개' */
+const pf=$('#wlProf');let pfDone=null,pfCue=null,pfEnd=0;
+function profileCard({name='',intro='',likes='',quote='',img=null,kicker='새 친구',sec=12}){return enqueue('profile',r=>{pfDone=r;pf.querySelector('.k').textContent=kicker;pf.querySelector('.t').textContent=name;pf.querySelector('.s').textContent=intro;
+  pf.querySelector('.l').textContent=likes?'좋아하는 것: '+likes:'';pf.querySelector('.q').textContent=quote?'“'+quote.replace(/^["“]|["”]$/g,'')+'”':'';
+  const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=clock.t+sec;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');sfx('itemget');});}
+function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');root.classList.remove('prof-on');endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
+const profileShown=()=>cardOn==='profile';
+cardCloser('profile',closeProfile);
+['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='profile'&&performance.now()-cardOpenT>600)closeProfile();}));
 /* 안내 문구 (개미굴 #toast): toast('…') — 위 가운데 칩, 2.8초(게임 시간). 안내 표시라 영상에는 안 나온다 */
 const ts=$('#wlToast');let tsEnd=0;
 function toast(msg,sec=2.8){ts.textContent=msg;ts.classList.add('on');tsEnd=clock.t+sec;}
-const tickCut=()=>{if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice();if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();
+const tickCut=()=>{if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice();if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
   if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;}tickFade();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));
@@ -157,7 +183,7 @@ function result({title,text,buttons=[],note='',sound='success'}){return enqueue(
 const resultShown=()=>cardOn==='result';
 function chooseResult(i=0){if(!resultShown())return false;const b=rs.querySelector(i?'.b2':'.b1');if(b.style.display==='none'||!b.onclick)return false;b.onclick();return true;} // 영상 캡처·시험용
 /* 구역을 떠날 때: 열린 카드를 닫고 줄을 비운다(기다리던 것은 그대로 끝난 것으로) */
-function clearCards(){CQ.splice(0).forEach(c=>c.r(-1));closeNotice();closeSecret();closeItemCard();if(cardOn&&closers[cardOn])closers[cardOn]();if(resultShown()){rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;cardOn=null;}}
+function clearCards(){CQ.splice(0).forEach(c=>c.r(-1));closeNotice();closeSecret();closeItemCard();closeProfile();if(cardOn&&closers[cardOn])closers[cardOn]();if(resultShown()){rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;cardOn=null;}}
 /* 할 일 문구·말 걸기 안내 */
 const quest=$('#wlQuest'),prompt=$('#wlPrompt'),act=$('#wlAct');
 function setQuest(t){quest.textContent=t||'';quest.style.display=t?'block':'none';}
@@ -168,7 +194,7 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
 // 소리 안내 (개미굴과 같은 문구): 화면에 돌아왔는데 소리가 깨어나지 않으면, M으로 끄고 켤 때
 soundHooks.onWakeFail=()=>toast('소리가 멈췄다면 화면을 한 번 눌러 주세요');
 soundHooks.onMute=m=>toast(m?'소리 꺼짐 (M으로 다시 켜기)':'소리 켜짐');

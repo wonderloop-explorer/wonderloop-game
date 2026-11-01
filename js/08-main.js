@@ -11,7 +11,11 @@ import * as GAME from './game/index.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
-dayBtn.addEventListener('click',()=>{lightState=(lightState+1)%3;nightTarget=lightState>=1?1:0;caveTarget=lightState===2?1:0;dayBtn.textContent=['저녁으로 바꾸기','어두운 굴로 바꾸기','낮으로 바꾸기'][lightState];});
+/* 하늘이 있는 구역(요정의 숲 등 game/sky)에서는 이 단추가 "시간: 낮 / 해 질 녘 / 밤" — 엔진 시간 흐름(SK.to)과 같은 조명 값을 쓴다. 굴 조명은 하늘 없는 구역(베이스캠프·개미굴)에서만 */
+const TIME_NAMES=['낮','해 질 녘','밤'];let dayLbl='';
+function dayLabel(){const SK=zone.cur&&zone.cur.sky;const s=SK?'시간: '+TIME_NAMES[Math.round(SK.goal??SK.t)]:['저녁으로 바꾸기','어두운 굴로 바꾸기','낮으로 바꾸기'][lightState];if(s!==dayLbl)dayBtn.textContent=dayLbl=s;}
+dayBtn.addEventListener('click',()=>{const SK=zone.cur&&zone.cur.sky;if(SK){SK.to((Math.round(SK.goal??SK.t)+1)%3,2.5);dayLabel();return;}
+  lightState=(lightState+1)%3;nightTarget=lightState>=1?1:0;caveTarget=lightState===2?1:0;dayBtn.textContent=['저녁으로 바꾸기','어두운 굴로 바꾸기','낮으로 바꾸기'][lightState];});
 /* 캐릭터 강조(림 라이트): 기본은 '자동' — 굴·저녁처럼 어두울 때만 켜지고 낮·밝은 곳에서는 꺼진다. 단추로 자동 → 켜짐(늘) → 꺼짐 */
 {const eb=document.getElementById('emphBtn'),L={auto:'캐릭터 강조: 자동',on:'캐릭터 강조: 켜짐',off:'캐릭터 강조: 꺼짐'},N={auto:'on',on:'off',off:'auto'};
  eb.textContent=L[emph];eb.addEventListener('click',()=>{emph=N[emph];eb.textContent=L[emph];});}
@@ -93,7 +97,7 @@ function tickBody(){
   hemi.intensity=0.62-0.4*n;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
   sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
   if(SK)SK.light({hemi,sun,fill,fog:scene.fog},camera,dt,Z.sun.dir);else if(scene.fog.near<FOG_OFF){scene.fog.near=FOG_OFF;scene.fog.far=FOG_OFF*2;}
-  cave+=(caveTarget-cave)*Math.min(1,dt*2.2);
+  cave+=((SK?0:caveTarget)-cave)*Math.min(1,dt*2.2);dayLabel(); // 하늘 있는 구역에서는 굴 조명을 쓰지 않는다
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}
   const env={night:n,cave,flick,reduce};
   if(Z.mood){const m=Z.mood;hemi.intensity*=m.hemi??1;sun.intensity*=m.sun??1;fill.intensity*=m.fill??1; // 구역 분위기(땅속 등): 하늘빛·해를 줄이고 색을 물들인다 — 없으면 예전과 같다

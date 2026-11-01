@@ -3,7 +3,7 @@
    http://localhost:8000/?shot&zone=<구역>  (견본은 &zonetest) 페이지가 다 뜬 뒤
    (await import('/tools/phone-check.js')).run({x, z})  →  [{항목, 결과, 내용}]   (x, z: 원더룹을 세워 볼 자리, 없으면 시작 자리)
    1. 세로 화면 카드 가림: 대화창(두 줄 대사)·안내 카드·비밀 카드·결과창을 하나씩 띄워, 화면 밖으로 넘치는지와 원더룹(머리·몸)을 얼마나 가리는지
-   2. 빛 번짐: 낮·저녁·어두운 굴에서 하얗게 날아간 화소(세 색 모두 250 이상) 비율 — 2% 넘으면 고칠 것(아이폰 화면은 더 밝게 보인다)
+   2. 빛 번짐: 낮·저녁·어두운 굴(하늘이 있는 구역은 낮·해 질 녘·밤)에서 하얗게 날아간 화소(세 색 모두 250 이상) 비율 — 2% 넘으면 고칠 것(아이폰 화면은 더 밝게 보인다)
    3. 소리: 소리 깨우기·무음 모드 대응(audioSession) 설정 확인 — 실제 무음 모드 소리는 아이폰에서 손으로 확인 */
 const OK = '통과', WARN = '주의', FIX = '고칠 것';
 export async function run(o = {}) {
@@ -39,14 +39,16 @@ export async function run(o = {}) {
   }
   // 2. 빛 번짐: 조명 단계마다 하얗게 날아간 화소
   const tmp = document.createElement('canvas'); tmp.width = 200; tmp.height = Math.round(200 * H / W); const g = tmp.getContext('2d', { willReadFrequently: true });
-  for (const [light, name] of [[0, '낮'], [1, '저녁'], [2, '어두운 굴']]) {
-    s.setup({ light }); s.step(240); s.capture(); g.clearRect(0, 0, tmp.width, tmp.height); g.drawImage(cv, 0, 0, tmp.width, tmp.height);
+  const SK = window.wlZone && wlZone.cur && wlZone.cur.sky; // 하늘이 있는 구역(요정의 숲 등)은 시간 값으로 낮·해 질 녘·밤
+  const LIGHTS = SK ? [[0, '낮'], [1, '해 질 녘'], [2, '밤']] : [[0, '낮'], [1, '저녁'], [2, '어두운 굴']];
+  for (const [light, name] of LIGHTS) {
+    if (SK) SK.set(light); else s.setup({ light }); s.step(240); s.capture(); g.clearRect(0, 0, tmp.width, tmp.height); g.drawImage(cv, 0, 0, tmp.width, tmp.height);
     const d = g.getImageData(0, 0, tmp.width, tmp.height).data; let n = 0, hot = 0, sum = 0;
     for (let i = 0; i < d.length; i += 4) { if (d[i + 3] < 10) continue; n++; const m = Math.min(d[i], d[i + 1], d[i + 2]); if (m >= 250) hot++; sum += (d[i] + d[i + 1] + d[i + 2]) / 3; }
     const pct = hot / Math.max(1, n) * 100;
     add(`빛 번짐 · ${name}`, pct > 2 ? FIX : pct > .5 ? WARN : OK, `하얗게 날아간 화소 ${pct.toFixed(2)}%, 평균 밝기 ${Math.round(sum / Math.max(1, n))}`);
   }
-  s.setup({ light: 0 }); s.step(120);
+  if (SK) SK.set(0); else s.setup({ light: 0 }); s.step(120);
   // 3. 소리
   { const S = G.sound.soundSettings, aus = 'audioSession' in navigator;
     add('소리 설정', S.muted ? WARN : OK, `음소거 ${S.muted ? '켜짐' : '꺼짐'}, 첫 터치에 소리 깨우기 있음, 무음 모드 대응(audioSession.type='playback') ${aus ? '이 브라우저 지원' : '이 브라우저 미지원(사파리 17+에서 동작)'} — 실제 무음 모드 소리는 아이폰에서 확인`); }
