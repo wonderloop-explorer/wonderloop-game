@@ -70,13 +70,13 @@ function fairy(kind){const root=new THREE.Group();root.name='fairy:'+kind;const 
     const gill=new THREE.Mesh(new THREE.RingGeometry(.001,.41,28,1),new THREE.MeshStandardMaterial({map:gillTex,roughness:.95,metalness:0,side:THREE.DoubleSide}));
     gill.rotation.x=PI/2;gill.position.set(0,.395,0);body.add(gill);
     {const uv=gill.geometry.attributes.uv,p=gill.geometry.attributes.position;for(let k=0;k<uv.count;k++){const a=Math.atan2(p.getY(k),p.getX(k));uv.setXY(k,(a/PI/2+.5)*6,Math.hypot(p.getX(k),p.getY(k)));}} // 주름 줄이 둘레를 따라 촘촘히
-    arms=[-1,1].map(s=>{const a=limb(body,s*.25,.3,.06,.04,'#f2dfc0');a.rotation.z=s*.55;return a;});}
+    arms=[-1,1].map(s=>{const a=limb(body,s*.25,.2,.07,.042,'#f2dfc0');a.rotation.z=s*.75;a.rotation.x=-.25;mesh(new THREE.SphereGeometry(.055,10,8),mat('#f2dfc0'),a,0,-.16,0);return a;});} // 팔은 몸통 옆 아래쪽에서(귀처럼 보이지 않게), 끝에 동그란 손
   let wave=false,mood='기본';
   const P={root,head,arms,legs,body,face:F,
     wave(on){wave=!!on;},setMood(n){mood=n;},
     tick(dt,t){const ph=t*2+(root.id%7);body.position.y=Math.abs(Math.sin(ph))*.012;head.rotation.z=kind==='mushroom'?0:Math.sin(t*.9+root.id)*.06;
       if(kind==='mushroom')body.rotation.z=Math.sin(ph)*.05; // 뒤뚱뒤뚱
-      if(arms){const w=wave?Math.sin(t*9)*.35:0;arms[1].rotation.z=wave?1.75+w*.6:(kind==='boatman'?.45:.55);arms[0].rotation.z=-(kind==='boatman'?.45:.55);} // 흔드는 팔은 바깥·위로 (머리·귀에 닿지 않게)
+      if(arms){const w=wave?Math.sin(t*9)*.35:0;arms[1].rotation.z=wave?1.75+w*.6:(kind==='boatman'?.45:.75);arms[0].rotation.z=-(kind==='boatman'?.45:.75);} // 흔드는 팔은 바깥·위로 (머리·귀에 닿지 않게)
       if(root.userData.oar)root.userData.oar.rotation.x=.12+Math.sin(t*1.6)*.1;}};
   return P;}
 /* 이슬배: 연파랑 그릇 배 (사공 요정 시트의 배) — scale로 크기만 바꿔 쓴다 */

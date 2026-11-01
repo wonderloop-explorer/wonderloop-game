@@ -24,7 +24,7 @@ const keep=[],obstacles=[],tick=[];
  [[0,10.6],[.2,8.7],[.8,6.9],[1.6,5.1],[2.6,3.4],[3.5,1.7],[4.2,.1]].forEach(([x,z],i)=>add(new THREE.CylinderGeometry(.42+(i%2)*.08,.46,.06,9),M('#d8cbb8','plain'),x,.03,z,{ry:i,line:false,cast:false}));}
 // 물: 맑은 청록 (위로 살짝 빛나게), 물가 둑은 흙 + 이끼 띠
 const water=add(new THREE.PlaneGeometry(SIZE,RZ0-RZ1,48,6).rotateX(-PI/2),M('#6fd0cf','plain',{emissive:'#3fa9b0',ei:.18}),0,-.06,(RZ0+RZ1)/2,{cast:false,line:false});
-water.material.roughness=.35;
+water.material.roughness=.92;water.material.metalness=0; // 해 반사가 하얗게 날아가지 않게(파스텔 물빛)
 for(const z of [RZ0,RZ1]){boxAt(SIZE,.22,.36,M('#b8875a','plain'),0,-.18,z+(z===RZ0?.08:-.08),{line:false});boxAt(SIZE,.05,.3,M('#8fb85a','leaf'),0,.02,z+(z===RZ0?.22:-.22),{line:false,cast:false});}
 obstacles.push({r:[-SIZE/2,3.5,RZ1,RZ0]},{r:[5.6,SIZE/2,RZ1,RZ0]},{r:[3.5,5.6,RZ1,-5.0]}); // 물에는 못 들어감(선착장만)
 /* ---------- 선착장 ---------- */
@@ -63,6 +63,20 @@ const hut=(x,z,roof,ry)=>{const g=group(x,0,z,ry);cylAt(.9,1,1.3,M('#f1e2c8','pl
   for(let k=0;k<6;k++){const p=add(new THREE.SphereGeometry(.85,10,6),M(roof,'suede'),0,1.55,0,{parent:g,line:false});p.scale.set(.62,.28,1);p.position.set(Math.sin(k/6*PI*2)*.55,1.5,Math.cos(k/6*PI*2)*.55);p.rotation.set(-.55,k/6*PI*2,0,'YXZ');}
   add(new THREE.SphereGeometry(.25,8,6),M('#86b058','leaf'),0,2.05,0,{parent:g,line:false,s:[1,.6,1]});obstacles.push({c:[x,z,1.15]});blob(x,z,1.5,1.5,.25);};
 hut(-3.2,-11.5,'#f4a9b6',.3);hut(6.5,-10.6,'#c4a6e6',-.4);
+// 둘레 숲 벽: 멀리 키 큰 클로버·잎·꽃을 빙 둘러 세워 빈 들판 대신 거대한 꽃밭 속에 있는 느낌(콘셉트 그림처럼 겹겹이)
+for(let i=0;i<30;i++){const a=i/30*PI*2+rnd(-.06,.06),d=rnd(17.5,22),x=Math.cos(a)*d,z=Math.sin(a)*d;if(Math.abs(x)<2.2&&z<-15)continue; // 북쪽 길 자리는 비움
+  const k=i%3;if(k===0)giantClover(x,z,rnd(4.5,7.5),rnd(1.8,2.6),rnd(0,PI*2));else if(k===1)daisy(x,z,rnd(5,8),rnd(1.5,2.1));else{bigLeaf(x,z,rnd(2.2,3),a+PI/2,rnd(.9,1.2));}}
+// 멀리 북쪽 언덕 위 커다란 분홍 꽃봉오리(별꽃 전망대 — 이야기의 목적지가 늘 보이게)
+{const g=group(0,0,-30,0);add(new THREE.SphereGeometry(6,20,10,0,PI*2,0,PI/2),M('#a9c56f','plain'),0,-1.5,0,{parent:g,line:false,cast:false,s:[1.6,.55,1]});
+ for(let k=0;k<6;k++){const p=add(lathe([[0,0],[.9,.4],[1.3,1.6],[1.1,3],[.6,4],[0,4.6]].map(q=>new THREE.Vector2(q[0],q[1])),12),M('#f2a5b4','suede'),0,1.5,0,{parent:g,line:false,cast:false});p.scale.set(1,1,.45);p.rotation.set(-.32,k/6*PI*2,0,'YXZ');p.position.set(Math.sin(k/6*PI*2)*.9,1.5,Math.cos(k/6*PI*2)*.9);}
+ for(let k=0;k<6;k++){const l=add(lathe([[0,0],[.5,.3],[.6,1],[.3,1.9],[0,2.3]].map(q=>new THREE.Vector2(q[0],q[1])),8),M('#86b058','leaf'),0,1.2,0,{parent:g,line:false,cast:false});l.scale.set(1,1,.35);l.rotation.set(-.9,k/6*PI*2+.5,0,'YXZ');l.position.set(Math.sin(k/6*PI*2+.5)*1.8,1.1,Math.cos(k/6*PI*2+.5)*1.8);}}
+// 덤불: 작은 클로버 덤불을 여기저기(무리 — 그리기 몇 번)
+{const n=70,cr=G.fx.crowd({parent:root,n,parts:[0,1,2].map(k=>({geo:leafHeart(.42,null).geometry.clone().rotateX(-PI/2+.5).rotateY(k*PI*2/3),mat:k%2?cloverMat:cloverDk,at:[0,.28,0]})).concat([{geo:new THREE.CylinderGeometry(.03,.04,.3,5),mat:M('#78a64c','plain'),at:[0,.15,0],cast:false}])});
+ for(let i=0;i<n;i++){let x,z;do{x=rnd(-17,17);z=rnd(-17,17);}while((z<RZ0+1&&z>RZ1-1)||Math.hypot(x-1.8,z-3)<2.6||Math.hypot(x+7,z+11)<2.5||Math.hypot(x-1,z-7.5)<3);cr.set(i,x,0,z,rnd(0,PI*2),rnd(.7,1.4));}}
+// 길가 나무 울타리 + 기둥 위 빛나는 버섯 (콘셉트의 울타리·버섯등 — 빛은 없고 스스로 빛나는 재질만)
+{const pts=[[-1.9,11.5],[-2.1,9],[-1.6,6.6],[-.4,4.4],[1.3,2.5],[2.7,.7]],pts2=[[2.1,11.5],[2.2,9],[2.7,6.8],[3.6,4.8],[4.9,2.8],[6,1]];
+ for(const P of [pts,pts2]){P.forEach(([x,z],i)=>{cylAt(.07,.08,.62,M('#8b5d3a','wood'),x,0,z,{line:false});add(new THREE.SphereGeometry(.13,10,6,0,PI*2,0,PI/2),M('#fff4d6','plain',{emissive:'#ffe7a8',ei:.55}),x,.62,z,{line:false,cast:false});
+   if(i)add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(P[i-1][0],.45,P[i-1][1]),new THREE.Vector3((x+P[i-1][0])/2,.36,(z+P[i-1][1])/2),new THREE.Vector3(x,.45,z)]),8,.02,4),M('#d9b98a','plain'),0,0,0,{line:false,cast:false});});}}
 // 반짝이는 작은 버섯 (낮에도 은은하게 — 빛은 없고 스스로 빛나는 재질만)
 for(let i=0;i<16;i++){const a=rnd(0,PI*2),d=rnd(3,14),x=Math.cos(a)*d,z=Math.sin(a)*d+2;if(z<RZ0+.6&&z>RZ1-.6)continue;
   const g=group(x,0,z,0);cylAt(.035,.045,.16,M('#f5ecdc','plain'),0,0,0,{parent:g,line:false,cast:false});add(new THREE.SphereGeometry(.1,8,5,0,PI*2,0,PI/2),M('#fff6dc','plain',{emissive:'#ffeab0',ei:.55}),0,.15,0,{parent:g,line:false,cast:false});}
@@ -97,8 +111,8 @@ let fixed=0;
 /* ---------- 요정 ---------- */
 const boatman=fairy('boatman'),small=dewBoat(.62);
 const bmG=new THREE.Group();bmG.position.set(6.4,-.04,-4.3);bmG.rotation.y=-.9;root.add(bmG);bmG.add(small);boatman.root.position.y=.1;bmG.add(boatman.root);keep.push(bmG);
-const shroom=fairy('mushroom');shroom.root.position.set(-1.6,0,5.2);shroom.root.rotation.y=.7;root.add(shroom.root);keep.push(shroom.root);obstacles.push({c:[-1.6,5.2,.3]});
-shadowBlob(-1.6,5.2,.35,.35);
+const shroom=fairy('mushroom');shroom.root.position.set(-.5,0,6.3);shroom.root.rotation.y=.5;root.add(shroom.root);keep.push(shroom.root);obstacles.push({c:[-.5,6.3,.3]}); // 길 안쪽(울타리 사이)
+shadowBlob(-.5,6.3,.35,.35);
 G.occlude.add(shroom.root,.35,.9);
 /* ---------- 이슬배 (원더룹이 타는 큰 그릇 배) + 굴러오는 큰 이슬방울 ---------- */
 const boat=new THREE.Group();boat.position.set(4.55,-.06,-5.75);root.add(boat);keep.push(boat);boat.add(dewBoat(1.25));
@@ -147,7 +161,10 @@ function startRide(){st.phase='riding';q('');boatman.wave(false);
   // 사공은 이슬배로 옮겨 타고 함께 간다
   bmG.visible=false;const bm2=fairy('boatman');bm2.root.position.set(0,.12,-.42);bm2.root.scale.setScalar(.95);boat.add(bm2.root); // 사공은 배 뒤쪽(노 젓는 자리), 원더룹은 앞쪽(ride fwd)tick.push(bm2);
   G.ride.ride({vehicle:boat,seat:.18,fwd:.24,speed:1.15,path:[[4.55,-.06,-5.75],[3,-.06,-6.4],[-.5,-.06,-5.1],[-4.5,-.06,-5.9],[-6.6,-.06,-6.6],[-6.8,-.06,-7.9]],
-    onEnd:()=>{rode=true;st.phase='gift';const P=boat.position;bmG.position.set(P.x+.9,-.04,P.z+.4);bmG.visible=true;boat.remove(bm2.root);tick.splice(tick.indexOf(bm2),1);
+    onEnd:()=>{rode=true;st.phase='gift';const P=boat.position;boat.remove(bm2.root);tick.splice(tick.indexOf(bm2),1);
+      // 사공이 배 옆으로 한 걸음 나와(카메라에서 본 원더룹 옆쪽, 물가 땅) 원더룹을 보고 말한다 — 원더룹 뒤에 가려지지 않게
+      {const cam=G.view.camera,f=new THREE.Vector3();cam.getWorldDirection(f);f.y=0;f.normalize();const rx=-f.z,rz=f.x;const W0=WL().position;
+       bmG.position.set(W0.x+rx*1.05,0,Math.min(RZ1-.35,W0.z+rz*1.05));small.visible=false;bmG.rotation.set(0,Math.atan2(W0.x-bmG.position.x,W0.z-bmG.position.z),0);bmG.visible=true;}
       G.dialog.say('사공 요정','도착! 물길을 열어 줘서 정말 고마워.',2.6).then(()=>G.dialog.say('사공 요정','이건 내 민들레 솜털 우산이야. 높은 데서 뛰어내릴 때 펼치면 사뿐히 내려올 수 있어!',4)).then(()=>{
         gotUmbrella=true;st.phase='done';WL().userData.setGlideProp(umbrella());
         G.ui.itemCard({title:'민들레 솜털 우산을 얻었어요!',text:'점프하거나 떨어질 때 펼쳐져요',icon:icon('umbrella')});
@@ -158,7 +175,7 @@ const _v=new THREE.Vector3();
 function update(dt,t){
   boatman.tick(dt,t);shroom.tick(dt,t);tick.forEach(f=>f.tick(dt,t));
   boatman.wave(st.phase==='arrive'||st.phase==='boat');
-  bmG.position.y=-.04+Math.sin(t*1.4)*.025;bmG.rotation.z=Math.sin(t*1.1)*.03;
+  if(small.visible){bmG.position.y=-.04+Math.sin(t*1.4)*.025;bmG.rotation.z=Math.sin(t*1.1)*.03;}else{bmG.position.y=-.1;bmG.rotation.z=0;} // 땅에 내려서면 흔들리지 않게
   if(st.phase!=='riding'){boat.position.y=-.06+Math.sin(t*1.2+1)*.02;boat.rotation.z=Math.sin(t*.9)*.02;}
   pads.forEach((p,i)=>p.position.y=-.02+Math.sin(t*.8+i)*.01);lboats.forEach((b,i)=>{b.position.y=-.02+Math.sin(t*1.1+i)*.02;b.rotation.z=Math.sin(t*.9+i)*.04;});
   floaters.forEach(b=>{b.position.y=b.children[0].geometry.parameters.radius+.15+Math.sin(t*1.3+b.userData.ph)*.06;});
@@ -170,7 +187,7 @@ function update(dt,t){
     bigDrop.position.set(x,.55+Math.abs(Math.sin(u*PI*3))*.25*(1-u),z);bigDrop.rotation.z=-x*1.8;
     if(u>=1){bigDrop.visible=false;drop=null;boatReady=true;st.phase='boat';boatWater.material.opacity=.55;splash.burst(36,{x:4.55,y:.35,z:-5.75});G.sound.sfx('pop');q('이슬배에 타요');}}
   // 우산을 펴고 활공하기 시작하면 안내 문구와 아이템 카드를 치운다(할 일을 해냈으니까)
-  if(gotUmbrella&&!st.glided){const W=WL();if(W&&W.userData.vert.glide>.5){st.glided=true;q('');G.ui.closeItemCard();}}
+  if(gotUmbrella&&!st.glided){const W=WL();if(W&&W.userData.vert.air&&W.userData.vert.vy<-.3){st.glided=true;q('');G.ui.closeItemCard();}} // 우산이 펴지기 직전(떨어지기 시작할 때) 치워 펴지는 순간에는 카드가 없다
   splash.update(dt);}
 return {...FAIRY_WORLD,
   name:'이슬방울 선착장',kind:'outdoor',music:'fairy-dock',

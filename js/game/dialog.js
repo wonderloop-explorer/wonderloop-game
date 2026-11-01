@@ -51,7 +51,9 @@ function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
   near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=linesOf(talk.n);setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
   else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
-  const who=talk?null:near;if(bubble){if(who&&hintsVisible()){who.root.getWorldPosition(_q);const cam=ctx.camera,h=bubbleSize(cam,cam.position.distanceTo(_q));bubble.scale.set(h*1.1/.82,h,1);
+  // 말풍선은 말 걸 수 있는 가장 가까운 인물 위에 — 대화 거리 안에 들어와 'E 말 걸기'가 뜨면 숨긴다(원더룹 얼굴·탈을 가리지 않게)
+  let who=null;if(!talk&&!near&&!blocking()){let bd=7;for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<bd){bd=d;who=n;}}}
+  if(bubble){if(who&&hintsVisible()){who.root.getWorldPosition(_q);const cam=ctx.camera,h=bubbleSize(cam,cam.position.distanceTo(_q));bubble.scale.set(h*1.1/.82,h,1);
     _q.y+=(who.bubbleY||1.4)-.133+h*.5+(reduce.matches?0:Math.sin(clock.t*4)*.06);bubble.position.copy(_q);bubble.visible=true;if(!bubble.parent)bubble.userData.scene.add(bubble);}else{bubble.visible=false;if(bubble.parent)bubble.parent.remove(bubble);}}
   tickSay();}
 /* 입력: E(또는 말 걸기 단추) — 대화 중이면 다음, 아니면 가까운 NPC와 대화 */

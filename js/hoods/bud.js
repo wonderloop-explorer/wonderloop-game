@@ -25,8 +25,11 @@ function sepalCanvas(){const S=256,cv=document.createElement('canvas');cv.width=
   return cv;}
 const tex=cv=>{const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;};
 // 꽃잎 각도: [기울기(+면 바깥으로 젖힘), 위치 반지름, 높이] — 닫힘·핌
-const OUTER={n:5,r:.3,y:.2,closed:-.5,open:1.38,s:1,off:PI/5};
+const OUTER={n:5,r:.3,y:.2,closed:-.5,open:1.38,s:1};
 const INNER={n:3,r:.1,y:.25,closed:-.16,open:.95,s:1.05};
+// 핀 꽃: 머리 둘레를 한 바퀴 두르는 두 겹 — 안쪽 겹은 세우고, 바깥 겹은 바깥으로 눕혀 어느 각도에서도 둥근 꽃. 앞쪽 바깥 꽃잎은 이마 위로 더 낮게 눕힌다
+const B_IN={n:7,r:.16,y:.22,closed:-.42,open:.3,s:.82};
+const B_OUT={n:10,r:.33,y:.15,closed:-.5,open:.98,s:1};
 export function build({head,wm,SM},open=false){
   const g=new THREE.Group();g.position.set(0,.15,-.025);g.rotation.x=-.1;g.scale.set(1,1,.9);head.add(g);
   petalTex=petalTex||tex(petalCanvas());sepalTex=sepalTex||tex(sepalCanvas());
@@ -39,18 +42,21 @@ export function build({head,wm,SM},open=false){
   // 꽃받침 잎: 봉오리 아랫부분을 둘러 감싸는 넓적한 잎 7장(레퍼런스처럼 꽃을 받쳐 안는 모양) + 관자놀이 쪽 아래로 늘어진 잎 4장(귀 위를 덮지 않고 얼굴 둘레를 감쌈)
   const cupG=lathe([[0,0],[.1,.05],[.14,.15],[.12,.26],[.06,.34],[0,.38]].map(q=>new THREE.Vector2(q[0],q[1])),8).scale(1.25,1,.3);
   const sepals=[];
-  for(let i=0;i<7;i++){const a=i/7*PI*2+.2,piv=new THREE.Group();piv.position.set(Math.sin(a)*.3,.14,Math.cos(a)*.3);piv.rotation.y=a;g.add(piv);
-    const L=wm(cupG,sepM);piv.add(L);piv.rotation.x=open?.75:.08;sepals.push(piv);} // 닫힘: 봉오리에 붙어 위로, 핌: 꽃잎과 함께 바깥으로
+  for(let i=0;i<7;i++){const a=i/7*PI*2+.2,piv=new THREE.Group();piv.position.set(Math.sin(a)*.37,.13,Math.cos(a)*.37);piv.rotation.y=a;g.add(piv);
+    const L=wm(cupG,sepM);L.scale.setScalar(.9);piv.add(L);piv.rotation.x=open?.75:.24;sepals.push(piv);} // 꽃잎 바깥에 붙어(서로 파고들지 않게) 살짝 벌어짐 // 닫힘: 봉오리에 붙어 위로, 핌: 꽃잎과 함께 바깥으로
   const sideG=lathe([[0,0],[.08,.05],[.1,.14],[.07,.24],[0,.32]].map(q=>new THREE.Vector2(q[0],q[1])),6).scale(1.2,1,.32);
   [[-1,.5],[-1,-.15],[1,.5],[1,-.15]].forEach(([sd,dz])=>{const a=sd*PI/2-sd*dz,L=wm(sideG,sepM);L.position.set(Math.sin(a)*.45,.02,Math.cos(a)*.45);L.rotation.set(0,a,0);L.rotateX(2.05);L.scale.setScalar(1.05);g.add(L);});
   // 꽃잎: 바깥 다섯, 안쪽 셋 (핀 모습은 꽃잎이 더 크고 바깥으로 활짝)
   const petG=lathe(PETAL,12).scale(1.3,1,.45);const petals=[];const petM2=open?new THREE.MeshStandardMaterial({map:bloomTex||(bloomTex=tex(petalCanvas(true))),roughness:.8,metalness:0}):petM;
-  for(const P of [OUTER,INNER])for(let i=0;i<P.n;i++){const a=i/P.n*PI*2+(P===INNER?PI/P.n:0)+(open&&P===OUTER?P.off:0),piv=new THREE.Group(); // 핀 꽃은 정면에 꽃잎이 오지 않게 돌려(얼굴을 덮지 않음) 양옆으로 활짝
-    piv.position.set(Math.sin(a)*P.r,P.y,Math.cos(a)*P.r);piv.rotation.y=a;g.add(piv);
-    const m=wm(petG,petM2);m.scale.setScalar(P.s*(open&&P===OUTER?1.15:1));piv.add(m);
-    petals.push({piv,closed:P.closed,open:P.open,outer:P===OUTER});piv.rotation.x=open?P.open:P.closed;}
+  const RINGS=open?[B_OUT,B_IN]:[OUTER,INNER];
+  for(const P of RINGS)for(let i=0;i<P.n;i++){const a=i/P.n*PI*2+(P===INNER||P===B_IN?PI/P.n:0),piv=new THREE.Group(),outer=P===OUTER||P===B_OUT;
+    const front=P===B_OUT&&Math.cos(a)>.75; // 핀 꽃의 앞쪽 바깥 꽃잎: 이마 위로 낮게
+    const rr=P.r+(P===OUTER&&i%2?.025:0); // 닫힌 봉오리: 이웃 꽃잎이 한 겹씩 엇갈려 겹치게(같은 자리에서 파고들어 지저분해 보이던 것)
+    piv.position.set(Math.sin(a)*rr,P.y,Math.cos(a)*rr);piv.rotation.y=a;g.add(piv);
+    const m=wm(petG,petM2);m.scale.setScalar(P.s*(front?.82:1)*(P===OUTER&&i%2?1.03:1));piv.add(m);
+    const op=front?1.32:P.open;petals.push({piv,closed:P.closed,open:op,outer});piv.rotation.x=open?op:P.closed;}
   // 노란 꽃술 (핀 모습만): 가운데 동그란 꽃술 + 둘레 작은 수술 끝
-  let stamen=null;if(open){stamen=new THREE.Group();stamen.position.y=.4;g.add(stamen);const yM=new THREE.MeshStandardMaterial({color:0xf3c544,roughness:.7,emissive:0x8a5a00,emissiveIntensity:.15});
+  let stamen=null;if(open){stamen=new THREE.Group();stamen.position.y=.66;g.add(stamen);const yM=new THREE.MeshStandardMaterial({color:0xf3c544,roughness:.7,emissive:0x8a5a00,emissiveIntensity:.15});
     const c=wm(new THREE.SphereGeometry(.11,12,8),yM);c.scale.y=.75;stamen.add(c);
     for(let k=0;k<10;k++){const a=k/10*PI*2,st=wm(new THREE.CylinderGeometry(.012,.012,.16,4),new THREE.MeshStandardMaterial({color:0xf6e3a0,roughness:.8}));st.position.set(Math.sin(a)*.1,.06,Math.cos(a)*.1);st.rotation.set(Math.cos(a)*.5,0,-Math.sin(a)*.5);stamen.add(st);
       const tip=wm(new THREE.SphereGeometry(.03,6,5),yM);tip.position.set(Math.sin(a)*.14,.13,Math.cos(a)*.14);stamen.add(tip);}}
