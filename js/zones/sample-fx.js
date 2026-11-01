@@ -15,6 +15,7 @@
    - 탈 모습 바뀌기(06 morphHood): '탈 바뀜' 단추 — 탐험 모자 ↔ 개미탈을 통 튀어나오며 바꾸고 빛 입자 터뜨림(두 모습 탈의 견본)
    - 꾸미기 칸(06 addBadge): '배지 달기' 단추 — 조끼 왼쪽 가슴과 배낭 덮개에 시험 배지
    - 화면 전환(game/ui transition): '화면 전환' 단추 — 서서히 덮였다가 원더룹을 처음 자리로 옮기고 밝아짐
+   - 코드로 연주하는 배경음(game/music.js): '배경음' 단추로 요정의 숲 다섯 곡(선착장·공중정원·장터·수로·첫별 축제)을 차례로 → 끔, '축제 활짝'은 축제 곡을 바로 다 피움, '대사 견본'으로 배경음 줄이기
    - 하늘과 시간 흐름(game/sky): '시간' 단추로 낮 → 해 질 녘 → 밤(첫별)으로 천천히. 이 구역은 낮/저녁/굴 단추 대신 하늘 시간을 따른다
    - 떠오르는 빛 입자(game/fx particles): 원더룹 둘레에서 위로 떠오르는 빛, '빛 입자 터뜨리기' 단추로 한꺼번에(별꽃 개화 견본)
    화면 왼쪽 위 시험판: 초당 프레임(평균·가장 느린 프레임), 드로우콜·삼각형, 항목마다 켜고 끄기, 낮/저녁/어두운 굴.
@@ -27,6 +28,7 @@
 import * as THREE from 'three';
 import {M,PI,QUALITY,add,blob,blobMany,cylAt,group,lin,rng,shadowBlob} from '../01-textures.js';
 import * as G from '../game/index.js';
+import {FAIRY_MUSIC,SONGS} from './fairy/music.js';
 export function build({root}){
 const Q=new URLSearchParams(location.search),num=(k,d)=>{const v=parseInt(Q.get(k),10);return Number.isFinite(v)&&v>=0?Math.min(v,5000):d;};
 const OFF=new Set((Q.get('fx')||'').split(',').filter(s=>s[0]==='-').map(s=>s.slice(1)));
@@ -187,6 +189,11 @@ const mkBtn=(txt,fn)=>{const b=document.createElement('button');b.textContent=tx
 const btns=Object.keys(parts).map(k=>{const b=mkBtn('',()=>{on[k]=!on[k];apply();});b.dataset.k=k;return b;});
 // 시간: 낮 → 해 질 녘 → 밤(첫별) → 낮, 3초 동안 천천히 (이 구역은 낮/저녁/굴 단추 대신 하늘 시간을 따른다)
 const timeBtn=mkBtn('시간: 낮',()=>{ti=(ti+1)%3;SK.to(ti,3);timeBtn.textContent='시간: '+TN[ti];});
+// 코드로 연주하는 배경음 시험(game/music.js, 요정의 숲 다섯 곡): 단추를 누를 때마다 다음 곡 → 끔. 바꿀 때 크로스페이드. '대사 견본'으로 배경음 줄이기를 듣는다
+G.sound.synth(FAIRY_MUSIC);const MUS=[null,...Object.keys(SONGS)];let mi=0;
+const musBtn=mkBtn('배경음: 끔',()=>{mi=(mi+1)%MUS.length;const id=MUS[mi];G.sound.bed(id);musBtn.textContent='배경음: '+(id?SONGS[id].name:'끔');if(id)G.ui.toast('♪ '+SONGS[id].name);});
+mkBtn('축제 활짝',()=>{const h=G.sound.bedHandle();if(h&&h.bloom)h.bloom();});
+mkBtn('대사 견본',()=>G.dialog.say('토리','배경음이 작아지는지 들어 보세요. 말이 끝나면 다시 커져요.',3.5));
 mkBtn('탈 바뀜',()=>{if(!WL)return;const U=WL.userData,to=U.hw===2?'ant':'hat';U.morphHood(to,{sec:1.2,onSwitch:()=>{const p=WL.position;motes.burst(50,{x:p.x,y:1.6,z:p.z});}});});
 mkBtn('배지 달기',()=>{if(!WL)return;const U=WL.userData,mk=c=>{const m=new THREE.Mesh(new THREE.CircleGeometry(.045,14),new THREE.MeshStandardMaterial({color:c,roughness:.7}));return m;};
   U.addBadge({flag:'testBadge',obj:mk(0xf7a8c0),at:'vest'});U.addBadge({flag:'testBadge2',obj:mk(0xffd46a),at:'pack'});const on=!G.state.flags.testBadge;G.state.setFlag('testBadge',on);G.state.setFlag('testBadge2',on);});

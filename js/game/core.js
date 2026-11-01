@@ -8,7 +8,7 @@ function cue(c){const e=Object.assign({t:+clock.t.toFixed(4)},c);cues.push(e);re
 /* 화면을 막는 것: 열려 있으면 위협은 멈추고, 나레이션은 끊겼다가 닫히면 다시, 혼잣말·이벤트는 기다린다 */
 const blockers=new Set();
 const block=(k,on)=>{if(on)blockers.add(k);else blockers.delete(k);};
-const blocking=()=>blockers.size>0;
+const blocking=k=>k?blockers.has(k):blockers.size>0; // blocking('fade'): 그것 하나만
 /* 게임 시간 기다리기 (이벤트 안에서 await wait(1.5)) */
 const waits=[];
 const wait=s=>new Promise(r=>waits.push({at:clock.t+s,r}));

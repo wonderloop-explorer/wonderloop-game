@@ -5,6 +5,7 @@ const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로�
 import {blocked,bouncerAt,floorAt,groundY,hasHeights,windAt,zone} from './02-zone.js';
 import {flags} from './game/state.js';
 import {hint} from './game/ui.js';
+import {sfx} from './game/sound.js'; // 걸음·뛰어오름·내려앉음 소리 (개미굴 step·jump·land)
 import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
 /* 작은 부품은 그림자를 드리우지 않게 (그림자용으로 한 번 더 그리는 비용 절약) */
 WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.isMesh||!o.castShadow)return;o.geometry.computeBoundingSphere();o.getWorldScale(sc);if(o.geometry.boundingSphere.radius*Math.max(sc.x,sc.y,sc.z)<.1)o.castShadow=false;});}
@@ -26,14 +27,31 @@ let wlTarget=null,wlHop=0,wlPhase=0,blinkT=2.5,markerA=0;
    발판 가장자리를 걸어 나가면 떨어지고, 구역 정보 glide:true인 곳에서는 떨어질 때 활공 물건(06 setGlideProp, 세계마다)을 머리 위로 펼쳐 천천히 내려온다. */
 const GRAV=14,GLIDE=.9,V={y:0,vy:0,air:false,jump:null,lastB:null,glide:0,px:0,pz:0,sw:0,swX:0};WL.userData.vert=V;
 function launch(b){const x=WL.position.x,z=WL.position.z,apex=b.top+b.height,vy0=Math.sqrt(2*GRAV*Math.max(.2,apex-V.y));
-  V.lastB=b;V.vy=vy0;V.air=true;V.jump={vx:0,vz:0};wlTarget=null;markerA=0;
+  V.lastB=b;V.vy=vy0;V.air=true;V.jump={vx:0,vz:0};wlTarget=null;markerA=0;sfx('jump');
   if(b.to){const yl=floorAt(b.to[0],b.to[1]),T=(vy0+Math.sqrt(2*GRAV*Math.max(0,apex-yl)))/GRAV;V.jump.vx=(b.to[0]-x)/T;V.jump.vz=(b.to[1]-z)/T;if(Math.hypot(V.jump.vx,V.jump.vz)>.01)WL.rotation.y=Math.atan2(V.jump.vx,V.jump.vz);}
   if(zone.cur.bounce)zone.cur.bounce(b);}
 // 걸을 수 있는 곳·장애물·땅 높이는 지금 구역이 정한다 (02 blocked·groundY)
 function hopWL(){if(wlHop<=0)wlHop=1;}
-function stopWalk(){wlTarget=null;markerA=0;} // 구역을 옮길 때
+function stopWalk(){wlTarget=null;markerA=0;D.spd=0;D.dashT=0;} // 구역을 옮길 때·연출이 멈춰 세울 때 (직접 조작 속도도)
 WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 때 (예: 매듭 앞에 서기)
-WL.userData.walkTo=(x,z)=>setWalkTarget(x,z);WL.userData.isWalking=()=>!!wlTarget||!!V.jump; // 게임 공통(game/interact)이 원더룹을 물건 앞으로 걸어가게 할 때
+/* 직접 조작 (개미굴 편 조작 그대로 — 키보드 WASD·방향키, 휴대폰 조이스틱. 08이 game/controls 입력을 카메라 방향으로 바꿔 매 프레임 넣는다):
+   U.drive={x,z,run} 가고 싶은 방향(길이 0이면 멈춤) — 누르는 동안 바로 그쪽으로 걷고(눌러서 걷기 목표는 취소), 떼면 서서히 멈춘다.
+   U.jumpReq 뛰어오르기(땅에 있을 때만), U.dashReq 대쉬(0.24초 앞으로 휙, 0.75초 동안 다시 못 함).
+   빠르기는 개미굴 비율 그대로 원더룹 걸음에 맞춤: 걷기 1.5 · 달리기(Shift를 누른 채·조이스틱 끝까지) ×8/5 · 대쉬 ×17/5. 속도는 초당 8로 따라가고 몸은 초당 10으로 돈다.
+   점프는 개미굴과 같은 체공 시간(약 0.67초)에 키의 2/3쯤 — 높이 구역이 아니어도 뛴다. 촬영 모드는 직접 조작을 쓰지 않는다(기준 화면 그대로).
+   움직임 효과(개미굴 그대로): 대쉬 — 몸을 0.45 앞으로 숙이고(초당 14로), 땅에 있으면 0.035초마다 발밑 먼지(0.5초 동안 커지며 흐려지고 떠오름), 더듬이는 뒤로 ·
+     공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
+     크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
+const DRV={walk:1.5,run:1.5*8/5,dash:1.5*17/5,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
+/* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
+const PUFF_S=.6,puffTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.5,'rgba(255,255,255,.5)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
+const puffs=[];let puffI=0;
+function spawnPuff(x,y,z){if(!puffs.length)for(let i=0;i<16;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:puffTex,color:lin('#f6e2cc'),transparent:true,opacity:0,depthWrite:false}));sp.visible=false;puffs.push({sp,t:0});}
+  const q=puffs[puffI++%puffs.length];q.t=.5;q.sp.position.set(x+(Math.random()-.5)*.3*PUFF_S,y+.18*PUFF_S,z+(Math.random()-.5)*.3*PUFF_S);q.sp.visible=true;if(!q.sp.parent)scene.add(q.sp);}
+function tickPuffs(dt){for(const q of puffs){if(q.t<=0)continue;q.t-=dt;const k=1-q.t/.5;q.sp.scale.setScalar((.35+k*1.1)*PUFF_S);q.sp.material.opacity=.75*(1-k);q.sp.position.y+=dt*.5*PUFF_S;if(q.t<=0){q.sp.visible=false;scene.remove(q.sp);}}}
+WL.userData.dashCool=()=>D.cd>0;
+WL.userData.walkTo=(x,z)=>setWalkTarget(x,z);WL.userData.isWalking=()=>!!wlTarget||!!V.jump||D.spd>.3; // 게임 공통(game/interact)이 원더룹을 물건 앞으로 걸어가게 할 때
 function setWalkTarget(x,z){wlTarget={x,z};marker.position.set(x,groundY(x,z)+0.06,z);markerA=1;}
 function steerWalk(x,z){wlTarget={x,z};} // 키보드 이동: 목표 표시 없이 바로 앞을 목표로 (08이 매 프레임 갱신)
 /* ---------- 동작 세트 ---------- */
@@ -215,6 +233,16 @@ const rigSync=(()=>{
 function updateWL(dt,t){
   shirtU.uInv.value.copy(wlBody.matrixWorld).invert();
   let moving=false;const H=hasHeights();
+  {const U=WL.userData,dv=U.riding?null:U.drive,ml=dv?Math.hypot(dv.x,dv.z):0;if(D.cd>0)D.cd-=dt; // 직접 조작 (위 "직접 조작")
+   let mx=Math.sin(WL.rotation.y),mz=Math.cos(WL.rotation.y);if(ml>.08){mx=dv.x/ml;mz=dv.z/ml;wlTarget=null;markerA=0;}
+   if(U.dashReq){U.dashReq=false;if(D.cd<=0&&!U.riding&&!V.jump){sfx('dash');D.dashT=DRV.dashT;D.cd=DRV.dashCd;D.dx=mx;D.dz=mz;WL.rotation.y=Math.atan2(mx,mz);wlTarget=null;}}
+   if(U.jumpReq){U.jumpReq=false;if(!V.air&&!V.jump&&!U.riding){V.vy=DRV.jumpVy;V.air=true;V.jumpT=0;sfx('jump');}}
+   if(!wlTarget){D.spd+=((ml>.08?(dv.run?DRV.run:DRV.walk):0)-D.spd)*Math.min(1,dt*8);
+     if(ml>.08){let diff=Math.atan2(mx,mz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);}
+     if(D.dashT>0){D.dashT-=dt;mx=D.dx;mz=D.dz;D.spd=DRV.dash;if(D.dashT<=0)D.spd=ml>.08?DRV.run:DRV.walk*.4;}
+     if(D.spd>.05&&!V.jump){const st=D.spd*dt,nx=WL.position.x+mx*st,nz=WL.position.z+mz*st,fy=H?V.y:undefined;
+       if(!blocked(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}else if(!blocked(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}else if(!blocked(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}}}
+   else D.spd=0;}
   if(V.jump){WL.position.x+=V.jump.vx*dt;WL.position.z+=V.jump.vz*dt;} // 튀어 날아가는 중: 걷기 대신
   else if(wlTarget&&!WL.userData.riding){const dx=wlTarget.x-WL.position.x,dz=wlTarget.z-WL.position.z,d=Math.hypot(dx,dz);
     if(d<0.06)wlTarget=null;else{const st=Math.min(1.5*dt*(WL.userData.action==='뛰기'?1.9:1),d),nx=WL.position.x+dx/d*st,nz=WL.position.z+dz/d*st;
@@ -226,7 +254,8 @@ function updateWL(dt,t){
       else wlTarget=null;}}
   let GY;const X=WL.position.x,Z=WL.position.z;
   if(WL.userData.riding){GY=WL.userData.riding.y;V.y=GY;V.vy=0;V.air=false;V.jump=null;V.glide=0;V.swX=0;WL.rotation.z=0;wlTarget=null;} // 탈것(game/ride)이 자리를 정하는 동안: 걷기·높이 계산 쉼
-  else if(!H){GY=groundY(X,Z);V.y=GY;V.vy=0;V.air=false;V.jump=null;V.glide=0;if(V.swX){V.swX=0;WL.rotation.z=0;}} // 땅 높이 (평평한 방은 0)
+  else if(!H){GY=groundY(X,Z);if(V.air){V.vy-=GRAV*dt;V.y+=V.vy*dt;if(V.y<=GY){V.y=GY;V.air=false;V.vy=0;sfx('land');D.landT=.22;}GY=V.y;}else{V.y=GY;V.vy=0;} // 땅 높이 (평평한 방은 0), 점프 중이면 떨어지는 중
+    V.jump=null;V.glide=0;if(V.swX){V.swX=0;WL.rotation.z=0;}}
   else{if(Math.hypot(X-V.px,Z-V.pz)>.5&&!V.jump){V.y=floorAt(X,Z);V.air=false;V.vy=0;} // 자리를 옮겼으면(구역 오가기·촬영) 그 자리 가장 높은 바닥에
     if(!V.air){const f=floorAt(X,Z,V.y);if(V.y-f>.3){V.air=true;V.vy=0;}else V.y=f; // 가장자리를 걸어 나가면 떨어짐
       const b=!V.air&&bouncerAt(X,Z);if(b&&b!==V.lastB)launch(b);else if(!b)V.lastB=null;}
@@ -235,7 +264,7 @@ function updateWL(dt,t){
       // 바람 구역(02 winds): 공중에서 dir 쪽으로 밀고(활공 중이면 온 힘, 아니면 절반), 바람길(up)은 활공 중 위로 띄운다. 막힌 곳으로는 밀지 않는다
       if(w&&!V.jump){const k=w.strength*(gl?1:.5)*dt,nx=WL.position.x+w.dir[0]*k,nz=WL.position.z+w.dir[1]*k;if(!blocked(nx,nz,V.y)){WL.position.x=nx;WL.position.z=nz;}
         if(w.up&&gl)V.vy+=(w.up-V.vy)*Math.min(1,dt*2);V.windT=(V.windT||0)+dt;}
-      V.y+=V.vy*dt;const f=floorAt(X,Z,prev);if(V.vy<=0&&V.y<=f){V.y=f;V.air=false;V.vy=0;V.jump=null;}}
+      V.y+=V.vy*dt;const f=floorAt(X,Z,prev);if(V.vy<=0&&V.y<=f){V.y=f;V.air=false;V.vy=0;V.jump=null;sfx('land');D.landT=.22;}}
     else V.glide=Math.max(0,V.glide-dt*8);
     // 활공하는 동안 낙엽처럼 양옆으로 왔다 갔다(옆으로 실제로 움직이고, 움직이는 쪽으로 몸을 기울임)
     // 옆으로 움직이는 건 공중에서만 — 내려앉으면 그 자리에 서고(흔들린 만큼 되돌아 미끄러지지 않게) 몸 기울기만 풀린다
@@ -244,7 +273,7 @@ function updateWL(dt,t){
     WL.rotation.z=-Math.cos(V.sw)*.28*V.glide;
     GY=V.y;}
   V.px=X;V.pz=Z;
-  if(moving)wlPhase+=dt*11*(WL.userData.action==='뛰기'?1.6:1);
+  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*0.5;legs[1].rotation.x=-sw*0.5;
@@ -252,7 +281,8 @@ function updateWL(dt,t){
   body.rotation.z=sw*0.06;
   body.position.y=moving?Math.abs(Math.cos(wlPhase))*0.05:Math.sin(t*2.2)*0.012;
   let hopY=0,wave=0;if(wlHop>0){wlHop=Math.max(0,wlHop-dt*1.6);wave=Math.sin((1-wlHop)*PI);hopY=wave*0.4;}
-  if(H){const U=WL.userData;U.airW=(U.airW||0)+((V.air?1:0)-(U.airW||0))*Math.min(1,dt*10);wave=Math.max(wave,U.airW*.55,V.glide); // 공중에서는 팔을 들고, 활공은 두 팔로 물건을 받침
+  if(H||V.air||WL.userData.airW>.001){const U=WL.userData;U.airW=(U.airW||0)+((V.air?1:0)-(U.airW||0))*Math.min(1,dt*10);wave=Math.max(wave,U.airW*.55,V.glide); // 공중에서는 팔을 들고(개미굴: 다리 앞뒤로), 활공은 두 팔로 물건을 받침
+    if(U.airW>.001&&V.glide<.3){const a=U.airW;legs[0].rotation.x+=(-.6-legs[0].rotation.x)*a;legs[1].rotation.x+=(.4-legs[1].rotation.x)*a;}
     if(U.glideProp)U.glideProp.visible=V.glide>.4;}
   WL.position.y=GY+hopY*WLS;arms[0].rotation.z=-0.32-wave*2.2;arms[1].rotation.z=0.32+wave*2.2;
   {const th=(moving?0:Math.sin(t*0.9)*0.05)+(WL.userData.headTilt||0);neck.rotation.z=th;}
@@ -260,14 +290,14 @@ function updateWL(dt,t){
   for(const C of WL.userData.charms||[WL.userData.charm]){if(C&&C.g.visible){const tx=moving?.25+Math.sin(wlPhase*2)*.35:Math.sin(t*1.3)*.05,tz=moving?Math.sin(wlPhase)*.4:Math.sin(t*.9)*.04;
     C.vx+=((tx-C.ax)*60-C.vx*5)*dt;C.vz+=((tz-C.az)*60-C.vz*5)*dt;if(wlHop>.95)C.vx+=6*dt*20;
     C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=C===WL.userData.charm&&WL.userData.charmNeedle;if(N)N.rotation.z=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;}}
-  antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1;});
+  antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1+(D.dashT>0?.3:0);}); // 대쉬 중에는 더듬이가 뒤로(개미굴)
   blinkT-=dt;if(blinkT<0)blinkT=2.5+2.5*blinkR();const bl=blinkT<0.12?0.15:1;eyes.forEach(e=>e.scale.y=bl);
   wlBlob.visible=!WL.userData.riding; // 탈것 위에서는 발밑 그림자 대신 탈것 그림자
   if(!H){wlBlob.position.set(WL.position.x,GY+0.046,WL.position.z);wlBlob.scale.setScalar((1-hopY*0.8)*WLS*0.8);}
   else{const f=floorAt(X,Z,V.y);wlBlob.position.set(X,f+0.046,Z);wlBlob.scale.setScalar((1-hopY*0.8-Math.min(.55,(V.y-f)*.18))*WLS*0.8);} // 발밑 그림자는 아래 바닥에, 높을수록 작게
   markerA=Math.max(0,markerA-dt*1.2);marker.material.opacity=markerA*0.9;marker.scale.setScalar(1+(1-markerA)*0.6);
   {const U=WL.userData,A=U.action||'서기';U.at=(U.at||0)+dt;const at=U.at;
-   let T=null;if(moving){if(A==='뛰기')T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at);
+   let T=null;if(moving){if(A==='뛰기'||(!wlTarget&&D.spd>DRV.walk*1.2))T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at);
    U.aw=Math.max(0,Math.min(1,(U.aw||0)+(T?1:-1)*dt*6));
    const base={ex0:-.12,ex1:-.12,ez0:0,ez1:0,kx0:0,kx1:0,lx0:legs[0].rotation.x,lx1:legs[1].rotation.x,ly0:legs[0].position.y,ly1:legs[1].position.y,ax0:arms[0].rotation.x,ax1:arms[1].rotation.x,az0:arms[0].rotation.z,az1:arms[1].rotation.z,bx:0,bz:body.rotation.z,by:body.position.y,hx:0,hy:0,hz:neck.rotation.z,wy:WL.position.y/WLS};
    if(!U.pc)U.pc=Object.assign({},base);const tg=T?Object.assign({},base,T):base;for(const k in tg)U.pc[k]+=(tg[k]-U.pc[k])*Math.min(1,dt*10);
@@ -286,6 +316,11 @@ function updateWL(dt,t){
    (U.charms||[]).forEach(C=>{if(C.flag)C.g.visible=!!flags[C.flag];}); // 받은 아이템 키링은 받은 뒤에만 (game/items, 06 addCharm)
    (U.badges||[]).forEach(B=>B.g.visible=!!flags[B.flag]); // 꾸미기(배지)도 받은 뒤에만 (06 addBadge)
    if(U.hoodMorph)U.hoodMorph.tick(dt);} // 탈 모습 바뀌기 연출 (06 morphHood)
+  // 개미굴 움직임 효과: 대쉬 숙임·먼지, 공중 늘어남, 착지 찌그러짐 (위 "움직임 효과")
+  D.lean+=((D.dashT>0?.45:0)-D.lean)*Math.min(1,dt*14);if(D.lean>.001)body.rotation.x=Math.max(body.rotation.x,D.lean); // 달리기 자세의 숙임과 겹치지 않게 — 모두 합쳐 개미굴처럼 0.45
+  if(D.dashT>0&&!V.air){D.puffT-=dt;if(D.puffT<=0){spawnPuff(WL.position.x,GY,WL.position.z);D.puffT=.035;}}if(puffs.length)tickPuffs(dt);
+  {let sy=1,sxz=1;if(D.landT>0){D.landT-=dt;const k=Math.sin(Math.max(0,D.landT)/.22*PI);sy=1-.16*k;sxz=1+.09*k;}else if(V.air&&V.glide<.3){sy=V.vy>0?1.08:1.02;sxz=V.vy>0?.95:.99;}
+   if(sy!==1||Math.abs(D.sy-1)>1e-4||Math.abs(D.sxz-1)>1e-4){D.sy+=(sy-D.sy)*Math.min(1,dt*22);D.sxz+=(sxz-D.sxz)*Math.min(1,dt*22);if(Math.abs(D.sy-1)<1e-4&&sy===1){D.sy=1;D.sxz=1;}WL.scale.set(WLS*D.sxz,WLS*D.sy,WLS*D.sxz);}}
   // 몸통: 위 계산은 발바닥 기준 몸 원점의 위치·회전 → 엉덩이 축 뼈(spine)로 옮김 (spine·(0,-HIP,0) = 예전 몸 변환)
   spine.rotation.copy(body.rotation);spine.position.copy(body.position).add(_hv.set(0,HIP,0).applyEuler(body.rotation));spine.position.y-=HIP;
   rigSync();

@@ -6,7 +6,7 @@ import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,se
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
-import {hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
+import {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
@@ -29,14 +29,16 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(zone.cur.ground){const h=ray.intersectObjects(zone.cur.ground,false)[0];if(h)setWalkTarget(h.point.x,h.point.z);return;} // 높낮이 있는 땅
   const r0=ray.ray;if(r0.direction.y<-0.01){const tt=-r0.origin.y/r0.direction.y;setWalkTarget(r0.origin.x+r0.direction.x*tt,r0.origin.z+r0.direction.z*tt);}
 });
-/* 키보드 이동: WASD·방향키 — 카메라가 보는 쪽을 앞으로 삼아 누르는 동안 걷는다(손을 떼면 멈춤). 입력칸에 쓰는 중이면 무시 */
-const KEYDIR={KeyW:[0,1],ArrowUp:[0,1],KeyS:[0,-1],ArrowDown:[0,-1],KeyA:[-1,0],ArrowLeft:[-1,0],KeyD:[1,0],ArrowRight:[1,0]},held=new Set(),_kf=new THREE.Vector3();
-window.addEventListener('keydown',e=>{if(!KEYDIR[e.code]||e.metaKey||e.ctrlKey||(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)))return;held.add(e.code);e.preventDefault();});
-window.addEventListener('keyup',e=>{if(held.delete(e.code)&&!held.size)stopWalk();});
-window.addEventListener('blur',()=>{if(held.size){held.clear();stopWalk();}});
-function keySteer(){if(!held.size)return;let f=0,r=0;held.forEach(k=>{r+=KEYDIR[k][0];f+=KEYDIR[k][1];});if(!f&&!r)return;
-  camera.getWorldDirection(_kf);_kf.y=0;if(_kf.lengthSq()<1e-6)return;_kf.normalize();
-  const dx=_kf.x*f-_kf.z*r,dz=_kf.z*f+_kf.x*r,L=Math.hypot(dx,dz);steerWalk(WL.position.x+dx/L*.6,WL.position.z+dz/L*.6);}
+/* 직접 조작 (game/controls — 개미굴 편 조작 그대로): 앞·옆 입력을 카메라가 보는 쪽 기준으로 바꿔 07에 넘긴다(U.drive·jumpReq·dashReq).
+   결과창·그림 컷·화면 전환 중에는 움직이지 않는다. 대쉬하면 하던 대화는 닫힌다(개미굴과 같음). 촬영 모드는 쓰지 않는다 */
+const _kf=new THREE.Vector3(),_ct=new THREE.Vector3(),_cw=new THREE.Vector3();
+function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=null;return;}
+  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade');
+  camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
+  const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,run:a.run};
+  if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}
+  if(I.dashReq){U.dashReq=true;I.dashReq=false;if(GAME.dialog.talking())GAME.dialog.endTalk();}}
+GAME.controls.controlHooks.onWardrobe=()=>document.getElementById('outfitBtn').click(); // C: 옷 바꾸기 (평상복 ↔ 탐험복)
 /* ---------- 구역 오가기 ----------
    goZone(이름, 자리): 새 구역을 만들고 → 지금 구역을 비우고 → 원더룹을 자리에 세우고 → 해·카메라·병합을 맞춘다.
    문(doors)을 밟으면 저절로 부른다. 들어온 문 위에 서 있는 동안은 다시 넘어가지 않는다. 탈 교체 영역(아틀라스)은 새로 채운다 */
@@ -46,7 +48,7 @@ async function goZone(id,spawn){
   try{const nz=await loadZone(id),old=zone.cur;unloadZone(old);zone.cur=nz;
     const sp=spawn||nz.spawn;stopWalk();WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;
     zone.area=areaAt(sp.x,sp.z)||Object.keys(nz.areas)[0];setupView(nz,zone.area);
-    WL.userData.atlas.clear('swap');zoneLook(nz);doorLock=true;
+    WL.userData.atlas.clear('swap');zoneLook(nz);doorLock=true;GAME.sound.sfx('enter'); // 구역에 들어갈 때 (개미굴 enter)
     const zb=document.getElementById('zoneBtn');if(zb)zb.textContent='구역: '+nz.name;
   }finally{zoneBusy=false;}
   return true;}
@@ -101,7 +103,7 @@ function tickBody(){
   // 위 세기는 r128 옛 조명 단위 → 물리 단위로 (옛 방식은 셰이더에서 π를 곱했다)
   [hemi,sun,fill,...Z.lights].forEach(l=>l.intensity*=PI);
   if(Z.update)Z.update(dt,t,env); // 구역 움직임 (베이스캠프: 먼지·김·시계)
-  keySteer();
+  driveInput();GAME.controls.tickControls(dt,WL.userData.dashCool());
   updateWL(dt,t);
   GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩, 영상 캡처 중에는 1/72초씩)
   // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
@@ -111,12 +113,24 @@ function tickBody(){
   if(Z.sun.follow){const s=Z.sun.shadow,st=2*s/sun.shadow.mapSize.x,cx=Math.round(WL.position.x/st)*st,cz=Math.round(WL.position.z/st)*st;
     sun.target.position.set(cx,0,cz);sun.position.set(cx,0,cz).sub(tmp.copy(Z.sun.dir).multiplyScalar(16));}
   // 천천히 둘러보기
-  if(spin){const off=camera.position.clone().sub(controls.target);const s=new THREE.Spherical().setFromVector3(off);
+  const C=GAME.controls.input.cam,rig=!SHOT&&follow;C.on=rig;controls.enableRotate=controls.enableZoom=!rig; // 따라가기 카메라 = 개미굴 카메라(끌기·휠)
+  if(spin&&!rig){const off=camera.position.clone().sub(controls.target);const s=new THREE.Spherical().setFromVector3(off);
     s.theta+=spinDir*dt*0.18;if(s.theta>controls.maxAzimuthAngle-0.02){spinDir=-1;}if(s.theta<controls.minAzimuthAngle+0.02){spinDir=1;}
     camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));}
-  {const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
+  /* 개미굴 따라가기 카메라: 원더룹 둘레 yaw(가로)·pitch(위아래 -0.55~1.15)·거리(3~13, 세로 화면은 방 카메라와 같은 배율로 멀리).
+     자리는 초당 7, 보는 점은 초당 10으로 따라가고, 땅 밑으로는 0.7 위까지만 내려간다. 처음엔 지금 카메라 방향에서 이어 받는다.
+     벽이 있는 방은 방 카메라 각도 범위 안에서(아래). 넓은 야외는 개미굴 값 그대로 */
+  if(rig){if(!C.ready){const sp=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));C.yaw=sp.theta;C.pitch=Math.min(1.15,Math.max(-.55,PI/2-sp.phi));C.dist=7.5;C.ready=true;}
+    if(spin)C.yaw+=spinDir*dt*.18;
+    // 벽이 있는 방(방 카메라에 가로 범위가 있는 곳)은 그 방의 열린 쪽 각도 안에서만 — 개미굴도 구역마다 카메라 자리를 방 안으로 묶었다
+    {const A=Z.areas[zone.area],c=A&&A.camera;if(c&&c.azimuth){const y0=c.azimuth[0],y1=c.azimuth[1];let y=C.yaw;while(y<y0-PI)y+=2*PI;while(y>y1+PI)y-=2*PI;C.yaw=Math.min(y1,Math.max(y0,y));
+      C.pitch=Math.min(PI/2-c.polar[0],Math.max(PI/2-c.polar[1],C.pitch));}}
+    const asp=camera.aspect,d=C.dist*(asp<1.25?Math.min(2.1,1.25/asp):1);_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
+    _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);_cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
+    camera.position.lerp(_cw,Math.min(1,dt*7));controls.target.lerp(_ct,Math.min(1,dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
+  else{C.ready=false;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
-  controls.update();renderer.render(scene,camera);
+  if(!rig)controls.update();renderer.render(scene,camera);
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
   nextFrame();

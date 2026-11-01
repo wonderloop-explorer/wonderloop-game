@@ -11,6 +11,7 @@
        obstacles [{r:[x0,x1,z0,z1]} | {c:[x,z,반지름]}], camera {target, dist, polar, azimuth(없으면 한 바퀴), start, minDist, maxDist}
      doors: [{rect:[x0,x1,z0,z1], to, spawn}]  밟으면 다른 구역(to)으로 (spawn이 있으면 그 자리로)
      sun: {dir, shadow, follow}           해 방향, 그림자 범위(반지름), follow: 그림자 범위가 원더룹을 따라감(넓은 야외)
+     music: '이름' | {id, gain, fade}  (선택) 구역 배경음 — assets/audio/<이름>.mp3, 구역을 옮기면 크로스페이드(game/sound.js zoneMusic). 파일이 없으면 빈 자리
      mood: {hemi, sun, fill, sky, ground, tint}  (선택) 구역 분위기 — 하늘빛·해·보조광 세기 배율과 하늘빛 물들일 색(땅속은 호박색). 낮·저녁·굴 단계 위에 곱한다
      groundY(x,z), ground: [메시]          (선택) 땅 높이, 클릭해서 걸을 때 맞힐 땅
      lights: [점광원]  light(env,dt)  update(dt,t,env)  click(ray)  keepOut: [병합에서 뺄 것]  dispose()
@@ -27,7 +28,7 @@
    새 구역 추가: README "새 구역 추가하기". */
 import * as THREE from 'three';
 import {BUILD,loadBaked,scene} from './01-textures.js';
-import {clearZoneGame} from './game/index.js';
+import {clearZoneGame,sound} from './game/index.js';
 import {applyStart} from './game/state.js';
 // 구역 목록 — 새 구역은 여기에 한 줄 더한다
 const ZONES={
@@ -51,6 +52,7 @@ async function loadZone(id){
   z.doors=(z.doors||[]).filter(d=>ZONES[d.to]); // 목록에 없는 구역으로 가는 문은 없앤다
   for(const a of Object.values(z.areas))a.obstacles=a.obstacles||[];z.platforms=z.platforms||[];z.bouncers=z.bouncers||[];z.winds=z.winds||[];
   applyStart(z.start); // 이 구역에 들어올 때 이미 그런 이야기 상태 (예: 나침반을 받음)
+  if(z.music)sound.zoneMusic(z.music); // 구역 배경음 (assets/audio/, 앞 구역 곡과 크로스페이드 — game/sound.js)
   return z;}
 function unloadZone(z){
   scene.remove(z.root);const seen=new Set();
