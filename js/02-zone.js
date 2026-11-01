@@ -15,11 +15,11 @@
      groundY(x,z), ground: [메시]          (선택) 땅 높이, 클릭해서 걸을 때 맞힐 땅
      lights: [점광원]  light(env,dt)  update(dt,t,env)  click(ray)  keepOut: [병합에서 뺄 것]  dispose()
      start: {compass:true}               들어올 때 이미 그런 진행 상태(game/state)
-     hood: 'acorn'                       들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
+     hood: 'ant'                         들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
      platforms: [{r:[x0,x1,z0,z1]|c:[x,z,반지름], top}]   높은 발판(버섯 갓·가지 등): 위에 서고, 아래에서 걸어 들어가면 막힘(STEP보다 높으면)
      bouncers: [{c:[x,z,반지름], top, height, to:[x,z]}]   튀는 발판(버섯 갓): 밟기만 하면 top+height 높이로 튀어 to에 내려앉음(to 없으면 제자리)
-     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true  활공 가능(지금은 시험 구역만 — 07)
-     outfit: 'explorer'|'casual'         (선택) 옷. 세계 구역은 js/zones/<세계>/world.js의 기본값을 펼쳐 쓴다(...FAIRY_WORLD)
+     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true  활공 가능(07, 펼치는 물건은 06 setGlideProp)
+     outfit: 'explorer'|'casual'         (선택) 옷. 세계 구역은 js/zones/<세계>/world.js에 기본값(옷·탈·start)을 두고 펼쳐 쓴다
      NPC·이벤트는 build 안에서 js/game/의 dialog.npc()·events.area()로 등록한다(구역을 떠나면 비워진다)
    새 구역 추가: README "새 구역 추가하기". */
 import * as THREE from 'three';
@@ -29,14 +29,13 @@ import {applyStart} from './game/state.js';
 // 구역 목록 — 새 구역은 여기에 한 줄 더한다
 const ZONES={
   basecamp:()=>import('./zones/basecamp.js'),
-  'fairy-roots':()=>import('./zones/fairy/roots.js'), // 요정의 숲 ① 뿌리 우체국
 };
 // 견본 구역(확인용, 하늘 없음)은 주소에 ?zonetest 를 붙였을 때만 목록에 들어간다 — 일반 주소에서는 문·wlZone.go·?zone= 어느 길로도 못 간다
 const ZONETEST=new URLSearchParams(location.search).has('zonetest');
 if(ZONETEST)Object.assign(ZONES,{
   'sample-outdoor':()=>import('./zones/sample-outdoor.js'),
   'sample-indoor':()=>import('./zones/sample-indoor.js'),
-  'sample-fairy-fx':()=>import('./zones/sample-fairy-fx.js'), // 요정의 숲 휴대폰 시험 장면(날개·등불 빛·낙엽·첫눈·여러 개 배치)
+  'sample-fx':()=>import('./zones/sample-fx.js'), // 휴대폰 성능 시험 장면(반투명 판·등불 빛·낙엽·눈·여러 개 배치·점프·활공)
 });
 const zone={cur:null,area:null}; // 지금 구역과 원더룹이 있는 방(영역) — 03·07·08이 읽는다
 async function loadZone(id){

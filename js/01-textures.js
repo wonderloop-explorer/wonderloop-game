@@ -227,24 +227,6 @@ function drawPencil(base,kind,o){
     g.strokeStyle=hexA(shade(base,-0.4),.9);g.lineWidth=S*.07;g.beginPath();g.arc(c,c,c*.96,0,7);g.stroke();
     g.strokeStyle=hexA(darker,.6);g.lineWidth=2;g.beginPath();g.arc(c,c,c*.9,0,7);g.stroke();
     hatchAmt*=.3;
-  }else if(kind==='bark'){
-    // 굵은 나무뿌리 껍질(요정의 숲 뿌리 우체국): 길이 방향(캔버스 가로)으로 흐르는 굵고 가는 결 + 결 사이 어두운 골 + 작은 옹이
-    g.lineCap='round';
-    for(let k=0;k<9;k++){const y=rnd(0,S),ph=rnd(0,PI*2);g.strokeStyle=hexA(darker,rnd(.35,.6));g.lineWidth=rnd(2.5,5);wavyLine(g,S,y,rnd(2,5),PI*2/S*Math.round(rnd(1,3)),ph);}
-    for(let k=0;k<22;k++){const y=rnd(0,S),ph=rnd(0,PI*2);g.strokeStyle=hexA(R()<.5?dark:light,rnd(.3,.6));g.lineWidth=rnd(1,2);wavyLine(g,S,y,rnd(1.5,4),PI*2/S*Math.round(rnd(1,4)),ph);}
-    for(let k=0;k<4;k++){const x=rnd(10,S-10),y=rnd(10,S-10);g.fillStyle=hexA(darker,.5);g.beginPath();g.ellipse(x,y,rnd(6,12),rnd(2.5,4.5),0,0,PI*2);g.fill();
-      g.strokeStyle=hexA(light,.5);g.lineWidth=1.2;g.beginPath();g.ellipse(x,y,rnd(9,15),rnd(4,6),0,0,PI*2);g.stroke();}
-    hatchAmt*=.5;
-  }else if(kind==='scales'){
-    // 도토리 깍정이 비늘: 끝이 아래(캔버스 아래 = 회전체의 테두리 쪽)를 향한 비늘을 아래 줄부터 그려 윗줄이 아랫줄 끝을 덮는다
-    const rows=o.rows||6,cols=o.cols||6,w=S/cols,h=S/rows;
-    for(let r=rows;r>=-1;r--){const y=r*h,off=(r&1)?w/2:0;
-      for(let c=-1;c<=cols;c++){const x=c*w+off+rnd(-1.5,1.5),k=rnd(-0.06,0.05);
-        g.fillStyle=shade(base,k);g.strokeStyle=hexA(darker,.85);g.lineWidth=2.2;
-        g.beginPath();g.moveTo(x-w*.55,y);g.quadraticCurveTo(x-w*.5,y+h*1.05,x,y+h*1.35);g.quadraticCurveTo(x+w*.5,y+h*1.05,x+w*.55,y);g.closePath();g.fill();g.stroke();
-        g.strokeStyle=hexA(light,.55);g.lineWidth=1.4;g.beginPath();g.moveTo(x,y+h*.15);g.lineTo(x,y+h*1.05);g.stroke();
-        g.strokeStyle=hexA(dark,.35);g.lineWidth=1;g.beginPath();g.moveTo(x-w*.3,y+h*.3);g.quadraticCurveTo(x-w*.15,y+h*.75,x,y+h*1.1);g.moveTo(x+w*.3,y+h*.3);g.quadraticCurveTo(x+w*.15,y+h*.75,x,y+h*1.1);g.stroke();}}
-    hatchAmt*=.35;
   }else if(kind==='dots'){
     for(let y=0;y<S;y+=32)for(let x=((y/32)%2)*16;x<S;x+=32){g.fillStyle=hexA('#fff6ea',.95);g.beginPath();g.arc(x+8,y+8,4.2,0,7);g.fill();
       g.strokeStyle=hexA('#fff6ea',.8);g.lineWidth=1.6;g.beginPath();g.arc(x+8,y+8,8,0,7);g.stroke();}
@@ -350,7 +332,7 @@ const footTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height
 function shadowBlob(x,z,rx,rz,op){if(QUALITY.shadows)return null;const m=blob(x,z,rx,rz,0.35);m.material=softMat(footTex,op??0.7);return m;}
 // 휴대폰 단계는 진짜 그림자가 없어 동그란 그림자(blob)가 땅에 붙여 주는 몫을 다 맡는다 → 모든 blob을 1.6배 진하게(컴퓨터 화면은 그대로)
 const BLOB_K=QUALITY.shadows?1:1.6;
-/* 같은 동그란 그림자 n개 (요정 무리 등 InstancedMesh): set(i,x,y,z,r)로 자리·크기. 휴대폰 단계에서만 만든다 */
+/* 같은 동그란 그림자 n개 (움직이는 무리 등 InstancedMesh): set(i,x,y,z,r)로 자리·크기. 휴대폰 단계에서만 만든다 */
 function blobMany(n,op){if(QUALITY.shadows||!n)return null;const m=new THREE.InstancedMesh(new THREE.PlaneGeometry(2,2).rotateX(-PI/2),softMat(footTex,op??0.75),n);
   m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);host().add(m);
   const o=new THREE.Object3D();m.set=(i,x,y,z,r)=>{o.position.set(x,y+0.045,z);o.scale.set(r,1,r);o.updateMatrix();m.setMatrixAt(i,o.matrix);m.instanceMatrix.needsUpdate=true;};return m;}

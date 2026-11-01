@@ -96,7 +96,7 @@ const secretShown=()=>cardOn==='secret';
 sc.querySelector('button').addEventListener('click',closeSecret);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,e=>{if(performance.now()-cardOpenT<=600||(e.target&&e.target.closest&&e.target.closest('#wlResult,#wlSecret button')))return;
   if(cardOn==='notice')closeNotice();else if(cardOn==='secret')closeSecret();}));
-/* 그림 컷 (장면 사이에 넣는 한 장짜리 그림, 예: 요정의 숲 오프닝 편지 클로즈업): cut({src, alt, sec, id})
+/* 그림 컷 (장면 사이에 넣는 한 장짜리 그림, 예: 오프닝 편지 클로즈업): cut({src, alt, sec, id})
    화면 전체에 그림을 띄우고 sec초(게임 시간 — 촬영 모드에서도 같은 길이) 뒤나 누르면(0.6초 뒤부터) 닫힌다. 카드 자리를 함께 써서 다른 카드와 겹치지 않는다.
    영상에는 그리지 않는다(HTML) → 시점 기록 kind 'card'(who '그림', id)로 남겨 편집 때 같은 그림을 얹는다. 열고 닫을 때 종이 스치는 소리(sfx 'cut'). */
 const ct=$('#wlCut');let ctDone=null,ctCue=null,ctEnd=0;

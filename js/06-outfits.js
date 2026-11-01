@@ -2,12 +2,12 @@
 import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
-import * as acornHood from './hoods/acorn.js';
-/* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래) · 3 도토리 깍정이(js/hoods/acorn.js)
-   새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}. 여기서 hoodParts(아틀라스 교체 영역)에 넣고 userData.hw로 번호를 붙인다(05 applyLook이 그 번호일 때만 보임).
-   머리 처리: 개미탈은 탈 아래 앞머리(05), 모자형 탈은 안쪽 머리만 눌러 넣기(pressHair, 탈의 profile·top). 구역 정보 hood:'acorn' → 들어올 때 그 탈(08).
+/* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래)
+   새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}을 만들어 import하고 HOODS 끝에 {key,name,mod}로 더한다.
+   여기서 hoodParts(아틀라스 교체 영역)에 넣고 userData.hw로 번호를 붙인다(05 applyLook이 그 번호일 때만 보임).
+   머리 처리: 개미탈은 탈 아래 앞머리(05), 모자형 탈은 안쪽 머리만 눌러 넣기(pressHair, 탈의 profile·top). 구역 정보 hood:'<key>' → 들어올 때 그 탈(08).
    번호 0~2는 기준 촬영·영상 대본(setup({hood}))이 쓰므로 바꾸지 않고 뒤에 붙인다. */
-const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'},{key:'acorn',name:'도토리 탈',mod:acornHood}];
+const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'}];
 HOODS.forEach((h,i)=>{if(!h.mod)return;const r=h.mod.build({head,wm,TM,SM});r.g.userData.hw=i;hoodParts.push(r.g);h.press=r;});
 WL.userData.hoods=HOODS;
 /* 디테일: 옷 구조 + 탐험대 패치 */
@@ -116,37 +116,29 @@ function wlMerge(list){
       const tp=new THREE.Mesh(new THREE.SphereGeometry(.06,8,6),gold);tp.position.set(s*.42,.86,0);cg.add(tp);});
     WL.userData.charmNeedle=nd;}
    WL.userData.charm={g:ch,ax:0,az:0,vx:0,vz:0};}
-  // 참나무 잎 모양(길이 L): 잎자루에서 끝까지 양쪽 가장자리가 둥근 갈래 네 쌍으로 물결친다. 텍스처는 잎 전체에 한 번(잎맥 결)
-  function oakLeafGeo(L,stalk=true){const sh=new THREE.Shape(),N=40,st=L*.05,sl=stalk?L*.16:0,wd=t=>L*.3*Math.pow(Math.sin(PI*Math.min(1,t*1.05)),.7)*(.6+.4*Math.abs(Math.sin(4*PI*t+.4)));
-    sh.moveTo(-st,-sl);sh.lineTo(-st,0);for(let i=1;i<N;i++){const t=i/N;sh.lineTo(-wd(t),t*L);}sh.lineTo(0,L);for(let i=N-1;i>0;i--){const t=i/N;sh.lineTo(wd(t),t*L);}sh.lineTo(st,0);sh.lineTo(st,-sl);
-    const lg=new THREE.ShapeGeometry(sh);lg.computeBoundingBox();const b=lg.boundingBox,p=lg.attributes.position,uv=lg.attributes.uv;for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)-b.min.x)/(b.max.x-b.min.x),(p.getY(i)-b.min.y)/(b.max.y-b.min.y));return lg;}
-  // 할아버지 참나무가 준 마지막 잎(아이템 lastLeaf): 나침반 옆에 나란히. 참나무 잎 모양 — 둥근 갈래가 물결치는 주황 잎(우듬지 장면 그림 2026-10-31)
-  {const ch=new THREE.Bone();ch.name='charm_lastLeaf';ch.position.set(.078,.476,-.462);wlBody.add(ch);pack.push(ch);
-   const brassM=SM('#d8b36a');const ring=wm(new THREE.TorusGeometry(.012,.0038,8,16),brassM);ring.position.y=-.012;ch.add(ring);
-   const link=wm(new THREE.TorusGeometry(.008,.003,6,12),brassM);link.position.y=-.03;link.rotation.y=PI/2;ch.add(link);
-   // 잎 모양: 잎자루에서 끝까지 양쪽 가장자리가 둥근 갈래 네 쌍으로 물결친다. 텍스처는 잎 전체에 한 번(잎맥 결)
-   const leafM=TM('#dc5a2c','leaf',{},THREE.DoubleSide);WL.userData.leafM=leafM; // 떠나는 잎의 외출복 — 붉은 주황
-   const leaf=wm(oakLeafGeo(.12),leafM);leaf.position.y=-.034;leaf.rotation.set(0,PI,PI-.22);ch.add(leaf);
-   WL.userData.leafCharm={g:ch,ax:0,az:0,vx:0,vz:0,flag:'lastLeaf'};}
-  WL.userData.charms=[WL.userData.charm,WL.userData.leafCharm];
-  // 활공: 마지막 잎을 우산처럼 머리 위로 크게 펼쳐 든다(활공할 때만 보임 — 07). 잎은 살짝 앞으로 기울고 가장자리가 아래로 휜다
-  {const g=new THREE.Bone();g.name='glide_leaf';g.position.set(0,1.95,.02);g.visible=false;wlBody.add(g);
-   // 낙하산·패러글라이더처럼 둥근 지붕: 옆으로 넓히고, 가운데가 가장 높고 앞뒤·양옆 가장자리가 모두 아래로 휜다
-   const L=2.0,big=oakLeafGeo(L,false);{const p=big.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i)*1.55,y=p.getY(i)-L*.5;p.setX(i,x);p.setZ(i,-(x*x*.5+y*y*.34));}big.computeVertexNormals();}
-   const lf=wm(big,WL.userData.leafM);lf.rotation.set(-PI/2+.12,0,0);lf.position.set(0,.02,L*.5);g.add(lf); // 잎 가운데가 머리 위에 오게(잎자루는 뒤쪽)
-   WL.userData.glideLeaf=g;}
+  /* 받은 아이템 키링 칸: 세계를 마치고 받은 아이템이 나침반 옆에 차례로 매달린다(뼈 charm_<flag>). 키링 모양은 세계 코드가 정해
+     WL.userData.addCharm({flag, obj})로 단다(obj 원점 = 고리, 아래로 매달림). flags[flag]가 참일 때만 보이고(07), 걸을 때 나침반과 같이 흔들린다.
+     다시 부르면(같은 flag) 모양만 바꾼다. 아틀라스 밖에서 그리는 보통 메시다. */
+  WL.userData.charms=[WL.userData.charm];
+  WL.userData.addCharm=({flag,obj})=>{const cs=WL.userData.charms;let C=cs.find(c=>c.flag===flag);
+    if(!C){const i=cs.length,ch=new THREE.Bone();ch.name='charm_'+flag;ch.position.set((i%2?1:-1)*.078*Math.ceil(i/2),.476,-.462);wlBody.add(ch);C={g:ch,ax:0,az:0,vx:0,vz:0,flag};cs.push(C);}
+    C.g.clear();if(obj)C.g.add(obj);return C;};
+  /* 활공할 때 머리 위로 펼쳐 드는 물건(07이 활공할 때만 보인다): 세계마다 WL.userData.setGlideProp(obj)로 바꾼다(obj 원점 = 손잡이, 머리 위).
+     없으면 몸짓(두 팔 들기·흔들림)만 하고 천천히 내려온다. */
+  {const g=new THREE.Bone();g.name='glide_prop';g.position.set(0,1.95,.02);g.visible=false;wlBody.add(g);WL.userData.glideProp=g;
+   WL.userData.setGlideProp=obj=>{g.clear();if(obj)g.add(obj);};}
   let outfit=0;
   function applyOutfit(){const e=outfit===1;shirtMs.forEach(o=>o.material=e?E.shirt:tunic);pantsMs.forEach(o=>o.material=e?E.pants:shorts);
     rf.forEach((o,i)=>o.material=e?(i%2?E.fold:E.roll):rfBase[i]);exp.forEach(o=>o.visible=e);pack.forEach(o=>o.visible=true);WL.userData.outfit=e;}
   applyOutfit();
   {const r=wlMerge(exp.filter(o=>o.isMesh));for(let i=exp.length-1;i>=0;i--)if(r.removed.has(exp[i]))exp.splice(i,1);r.made.forEach(m=>exp.push(m));
    {const r2=wlMerge(pack.filter(o=>o.isMesh));for(let i=pack.length-1;i>=0;i--)if(r2.removed.has(pack[i]))pack.splice(i,1);r2.made.forEach(m=>pack.push(m));}
-   wlMerge(WL.userData.hatG.children.slice());if(WL.userData.charm)wlMerge(WL.userData.charm.g.children.slice());wlMerge(WL.userData.leafCharm.g.children.slice());applyOutfit();}
+   wlMerge(WL.userData.hatG.children.slice());if(WL.userData.charm)wlMerge(WL.userData.charm.g.children.slice());applyOutfit();}
   // 탈 카테고리: 없음 → 개미탈 → 탐험 모자 (옷과 따로 쓰고 벗음)
   {const hwBtn=document.getElementById('hoodBtn');WL.userData.hw=0;
    const applyHW=()=>{const hw=WL.userData.hw;WL.userData.hatG.visible=hw===2;WL.userData.applyLook();pressHair(hw===2||HOODS[hw].press?hw:0);hwBtn.textContent='탈: '+HOODS[hw].name;};
    hwBtn.addEventListener('click',()=>{WL.userData.hw=(WL.userData.hw+1)%HOODS.length;applyHW();});applyHW();
-   // 이름으로 탈 쓰기 (구역 정보 hood, 영상 대본): setHood('acorn')
+   // 이름으로 탈 쓰기 (구역 정보 hood, 영상 대본): setHood('ant')
    WL.userData.setHood=key=>{const i=HOODS.findIndex(h=>h.key===key);if(i<0){console.warn('원더룹: 없는 탈',key);return;}WL.userData.hw=i;applyHW();};}
   const ob=document.getElementById('outfitBtn');const showOutfit=()=>ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();showOutfit();});
   // 이름으로 옷 입기 (구역 정보 outfit): setOutfit('explorer'|'casual')

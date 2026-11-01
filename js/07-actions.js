@@ -23,7 +23,7 @@ let wlTarget=null,wlHop=0,wlPhase=0,blinkT=2.5,markerA=0;
 /* 높이 이동 (구역에 platforms·bouncers가 있을 때만 — 없으면 예전처럼 땅 높이만):
    y 발 높이, vy 위아래 속도, air 공중, jump 튀는 발판이 정한 날아가기(가로 속도), glide 활공 정도(0~1).
    튀는 발판(버섯 갓)을 밟으면 정해진 꼭대기(top+height)까지 튀어 to에 내려앉는다 — 조작은 밟기만(어렵지 않게).
-   발판 가장자리를 걸어 나가면 떨어지고, 구역 정보 glide:true인 곳에서는 떨어질 때 마지막 잎을 머리 위로 펼쳐 천천히 내려온다(이번 편은 시험 구역만). */
+   발판 가장자리를 걸어 나가면 떨어지고, 구역 정보 glide:true인 곳에서는 떨어질 때 활공 물건(06 setGlideProp, 세계마다)을 머리 위로 펼쳐 천천히 내려온다. */
 const GRAV=14,GLIDE=.9,V={y:0,vy:0,air:false,jump:null,lastB:null,glide:0,px:0,pz:0,sw:0,swX:0};WL.userData.vert=V;
 function launch(b){const x=WL.position.x,z=WL.position.z,apex=b.top+b.height,vy0=Math.sqrt(2*GRAV*Math.max(.2,apex-V.y));
   V.lastB=b;V.vy=vy0;V.air=true;V.jump={vx:0,vz:0};wlTarget=null;markerA=0;
@@ -73,7 +73,8 @@ function actionPose(A,t){
                       └ spine 몸통(엉덩이 축으로 숙임) ─ upperarm.L/R 위팔(어깨) ─ forearm.L/R 아래팔(팔꿈치)
                                                      ├ neck 목 ─ head 머리 ─ eye.L/R 눈(깜빡임) · antenna.L/R 개미탈 더듬이
                                                      ├ charm 배낭 키링 ─ charm_needle 키링 바늘
-                                                     ├ charm_lastLeaf 배낭 키링(마지막 잎, 아이템을 받은 뒤)
+                                                     ├ charm_<flag> 받은 아이템 키링(06 addCharm, 받은 뒤에만)
+                                                     ├ glide_prop 활공할 때 머리 위로 펼치는 물건(06 setGlideProp)
                                                      └ prop 손에 든 나침반 ─ prop_needle 바늘
    동작 키 → 뼈 회전 (actionPose·runPose가 돌려주는 값, 0은 오른쪽 R·1은 왼쪽 L)
      lx 넓적다리 앞뒤 thigh.rotation.x · ly 넓적다리 높이 thigh.position.y · kx 무릎 shin.rotation.x (발목 foot은 자동)
@@ -135,7 +136,7 @@ const atlasMat=(()=>{const U=WL.userData,C=THREE.ShaderChunk,cache={};
           .replace('#include <emissivemap_fragment>','totalEmissiveRadiance=vWlExt.xyz;')
           .replace('#include <lights_fragment_begin>','bool wlRecv=receiveShadow&&vWlRecv>.5;\n'+lfb)
           .replace('#include <dithering_fragment>','float wlFr=pow(1.0-clamp(dot(normalize(normal),normalize(vViewPosition)),0.0,1.0),2.2);gl_FragColor.rgb+=(uRimCol*wlFr*uRim+diffuseColor.rgb*uLift)*vWlExt.w;\n#include <dithering_fragment>');};
-    m.customProgramCacheKey=()=>'wlatlas';return cache[k]=m;};})(); // 완전히 투명한 곳(탈 잎 날개 둘레)은 버린다 — 깊이를 써서 뒤의 빛무리를 네모로 가리지 않게
+    m.customProgramCacheKey=()=>'wlatlas';return cache[k]=m;};})(); // 완전히 투명한 곳(탈 장식 텍스처의 투명한 둘레)은 버린다 — 깊이를 써서 뒤의 빛무리를 네모로 가리지 않게
 // 그림자: 그림자를 드리우지 않는 부품은 그림자 패스에서만 크기 0으로 접는다
 const atlasDepth=new THREE.MeshDepthMaterial();atlasDepth.onBeforeCompile=sh=>{sh.vertexShader='attribute vec2 wlSh;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed*=wlSh.y;');};
 atlasDepth.customProgramCacheKey=()=>'wlatlasdepth';
@@ -228,8 +229,8 @@ function updateWL(dt,t){
   body.rotation.z=sw*0.06;
   body.position.y=moving?Math.abs(Math.cos(wlPhase))*0.05:Math.sin(t*2.2)*0.012;
   let hopY=0,wave=0;if(wlHop>0){wlHop=Math.max(0,wlHop-dt*1.6);wave=Math.sin((1-wlHop)*PI);hopY=wave*0.4;}
-  if(H){const U=WL.userData;U.airW=(U.airW||0)+((V.air?1:0)-(U.airW||0))*Math.min(1,dt*10);wave=Math.max(wave,U.airW*.55,V.glide); // 공중에서는 팔을 들고, 활공은 두 팔로 잎을 받침
-    if(U.glideLeaf)U.glideLeaf.visible=V.glide>.4;}
+  if(H){const U=WL.userData;U.airW=(U.airW||0)+((V.air?1:0)-(U.airW||0))*Math.min(1,dt*10);wave=Math.max(wave,U.airW*.55,V.glide); // 공중에서는 팔을 들고, 활공은 두 팔로 물건을 받침
+    if(U.glideProp)U.glideProp.visible=V.glide>.4;}
   WL.position.y=GY+hopY*WLS;arms[0].rotation.z=-0.32-wave*2.2;arms[1].rotation.z=0.32+wave*2.2;
   {const th=(moving?0:Math.sin(t*0.9)*0.05)+(WL.userData.headTilt||0);neck.rotation.z=th;}
   // 배낭 키링(나침반·받은 아이템): 걸을 때 달랑달랑. 나침반 계산은 예전 그대로, 다른 키링도 같은 식으로 따로 흔들린다
@@ -258,7 +259,7 @@ function updateWL(dt,t){
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
    if(U.thumbs)U.thumbs.forEach(th=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)); // 쥘 때만 엄지
    if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass; // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
-   if(U.leafCharm)U.leafCharm.g.visible=!!flags.lastLeaf;} // 마지막 잎은 받은 뒤에만 (game/items)
+   (U.charms||[]).forEach(C=>{if(C.flag)C.g.visible=!!flags[C.flag];});} // 받은 아이템 키링은 받은 뒤에만 (game/items, 06 addCharm)
   // 몸통: 위 계산은 발바닥 기준 몸 원점의 위치·회전 → 엉덩이 축 뼈(spine)로 옮김 (spine·(0,-HIP,0) = 예전 몸 변환)
   spine.rotation.copy(body.rotation);spine.position.copy(body.position).add(_hv.set(0,HIP,0).applyEuler(body.rotation));spine.position.y-=HIP;
   rigSync();

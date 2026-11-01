@@ -1,7 +1,7 @@
 /* 원더룹 — 합성 소리: 소리 파일이 없을 때 Web Audio로 즉석에서 만드는 효과음·배경음
    - 등록: sound.synth({id:{dur, play(ac,out,o)}}) — 효과음. 배경음은 {bed(ac,out)→{tick(dt),stop()}}.
    - 같은 id로 sound.register({id:'url'})하면 그 파일을 읽은 뒤부터 파일이 먼저다(ElevenLabs로 뽑은 소리로 하나씩 바꿔 끼우기).
-   - 이 파일에는 소리 도구와 모든 세계가 함께 쓰는 소리(도감 카드 dex, 비밀 secret, 그림 컷 cut)만 둔다. 세계 소리는 구역 폴더에(예: js/zones/fairy/sounds.js).
+   - 이 파일에는 소리 도구와 모든 세계가 함께 쓰는 소리(도감 카드 dex, 비밀 secret, 그림 컷 cut)만 둔다. 세계 소리는 구역 폴더에(예: js/zones/<세계>/sounds.js).
    - 소리는 화면 그림에 쓰지 않으므로 Math.random을 쓴다(시드 난수 순서와 상관없음). */
 const NB=new WeakMap();
 const rr=(a,b)=>a+Math.random()*(b-a);
