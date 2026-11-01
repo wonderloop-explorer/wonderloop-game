@@ -1,6 +1,6 @@
 /* 공통 시스템(js/game/) 규칙 자동 시험 — http://localhost:8000/?shot&zonetest&zone=sample-indoor 에서 (페이지가 다 뜬 뒤)
    (await import('/tools/game-tests.js')).run()  →  [{규칙, 통과, 내용}]
-   규칙 12개(대사 묶음·혼잣말·이벤트 줄·위협 멈춤·나레이션 다시·나레이션 기다림·프레임 오류·안내 표시·나침반 키링·영역 트리거·카드 줄 세우기·도감과 비밀).
+   규칙 13개(대사 묶음·혼잣말·이벤트 줄·위협 멈춤·나레이션 다시·나레이션 기다림·프레임 오류·안내 표시·나침반 키링·영역 트리거·카드 줄 세우기·도감과 비밀·손 상호작용).
    촬영 모드라 게임 시간은 wlShot.step(n)으로만 흐른다(1/60초씩) → 매번 같은 결과. 견본 실내의 NPC·이벤트·먼지 뭉치를 쓴다. */
 const STEP = 1 / 60;
 export async function run() {
@@ -100,5 +100,13 @@ export async function run() {
     let ended = -1; C.ending({ logo: '견본 탐험 끝', buttons: [{ label: '처음으로' }] }).then(i => ended = i); sec(.2); const stat = document.querySelector('#wlEnd .stat').textContent;
     G.ui.cardClosers.ending(); await flush(); notes.push(`엔딩 "${stat}" → 닫힘 ${ended === 0}`);
     ok('도감·비밀·엔딩', first && again === false && dexOn && resWaits && resNow && note === '✦ 발견한 비밀 0/1' && glow && hid && sec1 === '✦ 발견한 비밀 1/1' && noAgain && /견본 도감 \d\/2 · ✦ 발견한 비밀 1\/1/.test(stat) && ended === 0, notes.join(' / ')); }
+
+  // 13. 손으로 하는 상호작용(game/interact): 가까이서 E → 원더룹이 물건 앞으로 걸어가 마주 보고 손 동작 → 끝나면 '서기'로 돌아오고 onDone, 한 번만
+  { await reset(); const THREE = await import('three'); const box = new THREE.Mesh(new THREE.BoxGeometry(.3, .3, .3), new THREE.MeshBasicMaterial()); box.position.set(-1.6, .5, 2.2); s.scene.add(box);
+    let done = 0, startedA = ''; const it = G.interact.add({ root: box, at: [-1.6, 1.5], face: [-1.6, 2.2], label: '돌리기', action: '돌리기', dur: .6, onStart: () => { startedA = WL.userData.action; }, onDone: () => done++ });
+    WL.position.set(-1.2, 0, 1.1); sec(.1); const label = document.getElementById('wlPrompt').textContent; press(); sec(2.5);
+    const faced = Math.abs(Math.atan2(Math.sin(WL.rotation.y), Math.cos(WL.rotation.y))) < .2, at = Math.hypot(WL.position.x + 1.6, WL.position.z - 1.5) < .3, back = WL.userData.action === '서기';
+    press(); sec(1.5); const once = done === 1; G.interact.remove(it); s.scene.remove(box);
+    ok('손 상호작용', label === 'E 돌리기' && startedA === '돌리기' && done === 1 && faced && at && back && once, `안내 "${label}", 동작 ${startedA}, 자리 ${at}·마주 봄 ${faced}, 끝나고 서기 ${back}, onDone ${done}회(한 번만 ${once})`); }
   return out;
 }

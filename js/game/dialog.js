@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import {block,blocking,clock} from './core.js';
 import {voice} from './sound.js';
 import {hideDialog,hint,hintsVisible,setPrompt,showDialog} from './ui.js';
+import {act as handAct,prompt as handPrompt} from './interact.js'; // 말 걸 상대가 없으면 손으로 하는 상호작용(E·터치 단추)
 const coarse=matchMedia('(pointer:coarse)').matches,reduce=matchMedia('(prefers-reduced-motion: reduce)');
 const NPCS=[];let talk=null,near=null,ctx=null;const sayQ=[];let saying=null;
 function npc(def){const n=Object.assign({talkR:0},def);NPCS.push(n);return n;}
@@ -44,11 +45,11 @@ function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk();}
   near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=linesOf(talk.n);setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
-  else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):'');
+  else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
   const who=talk?null:near;if(bubble){if(who&&hintsVisible()){who.root.getWorldPosition(_q);_q.y+=(who.bubbleY||1.4)+(reduce.matches?0:Math.sin(clock.t*4)*.04);bubble.position.copy(_q);bubble.visible=true;if(!bubble.parent)bubble.userData.scene.add(bubble);}else{bubble.visible=false;if(bubble.parent)bubble.parent.remove(bubble);}}
   tickSay();}
 /* 입력: E(또는 말 걸기 단추) — 대화 중이면 다음, 아니면 가까운 NPC와 대화 */
-function act(){if(talk)return advance();if(near)return startTalk(near);return false;}
+function act(){if(talk)return advance();if(near)return startTalk(near);return handAct();}
 function clickNPC(ray){if(talk){advance();return true;}const hits=ray.intersectObjects(NPCS.filter(talkable).map(n=>n.root),true);if(hits.length){let o=hits[0].object;const n=NPCS.find(n=>{let q=o;while(q){if(q===n.root)return true;q=q.parent;}return false;});if(n&&startTalk(n))return true;}return false;}
 function initDialog(c){ctx=c;makeBubble(c.scene);
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});

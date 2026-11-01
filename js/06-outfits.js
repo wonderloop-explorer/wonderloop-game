@@ -123,6 +123,13 @@ function wlMerge(list){
   WL.userData.addCharm=({flag,obj})=>{const cs=WL.userData.charms;let C=cs.find(c=>c.flag===flag);
     if(!C){const i=cs.length,ch=new THREE.Bone();ch.name='charm_'+flag;ch.position.set((i%2?1:-1)*.078*Math.ceil(i/2),.476,-.462);wlBody.add(ch);C={g:ch,ax:0,az:0,vx:0,vz:0,flag};cs.push(C);}
     C.g.clear();if(obj)C.g.add(obj);return C;};
+  /* 꾸미기 칸(배지 등): 받은 꾸미기를 조끼 왼쪽 가슴(at:'vest') 또는 배낭 덮개(at:'pack')에 단다 — WL.userData.addBadge({flag, obj, at}).
+     obj 원점 = 배지 가운데, +z가 바깥(보이는 쪽). flags[flag]가 참일 때만 보인다(07). 흔들리지 않는다. 평상복이면 셔츠 같은 자리 */
+  WL.userData.badges=[];
+  WL.userData.addBadge=({flag,obj,at='vest'})=>{const bs=WL.userData.badges;let B=bs.find(b=>b.flag===flag);
+    if(!B){const b=new THREE.Bone();b.name='badge_'+flag;if(at==='pack'){b.position.set(.075,.43,-.462);b.rotation.y=PI;}else{b.position.set(.105,.6,.255);b.rotation.set(-.2,.28,0);}
+      wlBody.add(b);B={g:b,flag,at};bs.push(B);}
+    B.g.clear();if(obj)B.g.add(obj);return B;};
   /* 활공할 때 머리 위로 펼쳐 드는 물건(07이 활공할 때만 보인다): 세계마다 WL.userData.setGlideProp(obj)로 바꾼다(obj 원점 = 손잡이, 머리 위).
      없으면 몸짓(두 팔 들기·흔들림)만 하고 천천히 내려온다. */
   {const g=new THREE.Bone();g.name='glide_prop';g.position.set(0,1.95,.02);g.visible=false;wlBody.add(g);WL.userData.glideProp=g;
@@ -139,7 +146,19 @@ function wlMerge(list){
    const applyHW=()=>{const hw=WL.userData.hw;WL.userData.hatG.visible=hw===2;WL.userData.applyLook();pressHair(hw===2||HOODS[hw].press?hw:0);hwBtn.textContent='탈: '+HOODS[hw].name;};
    hwBtn.addEventListener('click',()=>{WL.userData.hw=(WL.userData.hw+1)%HOODS.length;applyHW();});applyHW();
    // 이름으로 탈 쓰기 (구역 정보 hood, 영상 대본): setHood('ant')
-   WL.userData.setHood=key=>{const i=HOODS.findIndex(h=>h.key===key);if(i<0){console.warn('원더룹: 없는 탈',key);return;}WL.userData.hw=i;applyHW();};}
+   WL.userData.setHood=key=>{const i=HOODS.findIndex(h=>h.key===key);if(i<0){console.warn('원더룹: 없는 탈',key);return;}WL.userData.hw=i;applyHW();};
+   /* 탈 모습 바뀌기 연출 (꽃봉오리 → 활짝 핀 꽃처럼, 한 탈의 두 모습을 HOODS 두 칸으로 두고 이어 준다): morphHood(key,{sec,onSwitch,onEnd})
+      앞 40%: 지금 탈이 살짝 움츠러들고 → 바뀌는 순간(onSwitch — 빛 입자 터뜨리기 등) → 뒤 60%: 새 탈이 0.6배에서 통 튀어나오며 1배로.
+      새 탈 모듈에 animate(g,u)(u 0→1)가 있으면 그동안 함께 부른다(꽃잎이 펼쳐지는 움직임은 세계 탈 쪽에서). 07이 게임 시간으로 진행(촬영 모드에서도 같은 그림) */
+   const hoodObjs=hw=>hw===2?[WL.userData.hatG]:hw===1?hoodParts.filter(o=>o.userData.hw==null):HOODS[hw]&&HOODS[hw].press?[HOODS[hw].press.g]:[];
+   const easeBack=u=>{const c=1.7;u-=1;return 1+(c+1)*u*u*u+c*u*u;};
+   WL.userData.morphHood=(key,{sec=1.2,onSwitch,onEnd}={})=>{const to=HOODS.findIndex(h=>h.key===key);if(to<0){console.warn('원더룹: 없는 탈',key);return;}
+     const from=hoodObjs(WL.userData.hw),scale=(L,v)=>L.forEach(o=>o.scale.setScalar(v));let t=0,switched=false;
+     WL.userData.hoodMorph={tick(dt){t+=dt;const k=Math.min(1,t/sec);
+       if(k<.4)scale(from,1-.12*Math.sin(k/.4*Math.PI/2));
+       else{if(!switched){switched=true;scale(from,1);WL.userData.hw=to;applyHW();if(onSwitch)try{onSwitch();}catch(e){console.error(e);}}
+         const u=(k-.4)/.6,L=hoodObjs(to);scale(L,.6+.4*easeBack(u));const m=HOODS[to].mod;if(m&&m.animate&&HOODS[to].press)m.animate(HOODS[to].press.g,u);}
+       if(k>=1){scale(hoodObjs(to),1);WL.userData.hoodMorph=null;if(onEnd)try{onEnd();}catch(e){console.error(e);}}}};};}
   const ob=document.getElementById('outfitBtn');const showOutfit=()=>ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();showOutfit();});
   // 이름으로 옷 입기 (구역 정보 outfit): setOutfit('explorer'|'casual')
   WL.userData.setOutfit=key=>{outfit=key==='explorer'?1:0;applyOutfit();showOutfit();};

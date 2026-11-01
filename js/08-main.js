@@ -23,6 +23,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
   ray.setFromCamera(ptr,camera);
   if(GAME.clickNPC(ray))return; // 대화 중이면 다음 대사, NPC를 누르면 말 걸기
+  if(GAME.interact.click(ray))return; // 손으로 할 물건을 누르면 걸어가서 손 동작(game/interact)
   if(zone.cur.click&&zone.cur.click(ray))return; // 구역의 클릭할 것 (베이스캠프: 버섯 램프)
   if(ray.intersectObjects(wlHit,false).length){hopWL();return;}
   if(zone.cur.ground){const h=ray.intersectObjects(zone.cur.ground,false)[0];if(h)setWalkTarget(h.point.x,h.point.z);return;} // 높낮이 있는 땅
@@ -63,6 +64,8 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
 
 /* ---------- 애니메이션 ---------- */
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
+/* 안개: 처음부터 늘 켜 두고 하늘 없는 구역에서는 아주 멀리 밀어 둔다(그림은 그대로) — 구역마다 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다 */
+const FOG_OFF=1e4;scene.fog=new THREE.Fog(0xffffff,FOG_OFF,FOG_OFF*2);
 const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector3();
 /* 촬영 모드(?shot): 고정 시간 간격(기본 1/60초, 영상 캡처 중에는 wlShot.dt=1/72)으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
 const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1/60;
@@ -82,12 +85,14 @@ function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&
 function tickBody(){
   let dt,t;if(SHOT){dt=shotDt;shotT+=dt;t=shotT;}else{clock.update();dt=Math.min(clock.getDelta(),0.05);t=clock.getElapsed();}
   night+=(nightTarget-night)*Math.min(1,dt*2.2);
-  const n=night,flick=reduce?1:(1+Math.sin(t*7.3)*0.04+Math.sin(t*13.1)*0.03);
+  const Z=zone.cur,SK=Z.sky; // 하늘이 있는 구역(game/sky): 낮/저녁 단추 대신 하늘의 시간 값을 따른다
+  const n=SK?SK.night:night,flick=reduce?1:(1+Math.sin(t*7.3)*0.04+Math.sin(t*13.1)*0.03);
   hemi.intensity=0.62-0.4*n;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
   sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
+  if(SK)SK.light({hemi,sun,fill,fog:scene.fog},camera,dt,Z.sun.dir);else if(scene.fog.near<FOG_OFF){scene.fog.near=FOG_OFF;scene.fog.far=FOG_OFF*2;}
   cave+=(caveTarget-cave)*Math.min(1,dt*2.2);
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}
-  const Z=zone.cur,env={night:n,cave,flick,reduce};
+  const env={night:n,cave,flick,reduce};
   if(Z.mood){const m=Z.mood;hemi.intensity*=m.hemi??1;sun.intensity*=m.sun??1;fill.intensity*=m.fill??1; // 구역 분위기(땅속 등): 하늘빛·해를 줄이고 색을 물들인다 — 없으면 예전과 같다
     if(m.sky!=null){hemi.color.lerp(rawLin(m.sky),m.tint??.5);hemi.groundColor.lerp(rawLin(m.ground??m.sky),m.tint??.5);}}
   if(Z.light)Z.light(env,dt); // 구역 조명(램프·등불 등)과 효과의 밝기

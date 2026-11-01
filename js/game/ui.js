@@ -50,6 +50,7 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 #wlCut{position:fixed;inset:0;display:none;place-items:center;background:#1e0e24;z-index:45;cursor:pointer}#wlCut.on{display:grid;animation:wlCutIn .6s ease-out}
 #wlCut img{width:100%;height:100%;object-fit:contain}#wlCut p{position:absolute;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);margin:0;font-size:.8rem;color:rgba(255,246,234,.7)}
 @keyframes wlCutIn{from{opacity:0}to{opacity:1}}
+#wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
 @media (prefers-reduced-motion: reduce){#wlNotice{transition:none}#wlNotice:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
 @media (max-width:600px){#wlDlg .line{font-size:1.1rem}}`;
 const root=document.createElement('div');root.className='wlg';
@@ -57,7 +58,7 @@ root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="wh
 <div id="wlNotice" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
-<div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div>
+<div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
 <p id="wlQuest" class="wl-hint"></p><p id="wlPrompt" class="wl-hint"></p><button id="wlAct" class="wl-hint" type="button">말 걸기</button>`;
 {const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
  if(!document.querySelector('link[data-wl-font]')){const l=document.createElement('link');l.rel='stylesheet';l.dataset.wlFont='1';l.href='https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap';document.head.appendChild(l);}
@@ -104,7 +105,19 @@ function cut({src,alt='',sec=4.5,id=''}){return enqueue('cut',r=>{ctDone=r;const
   ct.querySelector('p').textContent=coarse?'화면을 누르면 넘어가요':'누르거나 아무 키나 누르면 넘어가요';ctEnd=clock.t+sec;
   ctCue=cue({kind:'card',who:'그림',id,text:alt,dur:0});ct.classList.add('on');block('cut',true);sfx('cut');});}
 function closeCut(){if(cardOn!=='cut')return;ct.classList.remove('on');sfx('cut',{gain:.6});endCue(ctCue);ctCue=null;block('cut',false);const d=ctDone;ctDone=null;cardDone();if(d)d();}
-const tickCut=()=>{if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();};
+/* 화면 전환: transition(fn, {out:.6, hold:.2, in:.7, color:'#1e0e24'}) → 화면이 서서히 덮였다가(게임 시간) fn()을 부르고(프라미스면 끝날 때까지 기다림)
+   잠시 뒤 다시 밝아진다(비밀 통로를 지나 다른 구역으로 같은 이동). 하는 동안 막힘('fade'). 영상에는 그리지 않는다(HTML) → 시점 기록 kind 'transition'으로 편집 때 같은 전환을 넣는다.
+   움직임 줄이기 설정이면 덮고 밝아지는 시간을 짧게(0.15초). */
+const fd=$('#wlFade');let fade=null;
+function transition(fn,{out=.6,hold=.2,in:inn=.7,color='#1e0e24'}={}){if(fade)return Promise.resolve(false);const red=matchMedia('(prefers-reduced-motion: reduce)').matches;if(red){out=Math.min(out,.15);inn=Math.min(inn,.15);}
+  return new Promise(res=>{fd.style.background=color;fd.style.display='block';block('fade',true);const c=cue({kind:'transition',text:'화면 전환',dur:0});
+    fade={ph:'out',t0:clock.t,out,hold,inn,fn,res,c};});}
+function tickFade(){if(!fade)return;const f=fade,e=clock.t-f.t0;
+  if(f.ph==='out'){fd.style.opacity=Math.min(1,e/f.out);if(e>=f.out){f.ph='wait';fd.style.opacity=1;const go=()=>{f.ph='hold';f.t0=clock.t;};let r;try{r=f.fn&&f.fn();}catch(err){console.error(err);}
+    if(r&&r.then)r.catch(err=>console.error(err)).then(go);else go();}} // 보통 함수는 바로, 프라미스(구역 불러오기 등)면 끝날 때까지 기다림
+  else if(f.ph==='hold'){if(e>=f.hold){f.ph='in';f.t0=clock.t;}}
+  else if(f.ph==='in'){fd.style.opacity=Math.max(0,1-e/f.inn);if(e>=f.inn){fd.style.display='none';block('fade',false);endCue(f.c);fade=null;f.res(true);}}}
+const tickCut=()=>{if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();tickFade();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));
 /* 결과 화면: result({title,text,buttons:[{label,act}],note}) → 누른 단추의 번호로 resolve */
@@ -128,4 +141,4 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};

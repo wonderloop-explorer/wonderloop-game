@@ -7,6 +7,16 @@
    - 같은 모델 여러 개: 무리 60(몸·머리 InstancedMesh, 통통 뛰거나 떠 있음), 조약돌 40(통나무 위 줄)
    - 진짜 점프·활공(07 높이 이동): 튀는 버섯을 밟으면 그루터기 위로, 그루터기에서 걸어 나가면 시험용 활공 물건(둥근 천)을 펼쳐 활공(06 setGlideProp)
    - 남은 개수 카운터(game/hud) 견본: '하나 줄이기' 단추
+   - 손으로 하는 상호작용(game/interact): 큰 바퀴를 눌러 손으로 돌리기, 물뿌리개를 집어 들고(오른손 setHeld) 새싹에 뿌리기, '머리 만져 보기' 단추
+   - 바람길·통과 링(02 winds, game/course): 그루터기에서 활공해 나가면 바람이 앞으로 밀고 위로 띄워 준다. 링 세 개를 지나면 금빛으로. '바람 방향 바꾸기' 단추
+   - 자라는 발판(02 platforms의 top을 바꿈): 물뿌리개로 새싹 계단 세 개에 물을 주면 차례로 자라 올라갈 수 있다
+   - 탈것(game/ride): 둥근 배를 눌러 '타기' → 정해진 길로 건너편까지 태워 감
+   - 따라오는 동행(game/companion): '동행 켜기' 단추 — 작은 빛이 원더룹 옆쪽 조금 앞에서 따라온다
+   - 탈 모습 바뀌기(06 morphHood): '탈 바뀜' 단추 — 탐험 모자 ↔ 개미탈을 통 튀어나오며 바꾸고 빛 입자 터뜨림(두 모습 탈의 견본)
+   - 꾸미기 칸(06 addBadge): '배지 달기' 단추 — 조끼 왼쪽 가슴과 배낭 덮개에 시험 배지
+   - 화면 전환(game/ui transition): '화면 전환' 단추 — 서서히 덮였다가 원더룹을 처음 자리로 옮기고 밝아짐
+   - 하늘과 시간 흐름(game/sky): '시간' 단추로 낮 → 해 질 녘 → 밤(첫별)으로 천천히. 이 구역은 낮/저녁/굴 단추 대신 하늘 시간을 따른다
+   - 떠오르는 빛 입자(game/fx particles): 원더룹 둘레에서 위로 떠오르는 빛, '빛 입자 터뜨리기' 단추로 한꺼번에(별꽃 개화 견본)
    화면 왼쪽 위 시험판: 초당 프레임(평균·가장 느린 프레임), 드로우콜·삼각형, 항목마다 켜고 끄기, 낮/저녁/어두운 굴.
    "자동 측정": 모두 켬 → 항목을 하나씩 끔(판·등불 빛·빛무리·낙엽·눈·무리·그림자) → 모두 끔 → 픽셀 비율 바꾸기를
    차례로 재서 표로 보여 준다. 결과는 window.wlFx.results에도. 렌더러는 장면의 onBeforeRender로 받는다(03을 건드리지 않음).
@@ -64,12 +74,12 @@ cylAt(0.05,0.07,1.2,M('#8a6244','wood'),0,0,0,{parent:wingShow});
 [-1,1].forEach(sd=>{const w=new THREE.Mesh(wingGeo,wingMat);w.scale.set(sd*1.4,1.1,1);w.position.set(0,1.15,0);w.rotation.y=sd*0.35;w.castShadow=false;wingShow.add(w);
   const w2=new THREE.Mesh(wingGeo,wingMat);w2.scale.set(sd*0.9,0.7,1);w2.position.set(0,1.0,0.02);w2.rotation.set(0,sd*0.5,-sd*0.9);w2.castShadow=false;wingShow.add(w2);});
 obstacles.push({c:[0,-5.2,0.4]});shadowBlob(0,-5.2,0.9,0.6,0.3);
-/* ---------- 3. 무리 (몸·머리·등의 반투명 판마다 InstancedMesh) ---------- */
-const NF=num('crowd',60),crowd=new THREE.Group();root.add(crowd);
-const inst=(geo,mat,n,cast=true)=>{const m=new THREE.InstancedMesh(geo,mat,n);m.castShadow=cast;m.receiveShadow=true;m.frustumCulled=false;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);crowd.add(m);return m;};
-const fBody=inst(new THREE.CapsuleGeometry(0.11,0.14,4,10),M('#f1e2c4','plain'),NF),fHead=inst(new THREE.SphereGeometry(0.13,12,10),M('#f1e2c4','plain'),NF),
-  fWing=inst(wingGeo,wingMat,NF*2,false);
-const fBlob=blobMany(NF,0.4); // 휴대폰 단계: 무리마다 발밑 동그란 그림자(뛰어오르면 작아짐)
+/* ---------- 3. 무리 (엔진 무리 도우미 game/fx crowd — 몸·머리·등의 반투명 판마다 InstancedMesh) ---------- */
+const NF=num('crowd',60);
+const fBlob=blobMany(NF,0.4); // 휴대폰 단계: 무리마다 발밑 동그란 그림자(뛰어오르면 작아짐) — crowd가 함께 옮긴다
+const CR=G.fx.crowd({parent:root,n:NF,blobs:fBlob,parts:[{geo:new THREE.CapsuleGeometry(0.11,0.14,4,10),mat:M('#f1e2c4','plain'),at:[0,0.18,0]},{geo:new THREE.SphereGeometry(0.13,12,10),mat:M('#f1e2c4','plain'),at:[0,0.45,0]}]});
+const crowd=CR.group,[fBody,fHead]=CR.meshes;
+const fWing=new THREE.InstancedMesh(wingGeo,wingMat,NF*2);fWing.castShadow=false;fWing.receiveShadow=true;fWing.frustumCulled=false;fWing.instanceMatrix.setUsage(THREE.DynamicDrawUsage);crowd.add(fWing);
 const FAIRY=[];for(let i=0;i<NF;i++){const a=rnd(0,PI*2),d=rnd(2.2,8.5);FAIRY.push({x:Math.cos(a)*d,z:Math.sin(a)*d,ry:rnd(0,PI*2),ph:rnd(0,PI*2),sp:rnd(0.8,1.4),hov:R()<0.35});}
 {const c=new THREE.Color();for(let i=0;i<NF;i++){c.set(['#9cc08a','#e3b25b','#d98a6a','#b7a3d4'][i%4]);fBody.setColorAt(i,c);}fBody.instanceColor.needsUpdate=true;}
 /* ---------- 4. 조약돌 줄 (통나무 위에 줄지어) ---------- */
@@ -110,16 +120,64 @@ for(let i=0;i<NS;i++){SNOW.push({x:rnd(-1,1)*BOX[0],y:rnd(0,BOX[1]*1.5),z:rnd(-1
 snowGeo.setAttribute('position',new THREE.BufferAttribute(snowPos,3).setUsage(THREE.DynamicDrawUsage));
 const snowMat=new THREE.PointsMaterial({size:0.09,map:snowTex,color:0xffffff,transparent:true,opacity:0.9,depthWrite:false,sizeAttenuation:true});
 const snow=new THREE.Points(snowGeo,snowMat);snow.frustumCulled=false;root.add(snow);
+/* ---------- 8. 손으로 하는 상호작용 (돌리기 · 집어 들기 · 뿌리기) ---------- */
+// 큰 바퀴: 누르면 원더룹이 앞에 가서 두 손으로 돌린다 → 바퀴가 90도 돌아간다(여러 번 가능)
+const wheelG=group(-2.4,0,4.2,0);cylAt(.06,.08,.9,M('#8a6244','wood',{rep:[3,1]}),0,0,0,{parent:wheelG,line:false});
+const wheel=new THREE.Group();wheel.position.set(0,.95,0);wheelG.add(wheel);
+add(new THREE.TorusGeometry(.42,.05,8,20),M('#d9573f','plain'),0,0,0,{parent:wheel,line:false});
+for(let k=0;k<4;k++)add(new THREE.BoxGeometry(.06,.84,.05),M('#f1e2c4','plain'),0,0,0,{parent:wheel,rz:k*PI/4,line:false});
+obstacles.push({c:[-2.4,4.2,.3]});shadowBlob(-2.4,4.2,.5,.3);let wheelGoal=0;
+G.interact.add({root:wheelG,at:[-2.4,3.45],face:[-2.4,4.2],label:'돌리기',action:'돌리기',dur:1.8,once:false,onDone:()=>{wheelGoal+=PI/2;}});
+// 물뿌리개: 받침 위의 물뿌리개를 집어 들면(살펴보기 동작) 오른손에 쥔다 → 새싹 앞에서 뿌리기 → 새싹이 자란다
+const canMesh=()=>{const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(.075,.085,.13,12),M('#7fb2c9','plain'));body.position.set(0,-.02,.07);g.add(body);
+  const sp=new THREE.Mesh(new THREE.CylinderGeometry(.012,.018,.16,6),M('#7fb2c9','plain'));sp.position.set(0,.02,.19);sp.rotation.x=1.0;g.add(sp);
+  const hd=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,6,12,PI),M('#5a8aa0','plain'));hd.position.set(0,.04,0);hd.rotation.y=PI/2;g.add(hd);return g;};
+const standG=group(2.6,0,-1.4,0);cylAt(.18,.2,.5,M('#8a6244','wood',{rep:[3,1]}),0,0,0,{parent:standG,line:false});
+const canOnStand=canMesh();canOnStand.position.set(0,.6,0);canOnStand.scale.setScalar(1.6);standG.add(canOnStand);obstacles.push({c:[2.6,-1.4,.25]});shadowBlob(2.6,-1.4,.3,.3);
+let holding=false;
+G.interact.add({root:standG,label:'집어 들기',action:'들여다보기',dur:.9,onDone:()=>{canOnStand.visible=false;holding=true;WL&&WL.userData.setHeld(canMesh());}});
+const sproutG=group(3.4,0,1.2,0);const sprout=new THREE.Group();sproutG.add(sprout);
+add(new THREE.CylinderGeometry(.02,.03,.3,6),M('#7fa65a','plain'),0,.15,0,{parent:sprout,line:false});
+add(new THREE.SphereGeometry(.09,8,6),M('#9cc08a','plain'),0,.32,0,{parent:sprout,s:[1.4,.5,1],line:false});
+let grow=0,growGoal=0;
+const drops=G.fx.particles({parent:root,n:40,box:[.08,.05,.08],vel:[0,-1.2,0],sway:.03,color:'#bfe6ff',size:.05,life:[.4,.7],additive:false,rate:0.0001,seed:31});
+G.interact.add({root:sproutG,label:'뿌리기',action:'뿌리기',dur:1.8,once:false,when:()=>!!(WL&&WL.userData.heldObj),
+  onStart:()=>{sprinkle=1.6;},onDone:()=>{growGoal=Math.min(3,growGoal+1);}});
+let sprinkle=0;
+/* ---------- 9. 바람길 · 통과 링 · 자라는 계단 ---------- */
+const WIND={r:[0.6,6.5,5.6,13.5],dir:[.35,.94],strength:1.4,up:.7,y:[.2,6]};
+const streaks=G.fx.particles({parent:root,n:60,box:[2.6,1.4,3.6],center:[3.4,1.2,9.5],vel:[WIND.dir[0]*3,.2,WIND.dir[1]*3],sway:.05,color:'#f6f1e0',size:.07,life:[1,2],additive:false,seed:41});
+const RINGS=[[2.0,1.7,7.2],[2.8,1.9,9.0],[3.5,2.0,10.8]].map(([x,y,z],i)=>{const m=add(new THREE.TorusGeometry(.75,.06,8,28),M('#e9dcc0','plain'),x,y,z,{line:false,cast:false});
+  const R=G.course.ring({at:[x,y,z],ry:0,r:.75,onPass:()=>{m.material=M('#f2b63c','plain');motes.burst(30,{x,y,z});}});return {m,R};});
+const STAIRS=[[-4.6,-2.0],[-4.6,-2.9],[-4.6,-3.8]].map(([x,z],i)=>{const g=group(x,0,z,0);const stem=add(new THREE.CylinderGeometry(.12,.16,1,10),M('#f1e2c4','plain'),0,.5,0,{parent:g,line:false});
+  const cap=add(new THREE.SphereGeometry(.5,14,8,0,PI*2,0,PI*.5),M('#d9573f','dots',{rep:[2,1]}),0,1,0,{parent:g,s:[1,.4,1],thr:30});
+  const P={c:[x,z,.5],top:.06},it={g,stem,cap,P,h:.06,goal:.06,k:i};
+  G.interact.add({root:g,label:'뿌리기',action:'뿌리기',dur:1.6,when:()=>!!(WL&&WL.userData.heldObj)&&(i===0||STAIRS[i-1].goal>.06),onStart:()=>{sprinkle=1.4;},onDone:()=>{it.goal=.2*(i+1);}});return it;});
+/* ---------- 10. 탈것 · 동행 ---------- */
+// 둥근 배: 누르면 원더룹이 다가가 올라타고(들여다보기 동작 뒤) 길을 따라 건너편으로 → 내려 준다. 다시 누르면 돌아온다
+const boat=new THREE.Group();boat.position.set(-7,0,6);root.add(boat);
+add(new THREE.SphereGeometry(.75,16,10,0,PI*2,PI*.5,PI*.5),M('#bfe2ea','plain'),0,.55,0,{parent:boat,line:false});
+add(new THREE.CircleGeometry(.72,16).rotateX(-PI/2),M('#e9f6f8','plain'),0,.54,0,{parent:boat,line:false,cast:false});
+const ROUTE=[[-7,0,6],[-8.5,0,8],[-8,0,10.5],[-6,0,12]];let boatAt=0;
+G.interact.add({root:boat,label:'타기',action:'들여다보기',dur:.6,once:false,when:()=>!G.ride.riding(),
+  onDone:()=>{const path=boatAt?ROUTE.slice().reverse():ROUTE;G.ride.ride({vehicle:boat,path,speed:1.4,seat:.55,onEnd:()=>{boatAt=1-boatAt;const e=path[path.length-1],p=path[path.length-2];const dx=e[0]-p[0],dz=e[2]-p[2],d=Math.hypot(dx,dz)||1;WL&&WL.position.set(e[0]+dx/d*1.1,0,e[2]+dz/d*1.1);}});}});
+// 동행: 작은 빛(발광 공 + 빛무리) — 반딧불 같은 견본
+const fly=new THREE.Group();fly.add(new THREE.Mesh(new THREE.SphereGeometry(.06,10,8),new THREE.MeshBasicMaterial({color:0xfff2a8})));
+{const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:snowTex,color:0xffe58a,transparent:true,opacity:.7,depthWrite:false,blending:THREE.AdditiveBlending}));sp.scale.setScalar(.45);fly.add(sp);}
+const buddy=G.companion.companion({obj:fly,side:1,height:1.2});buddy.set(false);
+/* ---------- 7. 하늘·시간 흐름(game/sky) · 떠오르는 빛 입자(game/fx) ---------- */
+const SK=G.sky.sky({parent:root,t:0}),TN=['낮','해 질 녘','밤'];let ti=0;
+const motes=G.fx.particles({parent:root,n:num('motes',160),box:[5,.4,5],vel:[0,.55,0],color:'#ffe6a0',size:.14,life:[3,6],seed:23});
 /* ---------- 시험판 (화면 왼쪽 위) ---------- */
-const parts={wings:[wingShow,fWing],lamps:null,glow:null,leaves:[leaves],snow:[snow],crowd:[crowd,bugs,...(fBlob?[fBlob]:[])],shadow:null};
+const parts={wings:[wingShow,fWing],lamps:null,glow:null,leaves:[leaves],snow:[snow],crowd:[crowd,bugs,...(fBlob?[fBlob]:[])],sky:[SK.group],motes:[motes.points],shadow:null};
 if(!QUALITY.shadows)delete parts.shadow; // 휴대폰 단계: 진짜 그림자가 없으니 그림자 단추·측정도 없음
 const on={};Object.keys(parts).forEach(k=>on[k]=!OFF.has(k));
-const NAMES={wings:'반투명 판',lamps:'진짜 조명',glow:'빛무리·웅덩이',leaves:'낙엽',snow:'눈',crowd:'무리·조약돌',shadow:'그림자'};
+const NAMES={wings:'반투명 판',lamps:'진짜 조명',glow:'빛무리·웅덩이',leaves:'낙엽',snow:'눈',crowd:'무리·조약돌',sky:'하늘',motes:'빛 입자',shadow:'그림자'};
 // 렌더러·해(그림자)는 장면에서 받는다: 그림 그리기 직전 장면의 onBeforeRender가 렌더러를 넘겨준다
 let gl=null,sunL=null,scn=null,prevBR=null;
 const hook=()=>{if(scn||!root.parent)return;scn=root.parent;prevBR=scn.onBeforeRender;scn.onBeforeRender=function(r,...a){gl=r;return prevBR.call(this,r,...a);};
   sunL=scn.children.find(o=>o.isDirectionalLight&&o.castShadow)||null;};
-const apply=()=>{['wings','leaves','snow','crowd'].forEach(k=>parts[k].forEach(o=>o.visible=on[k]));lampOn.on=on.lamps;glowOn.on=on.glow;if(sunL)sunL.castShadow=on.shadow;
+const apply=()=>{['wings','leaves','snow','crowd','sky','motes'].forEach(k=>parts[k].forEach(o=>o.visible=on[k]));lampOn.on=on.lamps;glowOn.on=on.glow;if(sunL)sunL.castShadow=on.shadow;
   btns.forEach(b=>{b.setAttribute('aria-pressed',on[b.dataset.k]);b.textContent=NAMES[b.dataset.k]+(on[b.dataset.k]?' 켜짐':' 꺼짐');});};
 const panel=document.createElement('div');panel.id='fxPanel';panel.className='wlg';
 panel.style.cssText='position:fixed;left:calc(env(safe-area-inset-left,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:30;background:rgba(255,246,234,.92);border-radius:14px;padding:8px 10px;font:13px/1.4 "Gowun Dodum",sans-serif;color:#3e2834;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(30,14,36,.25)';
@@ -127,7 +185,16 @@ const stat=document.createElement('div');stat.style.cssText='font-variant-numeri
 const row=document.createElement('div');row.style.cssText='display:flex;flex-wrap:wrap;gap:6px';panel.appendChild(row);
 const mkBtn=(txt,fn)=>{const b=document.createElement('button');b.textContent=txt;b.style.cssText='all:unset;cursor:pointer;background:#3f9fa0;color:#fffaf2;border-radius:999px;padding:6px 10px;min-height:20px';b.addEventListener('click',fn);row.appendChild(b);return b;};
 const btns=Object.keys(parts).map(k=>{const b=mkBtn('',()=>{on[k]=!on[k];apply();});b.dataset.k=k;return b;});
-mkBtn('낮/저녁/굴',()=>{const d=document.getElementById('dayBtn');if(d)d.click();});
+// 시간: 낮 → 해 질 녘 → 밤(첫별) → 낮, 3초 동안 천천히 (이 구역은 낮/저녁/굴 단추 대신 하늘 시간을 따른다)
+const timeBtn=mkBtn('시간: 낮',()=>{ti=(ti+1)%3;SK.to(ti,3);timeBtn.textContent='시간: '+TN[ti];});
+mkBtn('탈 바뀜',()=>{if(!WL)return;const U=WL.userData,to=U.hw===2?'ant':'hat';U.morphHood(to,{sec:1.2,onSwitch:()=>{const p=WL.position;motes.burst(50,{x:p.x,y:1.6,z:p.z});}});});
+mkBtn('배지 달기',()=>{if(!WL)return;const U=WL.userData,mk=c=>{const m=new THREE.Mesh(new THREE.CircleGeometry(.045,14),new THREE.MeshStandardMaterial({color:c,roughness:.7}));return m;};
+  U.addBadge({flag:'testBadge',obj:mk(0xf7a8c0),at:'vest'});U.addBadge({flag:'testBadge2',obj:mk(0xffd46a),at:'pack'});const on=!G.state.flags.testBadge;G.state.setFlag('testBadge',on);G.state.setFlag('testBadge2',on);});
+mkBtn('화면 전환',()=>G.ui.transition(()=>{if(WL){WL.position.set(0,0,1.5);WL.userData.stopWalk();}}));
+mkBtn('동행 켜기',function(){buddy.set(!buddy.on);this.textContent=buddy.on?'동행 끄기':'동행 켜기';});
+mkBtn('바람 방향 바꾸기',()=>{WIND.dir=[-WIND.dir[0],WIND.dir[1]];});
+mkBtn('머리 만져 보기',()=>{if(WL){WL.userData.action='머리 만져 보기';WL.userData.at=0;WL.userData.setExpr&&WL.userData.setExpr('놀람');}});
+mkBtn('빛 입자 터뜨리기',()=>{const p=WL?WL.position:{x:0,z:0};motes.burst(80,{x:p.x,y:.4,z:p.z});});
 // 남은 개수 카운터 견본(기본 그림): 단추를 누를 때마다 하나씩 떨어지고, 다 떨어지면 다시 다섯
 const count5=G.hud.counter({id:'sample',max:5,value:5,label:'남은 개수'});
 mkBtn('하나 줄이기',()=>count5.set(count5.value>0?count5.value-1:5));
@@ -166,7 +233,7 @@ async function autoMeasure(){if(measuring)return;hook();if(!gl){stat.textContent
   [...new Set([dpr>keepPr+.01?dpr:null,2,1.5,1].filter(v=>v&&Math.abs(v-keepPr)>.01&&v<=dpr+.01))].forEach(pr=>conds.push({name:'모두 켬, 픽셀 '+pr,pr}));
   if(sunL)conds.push({name:'그림자 지도 1024',sh:{size:1024,type:keepSh.type}},{name:'그림자 단순',sh:{size:keepSh.size,type:THREE.BasicShadowMap}});
   conds.push(...tail);
-  const db=document.getElementById('dayBtn'),stage=db?({'저녁으로 바꾸기':'낮','어두운 굴로 바꾸기':'저녁','낮으로 바꾸기':'어두운 굴'}[db.textContent]||''):'';
+  const stage=TN[ti]+' 하늘';
   const head=`${QUALITY.tier==='mobile'?'휴대폰 단계(동그란 그림자)':'컴퓨터 단계(진짜 그림자)'} · ${stage} 조명 · 기기 픽셀 비율 ${dpr} · 지금 ${keepPr}${dpr>keepPr?' (2로 제한 중)':''} · 화면 ${innerWidth}×${innerHeight}`;
   try{for(let i=0;i<conds.length;i++){const c=conds[i];items.forEach(k=>on[k]=!(c.off||[]).includes(k));apply(); // 그 조건에서 끄는 항목만 빼고 모두 켬
       gl.setPixelRatio(c.pr||keepPr);setShadow(c.sh||keepSh);
@@ -197,18 +264,25 @@ function update(dt,t){meter();hook();
   if(!WL&&root.parent){WL=root.parent.children.find(o=>o.userData&&o.userData.setExpr)||null;if(WL&&WL.userData.setGlideProp)WL.userData.setGlideProp(glideCloth);}const cx=WL?WL.position.x:0,cz=WL?WL.position.z:0;
   // 무리: 통통 뛰거나 떠서 등의 판을 흔듦
   if(on.crowd)for(let i=0;i<NF;i++){const f=FAIRY[i],ph=t*f.sp*2+f.ph,y=f.hov?0.45+Math.sin(ph*0.5)*0.12:Math.abs(Math.sin(ph))*0.18;
-    if(fBlob)fBlob.set(i,f.x,0,f.z,0.24*(1-y*0.6));
-    o3.position.set(f.x,y+0.18,f.z);o3.rotation.set(0,f.ry+Math.sin(ph*0.3)*0.4,0);o3.scale.setScalar(1);o3.updateMatrix();fBody.setMatrixAt(i,o3.matrix);
-    o4.copy(o3);o4.translateY(0.27);o4.updateMatrix();fHead.setMatrixAt(i,o4.matrix);
+    const ry=f.ry+Math.sin(ph*0.3)*0.4;CR.set(i,f.x,y,f.z,ry);o3.position.set(f.x,y+0.18,f.z);o3.rotation.set(0,ry,0);o3.scale.setScalar(1);o3.updateMatrix();
     for(let s=0;s<2;s++){const sd=s?1:-1;
       const flap=f.hov?Math.sin(t*22+f.ph)*0.5:0.25+Math.sin(t*3+f.ph)*0.1;
       o4.copy(o3);o4.translateY(0.12);o4.translateZ(-0.1);o4.rotateY(sd*(0.6+flap)+PI);o4.scale.set(sd*0.32,0.26,1);o4.updateMatrix();fWing.setMatrixAt(i*2+s,o4.matrix);}}
-  if(on.crowd){[fBody,fHead,fWing].forEach(m=>m.instanceMatrix.needsUpdate=true);}
+  if(on.crowd)fWing.instanceMatrix.needsUpdate=true;
   // 낙엽: 흔들리며 떨어지고, 바닥에 닿으면 위로 (원더룹 둘레 상자)
   if(on.leaves&&NL){for(let i=0;i<NL;i++){const L=LEAF[i];L.y-=L.v*dt;if(L.y<0.02){L.y=BOX[1];L.x=cx+rnd2(-1,1)*BOX[0];L.z=cz+rnd2(-1,1)*BOX[2];}
       if(L.x-cx>BOX[0])L.x-=2*BOX[0];if(L.x-cx<-BOX[0])L.x+=2*BOX[0];if(L.z-cz>BOX[2])L.z-=2*BOX[2];if(L.z-cz<-BOX[2])L.z+=2*BOX[2];
       const sw=Math.sin(t*L.sp+L.ph);o3.position.set(L.x+sw*0.35,L.y,L.z+Math.cos(t*L.sp*0.7+L.ph)*0.2);o3.rotation.set(sw*1.1+L.ph,t*L.sp*0.5+L.ph,Math.cos(t*L.sp+L.ph)*0.8);o3.scale.setScalar(1);o3.updateMatrix();leaves.setMatrixAt(i,o3.matrix);}
     leaves.instanceMatrix.needsUpdate=true;}
+  if(on.motes)motes.update(dt,WL?WL.position:null);
+  // 손 상호작용 견본: 바퀴는 목표 각도로 천천히, 새싹은 뿌릴 때마다 한 단계씩 자람, 뿌리는 동안 물방울(물뿌리개 주둥이에서)
+  wheel.rotation.z+=(wheelGoal-wheel.rotation.z)*Math.min(1,dt*3);
+  grow+=(growGoal-grow)*Math.min(1,dt*2);sprout.scale.setScalar(1+grow*.8);
+  if(sprinkle>0&&WL&&WL.userData.heldObj){sprinkle-=dt;const hp=new THREE.Vector3(0,.02,.28);WL.userData.heldObj.localToWorld(hp);drops.burst(2,{x:hp.x,y:hp.y,z:hp.z});}
+  drops.update(dt);
+  streaks.update(dt);
+  // 자라는 계단: 물을 주면 목표 높이까지 천천히 자란다(발판 top을 함께 바꾼다 — 위에 서 있으면 같이 올라감)
+  for(const S of STAIRS){S.h+=(S.goal-S.h)*Math.min(1,dt*1.5);S.P.top=S.h;S.stem.scale.y=Math.max(.05,S.h);S.stem.position.y=S.h/2;S.cap.position.y=S.h;}
   // 눈: 천천히 흩날림
   if(on.snow&&NS){for(let i=0;i<NS;i++){const s=SNOW[i];s.y-=s.v*dt;if(s.y<0){s.y=BOX[1]*1.5;s.x=cx+rnd2(-1,1)*BOX[0];s.z=cz+rnd2(-1,1)*BOX[2];}
       if(s.x-cx>BOX[0])s.x-=2*BOX[0];if(s.x-cx<-BOX[0])s.x+=2*BOX[0];if(s.z-cz>BOX[2])s.z-=2*BOX[2];if(s.z-cz<-BOX[2])s.z+=2*BOX[2];
@@ -227,11 +301,11 @@ return {
   doors:[],
   sun:{dir:new THREE.Vector3(5,-11,6).normalize(),shadow:10,follow:true},
   groundY:()=>0,ground:[ground,stumpTop,bounceCap],
-  platforms:[{c:[STUMP.x,STUMP.z,STUMP.r],top:STUMP.top}],
+  platforms:[{c:[STUMP.x,STUMP.z,STUMP.r],top:STUMP.top},...STAIRS.map(S=>S.P)],winds:[WIND],
   bouncers:[{c:[BOUNCE.x,BOUNCE.z,BOUNCE.r],top:BOUNCE.top,height:STUMP.top+1.1,to:[STUMP.x,STUMP.z-.25]}],
   bounce(){squash=1;},glide:true, // 활공 시험(펼치는 물건은 아래 시험용 둥근 천)
-  lights:LS.all,keepOut:[crowd,bugs,leaves,snow,wingShow,bounceG],
-  update,light,
-  dispose(){LS.dispose();panel.remove();count5.remove();if(WL&&WL.userData.setGlideProp)WL.userData.setGlideProp(null);glideCloth.geometry.dispose();if(scn)scn.onBeforeRender=prevBR;if(sunL)sunL.castShadow=true;if(gl&&measuring)gl.setPixelRatio(Math.min(window.devicePixelRatio||1,2));pageUi.forEach((e,i)=>e.style.display=uiShown[i]);delete window.wlFx;[wingTex,snowTex].forEach(t=>t.dispose());},
+  lights:LS.all,keepOut:[crowd,bugs,leaves,snow,wingShow,bounceG,wheelG,standG,sproutG,...STAIRS.map(S=>S.g),...RINGS.map(r=>r.m),boat],
+  update,light,sky:SK,
+  dispose(){LS.dispose();SK.dispose();if(WL&&WL.userData.setHeld)WL.userData.setHeld(null);panel.remove();count5.remove();if(WL&&WL.userData.setGlideProp)WL.userData.setGlideProp(null);glideCloth.geometry.dispose();if(scn)scn.onBeforeRender=prevBR;if(sunL)sunL.castShadow=true;if(gl&&measuring)gl.setPixelRatio(Math.min(window.devicePixelRatio||1,2));pageUi.forEach((e,i)=>e.style.display=uiShown[i]);delete window.wlFx;[wingTex,snowTex].forEach(t=>t.dispose());},
 };
 }
