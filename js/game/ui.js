@@ -30,7 +30,8 @@ const css=`
 #wlGet{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 110px);width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:center;gap:.9rem;z-index:21;
   background:var(--panel);color:var(--ink);border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;box-shadow:0 14px 40px rgba(30,14,36,.45);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s}
 #wlGet.on{opacity:1;transform:translate(-50%,0) scale(1)}
-#wlGet img{width:58px;height:58px}#wlGet img:not([src]){display:none}
+#wlGet .ic{flex:none;display:grid;place-items:center;width:58px;height:58px;box-sizing:border-box;border-radius:50%;background:#f3ead6;border:1.5px solid #a77a52}#wlGet .ic:has(img:not([src])){display:none}
+#wlGet img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 0 .7px #7a5236) drop-shadow(0 0 .7px #7a5236)}#wlGet img:not([src]){display:none}
 #wlGet .t{margin:0;font-size:1.2rem}
 #wlGet .s{margin:.2rem 0 0;font-size:.9rem;color:var(--ink-soft)}
 #wlToast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translate(-50%,-10px);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:22;
@@ -69,7 +70,7 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="who"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
-<div id="wlGet" role="status" aria-live="polite"><img alt=""><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
+<div id="wlGet" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>

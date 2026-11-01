@@ -33,6 +33,7 @@ import {applyStart} from './game/state.js';
 // 구역 목록 — 새 구역은 여기에 한 줄 더한다
 const ZONES={
   basecamp:()=>import('./zones/basecamp.js'),
+  'fairy-dock':()=>import('./zones/fairy/dock.js'), // 요정의 숲 ① 이슬방울 선착장
 };
 // 견본 구역(확인용, 하늘 없음)은 주소에 ?zonetest 를 붙였을 때만 목록에 들어간다 — 일반 주소에서는 문·wlZone.go·?zone= 어느 길로도 못 간다
 const ZONETEST=new URLSearchParams(location.search).has('zonetest');

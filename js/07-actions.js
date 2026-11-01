@@ -290,7 +290,7 @@ function updateWL(dt,t){
   for(const C of WL.userData.charms||[WL.userData.charm]){if(C&&C.g.visible){const tx=moving?.25+Math.sin(wlPhase*2)*.35:Math.sin(t*1.3)*.05,tz=moving?Math.sin(wlPhase)*.4:Math.sin(t*.9)*.04;
     C.vx+=((tx-C.ax)*60-C.vx*5)*dt;C.vz+=((tz-C.az)*60-C.vz*5)*dt;if(wlHop>.95)C.vx+=6*dt*20;
     C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=C===WL.userData.charm&&WL.userData.charmNeedle;if(N)N.rotation.z=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;}}
-  antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1+(D.dashT>0?.3:0);}); // 대쉬 중에는 더듬이가 뒤로(개미굴)
+  antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1+(D.dashT>0&&WL.userData.hw===1?.3:0);}); // 대쉬 중에는 더듬이가 뒤로(개미굴) — 더듬이가 있는 개미탈일 때만
   blinkT-=dt;if(blinkT<0)blinkT=2.5+2.5*blinkR();const bl=blinkT<0.12?0.15:1;eyes.forEach(e=>e.scale.y=bl);
   wlBlob.visible=!WL.userData.riding; // 탈것 위에서는 발밑 그림자 대신 탈것 그림자
   if(!H){wlBlob.position.set(WL.position.x,GY+0.046,WL.position.z);wlBlob.scale.setScalar((1-hopY*0.8)*WLS*0.8);}

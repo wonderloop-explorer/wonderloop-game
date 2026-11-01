@@ -2,12 +2,14 @@
 import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
+import {BLOOM,BUD} from './hoods/bud.js';
 /* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래)
    새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}을 만들어 import하고 HOODS 끝에 {key,name,mod}로 더한다.
    여기서 hoodParts(아틀라스 교체 영역)에 넣고 userData.hw로 번호를 붙인다(05 applyLook이 그 번호일 때만 보임).
    머리 처리: 개미탈은 탈 아래 앞머리(05), 모자형 탈은 안쪽 머리만 눌러 넣기(pressHair, 탈의 profile·top). 구역 정보 hood:'<key>' → 들어올 때 그 탈(08).
    번호 0~2는 기준 촬영·영상 대본(setup({hood}))이 쓰므로 바꾸지 않고 뒤에 붙인다. */
-const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'}];
+const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'},
+  {key:'bud',name:'꽃봉오리 탈',mod:BUD},{key:'bloom',name:'핀 꽃 탈',mod:BLOOM}]; // 요정의 숲: 닫힌 봉오리 → 클라이맥스부터 활짝 핀 꽃(morphHood('bloom'))
 HOODS.forEach((h,i)=>{if(!h.mod)return;const r=h.mod.build({head,wm,TM,SM});r.g.userData.hw=i;hoodParts.push(r.g);h.press=r;});
 WL.userData.hoods=HOODS;
 /* 디테일: 옷 구조 + 탐험대 패치 */

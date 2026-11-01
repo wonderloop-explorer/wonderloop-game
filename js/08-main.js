@@ -54,7 +54,8 @@ async function goZone(id,spawn){
   return true;}
 /* 세계의 옷·탈: 상상의 세계(구역 정보에 hood가 있는 곳)에 들어가면 탐험복 그대로 탈만 그 세계 것으로 바꿔 쓴다.
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
-function zoneLook(z){const U=WL.userData;if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);}
+function zoneLook(z){const U=WL.userData;{const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
+  if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);}
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
 GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
