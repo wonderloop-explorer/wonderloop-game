@@ -149,15 +149,15 @@ function wlMerge(list){
    WL.userData.setHood=key=>{const i=HOODS.findIndex(h=>h.key===key);if(i<0){console.warn('원더룹: 없는 탈',key);return;}WL.userData.hw=i;applyHW();};
    /* 탈 모습 바뀌기 연출 (꽃봉오리 → 활짝 핀 꽃처럼, 한 탈의 두 모습을 HOODS 두 칸으로 두고 이어 준다): morphHood(key,{sec,onSwitch,onEnd})
       앞 40%: 지금 탈이 살짝 움츠러들고 → 바뀌는 순간(onSwitch — 빛 입자 터뜨리기 등) → 뒤 60%: 새 탈이 0.6배에서 통 튀어나오며 1배로.
-      새 탈 모듈에 animate(g,u)(u 0→1)가 있으면 그동안 함께 부른다(꽃잎이 펼쳐지는 움직임은 세계 탈 쪽에서). 07이 게임 시간으로 진행(촬영 모드에서도 같은 그림) */
+      크기는 0.93 아래로 줄이지 않는다(탈 안으로 눌린 머리가 드러나지 않게 — 맨 정수리가 보였다). 새 탈 모듈에 animate(g,u)(u 0→1)가 있으면 그동안 함께 부른다(꽃잎이 펼쳐지는 움직임은 세계 탈 쪽에서). 07이 게임 시간으로 진행(촬영 모드에서도 같은 그림) */
    const hoodObjs=hw=>hw===2?[WL.userData.hatG]:hw===1?hoodParts.filter(o=>o.userData.hw==null):HOODS[hw]&&HOODS[hw].press?[HOODS[hw].press.g]:[];
    const easeBack=u=>{const c=1.7;u-=1;return 1+(c+1)*u*u*u+c*u*u;};
    WL.userData.morphHood=(key,{sec=1.2,onSwitch,onEnd}={})=>{const to=HOODS.findIndex(h=>h.key===key);if(to<0){console.warn('원더룹: 없는 탈',key);return;}
      const from=hoodObjs(WL.userData.hw),scale=(L,v)=>L.forEach(o=>o.scale.setScalar(v));let t=0,switched=false;
      WL.userData.hoodMorph={tick(dt){t+=dt;const k=Math.min(1,t/sec);
-       if(k<.4)scale(from,1-.12*Math.sin(k/.4*Math.PI/2));
+       if(k<.4)scale(from,1-.07*Math.sin(k/.4*Math.PI/2));
        else{if(!switched){switched=true;scale(from,1);WL.userData.hw=to;applyHW();if(onSwitch)try{onSwitch();}catch(e){console.error(e);}}
-         const u=(k-.4)/.6,L=hoodObjs(to);scale(L,.6+.4*easeBack(u));const m=HOODS[to].mod;if(m&&m.animate&&HOODS[to].press)m.animate(HOODS[to].press.g,u);}
+         const u=(k-.4)/.6,L=hoodObjs(to);scale(L,.93+.07*easeBack(u)+.06*Math.sin(Math.PI*u));const m=HOODS[to].mod;if(m&&m.animate&&HOODS[to].press)m.animate(HOODS[to].press.g,u);}
        if(k>=1){scale(hoodObjs(to),1);WL.userData.hoodMorph=null;if(onEnd)try{onEnd();}catch(e){console.error(e);}}}};};}
   const ob=document.getElementById('outfitBtn');const showOutfit=()=>ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();showOutfit();});
   // 이름으로 옷 입기 (구역 정보 outfit): setOutfit('explorer'|'casual')
