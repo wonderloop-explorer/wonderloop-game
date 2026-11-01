@@ -1,6 +1,6 @@
 /* 원더룹 — 입력·조명 단계·카메라 따라가기·구역 오가기·애니메이션 루프 */
 import * as THREE from 'three';
-import {PI,rawLin,rngLoaded,scene} from './01-textures.js';
+import {PI,QUALITY,rawLin,rngLoaded,scene} from './01-textures.js';
 import {ZONES,areaAt,doorAt,groundY,loadZone,unloadZone,zone} from './02-zone.js';
 import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui} from './03-scene.js';
 import {WL} from './04-character.js';
@@ -23,7 +23,7 @@ spinBtn.addEventListener('click',()=>{spin=!spin;spinBtn.textContent=spin?'멈�
 const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();let downAt=null;ray.layers.enable(1); // 레이어 1: 원더룹 원래 부품(클릭 판정용, 화면엔 SkinnedMesh가 그려짐)
 renderer.domElement.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
 renderer.domElement.addEventListener('pointerup',e=>{
-  if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6)return;
+  if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6||GAME.controls.input.pinching)return; // 두 손가락 확대·축소는 누르기가 아니다
   const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
   ray.setFromCamera(ptr,camera);
   if(GAME.clickNPC(ray))return; // 대화 중이면 다음 대사, NPC를 누르면 말 걸기
@@ -59,15 +59,20 @@ async function goZone(id,spawn){
 /* 세계의 옷·탈: 상상의 세계(구역 정보에 hood가 있는 곳)에 들어가면 탐험복 그대로 탈만 그 세계 것으로 바꿔 쓴다.
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
 function zoneLook(z){const U=WL.userData;{const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
+  GAME.occlude.xray(!!z.world); // 세계 구역: 가려진 원더룹 윤곽이 비쳐 보인다(베이스캠프 기준 화면은 그대로)
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);}
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
 GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
+GAME.occlude.xray(!!zone.cur.world); // 처음 구역 (zoneLook은 initGame보다 먼저 불려서)
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES)};
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
 if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;
   document.querySelector('.bar').appendChild(b);b.addEventListener('click',()=>{const L=Object.keys(ZONES);goZone(L[(L.indexOf(zone.cur.id)+1)%L.length]);});}
 const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* 시험용 단추: 평소에는 숨김 — 왼쪽 위 톱니 단추로 열고 닫거나, 주소 뒤 ?debug 면 열린 채 시작 */
+{const b=document.getElementById('dbgBtn'),set=on=>{document.body.classList.toggle('debug',on);b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'시험용 단추 닫기':'시험용 단추 열기');};
+ set(new URLSearchParams(location.search).has('debug'));b.addEventListener('click',()=>set(!document.body.classList.contains('debug')));}
 
 /* ---------- 애니메이션 ---------- */
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
@@ -78,11 +83,11 @@ const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector
 const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1/60;
 /* 안전장치: 프레임 안에서 오류가 나도 멈추지 않게 — 콘솔에 한 번 남기고, 이번 화면은 그려 두고, 다음 프레임을 잇는다 */
 const tickErrSeen=new Set();
-/* 플레이 중 아끼기(촬영 모드는 그대로 — 한 걸음씩 직접 진행): 초당 60프레임으로 묶고(120Hz 화면에서도 60번만 그림),
+/* 플레이 중 아끼기(촬영 모드는 그대로 — 한 걸음씩 직접 진행): 초당 60프레임으로 묶고(120Hz 화면에서도 60번만 그림), 휴대폰 단계는 30프레임(발열, 2026-11-01),
    창이 가려지거나(document.hidden) 다른 창을 보고 있으면(blur) 그리기를 멈췄다가 돌아오면(focus·누르기) 다시 그린다. 멈춘 동안 게임 시간도 멈춘다(돌아온 첫 프레임 간격은 0.05초로 자른다). */
-let lastFrame=-1e9,paused=false,rafOn=false;
+let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_MS=1000/(QUALITY.tier==='mobile'?30:60);
 const schedule=()=>{if(!rafOn){rafOn=true;requestAnimationFrame(frame);}}; // 루프가 두 갈래로 갈라지지 않게 예약은 한 번만
-function frame(now){rafOn=false;if(paused)return;if(now-lastFrame<1000/60-2){schedule();return;}lastFrame=now;tick();}
+function frame(now){rafOn=false;if(paused)return;if(now-lastFrame<FRAME_MS-2){schedule();return;}lastFrame=now;tick();}
 const nextFrame=()=>{if(!SHOT&&!paused)schedule();};
 if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
@@ -97,6 +102,7 @@ function tickBody(){
   hemi.intensity=0.62-0.4*n;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
   sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
   if(SK)SK.light({hemi,sun,fill,fog:scene.fog},camera,dt,Z.sun.dir);else if(scene.fog.near<FOG_OFF){scene.fog.near=FOG_OFF;scene.fog.far=FOG_OFF*2;}
+  {const far=SK?Math.min(120,scene.fog.far+4):120;if(camera.far!==far){camera.far=far;camera.updateProjectionMatrix();}} // 하늘 있는 구역: 안개가 다 덮는 곳부터는 그리지 않는다(하늘 지붕은 그 안으로 줄어듦)
   cave+=((SK?0:caveTarget)-cave)*Math.min(1,dt*2.2);dayLabel(); // 하늘 있는 구역에서는 굴 조명을 쓰지 않는다
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}
   const env={night:n,cave,flick,reduce};
@@ -131,11 +137,13 @@ function tickBody(){
     {const A=Z.areas[zone.area],c=A&&A.camera;if(c&&c.azimuth){const y0=c.azimuth[0],y1=c.azimuth[1];let y=C.yaw;while(y<y0-PI)y+=2*PI;while(y>y1+PI)y-=2*PI;C.yaw=Math.min(y1,Math.max(y0,y));
       C.pitch=Math.min(PI/2-c.polar[0],Math.max(PI/2-c.polar[1],C.pitch));}}
     const asp=camera.aspect,d=C.dist*(asp<1.25?Math.min(2.1,1.25/asp):1);_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
-    _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);_cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
+    _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
+    if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
+      if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr){const k=Math.max(3/d,Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):3/d);if(k<1)_cw.set(_ct.x+(_cw.x-_ct.x)*k,_ct.y+(_cw.y-_ct.y)*k,_ct.z+(_cw.z-_ct.z)*k);}}_cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
     camera.position.lerp(_cw,Math.min(1,dt*7));controls.target.lerp(_ct,Math.min(1,dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
   else{C.ready=false;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
-  if(!rig)controls.update();renderer.render(scene,camera);
+  if(!rig)controls.update();GAME.occlude.prepCut();renderer.render(scene,camera); // 뚫어 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
   nextFrame();

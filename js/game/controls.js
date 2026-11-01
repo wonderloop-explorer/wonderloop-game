@@ -3,6 +3,7 @@
      F 세계 도구(setTool) · M 소리(sound) · H 조작 도움말 · C 옷장(hooks.onWardrobe) · Esc 창 닫기 · -/+ 카메라 거리
    마우스: 화면을 끌면 카메라가 원더룹 둘레로 돈다(가로 0.006·세로 0.004 라디안/픽셀, 위아래 -0.55~1.15) · 휠로 거리(×0.01, 3~13)
    휴대폰: 왼쪽 아래 조이스틱(반지름 45px, 끝까지 밀면 달리기) · 오른쪽 점프·대쉬 단추(말 걸기 단추는 ui #wlAct) · 화면을 끌어 카메라
+     · 두 손가락으로 벌리고 오므리면 카메라 거리(휠과 같은 3~13, 손가락 사이 거리에 반비례). 사파리가 페이지 자체를 확대하지 않게 막는다(gesture·두 손가락 touchmove·두 번 누르기)
    - 입력칸(INPUT·TEXTAREA·SELECT)에 쓰는 중이면 키를 가로채지 않고, 단추에 초점이 있으면 Space·Enter는 그 단추 몫(개미굴과 같음).
    - 창이 비활성화되면(blur) 눌린 키·조이스틱을 모두 푼다.
    - 이 모듈은 입력만 모은다(input). 카메라 둘레 돌기·따라가기는 08, 원더룹 움직임은 07(U.drive·jumpReq·dashReq)이 쓴다.
@@ -86,12 +87,20 @@ function initControls(ctx){build();if(SHOT)return;
   window.addEventListener('blur',releaseAll);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseAll();});
   // 화면 끌기 → 카메라 둘레 돌기 (끌지 않고 누르기만 하면 08이 '눌러서 걷기'·말 걸기로 쓴다)
-  const cv=ctx.renderer.domElement;let drag=null;
-  cv.addEventListener('pointerdown',e=>{drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
-  cv.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId||!input.cam.on)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+  const cv=ctx.renderer.domElement;let drag=null,pinch=null;const pts=new Map();
+  const span=()=>{const [a,b]=[...pts.values()];return Math.hypot(a.x-b.x,a.y-b.y);};
+  cv.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){drag=null;pinch={d:span(),dist:input.cam.dist};input.pinching=true;}else if(pts.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
+  cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(p){p.x=e.clientX;p.y=e.clientY;}
+    if(pinch&&pts.size>=2){if(input.cam.on){const d=span();if(d>10)input.cam.dist=Math.min(CAM.distMax,Math.max(CAM.distMin,pinch.dist*pinch.d/d));}return;} // 벌리면 가까이, 오므리면 멀리
+    if(!drag||drag.id!==e.pointerId||!input.cam.on)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
     input.cam.yaw-=dx*CAM.yawPx;input.cam.pitch=Math.min(CAM.pitchMax,Math.max(CAM.pitchMin,input.cam.pitch+dy*CAM.pitchPx));});
-  const endDrag=e=>{if(drag&&drag.id===e.pointerId)drag=null;};
+  const endDrag=e=>{pts.delete(e.pointerId);if(drag&&drag.id===e.pointerId)drag=null;if(pts.size<2&&pinch){pinch=null;drag=null;} // 두 손가락을 떼는 동안 남은 손가락으로 카메라가 튀지 않게
+    if(!pts.size&&input.pinching)setTimeout(()=>{input.pinching=false;},0);}; // 다 뗄 때까지는 '눌러서 걷기'로 보지 않는다(08)
   cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+  // 사파리 페이지 확대 막기: 핀치(gesture*)·두 손가락 끌기 (두 번 누르기 확대는 index.html touch-action:manipulation)
+  ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+  document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
   cv.addEventListener('wheel',e=>{if(!input.cam.on)return;e.preventDefault();input.cam.dist=Math.min(CAM.distMax,Math.max(CAM.distMin,input.cam.dist+e.deltaY*CAM.wheel));},{passive:false});}
 /* 08이 매 프레임: 키로 하는 카메라 거리(-/+), 대쉬 단추 식힘 표시 */
 function tickControls(dt,dashCool){if(SHOT)return;const c=input.cam;

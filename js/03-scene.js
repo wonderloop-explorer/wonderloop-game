@@ -22,11 +22,11 @@ const fill=new THREE.DirectionalLight(rawLin(0xe2e9ff),0.22);fill.position.set(1
 
 /* ---------- 렌더러 / 카메라 ---------- */
 const stage=document.getElementById('stage');
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,stencil:true}); // stencil: 가려진 원더룹 윤곽(game/occlude xray)이 원더룹 자신 위에는 안 그려지게
 /* 그리기 해상도: 기기 픽셀 비율(최대 2)을 쓰되, 그리는 화소가 1440p(2560×1440)를 넘지 않게 낮춘다 — 5K 아이맥 전체 화면이 1470만 화소를 그려 팬이 돌던 문제.
-   휴대폰(390×844 → 2배 130만 화소)은 그대로 2배. 촬영 모드(?shot)는 08이 1로 고정하고 wlShot.size로 크기를 정하므로 건드리지 않는다(1440p 영상 품질 그대로). */
+   휴대폰 단계는 최대 1.5배(개미굴과 같음 — 아이폰 기본 3배를 그대로 그리면 화소가 4배라 기기가 뜨거워진다, 2026-11-01). 촬영 모드(?shot)는 08이 1로 고정하고 wlShot.size로 크기를 정하므로 건드리지 않는다(1440p 영상 품질 그대로). */
 const MAX_PX=2560*1440,FIXED_PR=new URLSearchParams(location.search).has('shot');
-const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,2);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
+const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,QUALITY.tier==='mobile'?1.5:2);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
 renderer.setPixelRatio(fitPixelRatio(stage.clientWidth,stage.clientHeight));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.shadowMap.enabled=QUALITY.shadows;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -63,7 +63,7 @@ function mergeStatic(z){
   const keepOut=new Set();z.keepOut.forEach(k=>k.traverse(o=>keepOut.add(o)));
   const buckets=new Map(),originals=[],origSet=new Set();
   z.root.traverse(o=>{
-    if(!o.isMesh||o.isInstancedMesh||keepOut.has(o))return;const t=o.material; // InstancedMesh(같은 모델 여러 개)는 합치면 한 개로 뭉개지므로 빼기
+    if(!o.isMesh||o.isInstancedMesh||keepOut.has(o)||o.userData.noMerge)return;const t=o.material; // noMerge: 카메라를 따라다니는 하늘 지붕 등 // InstancedMesh(같은 모델 여러 개)는 합치면 한 개로 뭉개지므로 빼기
     const ok=!t.transparent||(t.isMeshBasicMaterial&&t.polygonOffset&&t.blending===THREE.NormalBlending);
     if(!ok)return;const k=sig(o);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(o);originals.push(o);origSet.add(o);
   });

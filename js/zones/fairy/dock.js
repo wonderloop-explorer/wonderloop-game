@@ -19,9 +19,10 @@ import * as G from '../../game/index.js';
 import {FAIRY_CARDS,FAIRY_SKY,FAIRY_WORLD,WATER,icon} from './world.js';
 import {dewBoat,fairy} from './fairies.js';
 import {fbm,painted,toon} from './paint.js';
+import {deepForest} from './forest.js';
 export function build({root}){
 const R=rng('fairy-dock:props'),rnd=(a,b)=>a+(b-a)*R();
-const SIZE=48,keep=[],obstacles=[],tick=[];
+const SIZE=48,keep=[],obstacles=[],tick=[],flat=[]; // flat: 발밑 높이의 판(땅·물·길·선착장) — 뚫어 보기에서 뺀다
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 /* ---------- 물길 모양: 가운데 cz(x)·반폭 hw(x) — 남쪽 둑 zS, 북쪽 둑 zN ---------- */
 const cz=x=>-5+.7*Math.sin(.21*x+.4)+.35*Math.sin(.53*x+1.3),hw=x=>2.5+.3*Math.sin(.37*x+2);
@@ -52,22 +53,22 @@ const inWater=(x,z)=>Math.min(z-zN(x),zS(x)-z)+(fbm(x*.9+11,z*.9+3)-.5)*.7; // +
    if(w>-.05)tmp.copy(bank).lerp(wet,ss(.1,.6,w)); // 둑 비탈·물 밑
    col.set([tmp.r,tmp.g,tmp.b],i*3);}
  g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
- const ground=new THREE.Mesh(g,toon('#ffffff',{map:TX.grass,vertexColors:true}));ground.receiveShadow=true;root.add(ground);keep.push(ground);}
+ const ground=new THREE.Mesh(g,toon('#ffffff',{map:TX.grass,vertexColors:true}));ground.receiveShadow=true;root.add(ground);keep.push(ground);flat.push(ground);}
 // 흙길: 들어오는 자리에서 선착장까지, 납작한 디딤돌
 {const path=new THREE.Shape();path.moveTo(-1.1,-12);path.bezierCurveTo(-1.6,-6,3,-2,3.6,1.9);path.lineTo(5.4,2.2);path.bezierCurveTo(5,-2.5,1.2,-6,1.1,-12);path.closePath(); // 모양 좌표 (x, -z)
  const pg=new THREE.ShapeGeometry(path,24).rotateX(-PI/2);{const U=pg.attributes.uv;for(let i=0;i<U.count;i++)U.setXY(i,U.getX(i)*.35,U.getY(i)*.35);}
- add(pg,T('#ffffff','dirt'),0,.012,0,{cast:false,line:false});
- [[0,10.6],[.2,8.7],[.8,6.9],[1.6,5.1],[2.6,3.4],[3.5,1.7],[4.2,.1]].forEach(([x,z],i)=>add(new THREE.CylinderGeometry(.42+(i%2)*.08,.46,.07,9),T(['#e8ddd0','#ddd2c4','#efe6da'][i%3],'stone'),x,.03,z,{ry:i,line:false,cast:false}));}
+ flat.push(add(pg,T('#ffffff','dirt'),0,.012,0,{cast:false,line:false}));
+ [[0,10.6],[.2,8.7],[.8,6.9],[1.6,5.1],[2.6,3.4],[3.5,1.7],[4.2,.1]].forEach(([x,z],i)=>flat.push(add(new THREE.CylinderGeometry(.42+(i%2)*.08,.46,.07,9),T(['#e8ddd0','#ddd2c4','#efe6da'][i%3],'stone'),x,.03,z,{ry:i,line:false,cast:false})));}
 // 물: 연한 파스텔 청록 + 잔물결(천천히 흐름). 시간마다 색이 바뀐다(WATER)
 const waterMat=toon(WATER[0].c,{map:TX.ripple,emissive:WATER[0].e,ei:WATER[0].ei});
-const water=new THREE.Mesh(new THREE.PlaneGeometry(SIZE,13,1,1).rotateX(-PI/2),waterMat);water.position.set(0,-.1,-5.2);water.receiveShadow=true;root.add(water);keep.push(water);
+const water=new THREE.Mesh(new THREE.PlaneGeometry(SIZE,13,1,1).rotateX(-PI/2),waterMat);water.position.set(0,-.1,-5.2);water.receiveShadow=true;root.add(water);keep.push(water);flat.push(water);
 const WC=WATER.map(w=>({c:new THREE.Color(w.c),e:new THREE.Color(w.e),ei:w.ei}));
 // 물에는 못 들어감(선착장만): 0.5m 폭 띠마다 그 사이 물길을 막는다
 for(let x=-SIZE/2;x<SIZE/2;x+=.5){const xs=[x,x+.25,x+.5],n=Math.min(...xs.map(zN))+.05,s=Math.max(...xs.map(zS))-.12;
   if(x>=3.5&&x+.5<=5.6)obstacles.push({r:[x,x+.5,n,-5.0]});else obstacles.push({r:[x,x+.5,n,s]});}
 /* ---------- 선착장 ---------- */
 const DOCK={x0:3.5,x1:5.6,z0:-5.0,z1:-1.75,top:.14};
-boxAt(DOCK.x1-DOCK.x0,.1,DOCK.z1-DOCK.z0,toon('#ffffff',{map:pencil('#c08a58','planks',{rep:[2,3]})}),(DOCK.x0+DOCK.x1)/2,DOCK.top-.1,(DOCK.z0+DOCK.z1)/2,{line:false});
+flat.push(boxAt(DOCK.x1-DOCK.x0,.1,DOCK.z1-DOCK.z0,toon('#ffffff',{map:pencil('#c08a58','planks',{rep:[2,3]})}),(DOCK.x0+DOCK.x1)/2,DOCK.top-.1,(DOCK.z0+DOCK.z1)/2,{line:false}));
 const post=(x,z,h=.75)=>{cylAt(.12,.13,h+.4,T('#9a6a44','wood'),x,-.4,z,{line:false});const r=add(new THREE.TorusGeometry(.13,.035,6,14),T('#e2c597'),x,h-.25,z,{rx:PI/2,line:false});r.scale.set(1,1,1.4);};
 [[DOCK.x0,DOCK.z1],[DOCK.x1,DOCK.z1],[DOCK.x0,DOCK.z0],[DOCK.x1,DOCK.z0],[DOCK.x0,-3.4],[DOCK.x1,-3.4]].forEach(([x,z])=>post(x,z));
 for(const x of [DOCK.x0,DOCK.x1]){const c=new THREE.CatmullRomCurve3([new THREE.Vector3(x,.6,DOCK.z1),new THREE.Vector3(x,.48,-2.6),new THREE.Vector3(x,.6,-3.4),new THREE.Vector3(x,.48,-4.2),new THREE.Vector3(x,.6,DOCK.z0)]);
@@ -78,8 +79,8 @@ const leafShape=s=>{const sh=new THREE.Shape();sh.moveTo(0,0);sh.bezierCurveTo(-
 const leafGeo=(s,seg=8)=>new THREE.ExtrudeGeometry(leafShape(s),{depth:.05*s,bevelEnabled:true,bevelSize:.03*s,bevelThickness:.03*s,bevelSegments:1,curveSegments:seg});
 const leafHeart=(s,mat)=>new THREE.Mesh(leafGeo(s),mat);
 const cloverMat=T('#86ba58','leaf'),cloverDk=T('#6fa646','leaf'),stemMat=T('#7fac52','leaf');
-/* 동선 가까이 큰 풀·꽃(o.occ): 카메라와 원더룹 사이에 오면 반투명 — 재질을 따로 두고 병합하지 않는다 */
-const occ=(g,r,h)=>{const seen=new Map();g.traverse(m=>{if(m.isMesh){if(!seen.has(m.material))seen.set(m.material,m.material.clone());m.material=seen.get(m.material);}});keep.push(g);G.occlude.add(g,r,h);};
+/* 동선 가까이 큰 풀·꽃: 카메라와 원더룹 사이에 오면 뚫어 보기(game/occlude cut — 구역 전체에 한 번에)로 비쳐 보인다. 재질을 같이 쓰고 병합된다 */
+const occ=()=>{};
 const giantClover=(x,z,h,s,ry,o={})=>{const g=group(x,0,z,ry);const lean=o.lean||0;
   const top=new THREE.Vector3(Math.sin(lean)*h*.25,h,0),c=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(top.x*.3,h*.5,0),top]);
   add(new THREE.TubeGeometry(c,8,.08*s,6),stemMat,0,0,0,{parent:g,line:false});
@@ -112,6 +113,8 @@ function tallGrass(list,seed,h0,h1,bend){const cr=G.fx.crowd({parent:root,n:list
    else bell(x,z,rnd(4.5,6.5),rnd(1.6,2),i%8===3?'#f2b6c6':'#bda4e6');
    wall.push([x*.92,z*.92,rnd(1.6,2.4)]);}
  tallGrass(wall,'wall',2.5,4.5,true);}
+// 벽 뒤 깊은 숲: 실루엣 판 네 겹 + 머리 위 큰 잎 + 빛줄기 (forest.js) — 북쪽은 꽃봉오리가 보이게 비운다
+const forest=deepForest({root,cx:-.5,cz:0,gaps:[Math.atan2(-30,.5)]});
 // 멀리 북쪽 언덕 위 커다란 분홍 꽃봉오리(별꽃 전망대 — 이야기의 목적지가 잎 틈으로 보이게)
 {const g=group(0,0,-30,0);add(new THREE.SphereGeometry(6,16,8,0,PI*2,0,PI/2),T('#a9c56f','leaf'),0,-1.5,0,{parent:g,line:false,cast:false,s:[1.6,.55,1]});
  for(let k=0;k<6;k++){const p=add(lathe([[0,0],[.9,.4],[1.3,1.6],[1.1,3],[.6,4],[0,4.6]].map(q=>new THREE.Vector2(q[0],q[1])),10),T('#f2a5b4','petal'),0,1.5,0,{parent:g,line:false,cast:false});p.scale.set(1,1,.45);p.rotation.set(-.32,k/6*PI*2,0,'YXZ');p.position.set(Math.sin(k/6*PI*2)*.9,1.5,Math.cos(k/6*PI*2)*.9);}
@@ -127,10 +130,10 @@ const canopy=[];
 [[-5.6,10.6,-1.4,8.4,5.2,3.4],[8.8,7,4.4,5,5.6,3.8],[-7.4,3.6,-3,2.6,6,4],[10.2,-2.6,6.6,-2.6,6.2,3.4],[-12.2,-12.2,-8.4,-10.4,6,3.6],[3.4,-14.6,1.2,-10.8,6.6,3.6],[-12.6,6,-9,5.6,5.4,3.2]].forEach(([bx,bz,lx,lz,h,s],i)=>{
   const c=new THREE.CatmullRomCurve3([new THREE.Vector3(bx,0,bz),new THREE.Vector3(bx+(lx-bx)*.15,h*.6,bz+(lz-bz)*.15),new THREE.Vector3(bx+(lx-bx)*.55,h*1.02,bz+(lz-bz)*.55),new THREE.Vector3(lx,h*.96,lz)]);
   add(new THREE.TubeGeometry(c,14,.16,6),stemMat,0,0,0,{line:false});obstacles.push({c:[bx,bz,.3]});blob(bx,bz,.5,.5,.18);
-  const lg=new THREE.Group();lg.position.set(lx,h*.96,lz);root.add(lg);keep.push(lg);
-  const L=new THREE.Mesh(leafGeo(s,10),toon(i%2?'#8cc25e':'#7fb653',{map:TX.leaf}));L.castShadow=true;L.receiveShadow=true; // 잎마다 재질 따로(비쳐 보이기)
+  const lg=new THREE.Group();lg.position.set(lx,h*.96,lz);root.add(lg);
+  const L=new THREE.Mesh(leafGeo(s,10),T(i%2?'#8cc25e':'#7fb653','leaf'));L.castShadow=true;L.receiveShadow=true; // 뚫어 보기는 재질을 같이 써도 되어 병합
   const yaw=Math.atan2(lx-bx,lz-bz);L.rotation.set(-PI/2+.16,yaw+PI,0,'YXZ');L.position.set(Math.sin(yaw)*s*.45,0,Math.cos(yaw)*s*.45);lg.add(L);
-  canopy.push(lg);G.occlude.add(lg,s*.6,.5);shadowBlob(lx,lz,s*.55,s*.45);});
+  canopy.push(lg);shadowBlob(lx,lz,s*.55,s*.45);});
 /* 잎 사이 햇빛 얼룩(낮): 바닥에 덧칠하는 부드러운 빛 조각(그리기 1회). 해 질 녘·밤에는 사라진다 */
 const dapple=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=256;const g=cv.getContext('2d'),r2=rng('fairy-dock:dapple');
   for(let i=0;i<16;i++){const x=30+r2()*196,y=30+r2()*196,r=10+r2()*22,gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba(255,244,205,.95)');gr.addColorStop(.6,'rgba(255,236,180,.45)');gr.addColorStop(1,'rgba(255,230,170,0)');
@@ -221,9 +224,10 @@ const LAMPS=[];const lampMat=()=>{const m=toon('#fff2d2',{emissive:'#ffe2a0',ei:
  const groups=[0,1,2,3].map(()=>lampMat());ms.forEach(([x,z],i)=>{const g=group(x,0,z,0),s=rnd(.8,1.4);cylAt(.035*s,.045*s,.16*s,T('#f5ecdc'),0,0,0,{parent:g,line:false,cast:false});
    add(new THREE.SphereGeometry(.1*s,8,4,0,PI*2,0,PI/2),groups[i%4],0,.15*s,0,{parent:g,line:false,cast:false});});
  groups.forEach((m,k)=>LAMPS.push({m,lp:null,th:.85+k*.12}));}
-/* 공중 꽃가루(늘) · 반딧불(밤) — 원더룹 둘레를 따라다니는 빛 입자 */
-const pollen=G.fx.particles({parent:root,n:70,box:[9,3.2,9],vel:[.05,.07,.02],sway:.5,color:'#fff2bf',size:.07,life:[5,9],additive:true,seed:41});
-const flies=G.fx.particles({parent:root,n:36,box:[10,2.2,10],vel:[0,.04,0],sway:.8,color:'#e6ff9a',size:.16,life:[3,6],additive:true,seed:43});
+/* 공중 꽃가루(늘) · 반딧불(밤) — 원더룹 둘레를 따라다니는 빛 입자. 휴대폰 단계는 절반 아래로(발열) */
+const MOB=!QUALITY.shadows;
+const pollen=G.fx.particles({parent:root,n:MOB?28:70,box:[9,3.2,9],vel:[.05,.07,.02],sway:.5,color:'#fff2bf',size:.07,life:[5,9],additive:true,seed:41});
+const flies=G.fx.particles({parent:root,n:MOB?16:36,box:[10,2.2,10],vel:[0,.04,0],sway:.8,color:'#e6ff9a',size:.16,life:[3,6],additive:true,seed:43});
 /* 연잎·잎사귀 배 (물 위 풍경) */
 const pad=(x,dz,r)=>{const m=add(new THREE.CylinderGeometry(r,r,.04,13,1,false,.3,PI*2-.3),T('#86ba58','leaf'),x,-.08,cz(x)+dz,{ry:rnd(0,PI*2),line:false,cast:false});keep.push(m);return m;};
 const pads=[[-12,1.3,.7],[-7.6,-1.2,.9],[-1.6,-1.8,.6],[9,-1.3,.8],[13,1.2,.6],[-15,-.9,.8],[11.2,.4,.5],[-10.4,-1.8,.55]].map(a=>pad(...a));
@@ -247,8 +251,8 @@ let fixed=0;
 /* ---------- 요정 ---------- */
 const boatman=fairy('boatman'),small=dewBoat(.62);
 const bmG=new THREE.Group();bmG.position.set(6.4,-.04,-4.3);bmG.rotation.y=-.9;root.add(bmG);bmG.add(small);boatman.root.position.y=.1;bmG.add(boatman.root);keep.push(bmG);
-const shroom=fairy('mushroom');shroom.root.position.set(-.5,0,6.3);shroom.root.rotation.y=.5;root.add(shroom.root);keep.push(shroom.root);obstacles.push({c:[-.5,6.3,.3]}); // 길 안쪽(울타리 사이)
-shadowBlob(-.5,6.3,.35,.35);
+const SHROOM=[-2.3,5.5];const shroom=fairy('mushroom');shroom.root.position.set(SHROOM[0],0,SHROOM[1]);shroom.root.rotation.y=.85;root.add(shroom.root);keep.push(shroom.root);obstacles.push({c:[SHROOM[0],SHROOM[1],.3]}); // 왼쪽 울타리 바깥, 길을 보고 선다 — 길 한가운데면 시작 카메라 바로 앞에 갓이 걸렸다
+shadowBlob(SHROOM[0],SHROOM[1],.35,.35);
 G.occlude.add(shroom.root,.35,.9);
 G.profile.setup({world:FAIRY_WORLD.world,cards:FAIRY_CARDS}); // 처음 이야기한 뒤 소개 카드 한 번 (도감 대신)
 /* ---------- 이슬배 (원더룹이 타는 큰 그릇 배) + 굴러오는 큰 이슬방울 ---------- */
@@ -317,6 +321,7 @@ function bendGrass(dt){const cam=G.view.camera,W=WL();if(!cam||!W)return;_c.copy
     _bo.position.set(b.x,0,b.z);_bo.rotation.set(0,b.ry,0);_bo.scale.set(b.s*(1+.25*k),b.s*(1-.82*k),b.s*(1+.25*k));_bo.updateMatrix();b.cr.part(0).setMatrixAt(b.i,_bo.matrix);b.cr.part(0).instanceMatrix.needsUpdate=true;}}
 /* ---------- 매 프레임 ---------- */
 const SK=G.sky.sky({parent:root,keys:FAIRY_SKY,t:0});
+G.occlude.cut(root,{skip:flat}); // 카메라와 원더룹 사이에 오는 것은 모두(잎·줄기·꽃·버섯·바위·소품·요정) 점무늬로 비쳐 보이게
 const _wc=new THREE.Color(),_we=new THREE.Color();
 function update(dt,t){
   boatman.tick(dt,t);shroom.tick(dt,t);tick.forEach(f=>f.tick(dt,t));
@@ -346,18 +351,19 @@ function update(dt,t){
   flowerMats.forEach(m=>m.emissiveIntensity=.22*nite);
   flies.points.material.opacity=nite;flies.points.visible=nite>.01;pollen.points.material.opacity=1-.6*nite;
   if(W){pollen.update(dt,W.position);if(nite>.01)flies.update(dt,W.position);}
-  bendGrass(dt);splash.update(dt);}
+  forest.update(G.view.camera,SK);bendGrass(dt);splash.update(dt);}
 return {...FAIRY_WORLD,
   name:'이슬방울 선착장',kind:'outdoor',music:'fairy-dock',
   sky:SK,
   get glide(){return gotUmbrella;}, // 우산을 받은 뒤에만 활공(07은 구역 정보 glide를 매 프레임 읽는다)
-  spawn:{x:0,z:11,ry:PI},
+  spawn:{x:.2,z:9.4,ry:PI}, // 길 입구 조금 안쪽 — 숲 방(camRoom) 가장자리면 휴대폰 카메라가 원더룹에 바짝 붙는다
+  camRoom:{c:[-.5,0],r:16.5}, // 따라가기 카메라는 둘레 벽(13~19m) 안쪽까지만 — 벽 바깥에서 큰 잎 너머로 보지 않게
   platforms:[{r:[DOCK.x0,DOCK.x1,DOCK.z0,DOCK.z1],top:DOCK.top},...ROCKS],
   areas:{dock:{bounds:[-15,14,-15,14],obstacles,
     camera:{target:[0,1,0],dist:24,polar:[.45,1.3],azimuth:null,start:[1,.5],minDist:3,maxDist:44}}},
   doors:[{rect:[-1.2,1.2,-15,-14],to:'fairy-dandelion'}], // 다음 스테이지(아직 없음 → 저절로 닫혀 있음)
   sun:{dir:new THREE.Vector3(6,-11,5).normalize(),shadow:10,follow:true},
   lights:L.all,keepOut:keep,update,
-  dispose(){const U=WL()&&WL().userData;if(U&&U.setGlideProp)U.setGlideProp(null);splash.dispose();pollen.dispose();flies.dispose();L.dispose();},
+  dispose(){const U=WL()&&WL().userData;if(U&&U.setGlideProp)U.setGlideProp(null);splash.dispose();pollen.dispose();flies.dispose();L.dispose();forest.dispose();},
 };
 }

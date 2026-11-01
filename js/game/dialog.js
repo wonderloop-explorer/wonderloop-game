@@ -38,7 +38,7 @@ function makeBubble(scene){const c=document.createElement('canvas');c.width=128;
   g.fillStyle='#fffaf2';g.beginPath();g.moveTo(24,8);g.lineTo(104,8);g.quadraticCurveTo(120,8,120,24);g.lineTo(120,52);g.quadraticCurveTo(120,68,104,68);
   g.lineTo(60,68);g.lineTo(44,86);g.lineTo(46,68);g.lineTo(24,68);g.quadraticCurveTo(8,68,8,52);g.lineTo(8,24);g.quadraticCurveTo(8,8,24,8);g.fill();
   g.fillStyle='#3e2834';[40,64,88].forEach(x=>{g.beginPath();g.arc(x,38,7,0,7);g.fill();});
-  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;bubble=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;bubble=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:true,depthWrite:false,transparent:true})); // 깊이를 봐서 잎·줄기 뒤로 숨은 요정의 말풍선만 떠 보이지 않게
   bubble.renderOrder=10;bubble.visible=false;hint(bubble);bubble.userData.scene=scene;} // 장면에는 보일 때만 붙인다 (숨겨 둔 스프라이트도 그림을 1단계 바꾼다)
 /* 개미굴: 시야각 55°, 따라가기 거리 6에서 카메라 7 안쪽은 높이 0.82×(거리/7) → 화면 높이의 0.82/(7·2tan27.5°) ≈ 11.25%.
    원더룹: 따라가기 거리(가로 7.5, 세로 화면은 더 멀리)의 7/6배 안쪽은 같은 화면 비율, 그보다 멀면 거리에 반비례해 작아진다 */

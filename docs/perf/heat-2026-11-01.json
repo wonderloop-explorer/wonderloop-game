@@ -1,0 +1,161 @@
+{
+ "설명": "휴대폰 발열 대책 전후 (2026-11-01). 헤드리스 크롬 + 실제 GPU(Apple M4, ANGLE Metal), 390×844 화면·기기 배율 3(아이폰과 같음), ?zone=fairy-dock&quality=mobile. idle 시작 자리 10초, walk 조이스틱으로 걷고 카메라 돌리기 15초, long 같은 걷기를 1분씩 10분. gpuMs = 한 프레임 GPU 시간(타이머 질의), gpuMsPerSec = 초당 GPU 일 = 발열 지표. 드로우콜·삼각형은 화면 아래 성능 표시(그림자 포함) 평균. M4라 절대값은 작고, 아이폰에서는 비율로 본다.",
+ "before": {
+  "name": "before",
+  "idle": {
+   "sec": 10,
+   "fps": 60,
+   "gpuMsAvg": 2.67,
+   "gpuMsP95": 6,
+   "gpuMsPerSec": 160,
+   "calls": 105,
+   "tris": 116606,
+   "px": "780x1688"
+  },
+  "walk": {
+   "sec": 15.1,
+   "fps": 59.6,
+   "gpuMsAvg": 2.33,
+   "gpuMsP95": 5.41,
+   "gpuMsPerSec": 139,
+   "calls": 64,
+   "tris": 111479,
+   "px": "780x1688"
+  }
+ },
+ "after": {
+  "name": "after",
+  "idle": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 2.22,
+   "gpuMsP95": 3.66,
+   "gpuMsPerSec": 67,
+   "calls": 98,
+   "tris": 176364,
+   "px": "585x1266"
+  },
+  "walk": {
+   "sec": 15,
+   "fps": 30,
+   "gpuMsAvg": 2.44,
+   "gpuMsP95": 3.74,
+   "gpuMsPerSec": 73,
+   "calls": 68,
+   "tris": 171762,
+   "px": "585x1266"
+  },
+  "long": [
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 2.57,
+    "gpuMsP95": 3.95,
+    "gpuMsPerSec": 77,
+    "calls": 82,
+    "tris": 172522,
+    "px": "585x1266",
+    "min": 1
+   },
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 2.32,
+    "gpuMsP95": 3.6,
+    "gpuMsPerSec": 69,
+    "calls": 90,
+    "tris": 173622,
+    "px": "585x1266",
+    "min": 2
+   },
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 1.91,
+    "gpuMsP95": 3.22,
+    "gpuMsPerSec": 57,
+    "calls": 93,
+    "tris": 174285,
+    "px": "585x1266",
+    "min": 3
+   },
+   {
+    "sec": 60.2,
+    "fps": 30,
+    "gpuMsAvg": 2.22,
+    "gpuMsP95": 3.93,
+    "gpuMsPerSec": 67,
+    "calls": 88,
+    "tris": 174349,
+    "px": "585x1266",
+    "min": 4
+   },
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 1.95,
+    "gpuMsP95": 3.29,
+    "gpuMsPerSec": 58,
+    "calls": 86,
+    "tris": 174267,
+    "px": "585x1266",
+    "min": 5
+   },
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 1.99,
+    "gpuMsP95": 3,
+    "gpuMsPerSec": 60,
+    "calls": 92,
+    "tris": 174493,
+    "px": "585x1266",
+    "min": 6
+   },
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 1.8,
+    "gpuMsP95": 2.77,
+    "gpuMsPerSec": 54,
+    "calls": 99,
+    "tris": 174847,
+    "px": "585x1266",
+    "min": 7
+   },
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 2.19,
+    "gpuMsP95": 3.59,
+    "gpuMsPerSec": 66,
+    "calls": 89,
+    "tris": 174833,
+    "px": "585x1266",
+    "min": 8
+   },
+   {
+    "sec": 60.3,
+    "fps": 30,
+    "gpuMsAvg": 1.83,
+    "gpuMsP95": 2.82,
+    "gpuMsPerSec": 55,
+    "calls": 87,
+    "tris": 174763,
+    "px": "585x1266",
+    "min": 9
+   },
+   {
+    "sec": 60.2,
+    "fps": 30,
+    "gpuMsAvg": 2.66,
+    "gpuMsP95": 5.74,
+    "gpuMsPerSec": 80,
+    "calls": 96,
+    "tris": 174932,
+    "px": "585x1266",
+    "min": 10
+   }
+  ]
+ }
+}

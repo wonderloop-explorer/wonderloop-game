@@ -23,7 +23,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
   const mat=new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader:'uniform vec3 top;uniform vec3 horizon;varying vec3 vP;void main(){float h=normalize(vP).y;float k=smoothstep(-.02,.55,h);gl_FragColor=vec4(mix(horizon,top,pow(k,.8)),1.);\n#include <colorspace_fragment>\n}'});
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,24,12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,24,12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
   // 별: 위쪽 하늘에 고르게(지평선 근처는 드물게). 첫별은 따로 크게
   let r=seed;const R=()=>(r=(r*16807)%2147483647)/2147483647;
   const P=new Float32Array(nStars*3);for(let i=0;i<nStars;i++){const a=R()*Math.PI*2,y=.12+.88*Math.sqrt(R()),c=Math.sqrt(1-y*y);P.set([Math.cos(a)*c*radius*.9,y*radius*.9,Math.sin(a)*c*radius*.9],i*3);}
@@ -54,7 +54,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
       if(sunDirOut)sunDirOut.copy(cur.dir.copy(a.dir).lerp(b.dir,u).normalize());
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
       smat.opacity=st*ss(1.75,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;
-      if(camera)g.position.copy(camera.position);},
+      if(camera){g.position.copy(camera.position);g.scale.setScalar(Math.min(1,camera.far*.9/radius));}},  // 08이 카메라 먼 거리를 안개 끝으로 당기면 하늘도 그 안으로
     dispose(){dot.dispose();}};
   return S;}
 export {DEFAULT_KEYS,sky};

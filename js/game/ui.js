@@ -61,20 +61,25 @@ const css=`
 body.wl-nohints .wl-hint{visibility:hidden!important}
 .wlg button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 #wlCut{position:fixed;inset:0;display:none;place-items:center;background:#1e0e24;z-index:45;cursor:pointer}#wlCut.on{display:grid;animation:wlCutIn .6s ease-out}
-#wlProf{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);width:min(27rem,calc(100vw - 24px));box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:center;gap:1rem;z-index:21;
-  background:var(--panel);color:var(--ink);border-radius:20px;padding:.9rem 1.2rem .9rem .9rem;box-shadow:0 14px 40px rgba(30,14,36,.45);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+#wlProf{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);width:min(34rem,calc(100vw - 24px));box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:stretch;gap:1.1rem;z-index:21;
+  background:var(--panel);color:var(--ink);border-radius:22px;padding:1rem 1.2rem 1.05rem 1rem;box-shadow:0 14px 40px rgba(30,14,36,.45);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s}
 /* 카드가 열린 동안 위쪽 할 일 문구는 잠시 숨김(카드 뒤로 비쳐 보이지 않게) */
 .wlg.prof-on #wlQuest{visibility:hidden}
 #wlProf.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto;cursor:pointer}
-#wlProf .ic{flex:none;width:92px;height:92px;box-sizing:border-box;border-radius:50%;background:#f3ead6;border:1.5px solid #a77a52;overflow:hidden}
-#wlProf .ic img{width:100%;height:100%;object-fit:cover;display:block}#wlProf .ic img:not([src]){display:none}
-#wlProf .k{margin:0;display:inline-block;background:var(--tag);color:var(--tag-ink);border-radius:999px;padding:.1rem .65rem;font-size:.8rem}
-#wlProf>div{word-break:keep-all}
-#wlProf .t{margin:.3rem 0 .15rem;font-size:1.2rem}
-#wlProf .s{margin:0;font-size:.9rem;line-height:1.45;color:var(--ink-soft)}
-#wlProf .l{margin:.3rem 0 0;font-size:.86rem;line-height:1.4}
-#wlProf .q{margin:.3rem 0 0;font-size:.95rem;line-height:1.45}
-@media (max-width:600px){#wlProf{gap:.7rem;padding:.7rem .9rem .7rem .7rem}#wlProf .ic{width:68px;height:68px}#wlProf .t{font-size:1.08rem}#wlProf .s,#wlProf .l{font-size:.82rem}#wlProf .q{font-size:.86rem}}
+#wlProf .ic{flex:none;width:9.5rem;position:relative;display:flex;align-items:flex-end;justify-content:center}
+#wlProf .ic::before{content:"";position:absolute;left:0;right:0;bottom:0;aspect-ratio:1;border-radius:50%;background:var(--pbg,#f3ead6)}
+#wlProf .ic img{position:relative;width:100%;aspect-ratio:3/4;object-fit:contain;object-position:50% 100%;display:block}#wlProf .ic img:not([src]){display:none}
+#wlProf>div{flex:1;min-width:0;word-break:keep-all;overflow-wrap:break-word;display:flex;flex-direction:column;justify-content:center}
+#wlProf .k{margin:0;align-self:flex-start;background:var(--tag);color:var(--tag-ink);border-radius:999px;padding:.12rem .7rem;font-size:.8rem}
+#wlProf .t{margin:.35rem 0 .2rem;font-size:1.5rem;font-weight:700;line-height:1.2}
+#wlProf .s{margin:0;font-size:.95rem;line-height:1.5;color:var(--ink-soft)}
+#wlProf hr{width:100%;margin:.65rem 0 .55rem;border:0;border-top:1.5px solid rgba(117,86,94,.22)}
+#wlProf .l{margin:0;font-size:.92rem;line-height:1.45;display:flex;gap:.5rem;align-items:baseline}
+#wlProf .l b{flex:none;font-weight:400;font-size:.76rem;background:rgba(117,86,94,.13);color:var(--ink-soft);border-radius:999px;padding:.08rem .55rem}
+#wlProf .q{position:relative;margin:.7rem 0 0 .35rem;padding:.55rem .8rem;font-size:.98rem;line-height:1.5;background:var(--bubble);border:1.5px solid rgba(167,122,82,.35);border-radius:14px}
+#wlProf .q::before{content:"";position:absolute;left:-8px;top:14px;width:12px;height:12px;background:var(--bubble);border-left:1.5px solid rgba(167,122,82,.35);border-bottom:1.5px solid rgba(167,122,82,.35);transform:rotate(45deg)}
+#wlProf .q:empty,#wlProf .l:empty{display:none}
+@media (max-width:600px){#wlProf{gap:.75rem;padding:.85rem .9rem .9rem .7rem;border-radius:20px}#wlProf .ic{width:6.6rem}#wlProf .t{font-size:1.22rem}#wlProf .s{font-size:.86rem}#wlProf .l{font-size:.84rem}#wlProf .q{font-size:.88rem;padding:.45rem .65rem}#wlProf hr{margin:.5rem 0 .45rem}#wlProf .l{flex-direction:column;align-items:flex-start;gap:.2rem}#wlProf .l b{font-size:.72rem}} /* 휴대폰: 꼬리표를 위에 두어 좋아하는 것 내용이 한 줄로 */
 #wlCut img{width:100%;height:100%;object-fit:contain}#wlCut p{position:absolute;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);margin:0;font-size:.8rem;color:rgba(255,246,234,.7)}
 @keyframes wlCutIn{from{opacity:0}to{opacity:1}}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
@@ -85,7 +90,7 @@ const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="who"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
-<div id="wlProf" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="k">새 친구</p><p class="t"></p><p class="s"></p><p class="l"></p><p class="q"></p></div></div>
+<div id="wlProf" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="k">새 친구</p><p class="t"></p><p class="s"></p><hr><p class="l"></p><p class="q"></p></div></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
@@ -158,8 +163,9 @@ cardCloser('item',closeItemCard);
    아이템 카드와 같은 테두리·글꼴, 왼쪽 동그라미에 초상(img: 2D 그림 경로 또는 게임 안에서 렌더링한 그림). 화면 위 가운데(휴대폰에서 원더룹·대화창을 가리지 않게).
    막지 않는다: 걷기·대화는 그대로, 아무 키나 누르기·터치로 닫히고(0.6초 뒤부터) sec초(기본 12, 게임 시간) 뒤 저절로. 시점 기록 kind 'card' who '소개' */
 const pf=$('#wlProf');let pfDone=null,pfCue=null,pfEnd=0;
-function profileCard({name='',intro='',likes='',quote='',img=null,kicker='새 친구',sec=12}){return enqueue('profile',r=>{pfDone=r;pf.querySelector('.k').textContent=kicker;pf.querySelector('.t').textContent=name;pf.querySelector('.s').textContent=intro;
-  pf.querySelector('.l').textContent=likes?'좋아하는 것: '+likes:'';pf.querySelector('.q').textContent=quote?'“'+quote.replace(/^["“]|["”]$/g,'')+'”':'';
+function profileCard({name='',intro='',likes='',quote='',img=null,bg=null,kicker='새 친구',sec=12}){return enqueue('profile',r=>{pfDone=r;pf.querySelector('.k').textContent=kicker;pf.querySelector('.t').textContent=name;pf.querySelector('.s').textContent=intro;
+  {const l=pf.querySelector('.l');l.textContent='';if(likes){const b=document.createElement('b');b.textContent='좋아하는 것';const sp=document.createElement('span');sp.textContent=likes;l.append(b,sp);}}
+  pf.querySelector('.q').textContent=quote?quote.replace(/^["“]|["”]$/g,''):'';pf.querySelector('.ic').style.setProperty('--pbg',bg||'#f3ead6');
   const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=clock.t+sec;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');sfx('itemget');});}
 function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');root.classList.remove('prof-on');endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
 const profileShown=()=>cardOn==='profile';
