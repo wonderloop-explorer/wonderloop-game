@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <!-- 원더룹 요정의 숲 — STAGE 01 이슬방울 선착장
-     한 파일 빌드: node tools/build-single.js fairy-dock (원본 저장소 wonderloop-game, 커밋 b978de8, 버전 4114f4df34, 2026-11-02)
+     한 파일 빌드: node tools/build-single.js fairy-dock (원본 저장소 wonderloop-game, 커밋 7704d95, 버전 f9cd527d55, 2026-11-02)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -106,14 +106,15 @@ body.debug #dbgBtn{opacity:1;background:var(--chipline)}
   <button id="actBtn" type="button">동작: 서기</button>
   <button id="emphBtn" type="button">캐릭터 강조: 자동</button>
   <button id="outfitBtn" type="button">옷: 평상복</button>
+  <button id="resetBtn" type="button">진행 초기화</button>
   <div class="hint" id="stats" aria-live="polite"></div>
   <div class="hint">끌어서 돌려 보고, 휠이나 두 손가락으로 확대해요. 바닥을 누르면 원더룹이 걸어가고, 원더룹을 누르면 인사해요. 버섯 랜턴은 눌러서 켜고 꺼요.</div>
 </div>
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="4114f4df34";
-window.WL_BUILD={"commit":"b978de8","date":"2026-11-02","stage":"fairy-dock"};
+window.WL_V="f9cd527d55";
+window.WL_BUILD={"commit":"7704d95","date":"2026-11-02","stage":"fairy-dock"};
 window.WL_START_ZONE="fairy-dock";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -484,7 +485,7 @@ export {B,BUILD,C,M,PI,QUALITY,TEXSET,UP,add,aoPlane,blob,blobMany,blobTex,boxAt
      hood: 'ant'                         들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
      platforms: [{r:[x0,x1,z0,z1]|c:[x,z,반지름], top}]   높은 발판(버섯 갓·가지 등): 위에 서고, 아래에서 걸어 들어가면 막힘(STEP보다 높으면)
      bouncers: [{c:[x,z,반지름], top, height, to:[x,z]}]   튀는 발판(버섯 갓): 밟기만 하면 top+height 높이로 튀어 to에 내려앉음(to 없으면 제자리)
-     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true  활공 가능(07, 펼치는 물건은 06 setGlideProp)
+     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true 늘 활공·false 활공 안 함·없으면 활공 아이템(민들레 솜털 우산, game/items canGlide)을 가졌을 때(07, 펼치는 물건은 06 setGlideProp)
      발판은 매 프레임 그 값을 읽는다 → p.top·c[2]를 바꾸면 자라는 발판(버섯 계단 등). 서 있는 발판이 천천히 자라면 원더룹도 함께 올라간다(한 프레임에 STEP보다 크게 바꾸지 않기)
      winds: [{c|r, dir:[x,z], strength, up, y:[아래,위], on}]   바람 구역: 공중·활공 중에만 dir 쪽으로 밀어 준다(초당 strength), up이 있으면 활공 중 위로 띄움(바람길).
                                          구역 코드가 dir·on을 바꾸면 바람 방향이 바뀐다(장난꾸러기 바람). 걷는 동안에는 밀지 않는다
@@ -1062,6 +1063,7 @@ import {PI,QUALITY,blobTex,footTex,lin,pencil,rng,scene,softMat} from './01-text
 const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로딩 뒤 첫 난수를 이어 썼다)
 import {blocked,bouncerAt,floorAt,groundY,hasHeights,overlap,windAt,zone} from './02-zone.js';
 import {flags} from './game/state.js';
+import {canGlide} from './game/items.js'; // 활공: 구역 정보 glide(true 늘·false 안 함), 없으면 활공 아이템(민들레 솜털 우산)을 가졌을 때
 import {hint} from './game/ui.js';
 import {sfx} from './game/sound.js'; // 걸음·뛰어오름·내려앉음 소리 (개미굴 step·jump·land)
 import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
@@ -1319,7 +1321,7 @@ function updateWL(dt,t){
   else{if(Math.hypot(X-V.px,Z-V.pz)>.5&&!V.jump){V.y=floorAt(X,Z);V.air=false;V.vy=0;} // 자리를 옮겼으면(구역 오가기·촬영) 그 자리 가장 높은 바닥에
     if(!V.air){const f=floorAt(X,Z,V.y);if(V.y-f>.3){V.air=true;V.vy=0;}else V.y=f; // 가장자리를 걸어 나가면 떨어짐
       const b=!V.air&&bouncerAt(X,Z);if(b&&b!==V.lastB)launch(b);else if(!b)V.lastB=null;}
-    if(V.air){const prev=V.y;V.vy-=GRAV*dt;const w=windAt(X,Z,V.y);const gl=!!zone.cur.glide&&!V.jump&&(V.vy<-.5||(!!w&&!!w.up&&V.glide>.4));V.glide+=((gl?1:0)-V.glide)*Math.min(1,dt*8);
+    if(V.air){const prev=V.y;V.vy-=GRAV*dt;const w=windAt(X,Z,V.y);const gl=(zone.cur.glide===true||(zone.cur.glide!==false&&canGlide()))&&!V.jump&&(V.vy<-.5||(!!w&&!!w.up&&V.glide>.4));V.glide+=((gl?1:0)-V.glide)*Math.min(1,dt*8);
       if(gl){V.sw+=dt*2.6;V.vy=Math.max(V.vy,-GLIDE*(1+.45*Math.sin(V.sw*2)));} // 활공: 떨어지는 속도를 GLIDE(초당 0.9) 언저리로 — 둥실둥실 빨라졌다 느려졌다
       // 바람 구역(02 winds): 공중에서 dir 쪽으로 밀고(활공 중이면 온 힘, 아니면 절반), 바람길(up)은 활공 중 위로 띄운다. 막힌 곳으로는 밀지 않는다
       if(w&&!V.jump){const k=w.strength*(gl?1:.5)*dt,nx=WL.position.x+w.dir[0]*k,nz=WL.position.z+w.dir[1]*k;if(!blocked(nx,nz,V.y)){WL.position.x=nx;WL.position.z=nz;}
@@ -1350,7 +1352,11 @@ function updateWL(dt,t){
   // 배낭 키링(나침반·받은 아이템): 걸을 때 달랑달랑. 나침반 계산은 예전 그대로, 다른 키링도 같은 식으로 따로 흔들린다
   for(const C of WL.userData.charms||[WL.userData.charm]){if(C&&C.g.visible){const tx=moving?.25+Math.sin(wlPhase*2)*.35:Math.sin(t*1.3)*.05,tz=moving?Math.sin(wlPhase)*.4:Math.sin(t*.9)*.04;
     C.vx+=((tx-C.ax)*60-C.vx*5)*dt;C.vz+=((tz-C.az)*60-C.vz*5)*dt;if(wlHop>.95)C.vx+=6*dt*20;
-    C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=C===WL.userData.charm&&WL.userData.charmNeedle;if(N)N.rotation.z=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;}}
+    C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=C===WL.userData.charm&&WL.userData.charmNeedle;
+    /* 나침반이 어딘가를 가리킴(WL.userData.charmPoint={x,z,sec} — 세계 연출, 2026-11-02): 키링이 톡 흔들리고 바늘이 그쪽으로 돌아 떨다가 sec초 뒤 평소대로 */
+    const CP=C===WL.userData.charm&&WL.userData.charmPoint;if(CP){if(!CP.t){CP.t=0;C.vx+=5;C.vz+=3.5;}CP.t+=dt;if(CP.t>CP.sec)WL.userData.charmPoint=null;}
+    if(N){const free=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;if(CP){const a=Math.atan2(CP.x-WL.position.x,CP.z-WL.position.z)-WL.rotation.y,goal=Math.atan2(Math.sin(a),Math.cos(a))+Math.sin(t*19)*.06*Math.max(0,1-CP.t);
+      const k=Math.min(1,CP.t/.35)*Math.min(1,Math.max(0,(CP.sec-CP.t)/.4));N.rotation.z=free+(goal-free)*k;}else N.rotation.z=free;}}}
   antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1+(D.dashT>0&&WL.userData.hw===1?.3:0);}); // 대쉬 중에는 더듬이가 뒤로(개미굴) — 더듬이가 있는 개미탈일 때만
   blinkT-=dt;if(blinkT<0)blinkT=2.5+2.5*blinkR();const bl=blinkT<0.12?0.15:1;eyes.forEach(e=>e.scale.y=bl);
   wlBlob.visible=!WL.userData.riding; // 탈것 위에서는 발밑 그림자 대신 탈것 그림자
@@ -1486,6 +1492,9 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
  set(new URLSearchParams(location.search).has('debug'));
  b.addEventListener('click',()=>{const vv=window.visualViewport;if(performance.now()-(GAME.controls.input.multiT||0)<800||(vv&&vv.scale>1.01))return; // 두 손가락 동작 끝에 잘못 눌린 것은 무시(저절로 열리지 않게)
    set(!document.body.classList.contains('debug'));});}
+/* 진행 초기화(시험용, 톱니 메뉴): 저장된 진행(flags — 우산·완료·소개 카드)·도감을 지우고 다시 연다. 실수로 눌리지 않게 3초 안에 한 번 더 눌러야 */
+{const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
+   if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
 
 /* ---------- 애니메이션 ---------- */
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
@@ -2252,7 +2261,10 @@ export {clearCourse,initCourse,passedCount,ring,tickCourse};
    - 대사 묶음이 비어 있거나 준비되지 않은 NPC는 말 걸 상대로 고르지 않는다(개미굴 꿀단지 멈춤의 교훈). 대화 중 비면 닫는다.
    - 대화 중에는 다른 혼잣말이 끼어들지 않는다 → 줄을 섰다가 대화가 끝나면 나온다.
    - 대화가 열려 있으면 "막힘" → 위협 멈춤, 나레이션 멈췄다 닫히면 다시.
-   - 대사 한 줄이 뜰 때마다 blip 소리(개미굴과 같음). 대화창·말풍선 모양은 개미굴 편 그대로(ui.js·아래 말풍선). */
+   - 대사 한 줄이 뜰 때마다 blip 소리(개미굴과 같음). 대화창·말풍선 모양은 개미굴 편 그대로(ui.js·아래 말풍선).
+   - onDone은 마지막 대사까지 넘겨서 닫았을 때만(2026-11-02 — 대화 중 멀어지거나·대쉬하거나·구역을 바꿔 닫혀도 불려서, 사공 설명을 다 듣지 않아도 미션이 시작됐다).
+     중간에 닫히면 진행은 그대로 두고 '…' 말풍선을 되돌린다(다시 말을 걸면 처음부터).
+   - say()는 끝까지 보여 주면 true, 구역을 바꿔 지워지면 false로 끝난다 — 이어지는 진행은 결과를 보고(.then(ok=>ok&&…)). */
 import * as THREE from 'three';
 import {block,blocking,clock} from './core.js';
 import {sfx,voice} from './sound.js';
@@ -2263,19 +2275,21 @@ const NPCS=[];let talk=null,near=null,ctx=null;const sayQ=[];let saying=null;
 function npc(def){const n=Object.assign({talkR:0},def);NPCS.push(n);return n;}
 function linesOf(n){if(!n)return [];let L=n.lines;if(n.variants)for(const v of n.variants){try{if(v.when())L=v.lines;}catch(e){}}return Array.isArray(L)?L.filter(x=>x!=null&&x!==''):[];}
 const talkable=n=>n&&n.root&&n.root.visible!==false&&linesOf(n).length>0;
-function show(){const L=linesOf(talk.n);if(talk.i>=L.length){endTalk();return;}const text=L[talk.i];
+function show(){const L=linesOf(talk.n);if(talk.i>=L.length){endTalk(true);return;}const text=L[talk.i];
   const last=talk.i>=L.length-1; // 넘기는 법: 터치는 대화창이나 아래 단추("다음"·"닫기"), 키보드는 E, 마우스는 대화창이나 화면 누르기
   showDialog(talk.n.name,text,coarse?(last?'눌러서 닫기':'눌러서 계속'):(last?'E 또는 클릭으로 닫기':'E 또는 클릭으로 계속'));
   sfx('blip');if(talk.h)talk.h.stop();talk.h=voice({id:talk.n.voice&&talk.n.voice[text],text,who:talk.n.name,kind:'dialogue'});}
 function startTalk(n){if(!talkable(n)||talk)return false;n.talked=true; // 한 번 말을 건 인물은 '…' 말풍선을 더 띄우지 않는다
-if(saying){const r=saying.r;saying=null;r();} // 떠 있던 혼잣말은 끝내고
+if(saying){const r=saying.r;saying=null;r(true);} // 떠 있던 혼잣말은 끝내고
   talk={n,i:0,h:null};block('talk',true);show();return true;}
-function endTalk(){if(!talk)return;const n=talk.n;if(talk.h)talk.h.stop();talk=null;hideDialog();block('talk',false);if(n.onDone)try{n.onDone();}catch(e){console.error(e);}}
+function endTalk(done=false){if(!talk)return;const n=talk.n;if(talk.h)talk.h.stop();talk=null;hideDialog();block('talk',false);
+  if(!done){n.talked=false;return;} // 중간에 닫힘: 진행 그대로, 말풍선 되돌림
+  if(n.onDone)try{n.onDone();}catch(e){console.error(e);}}
 function advance(){if(!talk)return false;talk.i++;show();return true;}
-/* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 resolve */
+/* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 true, 구역을 바꿔 지워지면 false */
 function say(who,text,sec,id){return new Promise(r=>sayQ.push({who,text,sec,id,r}));}
 function tickSay(){
-  if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r();}
+  if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r(true);}
   if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('blip');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
     s.end=clock.t+Math.max(s.sec||0,h.dur);saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
@@ -2297,7 +2311,7 @@ function bubbleSize(cam,d){const asp=cam.aspect,far=7.5*(asp<1.25?Math.min(2.1,1
 const _p=new THREE.Vector3(),_q=new THREE.Vector3();
 function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
   // 대화 중 너무 멀어지면 닫음
-  if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk();}
+  if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
   near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=linesOf(talk.n);setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
   else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
@@ -2313,7 +2327,8 @@ function initDialog(c){ctx=c;makeBubble(c.scene);
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});
   document.getElementById('wlAct').addEventListener('pointerdown',e=>{e.preventDefault();act();});
   document.getElementById('wlDlg').addEventListener('pointerdown',e=>{if(talk){e.preventDefault();e.stopPropagation();advance();}});} // 대화창을 눌러도 다음
-function clearDialog(){if(talk)endTalk();NPCS.length=0;near=null;}
+function clearDialog(){if(talk)endTalk(false);NPCS.length=0;near=null; // 구역을 바꿀 때: 기다리던 혼잣말·떠 있는 혼잣말도 비우고 false로 끝낸다
+  sayQ.splice(0).forEach(s=>s.r(false));if(saying){hideDialog();const r=saying.r;saying=null;r(false);}}
 const talking=()=>!!talk;
 const findNPC=name=>NPCS.find(n=>n.name===name)||null;
 const lineEnd=()=>talk&&talk.h?talk.h.end:null; // 지금 대사(목소리)가 끝나는 게임 시각 — 영상 캡처가 대사를 저절로 넘길 때
@@ -2363,7 +2378,10 @@ export {area,clearEvents,eventBusy,initEvents,queue,threatsPaused,tickEvents,whe
    - crowd({parent, n, parts:[{geo, mat, cast, at:[x,y,z]}], blobs}) → {set(i,x,y,z,ry,s), part(k), meshes, count}
      같은 모델 n개를 부품마다 InstancedMesh 하나로(부품 수만큼 그리기). set(i,x,y,z,ry,s)이 발바닥 자리(y = 땅에서 뜬 높이)를 정하고 부품은 at만큼 떨어져 붙는다.
      날개처럼 따로 움직일 부품은 part(k).setMatrixAt으로 직접. blobs: 01 blobMany(n)의 결과(휴대폰 단계 발밑 그림자, 컴퓨터는 null)를 넘기면 함께 옮긴다.
-     면 수를 아끼려면 부품 geo를 낮은 분할로(요정 무리는 몸·머리 합쳐 200면 안쪽 권장). */
+     면 수를 아끼려면 부품 geo를 낮은 분할로(요정 무리는 몸·머리 합쳐 200면 안쪽 권장).
+   - guide({parent, from:[x,z], to:[x,z], y, start, len, n, sec, color, r}) → {points, tick(dt) → 끝나면 false, end()}
+     발밑 길 안내 빛: 땅에 눕힌 작은 호박색 빛 동그라미(반지름 r m — 밝은 흙길 위에서도 보이게, 점 크기 대신 실제 크기) from에서 to 쪽으로 start~len m에 n개 + 끝에 꺾쇠 둘.
+     가까운 것부터 차례로 커져 물결치다 sec초 끝에 흐려지고 스스로 치운다. 인스턴스 하나라 그리기 1회(휴대폰 예산 안). 안내 표시라 부르는 쪽이 ui.hint(points)로 등록한다(영상 캡처가 숨김). */
 import * as THREE from 'three';
 let dotTex=null;
 const dot=()=>{if(dotTex)return dotTex;const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d'),gr=g.createRadialGradient(16,16,0,16,16,16);
@@ -2401,7 +2419,23 @@ function crowd({parent,n,parts,blobs=null}){
       meshes.forEach((m,k)=>{M.multiplyMatrices(o.matrix,offs[k]);m.setMatrixAt(i,M);m.instanceMatrix.needsUpdate=true;});
       if(blobs)blobs.set(i,x,0,z,.24*s*Math.max(.3,1-y*.6));},
     color(k,i,c){const m=meshes[k];m.setColorAt(i,new THREE.Color(c));m.instanceColor.needsUpdate=true;}};}
-export {crowd,particles};
+let guideTex=null; // 길 안내 동그라미: 가운데는 진하고 가장자리만 부드럽게(밝은 흙길 위에서도 또렷하게)
+const gdot=()=>{if(guideTex)return guideTex;const cv=document.createElement('canvas');cv.width=cv.height=64;const g=cv.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,250,225,1)');gr.addColorStop(.35,'rgba(255,200,90,1)');gr.addColorStop(.62,'rgba(240,150,40,.9)');gr.addColorStop(1,'rgba(240,150,40,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);
+  guideTex=new THREE.CanvasTexture(cv);guideTex.colorSpace=THREE.SRGBColorSpace;return guideTex;};
+function guide({parent,from,to,y=.05,start=.6,len=3,n=8,sec=2.6,color='#ffffff',r=.15}){
+  const dx=to[0]-from[0],dz=to[1]-from[1],L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,P=[];
+  for(let i=0;i<n;i++){const d=start+(len-start)*i/(n-1);P.push([from[0]+ux*d,from[1]+uz*d,i/(n-1),1]);}
+  for(const s2 of [-1,1]){const d=len-.3;P.push([from[0]+ux*d-uz*.27*s2,from[1]+uz*d+ux*.27*s2,1,.85]);} // 꺾쇠(화살표 머리)
+  const geo=new THREE.CircleGeometry(r,14).rotateX(-Math.PI/2),mat=new THREE.MeshBasicMaterial({color,map:gdot(),transparent:true,depthWrite:false,fog:false,toneMapped:false});
+  const im=new THREE.InstancedMesh(geo,mat,P.length);im.frustumCulled=false;im.renderOrder=5;if(parent)parent.add(im);
+  const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3();let t=0,done=false;
+  const end=()=>{if(done)return;done=true;if(im.parent)im.parent.remove(im);geo.dispose();mat.dispose();im.dispose();};
+  return {points:im,end,tick(dt){if(done)return false;t+=dt;if(t>=sec){end();return false;}
+    mat.opacity=1-Math.min(1,Math.max(0,(t-(sec-.6))/.6));
+    P.forEach(([x,z,d,s0],i)=>{const on=Math.min(1,Math.max(0,(t-d*.7)/.25)),k=on*s0*(.8+.25*Math.sin(t*6-d*5));S.setScalar(Math.max(.001,k));M4.compose(T.set(x,y,z),Q,S);im.setMatrixAt(i,M4);});
+    im.instanceMatrix.needsUpdate=true;return true;}};}
+export {crowd,guide,particles};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/hud.js">
@@ -2497,15 +2531,21 @@ import {clearProfile,initProfile} from './profile.js';
    view.hold(fn): fn()이 {at,from}을 돌려주는 동안 그 자리에서 비춘다(짧은 연출 — 이슬방울 따라가기) — null을 돌려주거나 hold(null)이면 원래 카메라로.
    focus·hold는 짧은 연출에만 쓴다. 플레이어가 화면을 끌거나 확대·축소하면 08이 바로 끝내고 지금 자리에서 조작을 넘겨준다.
    view.start({from,at}): 탈것·활공처럼 오래 가는 장면의 처음 각도 — 따라가기 카메라가 0.8초에 걸쳐 from 쪽(at 기준 방향·거리, at이 없으면 원더룹)으로 돌아간 뒤 그대로 둔다.
-     그 뒤로는 플레이어가 끌기·두 손가락·휠로 마음대로 돌리고, 손을 떼도 그 각도를 지킨다(카메라 규칙, CLAUDE.md) */
-const view={camera:null,req:null,aim:null,
+     그 뒤로는 플레이어가 끌기·두 손가락·휠로 마음대로 돌리고, 손을 떼도 그 각도를 지킨다(카메라 규칙, CLAUDE.md)
+   focus는 Promise — 카메라가 원더룹 쪽으로 돌아왔을 때(또는 플레이어가 만져 끝냈을 때·다른 연출로 바뀌었을 때) 끝난다.
+   steps(f1, f2, …): 카드·연출을 줄 세우기(2026-11-02 — 사공 대화 뒤 소개 카드·미션 카드·클로버 카메라가 한꺼번에 떠서 카드를 보는 사이 카메라 연출이 지나갔다).
+     함수마다 Promise(카드 ui.notice·itemCard·profile.meet, view.focus, dialog.say 등)를 돌려주면 그것이 끝나야 다음을 부른다. 구역을 바꾸면 남은 단계는 버린다. */
+let REQ=null,STEPS=0;
+const view={camera:null,aim:null,
+  get req(){return REQ;},set req(v){const o=REQ;REQ=v;if(o&&o!==v&&o.done)o.done();}, // 끝나거나 바뀌면 앞 연출의 Promise를 끝낸다
   start({from,at=null}){view.aim={from,at,t:0};},
-  focus({at,from=null,dist=7,sec=2}){view.req={at,from,dist,sec,t:0};},
+  focus({at,from=null,dist=7,sec=2}){return new Promise(done=>{view.req={at,from,dist,sec,t:0,done};});},
   hold(fn){view.req=fn?{fn,t:0}:null;}};
+async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
 function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);}
-function clearZoneGame(){view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();setQuest('');setPrompt('');}
-export {clickNPC,clearZoneGame,clock,cues,initGame,updateGame,view};
+function clearZoneGame(){STEPS++;view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();setQuest('');setPrompt('');}
+export {clickNPC,clearZoneGame,clock,cues,initGame,steps,updateGame,view};
 export * as core from './core.js';
 export * as sound from './sound.js';
 export * as controls from './controls.js';
@@ -2575,16 +2615,20 @@ export {act,add,busy,clearInteract,click,initInteract,prompt,remove,start,tickIn
    받았는지는 진행 상태 flags[id](state.js, localStorage 'wl-state')에 남는다 → 세계를 넘어도 그대로.
    새 세계는 구역 정보 start:{compass:true}처럼 "이미 받은 상태"로 시작할 수 있다.
    새 아이템: 아래 ITEMS에 한 줄 + 세계 코드에서 키링 모양 WL.userData.addCharm({flag:id, obj})(06, 뼈 이름 charm_<id>) + state.js 기본값.
-   give(id): 받기 — flags를 켜고(키링이 나타남) 시점 기록에 kind 'item'으로 남긴다. 획득 카드는 세계 쪽에서 ui.notice로 띄운다(카드 그림은 세계 자산). */
+   give(id): 받기 — flags를 켜고(키링이 나타남) 시점 기록에 kind 'item'으로 남긴다. 획득 카드는 세계 쪽에서 ui.notice로 띄운다(카드 그림은 세계 자산).
+   glide:true인 아이템(민들레 솜털 우산)을 가지고 있으면 어느 구역에서든 떨어질 때 활공한다(07 — 구역 정보 glide가 true면 늘, false면 안 함, 없으면 이 아이템으로).
+   펼쳐 드는 모양은 세계 쪽이 WL.userData.setGlideProp으로(없으면 몸짓만). */
 import {cue} from './core.js';
 import {flags,setFlag} from './state.js';
 const ITEMS={
   compass:{name:'더듬이 나침반',world:'antvillage',use:'길 찾기 — 힌트·보물이 있는 쪽을 가리킨다'},
+  umbrella:{name:'민들레 솜털 우산',world:'fairy-forest',use:'뛰어내리거나 떨어질 때 펼쳐 천천히 내려옴',glide:true}, // 요정의 숲 STAGE 01 사공에게 받음, STAGE 02 민들레 공중정원 경주에서 씀
 };
 const has=id=>!!flags[id];
 function give(id){if(!ITEMS[id]){console.warn('원더룹: 없는 아이템',id);return false;}if(has(id))return false;setFlag(id,true);cue({kind:'item',id,text:ITEMS[id].name});return true;}
 const owned=()=>Object.keys(ITEMS).filter(has);
-export {ITEMS,give,has,owned};
+const canGlide=()=>owned().some(id=>ITEMS[id].glide);
+export {ITEMS,canGlide,give,has,owned};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/lamps.js">
@@ -3132,13 +3176,15 @@ export {songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zon
    저장: localStorage 'wl-state'. 촬영 모드(?shot)에서는 저장된 값을 읽지도 쓰지도 않는다(매번 같은 그림). */
 const KEY='wl-state',SHOT=new URLSearchParams(location.search).has('shot');
 let saved={};if(!SHOT)try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}
-const flags=Object.assign({compass:false},saved.flags);
+const flags=Object.assign({compass:false,umbrella:false},saved.flags);
 const listeners=new Set();
 function save(){if(SHOT)return;try{localStorage.setItem(KEY,JSON.stringify({flags}));}catch(e){}}
 function setFlag(k,v=true){if(flags[k]===v)return;flags[k]=v;save();listeners.forEach(f=>{try{f(k,v);}catch(e){console.error(e);}});}
 function onFlag(f){listeners.add(f);return()=>listeners.delete(f);}
 function applyStart(start){if(start)for(const k in start)setFlag(k,start[k]);}
-export {applyStart,flags,onFlag,setFlag};
+/* 진행 초기화(톱니 메뉴 '진행 초기화'): 저장된 진행·도감을 지운다 — 08이 지운 뒤 페이지를 다시 연다 */
+function resetProgress(){try{localStorage.removeItem(KEY);localStorage.removeItem('wl-codex');}catch(e){}}
+export {applyStart,flags,onFlag,resetProgress,setFlag};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/synth.js">
@@ -3411,8 +3457,9 @@ function tickFade(){if(!fade)return;const f=fade,e=clock.t-f.t0;
 /* 아이템 획득 카드 (개미굴 #getCard): itemCard({title, text, icon, sec}) — 아래 가운데에 통 튀어나와 sec초(기본 2.8, 게임 시간) 뒤 사라진다.
    itemget 소리. 막지는 않지만(개미굴과 같음) 카드 자리를 함께 써서 미션 카드·결과창과 겹치지 않는다. 시점 기록 kind 'card' who '아이템' */
 const gt=$('#wlGet');let gtDone=null,gtCue=null,gtEnd=0;
-function itemCard({title='',text='',icon=null,sec=2.8}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
-  const img=gt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');gtEnd=clock.t+sec;gtCue=cue({kind:'card',who:'아이템',text:title,sub:text,dur:0});gt.classList.add('on');sfx('itemget');});}
+/* 아이템 획득 카드 — 같은 모양으로 스테이지 완료 안내도(sound·who만 바꿔) */
+function itemCard({title='',text='',icon=null,sec=2.8,sound='itemget',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
+  const img=gt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
 function closeItemCard(){if(cardOn!=='item')return;gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
 /* 캐릭터 소개 카드 (도감 대신 — 요정의 숲부터, game/profile.js가 부른다): profileCard({name, intro, likes, quote, img, sec})
@@ -4831,10 +4878,14 @@ const boatDew=dewBall(.24);boatDew.position.set(0,hull.userData.floor(-.08)+.22,
 const bigDrop=dewBall(.55);bigDrop.visible=false;root.add(bigDrop);keep.push(bigDrop);
 const splash=G.fx.particles({parent:root,n:40,box:[.4,.2,.4],vel:[0,1.1,0],sway:.25,color:'#e8fbff',size:.09,life:[.5,1],additive:true,rate:0,seed:31,center:[4.55,.3,-5.75]});
 let drop=null; // {t} 굴러오는 중
-let boatReady=false,rode=false,gotUmbrella=false;
+let boatReady=false,rode=false;
+const hasUmb=()=>G.items.has('umbrella'); // 민들레 솜털 우산: 공통 아이템(game/items, flags.umbrella — 저장, 다음 스테이지에서도 활공)
 /* ---------- 민들레 솜털 우산 (활공 물건) — 민들레 홀씨 공(fairies.js dandelionPuff). 07이 원더룹 오른손에 줄기를 쥐여 머리 위로 들고, 활공하는 동안 솜털이 살랑인다(update) ---------- */
 let umb=null;
 function umbrella(){umb=dandelionPuff({stem:1.9,reach:.36});return umb;} // 오른손(몸 가운데에서 약 0.36m 옆)에서 머리 위 가운데로
+// 우산을 가지고 있으면 활공할 때 펼쳐 드는 모양을 단다(활공 여부는 07이 아이템으로 — 이 구역은 모양만). 받는 순간(flags.umbrella)에도
+function syncUmbrella(){const W=WL();if(W&&hasUmb()&&!umb)W.userData.setGlideProp(umbrella());}
+const offUmb=G.state.onFlag(k=>{if(k==='umbrella')syncUmbrella();});
 /* 건너편 바위 두 개 (발판): 우산을 받은 뒤 뛰어올라 떨어지며 활공해 보는 곳 */
 const ROCKS=[{c:[-6.5,-10.4,.75],top:.5},{c:[-8.4,-11.6,.8],top:1.0}];
 ROCKS.forEach(r=>{SOLID.push([r.c[0],r.c[1],r.c[2]]);add(new THREE.CylinderGeometry(r.c[2]*.85,r.c[2],r.top,9),T('#d8c8ae','stone'),r.c[0],r.top/2,r.c[1],{ry:r.c[0],line:false});
@@ -4843,18 +4894,21 @@ ROCKS.forEach(r=>{SOLID.push([r.c[0],r.c[1],r.c[2]]);add(new THREE.CylinderGeome
 const st={phase:'arrive'};
 const q=t=>G.ui.setQuest(t);
 q('선착장의 사공 요정에게 가 봐요');
-G.dialog.npc({name:'버섯 요정',root:shroom.root,bubbleY:1.05,onDone:()=>G.profile.meet('mushroom',shroom.root),variants:[
-  {when:()=>!gotUmbrella,lines:['어머, 꽃봉오리 손님이네! 오늘 밤 첫별 축제 보러 왔구나?','축제는 별꽃 전망대에서 열려. 사공 아저씨 배를 타야 갈 수 있지.']},
-  {when:()=>gotUmbrella,lines:['우산 받았구나! 바위 위에서 뛰어내려 봐. 깃털처럼 내려올걸?']}]});
-const boatNpc=G.dialog.npc({name:'사공 요정',root:boatman.root,bubbleY:1.3,talkR:.9,onDone:()=>{G.profile.meet('boatman',boatman.root);afterBoatman();},variants:[
+G.dialog.npc({name:'버섯 요정',root:shroom.root,bubbleY:1.05,onDone:()=>G.profile.meet('mushroom',shroom.root),variants:[ // 소개 카드는 끝까지 들었을 때만(onDone — game/dialog)
+  {when:()=>!hasUmb(),lines:['어머, 꽃봉오리 손님이네! 오늘 밤 첫별 축제 보러 왔구나?','축제는 별꽃 전망대에서 열려. 사공 아저씨 배를 타야 갈 수 있지.']},
+  {when:()=>hasUmb(),lines:['우산 받았구나! 바위 위에서 뛰어내려 봐. 깃털처럼 내려올걸?']}]});
+const boatNpc=G.dialog.npc({name:'사공 요정',root:boatman.root,bubbleY:1.3,talkR:.9,onDone:()=>afterBoatman(),variants:[
   {when:()=>st.phase==='arrive',lines:['어이쿠, 손님이구나! 첫별 축제 가는 길이지?','그런데 큰일이야. 아침 바람에 클로버 잎들이 뒤틀려서 물길을 꽉 막아 버렸어.','물길이 막히면 이슬방울이 못 굴러와. 이슬이 없으니 이슬배가 못 떠나고 있단다!','저기 강가에 뒤틀린 클로버 잎 세 개 보이지? 손으로 돌려서 바로 놓아 줄 수 있겠니?']},
   {when:()=>st.phase==='clovers',lines:['클로버는 이쪽 강가를 따라 셋 있어. 살랑살랑 반짝이는 잎이야. 가까이 가서 돌려 줘!']},
   {when:()=>st.phase==='boat',lines:['이슬배가 찰랑찰랑 찼어! 자, 타렴. 내가 노를 저어 줄게.']},
   {when:()=>st.phase==='done',lines:['우산은 뛰어내릴 때 저절로 펼쳐져. 다음은 민들레 공중정원이야!']}]});
-function afterBoatman(){if(st.phase==='boat'){startRide();return;} // 배가 찼으면 사공과 이야기를 마치는 대로 함께 탄다(배 옆이라 E가 사공 대화를 먼저 잡는다)
-  if(st.phase!=='arrive')return;st.phase='clovers';
-  G.ui.notice({kicker:'미션',title:'클로버 잎을 돌려 주세요',text:'강가에 누운 클로버 셋을 손으로 돌려 바로 놓으면, 막힌 이슬 물길이 다시 이어져요.'});q('클로버 잎 돌리기 (0/3)');
-  G.view.focus({at:[-5.2,.2,zS(-5.2)-1.1],from:[2.2,4.6,zS(2.2)+3.4],sec:1.8});} // 미션을 줄 때 카메라가 1.8초 동안 강가의 클로버 셋을 비췄다가 돌아온다(어디인지 몰라 헤매지 않게, 2026-11-02)
+/* 사공 대화를 끝까지 들은 뒤(onDone). 처음(arrive): 미션 카드 → 카드를 닫으면 카메라가 클로버 셋을 1.8초 비춤(어디인지 몰라 헤매지 않게) → 돌아온 뒤 사공 소개 카드.
+   앞의 것이 끝나야 다음이 나온다(G.steps — 2026-11-02, 셋이 한꺼번에 떠서 카드를 보는 사이 카메라 연출이 지나갔다) */
+function afterBoatman(){const meet=()=>G.profile.meet('boatman',boatman.root);
+  if(st.phase==='boat'){meet();startRide();return;} // 배가 찼으면 사공과 이야기를 마치는 대로 함께 탄다(배 옆이라 E가 사공 대화를 먼저 잡는다)
+  if(st.phase!=='arrive'){meet();return;}st.phase='clovers';q('클로버 잎 돌리기 (0/3)');
+  G.steps(()=>G.ui.notice({kicker:'미션',title:'클로버 잎을 돌려 주세요',text:'강가에 누운 클로버 셋을 손으로 돌려 바로 놓으면, 막힌 이슬 물길이 다시 이어져요.'}),
+    ()=>G.view.focus({at:[-5.2,.2,zS(-5.2)-1.1],from:[2.2,4.6,zS(2.2)+3.4],sec:1.8}),meet);}
 CLOVERS.forEach(c=>G.interact.add({root:c.g,at:[c.x,zS(c.x)+.55],face:[c.x,c.g.position.z],label:'돌리기',action:'돌리기',dur:1.5,once:true,near:2.6,
   when:()=>st.phase==='clovers',
   onStart:()=>{c.u=0;},
@@ -4888,10 +4942,35 @@ function startRide(){st.phase='riding';q('');boatman.wave(false);
        // 원더룹 옆 1~1.5m 열린 땅(소품·그루터기·바위·물을 피해 — 예전엔 바위 속에 묻혀 머리만 보였다), 카메라에서 본 옆쪽을 먼저(둘 다 보이게)
        const sp=openSpot(W0.x,W0.z,{prefer:[-f.z,f.x],d0:1,d1:1.5,avoid:[[boat.position.x,boat.position.z,1.2]]})||[W0.x-f.z*1.05,W0.z+f.x*1.05];
        bmG.position.set(sp[0],0,sp[1]);small.visible=false;bmG.rotation.set(0,Math.atan2(W0.x-bmG.position.x,W0.z-bmG.position.z),0);bmG.visible=true;}
-      G.dialog.say('사공 요정','도착! 물길을 열어 줘서 정말 고마워.',2.6).then(()=>G.dialog.say('사공 요정','이건 내 민들레 솜털 우산이야. 높은 데서 뛰어내릴 때 펼치면 사뿐히 내려올 수 있어!',4)).then(()=>{
-        gotUmbrella=true;st.phase='done';WL().userData.setGlideProp(umbrella());
+      G.dialog.say('사공 요정','도착! 물길을 열어 줘서 정말 고마워.',2.6).then(ok=>ok&&G.dialog.say('사공 요정','이건 내 민들레 솜털 우산이야. 높은 데서 뛰어내릴 때 펼치면 사뿐히 내려올 수 있어!',4)).then(ok=>{
+        if(!ok)return; // 구역을 바꿔 혼잣말이 지워졌으면 받지 않는다
+        st.phase='done';G.items.give('umbrella');syncUmbrella(); // 공통 아이템으로 저장(flags.umbrella) — 펼쳐 드는 모양도
         G.ui.itemCard({title:'민들레 솜털 우산을 얻었어요!',text:'점프하거나 떨어질 때 펼쳐져요',icon:icon('umbrella')});
         q('바위에서 뛰어내려 우산을 펼쳐 봐요');});}});}
+/* ---------- 다시 열었을 때: 우산을 이미 받았으면 받은 뒤 모습으로(새로고침해도 우산은 flags.umbrella로 남는다) ----------
+   클로버는 바로 놓였고, 이슬배는 건너편 둑에 닿아 있고, 사공은 그 옆 빈 땅에. 원더룹은 건너편(구역 정보 spawn)에서 시작 */
+const CLEAR='clear:fairy-dock';
+if(hasUmb()){st.phase='done';fixed=3;rode=true;CLOVERS.forEach(c=>{c.done=true;c.u=1;c.spin.rotation.set(0,0,0);});
+  const a=[-6.6,zN(-6.6)+1],b=[-6.8,zN(-6.8)-.3];boat.position.set(a[0],-.06,a[1]);boat.rotation.y=Math.atan2(b[0]-a[0],b[1]-a[1]);
+  const sp=openSpot(-6.6,-8.6,{prefer:[1,0],d0:1.1,d1:1.5,avoid:[[a[0],a[1],1.2]]})||[-5.4,-8.6];small.visible=false;bmG.position.set(sp[0],0,sp[1]);bmG.rotation.set(0,Math.atan2(-6.6-sp[0],-8.6-sp[1]),0);
+  q(G.state.flags[CLEAR]?'':'바위에서 뛰어내려 우산을 펼쳐 봐요');}
+/* ---------- 스테이지 완료 안내: 우산을 펼쳐 처음 땅에 내려앉으면 한 번(저장 flags['clear:fairy-dock']) — 짧은 효과음·반짝임, 3초 뒤 저절로. 보상·결과창 없음 ---------- */
+const cheer=G.fx.particles({parent:root,n:28,box:[.45,.1,.45],vel:[0,1.2,0],sway:.5,color:'#ffe6a6',size:.13,life:[.7,1.3],additive:true,rate:0,seed:73});cheer.points.visible=false;let cheerT=0;
+function stageClear(){G.state.setFlag(CLEAR,true);q('');const W=WL();if(W){cheer.burst(28,{x:W.position.x,y:W.position.y+.9,z:W.position.z});cheerT=1.6;}
+  G.ui.itemCard({title:'이슬방울 선착장 탐험 완료!',text:'다음 목적지: 민들레 공중정원',icon:icon('badge'),sec:3,sound:'success',who:'완료'});}
+/* ---------- 나침반 시작 연출: 요정의 숲에 처음 들어오면 한 번(사공과 이미 이야기했으면 없음) — 진행을 막지 않는다 ----------
+   배낭의 나침반 키링이 톡 흔들리며 반짝이고 바늘이 사공(선착장) 쪽을 가리킨다(07 charmPoint), 혼잣말 한 줄, 발밑에 선착장 쪽 빛 알갱이 줄(fx.guide, 2.6초).
+   개미굴에서 받은 더듬이 나침반이 길 찾기에 실제로 쓰이게(2026-11-02). 그리기는 빛 줄 1회 + 반짝임 1회, 3초 안에 치운다 */
+const INTRO='intro:fairy-compass';let intro=null;
+if(!G.state.flags[INTRO]&&!G.state.flags['meet:'+FAIRY_WORLD.world+':boatman']&&st.phase==='arrive'){let t=0,line=null;const glow=G.fx.particles({parent:root,n:14,box:[.08,.05,.08],vel:[0,.35,0],sway:.15,color:'#fff0b0',size:.07,life:[.5,1],additive:true,rate:0,seed:79});glow.points.visible=false;
+  intro={tick(dt){const W=WL();if(!W)return;t+=dt;
+      if(t>1.2&&!line&&!G.core.blocking()&&G.state.flags.compass&&W.userData.charm&&W.userData.charm.g.visible){G.state.setFlag(INTRO,true);const P=new THREE.Vector3();bmG.getWorldPosition(P);
+        W.userData.charmPoint={x:P.x,z:P.z,sec:3.2};G.sound.sfx('chime');
+        W.userData.charm.g.getWorldPosition(P);glow.points.visible=true;glow.burst(14,P);
+        line=G.fx.guide({parent:root,from:[W.position.x,W.position.z],to:[bmG.position.x,bmG.position.z],sec:2.8});G.ui.hint(line.points);
+        G.dialog.say('원더룹','개미굴에서 받은 나침반이 어딘가를 가리키고 있어!',2.8);t=0;}
+      if(line){if(glow.points.visible){glow.update(dt,null);if(t>1.4)glow.points.visible=false;}if(!line.tick(dt)&&!glow.points.visible)intro.end();}},
+    end(){if(line)line.end();glow.dispose();intro=null;}};}
 /* 노 젓기: 노를 물에 넣고(배 옆 바깥) 뒤로 당긴 뒤 들어 앞으로 — 되풀이. 노 끝이 물에 닿아 있는 동안 작은 물결이 퍼진다 */
 let rower=null,ripT=0;const _blade=new THREE.Vector3();
 function row(dt,t){const bm=rower;bm.tick(dt,t);const p=t*2.4,s2=Math.sin(p),dip=Math.max(0,Math.cos(p)),arm=bm.arms[1],oar=bm.root.userData.oar;
@@ -4961,7 +5040,12 @@ function update(dt,t){
     bigDrop.position.set(x,.5+Math.abs(Math.sin(u*PI*3))*.25*(1-u),z);bigDrop.rotation.z=-x*1.8;
     if(u>=1){dropCam=.8;bigDrop.visible=false;drop=null;boatReady=true;st.phase='boat';boatDew.visible=true;dewPop=0;splash.burst(36,{x:BOAT0[0],y:.35,z:BOAT0[2]});splashT=1.4;G.sound.sfx('pop');q('이슬배에 타요');}}
   // 우산을 펴고 활공하기 시작하면 안내 문구와 아이템 카드를 치운다(할 일을 해냈으니까)
-  if(gotUmbrella&&!st.glided){const W=WL();if(W&&W.userData.vert.air&&W.userData.vert.vy<-.3){st.glided=true;q('');G.ui.closeItemCard();}} // 우산이 펴지기 직전(떨어지기 시작할 때) 치워 펴지는 순간에는 카드가 없다
+  if(hasUmb()&&!st.glided){const W=WL();if(W&&W.userData.vert.air&&W.userData.vert.vy<-.3){st.glided=true;q('');G.ui.closeItemCard();}} // 우산이 펴지기 직전(떨어지기 시작할 때) 치워 펴지는 순간에는 카드가 없다
+  // 스테이지 완료: 우산을 펼쳐(활공) 처음 땅에 내려앉으면 한 번 — 짧은 안내, 저장(flags)
+  if(hasUmb()&&!G.state.flags[CLEAR]){const V=WL()&&WL().userData.vert;if(V){if(V.glide>.5)st.soared=true;else if(st.soared&&!V.air){st.soared=false;stageClear();}}}
+  if(intro)intro.tick(dt);
+  if(cheerT>0){cheerT-=dt;cheer.points.visible=cheerT>0;cheer.update(dt,null);}
+  if(!umb&&hasUmb())syncUmbrella(); // 처음 열 때(WL이 장면에 붙은 뒤) 이미 가진 우산 모양을 단다
   // 시간(0 낮 · 1 해 질 녘 · 2 밤): 물 색, 햇빛 얼룩, 버섯등(등마다 켜지는 때가 다름), 꽃·반딧불
   const k=SK.t,i0=Math.min(1,Math.floor(k)),u0=k-i0,day=1-ss(0,1,k),nite=ss(1,2,k);
   _wc.copy(WC[i0].c).lerp(WC[i0+1].c,u0);_we.copy(WC[i0].e).lerp(WC[i0+1].e,u0);waterMat.color.copy(_wc);waterMat.emissive.copy(_we);waterMat.emissiveIntensity=WC[i0].ei+(WC[i0+1].ei-WC[i0].ei)*u0;
@@ -4986,8 +5070,8 @@ function quality(L){qLevel=L;pollen.points.visible=L<1;if(L>=1)flies.points.visi
 return {...FAIRY_WORLD,
   name:'이슬방울 선착장',kind:'outdoor',music:'fairy-dock',
   sky:SK,mergeColors:MOB, // 휴대폰: 움직이지 않는 소품·무리를 텍스처마다 한 덩어리로(03 색 접기)
-  get glide(){return gotUmbrella;}, // 우산을 받은 뒤에만 활공(07은 구역 정보 glide를 매 프레임 읽는다)
-  spawn:{x:.2,z:8.6,ry:PI}, // 길 입구 조금 안쪽 — 숲 방(camRoom) 가장자리면 휴대폰 카메라가 원더룹에 바짝 붙는다
+  // 활공은 구역 정보 glide 없이 아이템으로(민들레 솜털 우산을 가졌을 때 — 07, game/items canGlide)
+  spawn:hasUmb()?{x:-6.6,z:-8.6,ry:PI}:{x:.2,z:8.6,ry:PI}, // 우산을 이미 받았으면 건너편(이슬배에서 내린 자리)에서 // 길 입구 조금 안쪽 — 숲 방(camRoom) 가장자리면 휴대폰 카메라가 원더룹에 바짝 붙는다
   camRoom:{c:[-.5,0],r:MOB?15:19.5}, // 따라가기 카메라가 머무는 방 — 휴대폰은 둘레 벽(합쳐 그린 큰 잎, 흐려지지 않음, 14m부터) 언저리까지(더 줄이면 세로 화면 카메라가 원더룹에 바짝 붙는다), 컴퓨터는 흐려 보기가 있어 벽 바깥까지
   platforms:[{r:[DOCK.x0,DOCK.x1,DOCK.z0,DOCK.z1],top:DOCK.top},...ROCKS],
   walkLinks:[[-6.8,zN(-6.8)-.35]], // 이슬배에서 내리는 자리(끼임 자동 시험이 건너편 마을도 걸어서 닿는 곳으로 본다)
@@ -5000,8 +5084,8 @@ return {...FAIRY_WORLD,
     mission(){st.phase='arrive';afterBoatman();},
     channel(){fixed=3;CLOVERS.forEach(c=>{c.done=true;c.u=1;c.spin.rotation.set(0,0,0);});openChannel();},
     ride(){fixed=3;st.phase='boat';boatReady=true;boatDew.visible=true;startRide();},
-    umbrella(){gotUmbrella=true;st.phase='done';WL().userData.setGlideProp(umbrella());}},
-  dispose(){const U=WL()&&WL().userData;if(U&&U.setGlideProp)U.setGlideProp(null);CLOVERS.forEach(c=>c.glint.dispose());splash.dispose();pollen.dispose();flies.dispose();L.dispose();forest.dispose();clearPaintCache();clearFairyCache();}, // 텍스처·재질 캐시까지 비운다(휴대폰 스테이지당 예산 — 다음 스테이지로 넘어가면 이 스테이지 것은 메모리에 남지 않게)
+    umbrella(){st.phase='done';G.items.give('umbrella');syncUmbrella();}},
+  dispose(){offUmb();if(intro)intro.end();cheer.dispose();const U=WL()&&WL().userData;if(U&&U.setGlideProp)U.setGlideProp(null);CLOVERS.forEach(c=>c.glint.dispose());splash.dispose();pollen.dispose();flies.dispose();L.dispose();forest.dispose();clearPaintCache();clearFairyCache();}, // 텍스처·재질 캐시까지 비운다(휴대폰 스테이지당 예산 — 다음 스테이지로 넘어가면 이 스테이지 것은 메모리에 남지 않게)
 };
 }
 
