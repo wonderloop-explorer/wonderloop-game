@@ -1,6 +1,6 @@
 /* 공통 시스템(js/game/) 규칙 자동 시험 — http://localhost:8000/?shot&zonetest&zone=sample-indoor 에서 (페이지가 다 뜬 뒤)
    (await import('/tools/game-tests.js')).run()  →  [{규칙, 통과, 내용}]
-   규칙 13개(대사 묶음·혼잣말·이벤트 줄·위협 멈춤·나레이션 다시·나레이션 기다림·프레임 오류·안내 표시·나침반 키링·영역 트리거·카드 줄 세우기·도감과 비밀·손 상호작용).
+   규칙 14개(대사 묶음·혼잣말·이벤트 줄·위협 멈춤·나레이션 다시·나레이션 기다림·프레임 오류·안내 표시·나침반 키링·영역 트리거·카드 줄 세우기·도감과 비밀·손 상호작용·대화 중간에 그만두기).
    촬영 모드라 게임 시간은 wlShot.step(n)으로만 흐른다(1/60초씩) → 매번 같은 결과. 견본 실내의 NPC·이벤트·먼지 뭉치를 쓴다. */
 const STEP = 1 / 60;
 export async function run() {
@@ -108,5 +108,13 @@ export async function run() {
     const faced = Math.abs(Math.atan2(Math.sin(WL.rotation.y), Math.cos(WL.rotation.y))) < .2, at = Math.hypot(WL.position.x + 1.6, WL.position.z - 1.5) < .3, back = WL.userData.action === '서기';
     press(); sec(1.5); const once = done === 1; G.interact.remove(it); s.scene.remove(box);
     ok('손 상호작용', label === 'E 돌리기' && startedA === '돌리기' && done === 1 && faced && at && back && once, `안내 "${label}", 동작 ${startedA}, 자리 ${at}·마주 봄 ${faced}, 끝나고 서기 ${back}, onDone ${done}회(한 번만 ${once})`); }
+  // 14. 대화를 중간에 그만두면 진행하지 않는다(onDone은 마지막 대사까지 넘겨 닫았을 때만 — 멀어지면 진행 그대로, 말풍선 되돌림, 다시 말 걸면 처음부터)
+  { await reset(); const n = G.dialog.findNPC('견본 손님'); let done = 0; const od = n.onDone; n.onDone = () => { done++; if (od) od(); };
+    stand(Z.guest); press(); sec(.3); const first = document.querySelector('#wlDlg .t, #wlDlg p:last-of-type') && G.dialog.talking();
+    stand(Z.guest, 6); sec(.3); const closed = !G.dialog.talking(), noDone = done === 0, bubbleBack = !n.talked;
+    stand(Z.guest); press(); sec(.3); const L = G.dialog.linesOf(n).length; for (let i = 0; i < L; i++) { press(); sec(.3); }
+    const doneOnce = done === 1 && !G.dialog.talking(); if (G.ui.cardShown() === 'dex') G.codex.closeDex(); n.onDone = od; sec(.2);
+    ok('대화를 중간에 그만두면 진행 안 함', first && closed && noDone && bubbleBack && doneOnce, `대화 중 멀어짐 → 닫힘 ${closed}, onDone 안 불림 ${noDone}, 말풍선 되돌림 ${bubbleBack} / 끝까지 넘기면 onDone 한 번 ${doneOnce}`); }
+
   return out;
 }

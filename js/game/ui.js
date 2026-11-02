@@ -156,8 +156,9 @@ function tickFade(){if(!fade)return;const f=fade,e=clock.t-f.t0;
 /* 아이템 획득 카드 (개미굴 #getCard): itemCard({title, text, icon, sec}) — 아래 가운데에 통 튀어나와 sec초(기본 2.8, 게임 시간) 뒤 사라진다.
    itemget 소리. 막지는 않지만(개미굴과 같음) 카드 자리를 함께 써서 미션 카드·결과창과 겹치지 않는다. 시점 기록 kind 'card' who '아이템' */
 const gt=$('#wlGet');let gtDone=null,gtCue=null,gtEnd=0;
-function itemCard({title='',text='',icon=null,sec=2.8}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
-  const img=gt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');gtEnd=clock.t+sec;gtCue=cue({kind:'card',who:'아이템',text:title,sub:text,dur:0});gt.classList.add('on');sfx('itemget');});}
+/* 아이템 획득 카드 — 같은 모양으로 스테이지 완료 안내도(sound·who만 바꿔) */
+function itemCard({title='',text='',icon=null,sec=2.8,sound='itemget',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
+  const img=gt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
 function closeItemCard(){if(cardOn!=='item')return;gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
 /* 캐릭터 소개 카드 (도감 대신 — 요정의 숲부터, game/profile.js가 부른다): profileCard({name, intro, likes, quote, img, sec})

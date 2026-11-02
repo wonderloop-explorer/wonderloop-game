@@ -5,10 +5,12 @@
    저장: localStorage 'wl-state'. 촬영 모드(?shot)에서는 저장된 값을 읽지도 쓰지도 않는다(매번 같은 그림). */
 const KEY='wl-state',SHOT=new URLSearchParams(location.search).has('shot');
 let saved={};if(!SHOT)try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}
-const flags=Object.assign({compass:false},saved.flags);
+const flags=Object.assign({compass:false,umbrella:false},saved.flags);
 const listeners=new Set();
 function save(){if(SHOT)return;try{localStorage.setItem(KEY,JSON.stringify({flags}));}catch(e){}}
 function setFlag(k,v=true){if(flags[k]===v)return;flags[k]=v;save();listeners.forEach(f=>{try{f(k,v);}catch(e){console.error(e);}});}
 function onFlag(f){listeners.add(f);return()=>listeners.delete(f);}
 function applyStart(start){if(start)for(const k in start)setFlag(k,start[k]);}
-export {applyStart,flags,onFlag,setFlag};
+/* 진행 초기화(톱니 메뉴 '진행 초기화'): 저장된 진행·도감을 지운다 — 08이 지운 뒤 페이지를 다시 연다 */
+function resetProgress(){try{localStorage.removeItem(KEY);localStorage.removeItem('wl-codex');}catch(e){}}
+export {applyStart,flags,onFlag,resetProgress,setFlag};

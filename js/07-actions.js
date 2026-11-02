@@ -4,6 +4,7 @@ import {PI,QUALITY,blobTex,footTex,lin,pencil,rng,scene,softMat} from './01-text
 const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로딩 뒤 첫 난수를 이어 썼다)
 import {blocked,bouncerAt,floorAt,groundY,hasHeights,overlap,windAt,zone} from './02-zone.js';
 import {flags} from './game/state.js';
+import {canGlide} from './game/items.js'; // 활공: 구역 정보 glide(true 늘·false 안 함), 없으면 활공 아이템(민들레 솜털 우산)을 가졌을 때
 import {hint} from './game/ui.js';
 import {sfx} from './game/sound.js'; // 걸음·뛰어오름·내려앉음 소리 (개미굴 step·jump·land)
 import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
@@ -261,7 +262,7 @@ function updateWL(dt,t){
   else{if(Math.hypot(X-V.px,Z-V.pz)>.5&&!V.jump){V.y=floorAt(X,Z);V.air=false;V.vy=0;} // 자리를 옮겼으면(구역 오가기·촬영) 그 자리 가장 높은 바닥에
     if(!V.air){const f=floorAt(X,Z,V.y);if(V.y-f>.3){V.air=true;V.vy=0;}else V.y=f; // 가장자리를 걸어 나가면 떨어짐
       const b=!V.air&&bouncerAt(X,Z);if(b&&b!==V.lastB)launch(b);else if(!b)V.lastB=null;}
-    if(V.air){const prev=V.y;V.vy-=GRAV*dt;const w=windAt(X,Z,V.y);const gl=!!zone.cur.glide&&!V.jump&&(V.vy<-.5||(!!w&&!!w.up&&V.glide>.4));V.glide+=((gl?1:0)-V.glide)*Math.min(1,dt*8);
+    if(V.air){const prev=V.y;V.vy-=GRAV*dt;const w=windAt(X,Z,V.y);const gl=(zone.cur.glide===true||(zone.cur.glide!==false&&canGlide()))&&!V.jump&&(V.vy<-.5||(!!w&&!!w.up&&V.glide>.4));V.glide+=((gl?1:0)-V.glide)*Math.min(1,dt*8);
       if(gl){V.sw+=dt*2.6;V.vy=Math.max(V.vy,-GLIDE*(1+.45*Math.sin(V.sw*2)));} // 활공: 떨어지는 속도를 GLIDE(초당 0.9) 언저리로 — 둥실둥실 빨라졌다 느려졌다
       // 바람 구역(02 winds): 공중에서 dir 쪽으로 밀고(활공 중이면 온 힘, 아니면 절반), 바람길(up)은 활공 중 위로 띄운다. 막힌 곳으로는 밀지 않는다
       if(w&&!V.jump){const k=w.strength*(gl?1:.5)*dt,nx=WL.position.x+w.dir[0]*k,nz=WL.position.z+w.dir[1]*k;if(!blocked(nx,nz,V.y)){WL.position.x=nx;WL.position.z=nz;}
@@ -292,7 +293,11 @@ function updateWL(dt,t){
   // 배낭 키링(나침반·받은 아이템): 걸을 때 달랑달랑. 나침반 계산은 예전 그대로, 다른 키링도 같은 식으로 따로 흔들린다
   for(const C of WL.userData.charms||[WL.userData.charm]){if(C&&C.g.visible){const tx=moving?.25+Math.sin(wlPhase*2)*.35:Math.sin(t*1.3)*.05,tz=moving?Math.sin(wlPhase)*.4:Math.sin(t*.9)*.04;
     C.vx+=((tx-C.ax)*60-C.vx*5)*dt;C.vz+=((tz-C.az)*60-C.vz*5)*dt;if(wlHop>.95)C.vx+=6*dt*20;
-    C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=C===WL.userData.charm&&WL.userData.charmNeedle;if(N)N.rotation.z=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;}}
+    C.ax=Math.max(-.05,C.ax+C.vx*dt);C.az+=C.vz*dt;C.g.rotation.x=C.ax;C.g.rotation.z=C.az;const N=C===WL.userData.charm&&WL.userData.charmNeedle;
+    /* 나침반이 어딘가를 가리킴(WL.userData.charmPoint={x,z,sec} — 세계 연출, 2026-11-02): 키링이 톡 흔들리고 바늘이 그쪽으로 돌아 떨다가 sec초 뒤 평소대로 */
+    const CP=C===WL.userData.charm&&WL.userData.charmPoint;if(CP){if(!CP.t){CP.t=0;C.vx+=5;C.vz+=3.5;}CP.t+=dt;if(CP.t>CP.sec)WL.userData.charmPoint=null;}
+    if(N){const free=Math.sin(t*1.7)*.25+Math.sin(t*23)*.05;if(CP){const a=Math.atan2(CP.x-WL.position.x,CP.z-WL.position.z)-WL.rotation.y,goal=Math.atan2(Math.sin(a),Math.cos(a))+Math.sin(t*19)*.06*Math.max(0,1-CP.t);
+      const k=Math.min(1,CP.t/.35)*Math.min(1,Math.max(0,(CP.sec-CP.t)/.4));N.rotation.z=free+(goal-free)*k;}else N.rotation.z=free;}}}
   antennae.forEach((a,i)=>{a.rotation.z=Math.sin(t*3+i)*0.15+(moving?Math.sin(wlPhase)*0.2:0);a.rotation.x=Math.sin(t*2.3+i*2)*0.1+(D.dashT>0&&WL.userData.hw===1?.3:0);}); // 대쉬 중에는 더듬이가 뒤로(개미굴) — 더듬이가 있는 개미탈일 때만
   blinkT-=dt;if(blinkT<0)blinkT=2.5+2.5*blinkR();const bl=blinkT<0.12?0.15:1;eyes.forEach(e=>e.scale.y=bl);
   wlBlob.visible=!WL.userData.riding; // 탈것 위에서는 발밑 그림자 대신 탈것 그림자

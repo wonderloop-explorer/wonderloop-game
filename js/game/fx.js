@@ -7,7 +7,10 @@
    - crowd({parent, n, parts:[{geo, mat, cast, at:[x,y,z]}], blobs}) → {set(i,x,y,z,ry,s), part(k), meshes, count}
      같은 모델 n개를 부품마다 InstancedMesh 하나로(부품 수만큼 그리기). set(i,x,y,z,ry,s)이 발바닥 자리(y = 땅에서 뜬 높이)를 정하고 부품은 at만큼 떨어져 붙는다.
      날개처럼 따로 움직일 부품은 part(k).setMatrixAt으로 직접. blobs: 01 blobMany(n)의 결과(휴대폰 단계 발밑 그림자, 컴퓨터는 null)를 넘기면 함께 옮긴다.
-     면 수를 아끼려면 부품 geo를 낮은 분할로(요정 무리는 몸·머리 합쳐 200면 안쪽 권장). */
+     면 수를 아끼려면 부품 geo를 낮은 분할로(요정 무리는 몸·머리 합쳐 200면 안쪽 권장).
+   - guide({parent, from:[x,z], to:[x,z], y, start, len, n, sec, color, r}) → {points, tick(dt) → 끝나면 false, end()}
+     발밑 길 안내 빛: 땅에 눕힌 작은 호박색 빛 동그라미(반지름 r m — 밝은 흙길 위에서도 보이게, 점 크기 대신 실제 크기) from에서 to 쪽으로 start~len m에 n개 + 끝에 꺾쇠 둘.
+     가까운 것부터 차례로 커져 물결치다 sec초 끝에 흐려지고 스스로 치운다. 인스턴스 하나라 그리기 1회(휴대폰 예산 안). 안내 표시라 부르는 쪽이 ui.hint(points)로 등록한다(영상 캡처가 숨김). */
 import * as THREE from 'three';
 let dotTex=null;
 const dot=()=>{if(dotTex)return dotTex;const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d'),gr=g.createRadialGradient(16,16,0,16,16,16);
@@ -45,4 +48,20 @@ function crowd({parent,n,parts,blobs=null}){
       meshes.forEach((m,k)=>{M.multiplyMatrices(o.matrix,offs[k]);m.setMatrixAt(i,M);m.instanceMatrix.needsUpdate=true;});
       if(blobs)blobs.set(i,x,0,z,.24*s*Math.max(.3,1-y*.6));},
     color(k,i,c){const m=meshes[k];m.setColorAt(i,new THREE.Color(c));m.instanceColor.needsUpdate=true;}};}
-export {crowd,particles};
+let guideTex=null; // 길 안내 동그라미: 가운데는 진하고 가장자리만 부드럽게(밝은 흙길 위에서도 또렷하게)
+const gdot=()=>{if(guideTex)return guideTex;const cv=document.createElement('canvas');cv.width=cv.height=64;const g=cv.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,250,225,1)');gr.addColorStop(.35,'rgba(255,200,90,1)');gr.addColorStop(.62,'rgba(240,150,40,.9)');gr.addColorStop(1,'rgba(240,150,40,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);
+  guideTex=new THREE.CanvasTexture(cv);guideTex.colorSpace=THREE.SRGBColorSpace;return guideTex;};
+function guide({parent,from,to,y=.05,start=.6,len=3,n=8,sec=2.6,color='#ffffff',r=.15}){
+  const dx=to[0]-from[0],dz=to[1]-from[1],L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,P=[];
+  for(let i=0;i<n;i++){const d=start+(len-start)*i/(n-1);P.push([from[0]+ux*d,from[1]+uz*d,i/(n-1),1]);}
+  for(const s2 of [-1,1]){const d=len-.3;P.push([from[0]+ux*d-uz*.27*s2,from[1]+uz*d+ux*.27*s2,1,.85]);} // 꺾쇠(화살표 머리)
+  const geo=new THREE.CircleGeometry(r,14).rotateX(-Math.PI/2),mat=new THREE.MeshBasicMaterial({color,map:gdot(),transparent:true,depthWrite:false,fog:false,toneMapped:false});
+  const im=new THREE.InstancedMesh(geo,mat,P.length);im.frustumCulled=false;im.renderOrder=5;if(parent)parent.add(im);
+  const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3();let t=0,done=false;
+  const end=()=>{if(done)return;done=true;if(im.parent)im.parent.remove(im);geo.dispose();mat.dispose();im.dispose();};
+  return {points:im,end,tick(dt){if(done)return false;t+=dt;if(t>=sec){end();return false;}
+    mat.opacity=1-Math.min(1,Math.max(0,(t-(sec-.6))/.6));
+    P.forEach(([x,z,d,s0],i)=>{const on=Math.min(1,Math.max(0,(t-d*.7)/.25)),k=on*s0*(.8+.25*Math.sin(t*6-d*5));S.setScalar(Math.max(.001,k));M4.compose(T.set(x,y,z),Q,S);im.setMatrixAt(i,M4);});
+    im.instanceMatrix.needsUpdate=true;return true;}};}
+export {crowd,guide,particles};

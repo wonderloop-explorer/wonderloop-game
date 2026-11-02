@@ -19,7 +19,7 @@
      hood: 'ant'                         들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
      platforms: [{r:[x0,x1,z0,z1]|c:[x,z,반지름], top}]   높은 발판(버섯 갓·가지 등): 위에 서고, 아래에서 걸어 들어가면 막힘(STEP보다 높으면)
      bouncers: [{c:[x,z,반지름], top, height, to:[x,z]}]   튀는 발판(버섯 갓): 밟기만 하면 top+height 높이로 튀어 to에 내려앉음(to 없으면 제자리)
-     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true  활공 가능(07, 펼치는 물건은 06 setGlideProp)
+     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true 늘 활공·false 활공 안 함·없으면 활공 아이템(민들레 솜털 우산, game/items canGlide)을 가졌을 때(07, 펼치는 물건은 06 setGlideProp)
      발판은 매 프레임 그 값을 읽는다 → p.top·c[2]를 바꾸면 자라는 발판(버섯 계단 등). 서 있는 발판이 천천히 자라면 원더룹도 함께 올라간다(한 프레임에 STEP보다 크게 바꾸지 않기)
      winds: [{c|r, dir:[x,z], strength, up, y:[아래,위], on}]   바람 구역: 공중·활공 중에만 dir 쪽으로 밀어 준다(초당 strength), up이 있으면 활공 중 위로 띄움(바람길).
                                          구역 코드가 dir·on을 바꾸면 바람 방향이 바뀐다(장난꾸러기 바람). 걷는 동안에는 밀지 않는다

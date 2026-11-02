@@ -4,7 +4,10 @@
    - 대사 묶음이 비어 있거나 준비되지 않은 NPC는 말 걸 상대로 고르지 않는다(개미굴 꿀단지 멈춤의 교훈). 대화 중 비면 닫는다.
    - 대화 중에는 다른 혼잣말이 끼어들지 않는다 → 줄을 섰다가 대화가 끝나면 나온다.
    - 대화가 열려 있으면 "막힘" → 위협 멈춤, 나레이션 멈췄다 닫히면 다시.
-   - 대사 한 줄이 뜰 때마다 blip 소리(개미굴과 같음). 대화창·말풍선 모양은 개미굴 편 그대로(ui.js·아래 말풍선). */
+   - 대사 한 줄이 뜰 때마다 blip 소리(개미굴과 같음). 대화창·말풍선 모양은 개미굴 편 그대로(ui.js·아래 말풍선).
+   - onDone은 마지막 대사까지 넘겨서 닫았을 때만(2026-11-02 — 대화 중 멀어지거나·대쉬하거나·구역을 바꿔 닫혀도 불려서, 사공 설명을 다 듣지 않아도 미션이 시작됐다).
+     중간에 닫히면 진행은 그대로 두고 '…' 말풍선을 되돌린다(다시 말을 걸면 처음부터).
+   - say()는 끝까지 보여 주면 true, 구역을 바꿔 지워지면 false로 끝난다 — 이어지는 진행은 결과를 보고(.then(ok=>ok&&…)). */
 import * as THREE from 'three';
 import {block,blocking,clock} from './core.js';
 import {sfx,voice} from './sound.js';
@@ -15,19 +18,21 @@ const NPCS=[];let talk=null,near=null,ctx=null;const sayQ=[];let saying=null;
 function npc(def){const n=Object.assign({talkR:0},def);NPCS.push(n);return n;}
 function linesOf(n){if(!n)return [];let L=n.lines;if(n.variants)for(const v of n.variants){try{if(v.when())L=v.lines;}catch(e){}}return Array.isArray(L)?L.filter(x=>x!=null&&x!==''):[];}
 const talkable=n=>n&&n.root&&n.root.visible!==false&&linesOf(n).length>0;
-function show(){const L=linesOf(talk.n);if(talk.i>=L.length){endTalk();return;}const text=L[talk.i];
+function show(){const L=linesOf(talk.n);if(talk.i>=L.length){endTalk(true);return;}const text=L[talk.i];
   const last=talk.i>=L.length-1; // 넘기는 법: 터치는 대화창이나 아래 단추("다음"·"닫기"), 키보드는 E, 마우스는 대화창이나 화면 누르기
   showDialog(talk.n.name,text,coarse?(last?'눌러서 닫기':'눌러서 계속'):(last?'E 또는 클릭으로 닫기':'E 또는 클릭으로 계속'));
   sfx('blip');if(talk.h)talk.h.stop();talk.h=voice({id:talk.n.voice&&talk.n.voice[text],text,who:talk.n.name,kind:'dialogue'});}
 function startTalk(n){if(!talkable(n)||talk)return false;n.talked=true; // 한 번 말을 건 인물은 '…' 말풍선을 더 띄우지 않는다
-if(saying){const r=saying.r;saying=null;r();} // 떠 있던 혼잣말은 끝내고
+if(saying){const r=saying.r;saying=null;r(true);} // 떠 있던 혼잣말은 끝내고
   talk={n,i:0,h:null};block('talk',true);show();return true;}
-function endTalk(){if(!talk)return;const n=talk.n;if(talk.h)talk.h.stop();talk=null;hideDialog();block('talk',false);if(n.onDone)try{n.onDone();}catch(e){console.error(e);}}
+function endTalk(done=false){if(!talk)return;const n=talk.n;if(talk.h)talk.h.stop();talk=null;hideDialog();block('talk',false);
+  if(!done){n.talked=false;return;} // 중간에 닫힘: 진행 그대로, 말풍선 되돌림
+  if(n.onDone)try{n.onDone();}catch(e){console.error(e);}}
 function advance(){if(!talk)return false;talk.i++;show();return true;}
-/* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 resolve */
+/* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 true, 구역을 바꿔 지워지면 false */
 function say(who,text,sec,id){return new Promise(r=>sayQ.push({who,text,sec,id,r}));}
 function tickSay(){
-  if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r();}
+  if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r(true);}
   if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('blip');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
     s.end=clock.t+Math.max(s.sec||0,h.dur);saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
@@ -49,7 +54,7 @@ function bubbleSize(cam,d){const asp=cam.aspect,far=7.5*(asp<1.25?Math.min(2.1,1
 const _p=new THREE.Vector3(),_q=new THREE.Vector3();
 function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
   // 대화 중 너무 멀어지면 닫음
-  if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk();}
+  if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
   near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=linesOf(talk.n);setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
   else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
@@ -65,7 +70,8 @@ function initDialog(c){ctx=c;makeBubble(c.scene);
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});
   document.getElementById('wlAct').addEventListener('pointerdown',e=>{e.preventDefault();act();});
   document.getElementById('wlDlg').addEventListener('pointerdown',e=>{if(talk){e.preventDefault();e.stopPropagation();advance();}});} // 대화창을 눌러도 다음
-function clearDialog(){if(talk)endTalk();NPCS.length=0;near=null;}
+function clearDialog(){if(talk)endTalk(false);NPCS.length=0;near=null; // 구역을 바꿀 때: 기다리던 혼잣말·떠 있는 혼잣말도 비우고 false로 끝낸다
+  sayQ.splice(0).forEach(s=>s.r(false));if(saying){hideDialog();const r=saying.r;saying=null;r(false);}}
 const talking=()=>!!talk;
 const findNPC=name=>NPCS.find(n=>n.name===name)||null;
 const lineEnd=()=>talk&&talk.h?talk.h.end:null; // 지금 대사(목소리)가 끝나는 게임 시각 — 영상 캡처가 대사를 저절로 넘길 때

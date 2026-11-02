@@ -74,6 +74,9 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
  set(new URLSearchParams(location.search).has('debug'));
  b.addEventListener('click',()=>{const vv=window.visualViewport;if(performance.now()-(GAME.controls.input.multiT||0)<800||(vv&&vv.scale>1.01))return; // 두 손가락 동작 끝에 잘못 눌린 것은 무시(저절로 열리지 않게)
    set(!document.body.classList.contains('debug'));});}
+/* 진행 초기화(시험용, 톱니 메뉴): 저장된 진행(flags — 우산·완료·소개 카드)·도감을 지우고 다시 연다. 실수로 눌리지 않게 3초 안에 한 번 더 눌러야 */
+{const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
+   if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
 
 /* ---------- 애니메이션 ---------- */
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);

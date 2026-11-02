@@ -21,15 +21,21 @@ import {clearProfile,initProfile} from './profile.js';
    view.hold(fn): fn()이 {at,from}을 돌려주는 동안 그 자리에서 비춘다(짧은 연출 — 이슬방울 따라가기) — null을 돌려주거나 hold(null)이면 원래 카메라로.
    focus·hold는 짧은 연출에만 쓴다. 플레이어가 화면을 끌거나 확대·축소하면 08이 바로 끝내고 지금 자리에서 조작을 넘겨준다.
    view.start({from,at}): 탈것·활공처럼 오래 가는 장면의 처음 각도 — 따라가기 카메라가 0.8초에 걸쳐 from 쪽(at 기준 방향·거리, at이 없으면 원더룹)으로 돌아간 뒤 그대로 둔다.
-     그 뒤로는 플레이어가 끌기·두 손가락·휠로 마음대로 돌리고, 손을 떼도 그 각도를 지킨다(카메라 규칙, CLAUDE.md) */
-const view={camera:null,req:null,aim:null,
+     그 뒤로는 플레이어가 끌기·두 손가락·휠로 마음대로 돌리고, 손을 떼도 그 각도를 지킨다(카메라 규칙, CLAUDE.md)
+   focus는 Promise — 카메라가 원더룹 쪽으로 돌아왔을 때(또는 플레이어가 만져 끝냈을 때·다른 연출로 바뀌었을 때) 끝난다.
+   steps(f1, f2, …): 카드·연출을 줄 세우기(2026-11-02 — 사공 대화 뒤 소개 카드·미션 카드·클로버 카메라가 한꺼번에 떠서 카드를 보는 사이 카메라 연출이 지나갔다).
+     함수마다 Promise(카드 ui.notice·itemCard·profile.meet, view.focus, dialog.say 등)를 돌려주면 그것이 끝나야 다음을 부른다. 구역을 바꾸면 남은 단계는 버린다. */
+let REQ=null,STEPS=0;
+const view={camera:null,aim:null,
+  get req(){return REQ;},set req(v){const o=REQ;REQ=v;if(o&&o!==v&&o.done)o.done();}, // 끝나거나 바뀌면 앞 연출의 Promise를 끝낸다
   start({from,at=null}){view.aim={from,at,t:0};},
-  focus({at,from=null,dist=7,sec=2}){view.req={at,from,dist,sec,t:0};},
+  focus({at,from=null,dist=7,sec=2}){return new Promise(done=>{view.req={at,from,dist,sec,t:0,done};});},
   hold(fn){view.req=fn?{fn,t:0}:null;}};
+async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
 function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);}
-function clearZoneGame(){view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();setQuest('');setPrompt('');}
-export {clickNPC,clearZoneGame,clock,cues,initGame,updateGame,view};
+function clearZoneGame(){STEPS++;view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();setQuest('');setPrompt('');}
+export {clickNPC,clearZoneGame,clock,cues,initGame,steps,updateGame,view};
 export * as core from './core.js';
 export * as sound from './sound.js';
 export * as controls from './controls.js';
