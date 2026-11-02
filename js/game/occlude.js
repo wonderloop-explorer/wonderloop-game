@@ -17,17 +17,28 @@ import * as THREE from 'three';
 let ctx=null;const LIST=[];
 const _c=new THREE.Vector3(),_d=new THREE.Vector3(),_p=new THREE.Vector3(),_x=new THREE.Vector3();
 function initOcclude(c){ctx=c;}
-function add(root,r=.5,h=1,{near=false,speed=12}={}){LIST.push({root,r,h,k:0,near,speed});} // near: 카메라 바로 옆(가로 r+1.2m 안)에 걸려도 흐림 · speed: 흐려지는 빠르기(6 ≈ 0.2초)
-function setFade(o,k){o.root.traverse(m=>{if(!m.isMesh&&!m.isSprite)return;const ms=Array.isArray(m.material)?m.material:[m.material];
+/* boxes(선택, 휴대폰 세계 구역의 큰 풀·잎 — 2026-11-02): 부품마다 월드 상자. 카메라에서 원더룹 발·허리·가슴·머리 네 점으로 가는 시선 가운데 하나라도 상자를 지나면 가린 것(여러 겹이면 겹마다 따로 흐려짐),
+   카메라가 상자 안이나 0.9m 안, 또는 보는 쪽 1.8m 안에 있으면 '바로 앞'이라 완전히 흐려 숨긴다(화면 전체·반이 초록으로 덮이지 않게). 상자가 없으면 예전처럼 가운데 기둥(r·h)으로 본다 */
+function add(root,r=.5,h=1,{near=false,speed=12,boxes=null}={}){LIST.push({root,r,h,k:0,f:0,near,speed,boxes});} // near: 카메라 바로 옆(가로 r+1.2m 안)에 걸려도 흐림 · speed: 흐려지는 빠르기(6 ≈ 0.2초)
+function setFade(o,k,f=0){const a=(1-.7*k)*(1-f);o.root.traverse(m=>{if(!m.isMesh&&!m.isSprite)return;if(o.boxes)m.visible=a>.03;const ms=Array.isArray(m.material)?m.material:[m.material];
   ms.forEach(mt=>{if(!mt)return;const u=mt.userData;if(u.o0===undefined){u.o0=mt.opacity;u.t0=mt.transparent;u.d0=mt.depthWrite;}
-    if(k>.02){if(!mt.transparent){mt.transparent=true;mt.needsUpdate=true;}mt.opacity=u.o0*(1-.7*k);mt.depthWrite=k<.5&&u.d0;}
+    if(k>.02||f>.02){if(!mt.transparent){mt.transparent=true;mt.needsUpdate=true;}mt.opacity=u.o0*a;mt.depthWrite=k<.5&&f<.5&&u.d0;}
     else{if(mt.transparent!==u.t0){mt.transparent=u.t0;mt.needsUpdate=true;}mt.opacity=u.o0;mt.depthWrite=u.d0;}});});}
+const _ray=new THREE.Ray(),_bx=new THREE.Box3(),_pts=[.1,.45,.75,1.05],_fw=new THREE.Vector3(),_q=new THREE.Vector3();
+function boxHit(o,W){let near=false,hit=false;ctx.camera.getWorldDirection(_fw);for(const b of o.boxes){_bx.copy(b).expandByScalar(.06);
+    if(_bx.distanceToPoint(_c)<.9||_bx.distanceToPoint(_q.copy(_c).addScaledVector(_fw,.9))<.75||_bx.distanceToPoint(_q.copy(_c).addScaledVector(_fw,1.8))<.6){near=true;break;} // 카메라 안·바로 옆·바로 앞(시야 1.8m 안)
+    _bx.expandByScalar(.22); // 시선은 원더룹 가운데 줄로만 보니, 몸 너비만큼 넓혀 가장자리에 걸친 줄기·잎도
+    if(!hit)for(const y of _pts){_x.set(W.position.x,W.position.y+y,W.position.z).sub(_c);const L=_x.length();_ray.set(_c,_x.divideScalar(L));
+      if(_ray.intersectBox(_bx,_p)){const t=_p.distanceTo(_c);if(t<L-.25){hit=true;break;}}}}
+  return near?2:hit?1:0;}
 function tickOcclude(dt){tickXray(dt);if(!ctx||!LIST.length)return;const cam=ctx.camera,W=ctx.WL;
   _c.copy(cam.position);_d.set(W.position.x,W.position.y+.75,W.position.z).sub(_c);const len=_d.length();if(len<.1)return;_d.divideScalar(len);
-  LIST.forEach(o=>{let hit=false;if(o.root.visible!==false&&o.root.parent){o.root.getWorldPosition(_p);const y0=_p.y;
+  LIST.forEach(o=>{let hit=false,full=false;if(o.root.visible!==false&&o.root.parent){
+      if(o.boxes){const r=boxHit(o,W);hit=r>0;full=r===2;}
+      else{o.root.getWorldPosition(_p);const y0=_p.y;
       for(let i=0;i<4&&!hit;i++){_p.y=y0+o.h*(.15+i*.25);const t=_x.copy(_p).sub(_c).dot(_d);if(t>.2&&t<len-.3)hit=_x.copy(_c).addScaledVector(_d,t).distanceTo(_p)<o.r;}
-      if(!hit&&o.near){_p.y=y0;hit=Math.hypot(_p.x-_c.x,_p.z-_c.z)<o.r+1.2&&_c.y<y0+o.h+1.5&&_c.y>y0-1;}}
-    const k=o.k+((hit?1:0)-o.k)*Math.min(1,dt*o.speed);if(k<.01&&o.k<.01)return;o.k=k<.01?0:k;setFade(o,o.k);});}
+      if(!hit&&o.near){_p.y=y0;hit=Math.hypot(_p.x-_c.x,_p.z-_c.z)<o.r+1.2&&_c.y<y0+o.h+1.5&&_c.y>y0-1;}}}
+    const s=Math.min(1,dt*o.speed),k=o.k+((hit?1:0)-o.k)*s,f=o.f+((full?1:0)-o.f)*s;if(k<.01&&o.k<.01&&f<.01&&o.f<.01)return;o.k=k<.01?0:k;o.f=f<.01?0:f;setFade(o,o.k,o.f);});}
 /* ---------- 흐려 보기 ---------- */
 const CUT={value:new THREE.Vector4(0,0,1,0)},PASS={value:0},LAYER=5; // CUT: xy 그리기 화소 자리(아래가 0), z 반지름(화소), w 원더룹까지 깊이(0이면 꺼짐) · PASS 0 보통 그리기, 1 흐린 조각 덧그리기
 let cutOn=false,cutRoot=null,scanT=1;const CUT_MATS=new Set();
@@ -83,4 +94,5 @@ function tickXray(dt){xrT+=dt;scanT+=dt;if(xrOn&&xrT>1){xrT=0;xrBuild();}if(cutO
 /* 잠깐 끄기(소개 카드 전신 찍기 등): const resume=cutPaused(true); … resume(); */
 function cutPaused(){const w=CUT.value.w;CUT.value.w=0;return()=>{CUT.value.w=w;};}
 function clearOcclude(){LIST.length=0;cutOn=false;cutRoot=null;CUT.value.w=0;CUT_MATS.clear();}
-export {add,clearOcclude,cut,cutPaused,initOcclude,overlayPass,prepCut,tickOcclude,xray};
+const list=()=>LIST; // 시험용: 지금 흐려진 물체 보기
+export {add,clearOcclude,cut,cutPaused,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};

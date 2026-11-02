@@ -2,10 +2,12 @@
    머리 윗부분을 연둣빛 꽃받침 모자가 덮고, 이마 높이 둘레에 뾰족한 꽃받침 잎이 왕관처럼 둘러선다. 그 위로 분홍 꽃잎 봉오리.
    꽃잎은 아래가 크림빛, 끝으로 갈수록 진한 분홍. 귀는 밖에 둔다(둥근 귀가 드러남). 머리카락은 꽃받침 모자 안쪽만 눌러 넣는다(06 pressHair) → 지그재그 앞머리가 잎 아래로 보인다.
    두 모습: build(false) 닫힌 봉오리 · build(true) 활짝 핀 꽃 — 06 HOODS에 'bud'·'bloom' 두 칸. 꽃받침 모자·잎은 같고 꽃잎만 다르다.
-   핀 꽃(2026-11-01 다시 만듦, 시트의 핀 모습 기준): 정리된 연꽃 — 꽃잎 세 겹(안쪽 6 · 가운데 8 · 바깥 10장), 겹마다 같은 꽃잎을 같은 간격으로 빙 둘러 놓고 겹끼리 엇갈리게.
-     안쪽은 거의 세우고 바깥으로 갈수록 눕혀 사발 모양, 꽃잎은 안으로 오목하고 끝은 살짝 바깥으로 휜다. 겹마다 꽃잎 폭을 그 높이의 둘레 간격보다 좁게 잡아 서로 뚫지 않는다.
-     앞쪽(얼굴 쪽) 꽃잎은 각도를 이어지게 조금만 더 눕혀 이마 위로(정면 눈높이에서 얼굴을 가리지 않게). 핀 꽃에는 초록 꽃받침(띠·잎)이 없고 머리에 닿는 밑동도 꽃잎 색(닫힌 봉오리는 그대로). 색은 아래 크림·연분홍 → 끝 진분홍, 안팎 같은 색.
-     가운데는 연두빛 둥근 연밥(위에 씨앗 구멍) 하나와 그 둘레 노란 꽃술 한 줄.
+   핀 꽃(2026-11-02 장미처럼 다시 만듦 — 연꽃처럼 반구에 꽃잎을 하나씩 꽂은 느낌이던 것): 밑동 반구 없이 꽃잎만으로.
+     꽃잎은 안쪽으로 오목한 숟가락 모양 한 장(rosePetal — 밑동이 좁고 위가 둥글게 넓음, 가로로 오목, 바깥 겹일수록 끝·가장자리가 바깥으로 말림).
+     가운데에서 바깥으로 황금각(137.5°)씩 돌며 나선으로 놓아 꽃잎마다 앞 꽃잎을 반쯤 덮는다. 안쪽은 작고 꼭 오므리고, 바깥으로 갈수록 크고 벌어진다.
+     밑동은 꽃잎을 촘촘히(28장) 겹쳐 머리 위를 덮고, 그래도 생기는 좁은 틈 아래에는 짙은 분홍 속꽃잎 그늘(작은 오목 그릇, 꽃잎 아래에 숨음)을 둬 머리가 비치지 않게.
+     가운데 두 가지(주소 ?bloom=pod로 고름 — 기본은 rose): rose 꼭 오므린 속꽃잎 · pod 작은 연두 연밥과 노란 꽃술 한 줄.
+     앞쪽(얼굴 쪽) 꽃잎은 더 눕혀 이마 위로(정면 눈높이에서 얼굴을 가리지 않게). 색은 아래 크림·연분홍 → 끝 진분홍.
    animate(g,u): 06 morphHood가 'bloom'으로 바뀔 때 u 0→1로 부른다 → 꽃잎이 닫힌 각도에서 핀 각도로 천천히 열린다(바깥 겹이 먼저, 안쪽이 뒤따라).
    좌표는 머리(head 뼈) 기준. 꽃잎 그림은 캔버스 256(아틀라스 교체 영역). 난수 없이 늘 같은 그림. */
 import * as THREE from 'three';
@@ -31,30 +33,28 @@ const tex=cv=>{const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorS
 // 꽃잎 각도: [기울기(+면 바깥으로 젖힘), 위치 반지름, 높이] — 닫힘·핌
 const OUTER={n:5,r:.3,y:.2,closed:-.5,open:1.38,s:1};
 const INNER={n:3,r:.1,y:.25,closed:-.16,open:.95,s:1.05};
-// 핀 꽃 세 겹: n 장수, r 밑동 반지름, y 밑동 높이, open 눕힘(앞쪽은 +front만큼 더), w 꽃잎 폭, L 길이, off 돌림(겹끼리 엇갈림), d 피어나는 차례(바깥 먼저)
-//   바깥 겹 밑동은 모자 가장자리(띠)에 붙여 띠를 덮는다(밑동 모자는 꽃잎 분홍 — 핀 꽃에서는 띠가 보이지 않게)
-//   폭은 꽃잎이 가장 넓은 높이의 둘레 간격(2π·반지름/장수)보다 좁게 — 같은 겹 꽃잎끼리 뚫지 않는다. 겹끼리는 밑동이 바깥일수록 낮고 더 눕혀 서로 닿지 않는다
-const B_RINGS=[
-  {n:10,r:.44,y:.05,open:.98,front:.16,w:.36,L:.7,off:0,closed:-.5,d:0},
-  {n:8,r:.33,y:.17,open:.6,front:.12,w:.3,L:.64,off:PI/8,closed:-.32,d:.15},
-  {n:6,r:.2,y:.26,open:.24,front:.1,w:.19,L:.54,off:PI/6,closed:-.1,d:.3}];
-// 연꽃 꽃잎: 회전체를 납작하게 → 안쪽(-z)으로 오목하게 → 끝(위 30%)은 바깥(+z)으로 살짝 휜다. 밑동이 원점, +y가 끝, +z가 바깥
-function lotusPetal(w,L){const P=[[0,0],[.1,.05],[.2,.16],[.25,.3],[.25,.45],[.2,.58],[.11,.68],[0,.74]];
-  const g=lathe(P.map(q=>new THREE.Vector2(q[0],q[1])),14).scale(w/.5,L/.74,.2),pos=g.attributes.position;
-  for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),v=y/L,xn=x/(w/2);
-    pos.setZ(i,pos.getZ(i)-.09*w*xn*xn*Math.sqrt(Math.sin(PI*Math.min(1,v)))+.07*L*Math.pow(Math.max(0,(v-.62)/.38),2));}
-  g.computeVertexNormals();return g;}
+// 핀 꽃(장미): 나선 꽃잎 — 안쪽부터 i번째 꽃잎은 황금각만큼 돌고, 밑동 반지름·크기·눕힘이 바깥으로 갈수록 커진다
+const ROSE_N=34,GOLD=PI*(3-Math.sqrt(5)),BLOOM_CENTER=(typeof location!=='undefined'&&new URLSearchParams(location.search).get('bloom'))==='pod'?'pod':'rose';
+/* 숟가락 꽃잎 한 장: 밑동이 원점, +y가 끝, +z가 바깥(꽃 밖), 안쪽(-z, 꽃 가운데)으로 오목. curl 0~1 = 끝·가장자리가 바깥으로 말리는 정도(바깥 겹) */
+function rosePetal(w,L,curl){const NU=8,NV=9,pos=[],uv=[],idx=[];
+  const hw=v=>w/2*(v<.6?.42+.58*Math.sqrt(Math.max(0,1-((v-.6)/.6)**2)):Math.max(0,1-((v-.6)/.4)**2)**.32); // 밑동은 좁지만 이웃과 겹칠 만큼, 6할 높이에서 가장 넓고, 끝은 넓고 둥글게(장미 꽃잎)
+  for(let j=0;j<=NV;j++){const v=j/NV;for(let i=0;i<=NU;i++){const u=i/NU*2-1,x=u*hw(v),y=v*L;
+    let z=-.32*w*u*u*Math.sin(PI*Math.min(1,v*.9+.1))**.6 // 가로로 오목(가장자리가 꽃 가운데 쪽으로)
+      +.06*L*Math.sin(PI*v) // 세로로 등이 살짝 불룩(숟가락)
+      +curl*(.22*L*Math.max(0,(v-.62)/.38)**2+.18*w*u**4*Math.max(0,(v-.45)/.55)); // 바깥 겹: 끝과 가장자리가 바깥으로 말림
+    pos.push(x,y,z);uv.push(i/NU,v);}}
+  for(let j=0;j<NV;j++)for(let i=0;i<NU;i++){const a=j*(NU+1)+i,b=a+NU+1;idx.push(a,a+1,b,a+1,b+1,b);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
 export function build({head,wm,SM},open=false){
   const g=new THREE.Group();g.position.set(0,.15,-.025);g.rotation.x=-.1;g.scale.set(1,1,.9);head.add(g);
   petalTex=petalTex||tex(petalCanvas());sepalTex=sepalTex||tex(sepalCanvas());
   const sepM=new THREE.MeshStandardMaterial({map:sepalTex,roughness:.9,metalness:0});
   const petM=new THREE.MeshStandardMaterial({map:petalTex,roughness:.8,metalness:0});
   const bloomM=open?new THREE.MeshStandardMaterial({map:bloomTex||(bloomTex=tex(petalCanvas(true))),roughness:.8,metalness:0}):null;
-  const capM=open?new THREE.MeshStandardMaterial({color:0xf4b9c2,roughness:.85,metalness:0}):sepM; // 핀 꽃: 머리에 닿는 밑동(모자·뒤통수 덮개)도 꽃잎 색 — 초록 꽃받침이 보이지 않게(2026-11-02)
-  // 꽃받침 모자
-  g.add(wm(lathe(PROF.map(q=>new THREE.Vector2(q[0]*1.01,q[1])),40),capM));
+  // 꽃받침 모자·뒤통수 덮개는 닫힌 봉오리만(핀 꽃은 꽃잎만으로 — 2026-11-02 장미)
+  if(!open){g.add(wm(lathe(PROF.map(q=>new THREE.Vector2(q[0]*1.01,q[1])),40),sepM));
   // 뒤통수 덮개: 꽃받침 모자 아래로 뒷머리 위쪽을 감싼다(시트처럼 머리 뒤가 초록) — 옆·앞은 열어 귀·얼굴이 보이게
-  {const back=wm(new THREE.SphereGeometry(.47,24,10,PI*1.12,PI*.76,PI*.5,PI*.22),capM);back.scale.set(1.01,1,1.01);g.add(back);}
+  {const back=wm(new THREE.SphereGeometry(.47,24,10,PI*1.12,PI*.76,PI*.5,PI*.22),sepM);back.scale.set(1.01,1,1.01);g.add(back);}}
   // 꽃받침 잎: 봉오리 아랫부분을 둘러 감싸는 넓적한 잎 7장(레퍼런스처럼 꽃을 받쳐 안는 모양) + 관자놀이 쪽 아래로 늘어진 잎 4장(귀 위를 덮지 않고 얼굴 둘레를 감쌈)
   const cupG=lathe([[0,0],[.1,.05],[.14,.15],[.12,.26],[.06,.34],[0,.38]].map(q=>new THREE.Vector2(q[0],q[1])),8).scale(1.25,1,.3);
   const sepals=[];
@@ -70,23 +70,29 @@ export function build({head,wm,SM},open=false){
       piv.position.set(Math.sin(a)*rr,P.y,Math.cos(a)*rr);piv.rotation.y=a;g.add(piv);
       const m=wm(petG,petM);m.scale.setScalar(P.s*(P===OUTER&&i%2?1.03:1));piv.add(m);
       petals.push({piv,closed:P.closed,open:P.open,d:outer?0:.25});piv.rotation.x=P.closed;}}
-  else{ // 핀 꽃: 세 겹 연꽃
-    const petM2=bloomM;
-    for(const P of B_RINGS){const geo=lotusPetal(P.w,P.L);for(let i=0;i<P.n;i++){const a=i/P.n*PI*2+P.off,piv=new THREE.Group();
-      piv.position.set(Math.sin(a)*P.r,P.y,Math.cos(a)*P.r);piv.rotation.order='YXZ';piv.rotation.y=a;g.add(piv);piv.add(wm(geo,petM2)); // YXZ: 꽃잎 자신 기준으로 바깥으로 눕힘(기본 XYZ면 머리 기준 앞으로만 기울어 뒤쪽 꽃잎이 머리 안으로 눕던 것 — 예전 핀 꽃이 두서없어 보인 까닭)
-      const op=P.open+P.front*Math.pow(Math.max(0,Math.cos(a)),3); // 앞쪽으로 갈수록 이어지게 더 눕힘(이웃 꽃잎과 각도가 갑자기 달라 부딪치지 않게)
-      petals.push({piv,closed:P.closed,open:op,d:P.d});piv.rotation.x=op;}}
-    // 꽃잎 밑동 안쪽 그릇(꽃잎과 같은 색): 꽃잎은 밑동이 좁아 사이가 벌어지는데, 그 틈으로 속이 비쳐 보이지 않게 받친다
-    g.add(wm(lathe([[0,.27],[.13,.28],[.18,.34],[.2,.42],[.205,.48]].map(q=>new THREE.Vector2(q[0],q[1])),18),petM2));
-    // 가운데 연밥(연두빛 둥근 꽃받침, 위에 씨앗 구멍) + 둘레 노란 꽃술 한 줄
-    stamen=new THREE.Group();stamen.position.y=.36;g.add(stamen);
-    const podM=new THREE.MeshStandardMaterial({color:0xb7d27a,roughness:.85}),seedM=new THREE.MeshStandardMaterial({color:0x7f9c4c,roughness:.9});
-    stamen.add(wm(lathe([[0,0],[.09,.01],[.12,.06],[.125,.12],[.11,.15],[0,.155]].map(q=>new THREE.Vector2(q[0],q[1])),16),podM));
-    for(let k=0;k<7;k++){const a=k/6*PI*2,rr=k<6?.065:0,sd=wm(new THREE.CylinderGeometry(.017,.017,.012,8),seedM);sd.position.set(Math.sin(a)*rr,.155,Math.cos(a)*rr);stamen.add(sd);}
-    const yM=new THREE.MeshStandardMaterial({color:0xf3c544,roughness:.7,emissive:0x8a5a00,emissiveIntensity:.15}),fM=new THREE.MeshStandardMaterial({color:0xf6df8e,roughness:.8});
-    const fil=new THREE.CylinderGeometry(.008,.01,.1,4).translate(0,.05,0),tipG=new THREE.SphereGeometry(.018,6,4);
-    for(let k=0;k<18;k++){const a=k/18*PI*2,piv=new THREE.Group();piv.position.set(Math.sin(a)*.14,.02,Math.cos(a)*.14);piv.rotation.set(0,a,0);piv.rotateX(.35);stamen.add(piv);
-      piv.add(wm(fil,fM));const tp=wm(tipG,yM);tp.position.y=.1;piv.add(tp);}}
+  else{ // 핀 꽃: 장미처럼 나선으로 감싸며 겹친 꽃잎
+    const petM2=bloomM,petD=petM2.clone();petD.side=THREE.DoubleSide;
+    const skip=BLOOM_CENTER==='pod'?8:0; // 연밥이 들어갈 가운데 꽃잎은 비운다
+    const prof=r=>{for(let k=1;k<PROF.length;k++){const [r0,y0]=PROF[k-1],[r1,y1]=PROF[k];if(r>=r1)return y1+(y0-y1)*(r-r1)/(r0-r1);}return PROF[PROF.length-1][1];}; // 모자 윤곽(눌린 머리) 높이
+    for(let i=skip;i<ROSE_N;i++){const t=i/(ROSE_N-1),a=i*GOLD,piv=new THREE.Group();
+      // 밑동은 머리(눌린 정수리 윤곽) 위에 — 안쪽은 꼭대기 가운데, 바깥은 모자 가장자리. 바깥 꽃잎은 정수리를 감싸 올라가는 컵 벽, 가장 바깥 몇 장만 크게 벌어진다
+      const r=.05+.42*t**.7,y=Math.max(-.02,prof(r)-.05-.06*t),w=.2+.3*t**.8,L=.28+.42*t**.7,curl=.25+.75*Math.max(0,(t-.4)/.6);
+      piv.position.set(Math.sin(a)*r,y,Math.cos(a)*r);piv.rotation.order='YXZ';piv.rotation.y=a;g.add(piv);
+      const m=wm(rosePetal(w,L,curl),petD);piv.add(m);
+      const openK=Math.max(0,(t-.68)/.32)**1.3,op=-.34+.42*t+openK*(.55+.15*Math.pow(Math.max(0,Math.cos(a)),3)); // 안쪽은 안으로 오므려 감싸고(-), 바깥 꽃잎은 모자 가장자리에서 거의 곧게 서서 정수리를 감싸 올라가다 끝만 바깥으로 말린다(앞쪽은 조금 더 벌려 이마 위로)
+      const op2=op+(skip?.62*(1-t):0); // 연밥 모양: 가운데 둘레 꽃잎을 벌려 연밥·꽃술이 보이게
+      petals.push({piv,closed:-.3-.1*t,open:op2,d:(1-t)*.35});piv.rotation.x=op2;} // 피어나기: 바깥 꽃잎이 먼저
+    // 속꽃잎 그늘: 꽃잎 아래 좁은 틈으로 머리가 비치지 않게 받치는 짙은 분홍 오목 그릇(꽃잎보다 안쪽·아래 — 겉에서는 보이지 않는다)
+    g.add(wm(lathe([[0,.2],[.18,.2],[.3,.15],[.38,.08],[.42,.02]].map(q=>new THREE.Vector2(q[0],q[1])),24),new THREE.MeshStandardMaterial({color:0xd9788f,roughness:.9,metalness:0})));
+    if(BLOOM_CENTER==='pod'){ // 가운데: 작은 연두 연밥 + 노란 꽃술 한 줄
+      stamen=new THREE.Group();stamen.position.y=.34;stamen.scale.setScalar(.95);g.add(stamen);
+      const podM=new THREE.MeshStandardMaterial({color:0xb7d27a,roughness:.85}),seedM=new THREE.MeshStandardMaterial({color:0x7f9c4c,roughness:.9});
+      stamen.add(wm(lathe([[0,0],[.09,.01],[.12,.06],[.125,.12],[.11,.15],[0,.155]].map(q=>new THREE.Vector2(q[0],q[1])),16),podM));
+      for(let k=0;k<7;k++){const a=k/6*PI*2,rr=k<6?.065:0,sd=wm(new THREE.CylinderGeometry(.017,.017,.012,8),seedM);sd.position.set(Math.sin(a)*rr,.155,Math.cos(a)*rr);stamen.add(sd);}
+      const yM=new THREE.MeshStandardMaterial({color:0xf3c544,roughness:.7,emissive:0x8a5a00,emissiveIntensity:.15}),fM=new THREE.MeshStandardMaterial({color:0xf6df8e,roughness:.8});
+      const fil=new THREE.CylinderGeometry(.008,.01,.1,4).translate(0,.05,0),tipG=new THREE.SphereGeometry(.018,6,4);
+      for(let k=0;k<14;k++){const a=k/14*PI*2,piv=new THREE.Group();piv.position.set(Math.sin(a)*.14,.02,Math.cos(a)*.14);piv.rotation.set(0,a,0);piv.rotateX(.35);stamen.add(piv);
+        piv.add(wm(fil,fM));const tp=wm(tipG,yM);tp.position.y=.1;piv.add(tp);}}}
   g.userData.petals=petals;g.userData.sepals=sepals;g.userData.stamen=stamen;
   return {g,profile:PROF,top:PROF[PROF.length-1][1]};}
 // 피어나기: u 0→1 — 바깥 겹이 먼저, 안쪽 겹이 뒤따라(겹마다 d만큼 늦게). 끝에서 살짝 더 젖혔다 돌아와 탐스럽게

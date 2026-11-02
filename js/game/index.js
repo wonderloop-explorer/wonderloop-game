@@ -15,11 +15,16 @@ import {clearRide,initRide,tickRide} from './ride.js';
 import {clearCompanions,initCompanions,tickCompanions} from './companion.js';
 import {clearControls,initControls} from './controls.js';
 import {clearProfile,initProfile} from './profile.js';
-/* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기) */
-const view={camera:null};
+/* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기)
+   view.focus({at:[x,y,z], from:[x,y,z]?, dist, sec}): 따라가기 카메라가 sec초 동안 at을 비췄다가 돌아온다(미션 장소 알려 주기, 2026-11-02).
+     from이 없으면 원더룹 쪽에서 dist(기본 7)만큼 떨어져 비스듬히 내려다본다. 들어갈 때·돌아올 때 0.45초씩 부드럽게(08 따라가기 카메라가 섞는다).
+   view.hold(fn): fn()이 {at,from}을 돌려주는 동안 그 자리에서 비춘다(탈것 옆모습 등) — null을 돌려주거나 hold(null)이면 원래 카메라로 */
+const view={camera:null,req:null,
+  focus({at,from=null,dist=7,sec=2}){view.req={at,from,dist,sec,t:0};},
+  hold(fn){view.req=fn?{fn,t:0}:null;}};
 function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);}
-function clearZoneGame(){clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();setQuest('');setPrompt('');}
+function clearZoneGame(){view.req=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();setQuest('');setPrompt('');}
 export {clickNPC,clearZoneGame,clock,cues,initGame,updateGame,view};
 export * as core from './core.js';
 export * as sound from './sound.js';

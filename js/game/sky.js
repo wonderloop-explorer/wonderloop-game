@@ -53,7 +53,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
       if(L.fog){L.fog.color.copy(cur.fog);L.fog.near=num('fogNear');L.fog.far=num('fogFar');}
       if(sunDirOut)sunDirOut.copy(cur.dir.copy(a.dir).lerp(b.dir,u).normalize());
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
-      smat.opacity=st*ss(1.75,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;
+      smat.opacity=st*ss(1.75,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
       if(camera){g.position.copy(camera.position);g.scale.setScalar(Math.min(1,camera.far*.9/radius));}},  // 08이 카메라 먼 거리를 안개 끝으로 당기면 하늘도 그 안으로
     dispose(){dot.dispose();}};
   return S;}

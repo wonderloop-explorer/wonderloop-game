@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {PI,QUALITY,blobTex,footTex,lin,pencil,rng,scene,softMat} from './01-textures.js';
 const blinkR=rng('blink',{afterLoad:true}); // 깜빡임 간격 (예전엔 로딩 뒤 첫 난수를 이어 썼다)
-import {blocked,bouncerAt,floorAt,groundY,hasHeights,windAt,zone} from './02-zone.js';
+import {blocked,bouncerAt,floorAt,groundY,hasHeights,overlap,windAt,zone} from './02-zone.js';
 import {flags} from './game/state.js';
 import {hint} from './game/ui.js';
 import {sfx} from './game/sound.js'; // 걸음·뛰어오름·내려앉음 소리 (개미굴 step·jump·land)
@@ -80,6 +80,8 @@ function actionPose(A,t){
  // 약 2등신이라 팔이 정수리까지 닿지 않는다 — 손은 볼·탈 아래 테두리 높이가 한계(더 올리면 팔이 머리 뒤로 숨는다)
  if(A==='머리 만져 보기'){const r=Math.min(1,t/.5),pat=Math.sin(Math.max(0,t-.5)*8)*Math.min(1,Math.max(0,t-.5)*2);
    return{ax0:-2.35*r,ax1:-2.35*r,az0:-.9*r,az1:.9*r,ex0:-.35*r+pat*.12,ex1:-.35*r-pat*.12,ez0:1.25*r,ez1:-1.25*r,hx:-.1*r,hz:pat*.04,bx:-.04*r,wy:t<.3?.04*Math.sin(t/.3*PI):0};}
+ // 앉기(게임 로직 전용 — 탈것 바닥에 앉음, game/ride pose): 다리를 앞으로 쭉 펴고 엉덩이를 바닥에, 두 손은 무릎 옆에
+ if(A==='앉기'){const b=Math.sin(t*1.6)*.015;return{lx0:-1.45,lx1:-1.45,kx0:.12,kx1:.12,ly0:.3,ly1:.3,wy:-.235,bx:-.06+b,ax0:-.55,ax1:-.55,az0:-.42,az1:.42,ex0:-.35,ex1:-.35,hx:-.04,hz:Math.sin(t*.7)*.04};}
  if(A==='손 흔들기')return{az0:-1.5,ex0:-.15,ez0:-.55+Math.sin(t*9)*.3,ax0:-.15,az1:.35,ax1:0,hz:-.14,hx:-.05,bz:-.04};
  return null;}
 /* 손에 드는 더듬이 나침반 + 쥐는 손(엄지) */
@@ -241,16 +243,16 @@ function updateWL(dt,t){
      if(ml>.08){let diff=Math.atan2(mx,mz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);}
      if(D.dashT>0){D.dashT-=dt;mx=D.dx;mz=D.dz;D.spd=DRV.dash;if(D.dashT<=0)D.spd=ml>.08?DRV.run:DRV.walk*.4;}
      if(D.spd>.05&&!V.jump){const st=D.spd*dt,nx=WL.position.x+mx*st,nz=WL.position.z+mz*st,fy=H?V.y:undefined;
-       if(!blocked(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}else if(!blocked(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}else if(!blocked(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}}}
+       if(canGo(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}else if(canGo(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}else if(canGo(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}}}
    else D.spd=0;}
   if(V.jump){WL.position.x+=V.jump.vx*dt;WL.position.z+=V.jump.vz*dt;} // 튀어 날아가는 중: 걷기 대신
   else if(wlTarget&&!WL.userData.riding){const dx=wlTarget.x-WL.position.x,dz=wlTarget.z-WL.position.z,d=Math.hypot(dx,dz);
     if(d<0.06)wlTarget=null;else{const st=Math.min(1.5*dt*(WL.userData.action==='뛰기'?1.9:1),d),nx=WL.position.x+dx/d*st,nz=WL.position.z+dz/d*st;
       let diff=Math.atan2(dx,dz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);
       const fy=H?V.y:undefined; // 높이가 있는 구역: 발보다 높은 발판 옆면은 막힘
-      if(!blocked(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}
-      else if(!blocked(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}
-      else if(!blocked(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}
+      if(canGo(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}
+      else if(canGo(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}
+      else if(canGo(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}
       else wlTarget=null;}}
   let GY;const X=WL.position.x,Z=WL.position.z;
   if(WL.userData.riding){GY=WL.userData.riding.y;V.y=GY;V.vy=0;V.air=false;V.jump=null;V.glide=0;V.swX=0;WL.rotation.z=0;wlTarget=null;} // 탈것(game/ride)이 자리를 정하는 동안: 걷기·높이 계산 쉼
@@ -268,10 +270,11 @@ function updateWL(dt,t){
     else V.glide=Math.max(0,V.glide-dt*8);
     // 활공하는 동안 낙엽처럼 양옆으로 왔다 갔다(옆으로 실제로 움직이고, 움직이는 쪽으로 몸을 기울임)
     // 옆으로 움직이는 건 공중에서만 — 내려앉으면 그 자리에 서고(흔들린 만큼 되돌아 미끄러지지 않게) 몸 기울기만 풀린다
-    if(V.air){const sx=Math.sin(V.sw)*.5*V.glide,d=sx-V.swX;V.swX=sx;if(d){const c=Math.cos(WL.rotation.y),sn=Math.sin(WL.rotation.y);WL.position.x+=c*d;WL.position.z-=sn*d;}}
+    if(V.air){const sx=Math.sin(V.sw)*.5*V.glide,d=sx-V.swX;V.swX=sx;if(d){const c=Math.cos(WL.rotation.y),sn=Math.sin(WL.rotation.y),nx=WL.position.x+c*d,nz=WL.position.z-sn*d;if(canGo(nx,nz,V.y)){WL.position.x=nx;WL.position.z=nz;}}} // 흔들려도 장애물 속으로는 들어가지 않게
     else V.swX=0;
     WL.rotation.z=-Math.cos(V.sw)*.28*V.glide;
     GY=V.y;}
+  unstick(dt,H);
   V.px=X;V.pz=Z;
   if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
@@ -311,7 +314,7 @@ function updateWL(dt,t){
    else{U.pc=Object.assign({},base);body.rotation.x=0;body.position.z=0;neck.rotation.x=0;neck.rotation.y=0;legs.forEach(lg=>{lg.userData.knee.rotation.x=0;lg.userData.boot.rotation.x=-lg.rotation.x*.6;});arms.forEach(ap=>ap.userData.elbow.rotation.set(-.12,0,0));}
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
-   if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&!!U.heldObj)); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안)
+   if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
    if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass; // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
    (U.charms||[]).forEach(C=>{if(C.flag)C.g.visible=!!flags[C.flag];}); // 받은 아이템 키링은 받은 뒤에만 (game/items, 06 addCharm)
    (U.badges||[]).forEach(B=>B.g.visible=!!flags[B.flag]); // 꾸미기(배지)도 받은 뒤에만 (06 addBadge)
@@ -323,7 +326,24 @@ function updateWL(dt,t){
    if(sy!==1||Math.abs(D.sy-1)>1e-4||Math.abs(D.sxz-1)>1e-4){D.sy+=(sy-D.sy)*Math.min(1,dt*22);D.sxz+=(sxz-D.sxz)*Math.min(1,dt*22);if(Math.abs(D.sy-1)<1e-4&&sy===1){D.sy=1;D.sxz=1;}WL.scale.set(WLS*D.sxz,WLS*D.sy,WLS*D.sxz);}}
   // 몸통: 위 계산은 발바닥 기준 몸 원점의 위치·회전 → 엉덩이 축 뼈(spine)로 옮김 (spine·(0,-HIP,0) = 예전 몸 변환)
   spine.rotation.copy(body.rotation);spine.position.copy(body.position).add(_hv.set(0,HIP,0).applyEuler(body.rotation));spine.position.y-=HIP;
+  // 활공 물건은 오른손에 쥔다(2026-11-02): 물건 원점(줄기 아래 끝)을 오른손 자리에, 몸과 같은 방향으로 곧게 — 머리 위로 오는 모양은 물건 쪽(민들레는 줄기가 휘어 머리 위로)
+  {const U=WL.userData,G=U.glideProp;if(G&&G.visible&&U.heldBone){WL.updateMatrixWorld(true);U.heldBone.getWorldPosition(_gp);G.parent.worldToLocal(_gp);G.position.copy(_gp);G.quaternion.identity();}}
   rigSync();
 }
+/* 갇힘 안전장치(2026-11-02): 장애물 속에 들어가 있으면 덜 파고드는 쪽으로는 걸을 수 있다(canGo).
+   그래도 3초 넘게 움직이려는데(조이스틱·키) 제자리면 가까운 열린 곳으로 부드럽게 밀어내고, 가까이 없으면 마지막으로 서 있던 안전한 자리로 옮긴다.
+   안전한 자리 = 땅(또는 발판) 위에 서 있고, 장애물에 닿지 않고, 사방 0.35m도 열려 있는 곳(0.5초마다 기억) */
+function canGo(nx,nz,fy){if(!blocked(nx,nz,fy))return true;const c=overlap(WL.position.x,WL.position.z,fy);return c>0&&overlap(nx,nz,fy)<c-1e-4;}
+const ST={t:0,ax:0,az:0,safe:null,safeT:0,push:null};
+const openAt=(x,z,y)=>!blocked(x,z,y)&&[[.35,0],[-.35,0],[0,.35],[0,-.35]].every(([a,b])=>!blocked(x+a,z+b,y));
+function unstick(dt,H){const U=WL.userData,X=WL.position.x,Z=WL.position.z,fy=H?V.y:undefined;
+  if(ST.push){const p=ST.push,k=Math.min(1,dt*7);WL.position.x+=(p.x-X)*k;WL.position.z+=(p.z-Z)*k;if(Math.hypot(p.x-WL.position.x,p.z-WL.position.z)<.02)ST.push=null;return;}
+  if(!V.air&&!U.riding){ST.safeT+=dt;if(ST.safeT>.5){ST.safeT=0;if(openAt(X,Z,fy))ST.safe={x:X,z:Z};}}
+  const dv=U.riding?null:U.drive,want=!!dv&&Math.hypot(dv.x,dv.z)>.08&&!V.air;
+  if(!want||Math.hypot(X-ST.ax,Z-ST.az)>.25){ST.t=0;ST.ax=X;ST.az=Z;return;}
+  ST.t+=dt;if(ST.t<3)return;ST.t=0;
+  let best=null;for(let r=.3;r<=4&&!best;r+=.2)for(let i=0;i<16;i++){const a=i/16*PI*2,x=X+Math.cos(a)*r,z=Z+Math.sin(a)*r;if(openAt(x,z,fy)){best={x,z};break;}}
+  if(best)ST.push=best;else if(ST.safe){WL.position.x=ST.safe.x;WL.position.z=ST.safe.z;}}
+const _gp=new THREE.Vector3();
 const walking=()=>!!wlTarget; // 영상 캡처: 걸어가서 도착했는지
 export {hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};

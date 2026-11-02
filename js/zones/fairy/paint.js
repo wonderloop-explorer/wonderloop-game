@@ -21,6 +21,8 @@ export function painted(name,base,cols,opt={}){
   g.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
   if(opt.rep)t.repeat.set(opt.rep[0],opt.rep[1]);
   return cache[key]=t;}
+/* 구역을 떠날 때(구역 dispose): 그려 둔 붓결 캔버스를 모두 놓는다 — GPU 쪽은 02 unloadZone이 비우고, 여기서는 자바스크립트 메모리(캔버스)까지(휴대폰 스테이지당 예산) */
+export function clearPaintCache(){for(const k in cache){cache[k].dispose();delete cache[k];}GRAD&&GRAD.dispose();GRAD=null;}
 /* 개미굴 CRAYON: 흰 바탕에 옅은 크림 획 — 모든 툰 재질의 기본 결 */
 export const CRAYON=()=>painted('crayon','#ffffff',['#efe2d6','#ffffff','#e2d2c6','#fff6ea','#d8c8bc'],{n:1100,len:18,w:5,dots:900,amin:.1,amax:.32,size:256});
 let GRAD=null;

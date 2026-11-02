@@ -79,9 +79,17 @@ function blocked(x,z,y){if(!areaAt(x,z))return true;
     if(o.r){if(x>o.r[0]-WR&&x<o.r[1]+WR&&z>o.r[2]-WR&&z<o.r[3]+WR)return true;}
     else{const dx=x-o.c[0],dz=z-o.c[1];if(dx*dx+dz*dz<(o.c[2]+WR)*(o.c[2]+WR))return true;}}
   return false;}
+/* 얼마나 파고들었나(m, 0이면 자유): 원더룹이 어떤 까닭으로든(활공 흔들림·튀는 발판·탈것에서 내림) 장애물 속에 들어가 있으면
+   07이 '덜 파고드는 쪽'으로는 움직이게 한다 — 갇혀서 점프·대쉬로도 못 나오던 문제(2026-11-02, 요정의 숲 마을 꽃지붕 집 옆) */
+function overlap(x,z,y){if(!areaAt(x,z))return 9;let d=0;
+  if(y!=null)for(const p of zone.cur.platforms)if(p.top>y+STEP&&inShape(p,x,z,WR*.6))d=Math.max(d,p.r?Math.min(x-p.r[0],p.r[1]-x,z-p.r[2],p.r[3]-z)+WR*.6:p.c[2]+WR*.6-Math.hypot(x-p.c[0],z-p.c[1]));
+  for(const k in zone.cur.areas)for(const o of zone.cur.areas[k].obstacles){
+    if(o.r){if(x>o.r[0]-WR&&x<o.r[1]+WR&&z>o.r[2]-WR&&z<o.r[3]+WR)d=Math.max(d,Math.min(x-o.r[0],o.r[1]-x,z-o.r[2],o.r[3]-z)+WR);}
+    else{const q=o.c[2]+WR-Math.hypot(x-o.c[0],z-o.c[1]);if(q>0)d=Math.max(d,q);}}
+  return d;}
 const groundY=(x,z)=>zone.cur.groundY?zone.cur.groundY(x,z):0;
 const doorAt=(x,z)=>zone.cur.doors.find(d=>inRect(d.rect,x,z))||null;
 // 처음 구역: 보통 베이스캠프, 주소에 ?zone=이름 을 붙이면 그 구역에서 시작
 {const want=new URLSearchParams(location.search).get('zone');zone.cur=await loadZone(ZONES[want]?want:'basecamp');}
 zone.area=areaAt(zone.cur.spawn.x,zone.cur.spawn.z)||Object.keys(zone.cur.areas)[0];
-export {STEP,WR,ZONES,ZONETEST,areaAt,blocked,bouncerAt,doorAt,floorAt,groundY,hasHeights,loadZone,unloadZone,windAt,zone};
+export {STEP,WR,ZONES,ZONETEST,areaAt,blocked,bouncerAt,doorAt,floorAt,groundY,hasHeights,loadZone,overlap,unloadZone,windAt,zone};

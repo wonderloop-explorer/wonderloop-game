@@ -26,7 +26,7 @@ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,stencil:true})
 /* 그리기 해상도: 기기 픽셀 비율(최대 2)을 쓰되, 그리는 화소가 1440p(2560×1440)를 넘지 않게 낮춘다 — 5K 아이맥 전체 화면이 1470만 화소를 그려 팬이 돌던 문제.
    휴대폰 단계는 최대 1.5배(개미굴과 같음 — 아이폰 기본 3배를 그대로 그리면 화소가 4배라 기기가 뜨거워진다, 2026-11-01). 촬영 모드(?shot)는 08이 1로 고정하고 wlShot.size로 크기를 정하므로 건드리지 않는다(1440p 영상 품질 그대로). */
 const MAX_PX=2560*1440,FIXED_PR=new URLSearchParams(location.search).has('shot');
-let PR_CAP=QUALITY.tier==='mobile'?1.5:2; // 08 자동 화질 조절이 휴대폰에서 1.25·1로 낮출 수 있다(setPixelCap)
+let PR_CAP=+(new URLSearchParams(location.search).get('pr')||0)||(QUALITY.tier==='mobile'?1.25:2); // ?pr=1.5 처럼 주면 그 값(비교 촬영용) // 휴대폰 1.25(2026-11-02 발열 — 1.5와 나란히 비교해 차이가 거의 안 보임), 08 자동 화질 조절이 1.1·1로 더 낮출 수 있다(setPixelCap)
 const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,PR_CAP);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
 renderer.setPixelRatio(fitPixelRatio(stage.clientWidth,stage.clientHeight));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -60,26 +60,35 @@ function setAreaCamera(c,place){
    구역 뿌리 아래 움직이지 않는 메시를 재질별로 하나로 합친다 (원래 메시는 '최적화 끄기'로 다시 볼 수 있게 숨겨 둔다) */
 const _v=new THREE.Vector3(),_nm=new THREE.Matrix3();
 function sig(m){const t=m.material;return [t.type,t.map?t.map.uuid:'',t.color?t.color.getHexString():'',t.transparent,t.opacity,t.side,t.emissive?t.emissive.getHexString()+t.emissiveIntensity:'',t.flatShading,t.polygonOffset,t.blending,t.depthWrite,m.castShadow,m.receiveShadow].join('|');}
+/* 색 접기(구역 정보 mergeColors — 휴대폰 단계 세계 구역, 2026-11-02): 재질 색을 정점 색으로 옮겨 텍스처·면·그림자가 같은 것끼리 한 덩어리로 그린다(색이 달라도 하나).
+   움직이지 않는 무리(InstancedMesh)도 인스턴스마다 펼쳐 넣는다(인스턴스 색 × 재질 색). 스스로 빛나는 재질(등불·꽃 — 밝기가 시간 따라 바뀜)과 정점 색을 이미 쓰는 재질은 예전처럼 따로 */
+const foldable=t=>t.isMeshToonMaterial&&!t.vertexColors&&!(t.emissive&&t.emissive.getHex()!==0);
+function sigFold(o){const t=o.material;return ['fold',t.map?t.map.uuid:'',t.side,t.flatShading,QUALITY.shadows&&o.castShadow,QUALITY.shadows&&o.receiveShadow].join('|');} // 진짜 그림자가 없는 휴대폰은 그림자 설정이 달라도 한 덩어리
 function mergeStatic(z){
   z.root.updateMatrixWorld(true);
   const keepOut=new Set();z.keepOut.forEach(k=>k.traverse(o=>keepOut.add(o)));
-  const buckets=new Map(),originals=[],origSet=new Set();
+  const buckets=new Map(),originals=[],origSet=new Set(),fold=!!z.mergeColors;
   z.root.traverse(o=>{
-    if(!o.isMesh||o.isInstancedMesh||keepOut.has(o)||o.userData.noMerge)return;const t=o.material; // noMerge: 카메라를 따라다니는 하늘 지붕 등 // InstancedMesh(같은 모델 여러 개)는 합치면 한 개로 뭉개지므로 빼기
+    if(!o.isMesh||keepOut.has(o)||o.userData.noMerge)return;const t=o.material; // noMerge: 카메라를 따라다니는 하늘 지붕 등
+    if(o.isInstancedMesh&&!(fold&&foldable(t)))return; // InstancedMesh(같은 모델 여러 개)는 합치면 한 개로 뭉개지므로 빼기 — 색 접기에서는 인스턴스마다 펼친다
     const ok=!t.transparent||(t.isMeshBasicMaterial&&t.polygonOffset&&t.blending===THREE.NormalBlending);
-    if(!ok)return;const k=sig(o);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(o);originals.push(o);origSet.add(o);
+    if(!ok)return;const k=fold&&foldable(t)?sigFold(o):sig(o);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(o);originals.push(o);origSet.add(o);
   });
   const lineSrc=[];z.root.traverse(o=>{if(o.isLineSegments&&origSet.has(o.parent))lineSrc.push(o);});
   const mergedRoot=new THREE.Group();z.root.add(mergedRoot);
-  buckets.forEach(list=>{
-    const pos=[],nor=[],uv=[];
-    list.forEach(m=>{const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry;const P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv;_nm.getNormalMatrix(m.matrixWorld);
-      for(let i=0;i<P.count;i++){_v.fromBufferAttribute(P,i).applyMatrix4(m.matrixWorld);pos.push(_v.x,_v.y,_v.z);
-        if(N){_v.fromBufferAttribute(N,i).applyMatrix3(_nm).normalize();nor.push(_v.x,_v.y,_v.z);}else nor.push(0,1,0);
-        if(U)uv.push(U.getX(i),U.getY(i));else uv.push(0,0);}
+  buckets.forEach((list,key)=>{
+    const pos=[],nor=[],uv=[],col=[],folded=key.startsWith('fold|'),_im=new THREE.Matrix4(),_wm=new THREE.Matrix4(),_ic=new THREE.Color();
+    list.forEach(m=>{const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry;const P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv,mc=m.material.color;
+      const n=m.isInstancedMesh?m.count:1;
+      for(let j=0;j<n;j++){if(m.isInstancedMesh){m.getMatrixAt(j,_im);_wm.multiplyMatrices(m.matrixWorld,_im);if(m.instanceColor)m.getColorAt(j,_ic);else _ic.setRGB(1,1,1);}else{_wm.copy(m.matrixWorld);_ic.setRGB(1,1,1);}
+        if(m.isInstancedMesh&&_wm.determinant()===0)continue;_nm.getNormalMatrix(_wm);const cr=mc.r*_ic.r,cg=mc.g*_ic.g,cb=mc.b*_ic.b;
+        for(let i=0;i<P.count;i++){_v.fromBufferAttribute(P,i).applyMatrix4(_wm);pos.push(_v.x,_v.y,_v.z);
+          if(N){_v.fromBufferAttribute(N,i).applyMatrix3(_nm).normalize();nor.push(_v.x,_v.y,_v.z);}else nor.push(0,1,0);
+          if(U)uv.push(U.getX(i),U.getY(i));else uv.push(0,0);if(folded)col.push(cr,cg,cb);}}
     });
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
-    const mm=new THREE.Mesh(g,list[0].material);mm.castShadow=list[0].castShadow;mm.receiveShadow=list[0].receiveShadow;mergedRoot.add(mm);
+    let mat=list[0].material;if(folded){g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));mat=mat.clone();mat.color.setRGB(1,1,1);mat.vertexColors=true;}
+    const mm=new THREE.Mesh(g,mat);mm.castShadow=list[0].castShadow;mm.receiveShadow=list[0].receiveShadow;mergedRoot.add(mm);
   });
   {const lp=[],lc=[];lineSrc.forEach(l=>{const P=l.geometry.attributes.position,c=l.material.color;for(let i=0;i<P.count;i++){_v.fromBufferAttribute(P,i).applyMatrix4(l.matrixWorld);lp.push(_v.x,_v.y,_v.z);lc.push(c.r,c.g,c.b);}});
     const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));lg.setAttribute('color',new THREE.Float32BufferAttribute(lc,3));

@@ -7,8 +7,9 @@
    · 머리 위: 큰 잎 실루엣 판(높이 15~21m)을 겹쳐 하늘을 거의 덮고, 틈으로만 하늘빛이 보인다.
    · 빛줄기: 겹 사이로 내려오는 희미한 빛 다섯 줄기(십자 판 한 묶음, 더하기 섞기). 낮 따뜻한 빛 · 해 질 녘 복숭아빛 · 밤 푸른 달빛으로 약하게(SK.t).
    · gaps: 비워 둘 방향(라디안, 중심에서 본 각) — 별꽃 전망대 꽃봉오리가 보이는 북쪽 틈. 가까운 두 겹만 비운다.
-   그리기: 겹마다 1회 + 머리 위 1회 + 빛줄기 1회 = 6회. 그림자를 드리우지 않는다. 휴대폰 단계도 같은 모습(텍스처만 조금 작게). */
+   그리기: 겹마다 1회 + 머리 위 1회 + 빛줄기 1회 = 6회(휴대폰은 두 겹씩 묶어 4회). 그림자를 드리우지 않는다. 휴대폰 단계도 같은 모습(텍스처만 조금 작게). */
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {QUALITY,rng} from '../../01-textures.js';
 import {CRAYON,toon} from './paint.js';
 const MOB=!QUALITY.shadows;
@@ -65,10 +66,18 @@ function shaftTex(){const c=document.createElement('canvas');c.width=64;c.height
 const SHAFT_C=[new THREE.Color('#fff0c4'),new THREE.Color('#ffc7a6'),new THREE.Color('#9fb4ff')],SHAFT_O=[.3,.22,.09];
 export function deepForest({root,cx=0,cz=0,gaps=[]}){
   let shafts=null;const group=new THREE.Group();group.name='deepForest';group.position.set(cx,0,cz);root.add(group);const mats=[],movers=[];
-  LAYERS.forEach((L,i)=>{const w=MOB&&i>1?512:1024,tex=layerTex('layer'+i,{w,h:w/2,...L});
+  if(!MOB)LAYERS.forEach((L,i)=>{const w=1024,tex=layerTex('layer'+i,{w,h:w/2,...L});
     const m=toon('#ffffff',{map:tex,side:THREE.DoubleSide});m.alphaTest=.5;mats.push(m);
     const mesh=new THREE.Mesh(ring(L.r,L.H,L.reps,48,i<2?gaps:[],.17),m);mesh.castShadow=mesh.receiveShadow=false;mesh.userData.noMerge=true;
     const holder=new THREE.Group();holder.add(mesh);group.add(holder);if(L.follow)movers.push({holder,k:L.follow});});
+  else[[0,1],[2,3]].forEach(([a,b])=>{ // 휴대폰(2026-11-02 드로우콜): 두 겹씩 그림 한 장(위아래로 쌓음)에 담아 한 번에 — 가까운 두 겹은 가만히, 먼 두 겹은 함께 0.6만큼 따라옴
+    const w=a?512:1024,h=w/2,pad=8,ta=layerTex('layer'+a,{w,h,...LAYERS[a]}),tb=layerTex('layer'+b,{w,h,...LAYERS[b]});
+    const c=document.createElement('canvas');c.width=w;c.height=h*2+pad;const g=c.getContext('2d');g.drawImage(ta.image,0,0);g.drawImage(tb.image,0,h+pad);ta.dispose();tb.dispose();
+    const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.wrapS=THREE.RepeatWrapping;tex.anisotropy=4;
+    const H=c.height,geos=[[a,(h+pad)/H,h/H],[b,0,h/H]].map(([i,v0,dv])=>{const L=LAYERS[i],q=ring(L.r,L.H,L.reps,48,i<2?gaps:[],.17),U=q.attributes.uv;for(let k=0;k<U.count;k++)U.setY(k,v0+U.getY(k)*dv*.995+dv*.0025);return q;}); // 그림 위쪽(캔버스 위) = v 큰 쪽
+    const m=toon('#ffffff',{map:tex,side:THREE.DoubleSide});m.alphaTest=.5;mats.push(m);
+    const mesh=new THREE.Mesh(mergeGeometries(geos),m);mesh.castShadow=mesh.receiveShadow=false;mesh.userData.noMerge=true;
+    const holder=new THREE.Group();holder.add(mesh);group.add(holder);if(a)movers.push({holder,k:.6});});
   // 머리 위 큰 잎: 높이 15~21m, 하늘을 거의 덮고 틈으로만 빛
   {const R=rng('fairy-forest:roof'),rr=(a,b)=>a+R()*(b-a),geos=[];
    for(let i=0;i<16;i++){const a=i/16*Math.PI*2+rr(-.2,.2),d=i%2?rr(8,18):rr(20,32),s=rr(16,24),p=new THREE.PlaneGeometry(s,s).rotateX(Math.PI/2+rr(-.25,.25)).rotateY(rr(0,7)).translate(Math.cos(a)*d,rr(15,21),Math.sin(a)*d);geos.push(p);}

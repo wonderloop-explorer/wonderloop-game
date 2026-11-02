@@ -4,10 +4,12 @@
    볼터치는 얼굴 면에 붙여 납작하게(떠 보이지 않게). 팔은 어깨(몸통 위쪽)에서, 노는 손에 쥐어 몸 옆으로.
    fairy(kind) → {root, head, arms:[왼,오], tick(dt,t), wave(on), setMood(name)}
      kind: 'boatman' 사공(잎 모자·연파랑 옷·노) · 'mushroom' 버섯(주황 갓·아이보리 반점 셋·크림 통통 몸)
-   이슬배(boatman이 탄 파란 그릇 배): dewBoat() → Group (지름 약 1.3, 원더룹이 탈 수 있는 크기는 bigDewBoat())
+   이슬배: 길쭉한 나뭇잎배 leafBoat(길이, 폭)(2026-11-02 — 예전 파란 그릇 배 dewBoat()는 남겨 둠). 민들레 홀씨 우산 dandelionPuff(). 휴대폰은 bakeFairy로 부품을 합친다.
    얼굴 앞은 +z. 발바닥이 y=0. 그림자는 휴대폰 단계에서 구역이 shadowBlob을 단다. */
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {M,PI,lathe} from '../../01-textures.js';
+import {toon} from './paint.js';
 const SKIN='#f4cfa6',CHEEK='#f39a9a',INK='#4a2a24';
 const mats={};const mat=(c,k='suede',o)=>{o=Object.assign({flat:false},o);const key=c+k+JSON.stringify(o);return mats[key]||(mats[key]=M(c,k,o));}; // 부드러운 음영(원더룹과 같게)
 const mesh=(g,m,parent,x=0,y=0,z=0)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;if(parent)parent.add(o);return o;};
@@ -79,8 +81,60 @@ function fairy(kind){const root=new THREE.Group();root.name='fairy:'+kind;const 
       if(arms){const w=wave?Math.sin(t*9)*.35:0;arms[1].rotation.z=wave?1.75+w*.6:(kind==='boatman'?.45:.75);arms[0].rotation.z=-(kind==='boatman'?.45:.75);} // 흔드는 팔은 바깥·위로 (머리·귀에 닿지 않게)
       if(root.userData.oar)root.userData.oar.rotation.x=.12+Math.sin(t*1.6)*.1;}};
   return P;}
+/* 휴대폰 단계(2026-11-02 발열): 요정 한 명의 부품을 텍스처마다 한 덩어리로 합친다(색은 정점 색, 재질은 이 요정 전용 — 가림 흐림이 다른 물체로 번지지 않게).
+   같은 부모 아래 부품끼리만 합쳐 움직이는 마디(머리·팔·노)는 그대로 움직인다. into(그룹)를 주면 그 아래는 모두 into 하나로(버섯 요정은 몸이 통째로 뒤뚱이고 팔·머리는 가만히 있어서) */
+function bakeFairy(P,{into=null}={}){const root=P.root;root.updateMatrixWorld(true);const B=new Map(),M4=new THREE.Matrix4(),inv=new THREE.Matrix4();
+  root.traverse(m=>{if(!m.isMesh||m.children.length)return;let t=m.parent;if(into){let q=m;while(q&&q!==into)q=q.parent;if(q)t=into;}
+    const mt=m.material,k=t.uuid+'|'+(mt.map?mt.map.uuid:'-')+'|'+mt.side+'|'+mt.transparent+'|'+mt.type;if(!B.has(k))B.set(k,{t,list:[]});B.get(k).list.push(m);});
+  B.forEach(({t,list})=>{if(list.length<2)return;inv.copy(t.matrixWorld).invert();
+    const geos=list.map(m=>{const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone();for(const a of Object.keys(g.attributes))if(!['position','normal','uv'].includes(a))g.deleteAttribute(a);g.clearGroups();
+      g.applyMatrix4(M4.multiplyMatrices(inv,m.matrixWorld));const c=m.material.color,n=g.attributes.position.count,col=new Float32Array(n*3);for(let i=0;i<n;i++)col.set([c.r,c.g,c.b],i*3);g.setAttribute('color',new THREE.BufferAttribute(col,3));return g;});
+    const mt=list[0].material.clone();mt.color.setRGB(1,1,1);mt.vertexColors=true;const mm=new THREE.Mesh(mergeGeometries(geos),mt);mm.castShadow=list.some(m=>m.castShadow);mm.receiveShadow=true;t.add(mm);
+    geos.forEach(g=>g.dispose());list.forEach(m=>m.parent.remove(m));});
+  return P;}
 /* 이슬배: 연파랑 그릇 배 (사공 요정 시트의 배) — scale로 크기만 바꿔 쓴다 */
 function dewBoat(scale=1){const g=new THREE.Group();g.name='dewBoat';
   const bowl=mesh(lathe([[0,0],[.38,.01],[.55,.08],[.62,.2],[.6,.22],[.52,.12],[.36,.06],[0,.05]].map(q=>new THREE.Vector2(q[0],q[1])),18),mat('#8cc4e2','suede'),g);bowl.material=bowl.material;
   g.scale.setScalar(scale);return g;}
-export {dewBoat,fairy};
+/* 나뭇잎배(2026-11-02, 그릇 배 대신): 길쭉한 잎 한 장이 배 — 가운데가 오목하고 가장자리가 위로 말려 올라가며 앞뒤 끝이 들린다. 가운데 잎맥 + 옆 잎맥 넷씩, 뒤쪽에 말린 잎자루.
+   leafBoat(길이, 폭) → Group (앞 = +z, 바닥 가운데가 y 0). userData.floor(u) = 길이 방향 자리 u(-1 뒤 … +1 앞)의 바닥 높이, userData.half(u) = 그 자리 반폭 */
+function leafBoat(L=2.6,W=1.15,{color='#8cc05c',rib='#6f9e44'}={}){const g=new THREE.Group();g.name='leafBoat';
+  const half=u=>W/2*Math.pow(Math.max(0,1-u*u),.55)*(1-.1*u),
+    at=(u,v)=>{const ax=Math.abs(v),h=half(u);return new THREE.Vector3(v*h*(1-.1*ax**4),.18*u*u*(1-v*v)+.3*ax**3*(1-.45*u*u)+.16*u**4,u*L/2);}; // 오목한 바닥 + 말려 올라간 가장자리 + 들린 앞뒤 끝
+  const NU=30,NV=14,pos=[],uv=[],idx=[];
+  for(let i=0;i<=NU;i++)for(let j=0;j<=NV;j++){const p=at(i/NU*2-1,j/NV*2-1);pos.push(p.x,p.y,p.z);uv.push(j/NV*1.4,i/NU*3);}
+  for(let i=0;i<NU;i++)for(let j=0;j<NV;j++){const a=i*(NV+1)+j,b=a+NV+1;idx.push(a,b,a+1,a+1,b,b+1);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();
+  const hull=mesh(geo,mat(color,'leaf',{rep:[1,2]}),g);hull.material=hull.material.clone();hull.material.side=THREE.DoubleSide;
+  const tube=(pts,r,c)=>mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),Math.max(6,pts.length*3),r,5),mat(c,'leaf'),g);
+  const lift=(p,d=.012)=>p.add(new THREE.Vector3(0,d,0));
+  tube([-.97,-.6,-.2,.2,.6,.95].map(u=>lift(at(u,0),.018)),.024,rib); // 가운데 잎맥
+  for(const s of [-1,1])[-.55,-.2,.15,.5].forEach(u0=>tube([0,.3,.6,.85].map(k=>lift(at(u0+k*.28,s*k),.012)),.012,rib)); // 옆 잎맥: 가운데에서 앞쪽으로 비스듬히 가장자리까지
+  {const e=at(-1,0);tube([e,e.clone().add(new THREE.Vector3(0,.12,-.18)),e.clone().add(new THREE.Vector3(0,.3,-.2)),e.clone().add(new THREE.Vector3(0,.36,-.08))],.03,rib);} // 뒤쪽 잎자루(위로 말림)
+  {const parts=[...g.children],geos=parts.map(m=>{const q=(m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone());for(const a of Object.keys(q.attributes))if(!['position','normal','uv'].includes(a))q.deleteAttribute(a);q.clearGroups();
+     m.updateMatrix();q.applyMatrix4(m.matrix);const c=m.material.color,n=q.attributes.position.count,col=new Float32Array(n*3);for(let i=0;i<n;i++)col.set([c.r,c.g,c.b],i*3);q.setAttribute('color',new THREE.BufferAttribute(col,3));return q;});
+   const mt=hull.material.clone();mt.color.setRGB(1,1,1);mt.vertexColors=true;parts.forEach(m=>{g.remove(m);m.geometry.dispose();});mesh(mergeGeometries(geos),mt,g);geos.forEach(q=>q.dispose());} // 배 한 척 = 그리기 1번(잎맥·잎자루는 정점 색)
+  g.userData.floor=u=>at(u,0).y;g.userData.half=half;return g;}
+/* 민들레 홀씨 우산(활공 물건, 2026-11-02 — 살만 남은 우산 대신): 가는 연두 줄기 끝에 하얀 솜털 다발이 둥글게 퍼진 폭신한 공, 가운데는 연노랑.
+   원점 = 줄기 아래 끝(손잡이), +y 위. 줄기는 손에서 바깥으로 올라갔다가 reach(+x)만큼 안쪽으로 휘어 들어온다 — 약 2등신이라 든 손이 뺨 높이라서,
+   곧은 줄기면 큰 탈을 뚫는다(원더룹 오른손이 -x 쪽이니 reach가 머리 가운데까지). 솜털은 안·바깥 두 겹(각각 한 번에 그림)이고 sway(t, k)로 살랑인다(k 0~1 — 활공할 때 1) */
+function dandelionPuff({stem=1.75,reach=0,R=.44}={}){const g=new THREE.Group();g.name='dandelionPuff';
+  const st=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(-.12-reach*.6,stem*.4,0),new THREE.Vector3(-.1-reach*.55,stem*.78,0),new THREE.Vector3(reach*.2,stem*.97,0),new THREE.Vector3(reach,stem,0)]);
+  mesh(new THREE.TubeGeometry(st,16,.024,6),mat('#a9c77a','leaf'),g);
+  const top=new THREE.Group();top.position.set(reach,stem+.03,0);g.add(top);
+  mesh(new THREE.SphereGeometry(.085,12,9),mat('#f6e48a','plain'),top);mesh(new THREE.SphereGeometry(.05,8,6),mat('#a9c77a','leaf'),top,0,-.07,0); // 연노랑 가운데 + 줄기와 이어지는 꽃받침
+  const fluff=toon('#ffffff',{emissive:'#fffaf0',ei:.42}),thread=toon('#f4efe2',{emissive:'#ffffff',ei:.3});
+  const layers=[{n:70,r:R,tuft:.05,a:0},{n:36,r:R*.74,tuft:.042,a:.4}].map(L=>{const lg=new THREE.Group();top.add(lg);const fil=[],tuf=[],up=new THREE.Vector3(0,1,0),q=new THREE.Quaternion();
+    for(let i=0;i<L.n;i++){const y=1-2*(i+.5)/L.n,rr=Math.sqrt(1-y*y),a=i*2.39996+L.a,d=new THREE.Vector3(Math.cos(a)*rr,y,Math.sin(a)*rr);if(d.y<-.72)continue; // 아래(줄기 쪽)는 비워 둔다
+      q.setFromUnitVectors(up,d);fil.push(new THREE.CylinderGeometry(.0045,.0045,L.r*.9,3).translate(0,L.r*.45,0).applyQuaternion(q));
+      tuf.push(new THREE.ConeGeometry(L.tuft,L.tuft*.7,7,1,true).rotateX(PI).translate(0,L.r+L.tuft*.2,0).applyQuaternion(q)); // 솜털 다발: 끝이 우산처럼 퍼진 하얀 갓털
+      tuf.push(new THREE.SphereGeometry(L.tuft*.55,6,4).scale(1,.45,1).translate(0,L.r+L.tuft*.35,0).applyQuaternion(q));}
+    mesh(mergeGeometries(fil),thread,lg);const tm=mesh(mergeGeometries(tuf),fluff,lg);tm.material=fluff.clone();tm.material.side=THREE.DoubleSide;fil.concat(tuf).forEach(x=>x.dispose());return lg;});
+  const haze=new THREE.Mesh(new THREE.SphereGeometry(R*.93,18,14),new THREE.MeshBasicMaterial({color:0xfffdf6,transparent:true,opacity:.42,depthWrite:false}));top.add(haze); // 솜털 사이를 채우는 옅은 흰 기운(멀리서 보면 폭신한 흰 공)
+  g.traverse(o=>{if(o.isMesh)o.castShadow=o!==haze;});
+  g.userData.sway=(t,k)=>{layers[0].rotation.set(Math.sin(t*2.1)*.07*k,t*.25*k,Math.sin(t*1.7+1)*.08*k);layers[1].rotation.set(Math.sin(t*2.6+2)*.09*k,-t*.18*k,Math.sin(t*2.2)*.06*k);
+    const b=1+Math.sin(t*3.2)*.025*k;layers[0].scale.setScalar(b);top.rotation.z=Math.sin(t*1.3)*.06*k;};
+  return g;}
+/* 구역을 떠날 때: 요정 재질·갓 무늬 캐시를 놓는다(다음 구역에서 다시 만들면 같은 그림) */
+function clearFairyCache(){for(const k in mats){mats[k].dispose();delete mats[k];}if(capTex){capTex.dispose();capTex=null;}if(gillTex){gillTex.dispose();gillTex=null;}}
+export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,leafBoat};

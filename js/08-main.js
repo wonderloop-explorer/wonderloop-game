@@ -1,7 +1,7 @@
 /* 원더룹 — 입력·조명 단계·카메라 따라가기·구역 오가기·애니메이션 루프 */
 import * as THREE from 'three';
 import {PI,QUALITY,rawLin,rngLoaded,scene} from './01-textures.js';
-import {ZONES,areaAt,doorAt,groundY,loadZone,unloadZone,zone} from './02-zone.js';
+import {ZONES,areaAt,blocked,doorAt,groundY,loadZone,overlap,unloadZone,zone} from './02-zone.js';
 import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui} from './03-scene.js';
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
@@ -36,7 +36,8 @@ renderer.domElement.addEventListener('pointerup',e=>{
 /* 직접 조작 (game/controls — 개미굴 편 조작 그대로): 앞·옆 입력을 카메라가 보는 쪽 기준으로 바꿔 07에 넘긴다(U.drive·jumpReq·dashReq).
    결과창·그림 컷·화면 전환 중에는 움직이지 않는다. 대쉬하면 하던 대화는 닫힌다(개미굴과 같음). 촬영 모드는 쓰지 않는다 */
 const _kf=new THREE.Vector3(),_ct=new THREE.Vector3(),_cw=new THREE.Vector3();
-function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=null;return;}
+let shotDrive=null; // 촬영 모드: 직접 조작 대신 wlShot.drive({x,z,run})로 미는 값(끼임 시험) — 평소 null
+function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=shotDrive;return;}
   const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade');
   camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
   const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,run:a.run};
@@ -65,7 +66,7 @@ zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
 GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
 GAME.occlude.xray(!!zone.cur.world&&QUALITY.shadows); // 처음 구역 (zoneLook은 initGame보다 먼저 불려서)
-window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES)};
+window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES),blocked,overlap}; // blocked·overlap: 끼임 자동 시험(tools/stuck-test.js)
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
 if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;
   document.querySelector('.bar').appendChild(b);b.addEventListener('click',()=>{const L=Object.keys(ZONES);goZone(L[(L.indexOf(zone.cur.id)+1)%L.length]);});}
@@ -80,7 +81,7 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
 /* 안개: 처음부터 늘 켜 두고 하늘 없는 구역에서는 아주 멀리 밀어 둔다(그림은 그대로) — 구역마다 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다 */
 const FOG_OFF=1e4;scene.fog=new THREE.Fog(0xffffff,FOG_OFF,FOG_OFF*2);
-const CAM_MIN=4; // 따라가기 카메라 가장 가까운 거리(m) — 원더룹 전신이 다 보이게(세로 시야 30°에서 키 1.1m + 여백)
+const _fv=new THREE.Vector3();const CAM_MIN=4; // 따라가기 카메라 가장 가까운 거리(m) — 원더룹 전신이 다 보이게(세로 시야 30°에서 키 1.1m + 여백)
 const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector3();
 /* 촬영 모드(?shot): 고정 시간 간격(기본 1/60초, 영상 캡처 중에는 wlShot.dt=1/72)으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
 const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1/60;
@@ -90,15 +91,23 @@ const tickErrSeen=new Set();
    창이 가려지거나(document.hidden) 다른 창을 보고 있으면(blur) 그리기를 멈췄다가 돌아오면(focus·누르기) 다시 그린다. 멈춘 동안 게임 시간도 멈춘다(돌아온 첫 프레임 간격은 0.05초로 자른다). */
 let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_MS=1000/(QUALITY.tier==='mobile'?30:60);
 const schedule=()=>{if(!rafOn){rafOn=true;requestAnimationFrame(frame);}}; // 루프가 두 갈래로 갈라지지 않게 예약은 한 번만
-function frame(now){rafOn=false;if(paused)return;if(now-lastFrame<FRAME_MS-2){schedule();return;}lastFrame=now;const w0=performance.now();tick();perfTick(now,performance.now()-w0);}
+/* 쉴 때 아끼기(휴대폰 단계, 2026-11-02 발열): 대화·카드가 열려 있거나, 1.5초 넘게 손대지 않고 원더룹·카메라가 가만히 있으면 초당 20프레임.
+   누르기·끌기·키·조이스틱, 원더룹이 움직이거나 탈것을 타거나 카메라가 움직이면 바로 30프레임으로 */
+const MOBILE=QUALITY.tier==='mobile';let lastAct=0;const _lw=new THREE.Vector3(),_lc=new THREE.Vector3();
+['pointerdown','pointermove','keydown','wheel','touchmove'].forEach(ev=>window.addEventListener(ev,()=>{lastAct=performance.now();},{passive:true,capture:true}));
+function markMotion(now){const I=GAME.controls.input;if(I.jx||I.jy||GAME.ride.riding()||_lw.distanceToSquared(WL.position)>1e-6||_lc.distanceToSquared(camera.position)>1e-5)lastAct=now;_lw.copy(WL.position);_lc.copy(camera.position);}
+const idle=now=>MOBILE&&!SHOT&&(GAME.core.blocking()||now-lastAct>1500);
+function frame(now){rafOn=false;if(paused)return;const ms=idle(now)?50:FRAME_MS;if(now-lastFrame<ms-2){schedule();return;}lastFrame=now;const w0=performance.now();tick();markMotion(now);perfTick(now,performance.now()-w0);}
 /* 실제 기기 성능(톱니 단추를 열면 화면 아래 표시): 1초마다 초당 프레임·프레임 간격·한 프레임 계산 시간·픽셀 비율·드로우콜·삼각형.
    자동 화질 조절(휴대폰 단계만): 초당 프레임이 목표(30)보다 3초 연달아 26 아래면 한 단계씩 낮춘다 —
-   1 공중 입자 끔 · 2 먼 배경 겹·빛줄기 끔(구역 정보 quality(단계)) · 3 픽셀 비율 1.25 · 4 픽셀 비율 1. 다시 올리지는 않는다(오르내림 반복 막기). 빛·그림자 개수는 건드리지 않는다 */
-const PERF={t0:0,last:0,n:0,iv:0,work:0,fps:0,ivA:0,workA:0,bad:0,level:0};
+   1 공중 입자 끔 · 2 먼 배경 겹·빛줄기 끔(구역 정보 quality(단계)) · 3 픽셀 비율 1.1 · 4 픽셀 비율 1. 다시 올리지는 않는다(오르내림 반복 막기). 빛·그림자 개수는 건드리지 않는다.
+   쉬는 20프레임(위 idle) 동안은 느린 것으로 세지 않는다. 오래 플레이하면(휴대폰이 데워짐) 프레임과 상관없이 10분에 적어도 1단계, 20분에 적어도 2단계(화면을 보고 있는 시간만 셈) */
+const PERF={t0:0,last:0,n:0,iv:0,work:0,fps:0,ivA:0,workA:0,bad:0,level:0,play:0};
 function perfTick(now,work){const P=PERF;if(!P.last||now-P.last>500){P.t0=now;P.last=now;P.n=P.iv=P.work=0;return;}P.iv+=now-P.last;P.work+=work;P.n++;P.last=now;
-  if(now-P.t0<1000)return;P.fps=P.n*1000/(now-P.t0);P.ivA=P.iv/P.n;P.workA=P.work/P.n;P.t0=now;P.n=P.iv=P.work=0;
-  if(QUALITY.tier==='mobile'&&!SHOT){if(P.fps<26)P.bad++;else P.bad=0;if(P.bad>=3&&P.level<4){P.level++;P.bad=0;applyQuality();}}}
-function applyQuality(){const L=PERF.level;if(zone.cur&&zone.cur.quality)zone.cur.quality(L);if(L>=3)setPixelCap(L>=4?1:1.25);}
+  if(now-P.t0<1000)return;const sec=(now-P.t0)/1000;P.fps=P.n*1000/(now-P.t0);P.ivA=P.iv/P.n;P.workA=P.work/P.n;P.t0=now;P.n=P.iv=P.work=0;
+  if(MOBILE&&!SHOT){P.play+=sec;if(idle(now))P.bad=0;else if(P.fps<26)P.bad++;else P.bad=0;
+    const want=Math.max(P.bad>=3?P.level+1:P.level,P.play>1200?2:P.play>600?1:0);if(want>P.level&&P.level<4){P.level=Math.min(4,want);P.bad=0;applyQuality();}}}
+function applyQuality(){const L=PERF.level;if(zone.cur&&zone.cur.quality)zone.cur.quality(L);if(L>=3)setPixelCap(L>=4?1:1.1);}
 const nextFrame=()=>{if(!SHOT&&!paused)schedule();};
 if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
@@ -155,17 +164,33 @@ function tickBody(){
     const asp=camera.aspect,fk=asp<1.25?Math.min(2.1,1.25/asp):1;C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
     {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
-       if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr)kt=Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):0;}
+       if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr)kt=Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):0;
+       /* 큰 장애물(집·바위·큰 줄기 — 구역 장애물 원 반지름 0.45 이상) 속으로 팔이 들어가면 그 앞까지(카메라가 물체 속에 들어가 화면이 한 색으로 덮이지 않게, 2026-11-02).
+          높이를 모르는 원이라 반지름으로 어림한 높이(반지름×1.9, 최대 2.6m — 돌은 낮고 집은 높다)보다 그 자리 카메라가 낮을 때만. 잎·꽃처럼 얇은 것은 막지 않고 game/occlude가 카메라 바로 앞이면 완전히 흐린다 */
+       const AR=Z.areas[zone.area];if(AR)for(const o of AR.obstacles){if(!o.c||o.c[2]<.45)continue;const R=o.c[2]+.35,px=_ct.x-o.c[0],pz=_ct.z-o.c[1],dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,a=dx*dx+dz*dz,b=2*(px*dx+pz*dz),c=px*px+pz*pz-R*R;
+         if(a<1e-6||c<=0)continue;const D=b*b-4*a*c;if(D<0)continue;const s=(-b-Math.sqrt(D))/(2*a);if(s>0&&s<kt&&_ct.y+(_cw.y-_ct.y)*s<Math.min(2.6,o.c[2]*1.9))kt=Math.max(0,s-.04);}
+       // 구역 정보 camBlock [[x,y,z,반지름]…]: 카메라가 들어가면 안 되는 공(합쳐 그려 흐려지지 않는 벽의 꽃머리·잎 등) — 팔이 공에 닿기 전까지만
+       if(Z.camBlock)for(const q of Z.camBlock){const R=q[3]+.4,px=_ct.x-q[0],py=_ct.y-q[1],pz=_ct.z-q[2],dx=_cw.x-_ct.x,dy=_cw.y-_ct.y,dz=_cw.z-_ct.z,a=dx*dx+dy*dy+dz*dz,b=2*(px*dx+py*dy+pz*dz),c=px*px+py*py+pz*pz-R*R;
+         if(a<1e-6||c<=0)continue;const D=b*b-4*a*c;if(D<0)continue;const s=(-b-Math.sqrt(D))/(2*a);if(s>0&&s<kt)kt=Math.max(0,s-.03);}}
      C.pull=C.pull??1;C.pull+=(kt-C.pull)*Math.min(1,dt*(kt<C.pull?12:2.5));const k=Math.min(1,Math.max(CAM_MIN/d,C.pull));
-     if(k<1)_cw.set(_ct.x+(_cw.x-_ct.x)*k,_ct.y+(_cw.y-_ct.y)*k,_ct.z+(_cw.z-_ct.z)*k);}_cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
-    camera.position.lerp(_cw,Math.min(1,dt*7));controls.target.lerp(_ct,Math.min(1,dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
+     if(k<1)_cw.set(_ct.x+(_cw.x-_ct.x)*k,_ct.y+(_cw.y-_ct.y)*k,_ct.z+(_cw.z-_ct.z)*k);}
+    /* 구역이 비춰 달라는 곳(game view.focus·hold): 그쪽 자리·보는 점으로 섞는다 — 들어갈 때·돌아올 때 0.45초 */
+    {const V=GAME.view,r=V.req;let want=0;if(r){r.t+=dt;let at=null,from=null;
+       if(r.fn){const o=r.fn();if(o){at=o.at;from=o.from;want=1;}}else if(r.t<r.sec+.45){at=r.at;from=r.from;want=r.t<r.sec?1:0;
+         if(!from){const dx=WL.position.x-at[0],dz=WL.position.z-at[2],L=Math.hypot(dx,dz)||1;from=[at[0]+dx/L*r.dist,at[1]+r.dist*.55,at[2]+dz/L*r.dist];}}
+       else V.req=null;if(at){C.fAt=at;C.fFrom=from;}}
+     C.fw=(C.fw||0)+(want-(C.fw||0))*Math.min(1,dt/.45*2.2);if(C.fw<.002)C.fw=0;
+     if(C.fw>0&&C.fAt){const w=C.fw*C.fw*(3-2*C.fw);_ct.lerp(_fv.set(...C.fAt),w);_cw.lerp(_fv.set(...C.fFrom),w);}}
+    _cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
+    camera.position.lerp(_cw,Math.min(1,dt*7));camera.position.y=Math.max(camera.position.y,groundY(camera.position.x,camera.position.z)+.6); // 따라오는 길에도 땅 속으로 들어가지 않게
+    controls.target.lerp(_ct,Math.min(1,dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
   else{C.ready=false;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
   if(!rig)controls.update();GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':
-      `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${Math.round(1000/FRAME_MS)}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계`);}
+      `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${Math.round(1000/FRAME_MS)}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계 · 플레이 ${Math.floor(P.play/60)}분${idle(performance.now())?' · 쉬는 중 20프레임':''}`);}
   nextFrame();
 }
 tick();
@@ -198,7 +223,7 @@ if(SHOT){
       const tg=v.room?ROOM_T.clone():new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z);if(v.ty!=null)tg.y=v.ty;
       controls.target.copy(tg);camera.position.copy(new THREE.Vector3().setFromSpherical(new THREE.Spherical(v.dist,v.pol,(v.room?0:WL.rotation.y)+v.az)).add(tg));controls.update();},
     step(n){for(let i=0;i<n;i++)tick();},
-    render:renderFrame,
+    render:renderFrame,drive(v){shotDrive=v||null;},
     capture(){renderFrame();return renderer.domElement.toDataURL('image/png');},
     info(){const ri=renderer.info.render;return{calls:ri.calls,triangles:ri.triangles};}
   };
