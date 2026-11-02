@@ -1,7 +1,7 @@
 /* 원더룹 — 조작 (개미굴 편 index.html의 keydown·pointer·wheel·joy를 엔진 공통으로 옮긴 것)
    키보드: WASD 이동(카메라가 보는 쪽이 앞) · 방향키 카메라 돌리기(←→ 초당 2.3, ↑↓ 초당 1.3) · Space 점프 · Shift 대쉬(누른 채면 달리기) · E 말 걸기·손 상호작용(dialog) ·
      F 세계 도구(setTool) · M 소리(sound) · H 조작 도움말 · C 옷장(hooks.onWardrobe) · Esc 창 닫기 · -/+ 카메라 거리
-   마우스: 화면을 끌면 카메라가 원더룹 둘레로 돈다(가로 0.006·세로 0.004 라디안/픽셀, 위아래 -0.55~1.15) · 휠로 거리(×0.01, 3~13)
+   마우스: 화면을 끌면 카메라가 원더룹 둘레로 돈다(가로 0.006·세로 0.004 라디안/픽셀, 위아래 -0.55~1.15) · 휠로 거리(×0.01, 4~13 — 가장 가까이는 08 CAM_MIN, 세로 화면은 배율을 곱한 뒤 4m)
    휴대폰: 왼쪽 아래 조이스틱(반지름 45px, 끝까지 밀면 달리기) · 오른쪽 점프·대쉬 단추(말 걸기 단추는 ui #wlAct) · 화면을 끌어 카메라
      · 두 손가락으로 벌리고 오므리면 카메라 거리(휠과 같은 3~13, 손가락 사이 거리에 반비례). 사파리가 페이지 자체를 확대하지 않게 막는다(gesture·두 손가락 touchmove·두 번 누르기)
    - 입력칸(INPUT·TEXTAREA·SELECT)에 쓰는 중이면 키를 가로채지 않고, 단추에 초점이 있으면 Space·Enter는 그 단추 몫(개미굴과 같음).
@@ -12,7 +12,7 @@
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 const coarse=matchMedia('(pointer:coarse)').matches;
 const MOVE=['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
-const CAM={yawPx:.006,pitchPx:.004,pitchMin:-.55,pitchMax:1.15,distMin:3,distMax:13,wheel:.01,keyZoom:6};
+const CAM={yawPx:.006,pitchPx:.004,pitchMin:-.55,pitchMax:1.15,distMin:4,distMax:13,wheel:.01,keyZoom:6};
 const keys={};
 const input={keys,jx:0,jy:0,jumpReq:false,dashReq:false,
   cam:{yaw:0,pitch:.34,dist:7.5,on:false}, // on: 08이 따라가기 카메라를 이 값으로 그릴 때만 끌기·휠을 받는다
@@ -92,7 +92,7 @@ function initControls(ctx){build();if(SHOT)return;
   cv.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===2){drag=null;pinch={d:span(),dist:input.cam.dist};input.pinching=true;}else if(pts.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
   cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(p){p.x=e.clientX;p.y=e.clientY;}
-    if(pinch&&pts.size>=2){if(input.cam.on){const d=span();if(d>10)input.cam.dist=Math.min(CAM.distMax,Math.max(CAM.distMin,pinch.dist*pinch.d/d));}return;} // 벌리면 가까이, 오므리면 멀리
+    if(pinch&&pts.size>=2){if(input.cam.on){const d=span();if(d>10)input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,pinch.dist*pinch.d/d));}return;} // 벌리면 가까이, 오므리면 멀리
     if(!drag||drag.id!==e.pointerId||!input.cam.on)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
     input.cam.yaw-=dx*CAM.yawPx;input.cam.pitch=Math.min(CAM.pitchMax,Math.max(CAM.pitchMin,input.cam.pitch+dy*CAM.pitchPx));});
   const endDrag=e=>{pts.delete(e.pointerId);if(drag&&drag.id===e.pointerId)drag=null;if(pts.size<2&&pinch){pinch=null;drag=null;} // 두 손가락을 떼는 동안 남은 손가락으로 카메라가 튀지 않게
@@ -101,12 +101,12 @@ function initControls(ctx){build();if(SHOT)return;
   // 사파리 페이지 확대 막기: 핀치(gesture*)·두 손가락 끌기 (두 번 누르기 확대는 index.html touch-action:manipulation)
   ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
   document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
-  cv.addEventListener('wheel',e=>{if(!input.cam.on)return;e.preventDefault();input.cam.dist=Math.min(CAM.distMax,Math.max(CAM.distMin,input.cam.dist+e.deltaY*CAM.wheel));},{passive:false});}
+  cv.addEventListener('wheel',e=>{if(!input.cam.on)return;e.preventDefault();input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,input.cam.dist+e.deltaY*CAM.wheel));},{passive:false});}
 /* 08이 매 프레임: 키로 하는 카메라 거리(-/+), 대쉬 단추 식힘 표시 */
 function tickControls(dt,dashCool){if(SHOT)return;const c=input.cam;
   if(c.on){if(keys.ArrowLeft)c.yaw+=dt*2.3;if(keys.ArrowRight)c.yaw-=dt*2.3; // 개미굴: 방향키는 카메라
     if(keys.ArrowUp)c.pitch=Math.max(CAM.pitchMin,c.pitch-dt*1.3);if(keys.ArrowDown)c.pitch=Math.min(CAM.pitchMax,c.pitch+dt*1.3);
-    if(keys.Minus||keys.NumpadSubtract)c.dist=Math.min(CAM.distMax,c.dist+dt*CAM.keyZoom);if(keys.Equal||keys.NumpadAdd)c.dist=Math.max(CAM.distMin,c.dist-dt*CAM.keyZoom);}
+    if(keys.Minus||keys.NumpadSubtract)c.dist=Math.min(CAM.distMax,c.dist+dt*CAM.keyZoom);if(keys.Equal||keys.NumpadAdd)c.dist=Math.max(c.minD||CAM.distMin,c.dist-dt*CAM.keyZoom);}
   if(dashBtn)dashBtn.classList.toggle('cool',!!dashCool);}
 function clearControls(){setTool(null);}
 export {CAM,clearControls,hooks as controlHooks,helpShown,initControls,input,setTool,showHelp,tickControls,useTool};

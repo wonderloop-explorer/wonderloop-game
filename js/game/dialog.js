@@ -19,7 +19,8 @@ function show(){const L=linesOf(talk.n);if(talk.i>=L.length){endTalk();return;}c
   const last=talk.i>=L.length-1; // 넘기는 법: 터치는 대화창이나 아래 단추("다음"·"닫기"), 키보드는 E, 마우스는 대화창이나 화면 누르기
   showDialog(talk.n.name,text,coarse?(last?'눌러서 닫기':'눌러서 계속'):(last?'E 또는 클릭으로 닫기':'E 또는 클릭으로 계속'));
   sfx('blip');if(talk.h)talk.h.stop();talk.h=voice({id:talk.n.voice&&talk.n.voice[text],text,who:talk.n.name,kind:'dialogue'});}
-function startTalk(n){if(!talkable(n)||talk)return false;if(saying){const r=saying.r;saying=null;r();} // 떠 있던 혼잣말은 끝내고
+function startTalk(n){if(!talkable(n)||talk)return false;n.talked=true; // 한 번 말을 건 인물은 '…' 말풍선을 더 띄우지 않는다
+if(saying){const r=saying.r;saying=null;r();} // 떠 있던 혼잣말은 끝내고
   talk={n,i:0,h:null};block('talk',true);show();return true;}
 function endTalk(){if(!talk)return;const n=talk.n;if(talk.h)talk.h.stop();talk=null;hideDialog();block('talk',false);if(n.onDone)try{n.onDone();}catch(e){console.error(e);}}
 function advance(){if(!talk)return false;talk.i++;show();return true;}
@@ -30,7 +31,8 @@ function tickSay(){
   if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('blip');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
     s.end=clock.t+Math.max(s.sec||0,h.dur);saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
-   말 걸 수 있는 가장 가까운 인물 하나의 머리 위에만, 위아래로 살짝 흔들림(움직임 줄이기면 멈춤). 깊이 검사 없이 늘 앞에.
+   아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).
+   위아래로 살짝 흔들림(움직임 줄이기면 멈춤). 깊이를 봐서 잎 뒤로 숨은 인물의 말풍선은 같이 가려진다. 가까이 가면 조금 작게(원더룹 얼굴·화면 위 안내 문구와 겹치지 않게).
    크기도 개미굴과 같게: 카메라가 가까우면 화면 높이의 약 11%로 늘 같은 크기, 따라가기 거리보다 멀어지면 작아진다(개미굴 min(1, 거리/7)과 같은 비율).
    꼬리 끝 높이는 NPC bubbleY 아래 0.13(머리를 덮지 않게 예전 말풍선 꼬리 자리 그대로) */
 let bubble=null;
@@ -51,10 +53,10 @@ function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
   near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=linesOf(talk.n);setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
   else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
-  // 말풍선은 말 걸 수 있는 가장 가까운 인물 위에 — 대화 거리 안에 들어와 'E 말 걸기'가 뜨면 숨긴다(원더룹 얼굴·탈을 가리지 않게)
-  let who=null;if(!talk&&!near&&!blocking()){let bd=7;for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<bd){bd=d;who=n;}}}
-  if(bubble){if(who&&hintsVisible()){who.root.getWorldPosition(_q);const cam=ctx.camera,h=bubbleSize(cam,cam.position.distanceTo(_q));bubble.scale.set(h*1.1/.82,h,1);
-    _q.y+=(who.bubbleY||1.4)-.133+h*.5+(reduce.matches?0:Math.sin(clock.t*4)*.06);bubble.position.copy(_q);bubble.visible=true;if(!bubble.parent)bubble.userData.scene.add(bubble);}else{bubble.visible=false;if(bubble.parent)bubble.parent.remove(bubble);}}
+  // 말풍선은 아직 말을 걸지 않은 가장 가까운 인물 위에 — 'E 말 걸기'가 떠도 그대로, 말을 건 뒤에는 사라짐
+  let who=null,wd=7;if(!talk&&!blocking()){for(const n of NPCS){if(!talkable(n)||n.talked)continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<wd){wd=d;who=n;}}}
+  if(bubble){if(who&&hintsVisible()){who.root.getWorldPosition(_q);const cam=ctx.camera,h=bubbleSize(cam,cam.position.distanceTo(_q))*(.72+.28*Math.min(1,Math.max(0,(wd-1.5)/2.5)));bubble.scale.set(h*1.1/.82,h,1); // 대화 거리 가까이는 72%까지 작게
+    _q.y+=(who.bubbleY||1.4)-.133+h*.5+(reduce.matches?0:Math.sin(clock.t*4)*.04);bubble.position.copy(_q);bubble.visible=true;if(!bubble.parent)bubble.userData.scene.add(bubble);}else{bubble.visible=false;if(bubble.parent)bubble.parent.remove(bubble);}}
   tickSay();}
 /* 입력: E(또는 말 걸기 단추) — 대화 중이면 다음, 아니면 가까운 NPC와 대화 */
 function act(){if(talk)return advance();if(near)return startTalk(near);return handAct();}

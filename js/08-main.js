@@ -78,6 +78,7 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
 /* 안개: 처음부터 늘 켜 두고 하늘 없는 구역에서는 아주 멀리 밀어 둔다(그림은 그대로) — 구역마다 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다 */
 const FOG_OFF=1e4;scene.fog=new THREE.Fog(0xffffff,FOG_OFF,FOG_OFF*2);
+const CAM_MIN=4; // 따라가기 카메라 가장 가까운 거리(m) — 원더룹 전신이 다 보이게(세로 시야 30°에서 키 1.1m + 여백)
 const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector3();
 /* 촬영 모드(?shot): 고정 시간 간격(기본 1/60초, 영상 캡처 중에는 wlShot.dt=1/72)으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
 const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1/60;
@@ -92,8 +93,11 @@ const nextFrame=()=>{if(!SHOT&&!paused)schedule();};
 if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
   window.addEventListener('blur',()=>setPaused(true));['focus','pointerdown','keydown'].forEach(ev=>window.addEventListener(ev,()=>setPaused(document.hidden)));}
+/* 한 화면 그리기: 보통 그리기 + 흐려 보기 덧그리기(game/occlude — 세계 구역에서 원더룹을 가리는 조각만). 화면 통계는 둘을 합친 값 */
+renderer.info.autoReset=false;
+function renderFrame(){renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
 function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
-  try{renderer.render(scene,camera);}catch(e2){}}if(!ok)nextFrame();}
+  try{renderFrame();}catch(e2){}}if(!ok)nextFrame();}
 function tickBody(){
   let dt,t;if(SHOT){dt=shotDt;shotT+=dt;t=shotT;}else{clock.update();dt=Math.min(clock.getDelta(),0.05);t=clock.getElapsed();}
   night+=(nightTarget-night)*Math.min(1,dt*2.2);
@@ -136,14 +140,18 @@ function tickBody(){
     // 벽이 있는 방(방 카메라에 가로 범위가 있는 곳)은 그 방의 열린 쪽 각도 안에서만 — 개미굴도 구역마다 카메라 자리를 방 안으로 묶었다
     {const A=Z.areas[zone.area],c=A&&A.camera;if(c&&c.azimuth){const y0=c.azimuth[0],y1=c.azimuth[1];let y=C.yaw;while(y<y0-PI)y+=2*PI;while(y>y1+PI)y-=2*PI;C.yaw=Math.min(y1,Math.max(y0,y));
       C.pitch=Math.min(PI/2-c.polar[0],Math.max(PI/2-c.polar[1],C.pitch));}}
-    const asp=camera.aspect,d=C.dist*(asp<1.25?Math.min(2.1,1.25/asp):1);_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
+    /* 거리: 플레이어가 정한 C.dist(휠·두 손가락)만 바꾼다 — 한 손가락 끌기는 각도만. 가장 가까이는 원더룹 전신이 화면에 다 들어오는 4m(세로 화면 배율을 곱한 뒤 값),
+       방(camRoom) 같은 장애물 때문에 당겨지면 C.pull로 빨리 당기고, 장애물이 없어지면 정한 거리로 천천히 돌아간다 */
+    const asp=camera.aspect,fk=asp<1.25?Math.min(2.1,1.25/asp):1;C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
-    if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
-      if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr){const k=Math.max(3/d,Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):3/d);if(k<1)_cw.set(_ct.x+(_cw.x-_ct.x)*k,_ct.y+(_cw.y-_ct.y)*k,_ct.z+(_cw.z-_ct.z)*k);}}_cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
+    {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
+       if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr)kt=Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):0;}
+     C.pull=C.pull??1;C.pull+=(kt-C.pull)*Math.min(1,dt*(kt<C.pull?12:2.5));const k=Math.min(1,Math.max(CAM_MIN/d,C.pull));
+     if(k<1)_cw.set(_ct.x+(_cw.x-_ct.x)*k,_ct.y+(_cw.y-_ct.y)*k,_ct.z+(_cw.z-_ct.z)*k);}_cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
     camera.position.lerp(_cw,Math.min(1,dt*7));controls.target.lerp(_ct,Math.min(1,dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
   else{C.ready=false;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
-  if(!rig)controls.update();GAME.occlude.prepCut();renderer.render(scene,camera); // 뚫어 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
+  if(!rig)controls.update();GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
   nextFrame();
@@ -178,7 +186,8 @@ if(SHOT){
       const tg=v.room?ROOM_T.clone():new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z);if(v.ty!=null)tg.y=v.ty;
       controls.target.copy(tg);camera.position.copy(new THREE.Vector3().setFromSpherical(new THREE.Spherical(v.dist,v.pol,(v.room?0:WL.rotation.y)+v.az)).add(tg));controls.update();},
     step(n){for(let i=0;i<n;i++)tick();},
-    capture(){renderer.render(scene,camera);return renderer.domElement.toDataURL('image/png');},
+    render:renderFrame,
+    capture(){renderFrame();return renderer.domElement.toDataURL('image/png');},
     info(){const ri=renderer.info.render;return{calls:ri.calls,triangles:ri.triangles};}
   };
 }

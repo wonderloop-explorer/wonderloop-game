@@ -357,7 +357,7 @@ return {...FAIRY_WORLD,
   sky:SK,
   get glide(){return gotUmbrella;}, // 우산을 받은 뒤에만 활공(07은 구역 정보 glide를 매 프레임 읽는다)
   spawn:{x:.2,z:9.4,ry:PI}, // 길 입구 조금 안쪽 — 숲 방(camRoom) 가장자리면 휴대폰 카메라가 원더룹에 바짝 붙는다
-  camRoom:{c:[-.5,0],r:16.5}, // 따라가기 카메라는 둘레 벽(13~19m) 안쪽까지만 — 벽 바깥에서 큰 잎 너머로 보지 않게
+  camRoom:{c:[-.5,0],r:19.5}, // 따라가기 카메라는 둘레 벽(13~19m) 안쪽까지만 — 벽 바깥에서 큰 잎 너머로 보지 않게
   platforms:[{r:[DOCK.x0,DOCK.x1,DOCK.z0,DOCK.z1],top:DOCK.top},...ROCKS],
   areas:{dock:{bounds:[-15,14,-15,14],obstacles,
     camera:{target:[0,1,0],dist:24,polar:[.45,1.3],azimuth:null,start:[1,.5],minDist:3,maxDist:44}}},

@@ -1,0 +1,102 @@
+{
+ "설명": "가림 표현(점무늬 → 부드러운 흐림 두 번 그리기) 전후 휴대폰 단계 성능 (2026-11-02). 헤드리스 크롬 + 실제 GPU(Apple M4), 390×844·기기 배율 3, ?zone=fairy-dock&quality=mobile. start 시작 자리 10초, behindLeaf 큰 줄기 뒤(흐림이 켜진 곳) 10초, walk 걷기·카메라 돌리기 20초. gpuMsPerSec = 초당 GPU 일(발열 지표). after는 0.35m보다 작은 발목 소품을 흐림에서 뺀 최종본.",
+ "before": {
+  "name": "before",
+  "start": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 2.06,
+   "gpuMsP95": 2.93,
+   "gpuMsPerSec": 62,
+   "calls": 98,
+   "tris": 176364,
+   "px": "585x1266"
+  },
+  "behindLeaf": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 2.18,
+   "gpuMsP95": 3.02,
+   "gpuMsPerSec": 65,
+   "calls": 95,
+   "tris": 175886,
+   "px": "585x1266"
+  },
+  "walk": {
+   "sec": 20.2,
+   "fps": 30,
+   "gpuMsAvg": 2.36,
+   "gpuMsP95": 3.34,
+   "gpuMsPerSec": 71,
+   "calls": 107,
+   "tris": 178794,
+   "px": "585x1266"
+  }
+ },
+ "after_all_objects": {
+  "name": "after",
+  "start": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 3.46,
+   "gpuMsP95": 5.73,
+   "gpuMsPerSec": 104,
+   "calls": 176,
+   "tris": 241752,
+   "px": "585x1266"
+  },
+  "behindLeaf": {
+   "sec": 10.1,
+   "fps": 30,
+   "gpuMsAvg": 2.88,
+   "gpuMsP95": 3.65,
+   "gpuMsPerSec": 87,
+   "calls": 166,
+   "tris": 239768,
+   "px": "585x1266"
+  },
+  "walk": {
+   "sec": 20.2,
+   "fps": 30,
+   "gpuMsAvg": 3.12,
+   "gpuMsP95": 4.71,
+   "gpuMsPerSec": 94,
+   "calls": 192,
+   "tris": 246069,
+   "px": "585x1266"
+  }
+ },
+ "after": {
+  "name": "after2",
+  "start": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 2.58,
+   "gpuMsP95": 3.19,
+   "gpuMsPerSec": 77,
+   "calls": 143,
+   "tris": 226689,
+   "px": "585x1266"
+  },
+  "behindLeaf": {
+   "sec": 10.1,
+   "fps": 30,
+   "gpuMsAvg": 2.94,
+   "gpuMsP95": 4,
+   "gpuMsPerSec": 88,
+   "calls": 135,
+   "tris": 224941,
+   "px": "585x1266"
+  },
+  "walk": {
+   "sec": 20.1,
+   "fps": 30,
+   "gpuMsAvg": 2.81,
+   "gpuMsP95": 3.72,
+   "gpuMsPerSec": 84,
+   "calls": 158,
+   "tris": 231196,
+   "px": "585x1266"
+  }
+ }
+}

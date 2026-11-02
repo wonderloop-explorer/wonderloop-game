@@ -235,7 +235,7 @@ async function take(aspect,opt={}){
     if(png){const b=await new Promise(r=>frame.toBlob(r,'image/png'));pngQ.push(save(`${base}-png/${String(fi).padStart(5,'0')}.png`,b));if(pngQ.length>8)await pngQ.shift();}
     await enc.add(frame,fi);fi++;}
   // 시작 화면 → 구간들을 차례로
-  renderer.render(S.scene,S.camera);await grab();
+  S.render();await grab(); // 08 renderFrame — 흐려 보기 덧그리기까지
   let done=false,err=null;const MAX=(sc.max||600)*FPS;
   (async()=>{for(const sg of sc.segments){curDef=sg;curSeg={name:sg.name,t0:vt(),noWL:!!sg.noWL};segs.push(curSeg);msg(`${sg.name} 녹화 중…`);await sg.run(c);curSeg.t1=vt();}})()
     .catch(e=>{err=e;}).finally(()=>{done=true;});

@@ -6,7 +6,7 @@
      bg 카드 왼쪽 둥근 배경판 색(캐릭터마다 다른 연한 파스텔). portrait.side 정면에서 돌린 각도(라디안, 기본 0.42 = 살짝 3/4), lift 내려다보는 정도.
    전신 찍기: 그 캐릭터만 잠깐 따로 만든 장면으로 옮겨(배경·안개·다른 물체 없이) 투명 배경에 찍고 제자리로 돌려놓는다.
      부드러운 정면 조명(하늘빛 + 카메라 쪽 앞빛), 비쳐 보이기(occlude)·뚫어 보기(cut)로 반투명해진 상태는 찍는 동안 되돌린다.
-     몸 전체 상자에 맞춰 카메라 거리를 잡는다(위아래 여백 약 8%). 384×512 렌더 타깃에 한 번 → 캔버스 그림 주소. 카드가 열릴 때만이라 플레이 중 비용은 없다. */
+     몸 전체 상자에 맞춰 카메라 거리를 잡는다(위아래 여백 약 8%). 카드의 동그라미에 맞춰 512×512 렌더 타깃에 한 번 → 캔버스 그림 주소. 카드가 열릴 때만이라 플레이 중 비용은 없다. */
 import * as THREE from 'three';
 import {flags,setFlag} from './state.js';
 import {profileCard} from './ui.js';
@@ -15,7 +15,7 @@ let ctx=null,W='',CARDS={};
 function initProfile(c){ctx=c;}
 function setup({world,cards}){W=world||'';CARDS=cards||{};}
 const seen=id=>!!flags['meet:'+W+':'+id];
-function portrait(root,{side=.42,lift=.12,w=384,h=512}={}){if(!ctx||!ctx.renderer)return null;const {renderer}=ctx;
+function portrait(root,{side=.42,lift=.12,w=512,h=512}={}){if(!ctx||!ctx.renderer)return null;const {renderer}=ctx;
   const par=root.parent,pos=root.position.clone(),quat=root.quaternion.clone(),scl=root.scale.clone();
   const stage=new THREE.Scene();stage.add(root);root.position.set(0,0,0);root.quaternion.identity();root.updateMatrixWorld(true); // 캐릭터만 따로(제자리 방향은 정면 = +z)
   const hid=[];root.traverse(o=>{if((o.isSprite||o.userData.wlHint)&&o.visible){o.visible=false;hid.push(o);}});
@@ -24,7 +24,7 @@ function portrait(root,{side=.42,lift=.12,w=384,h=512}={}){if(!ctx||!ctx.rendere
   const fov=24,asp=w/h,half=Math.max(sz.y/2,sz.x/2/asp*1.05)*1.08,dist=half/Math.tan(fov*Math.PI/360)+Math.max(sz.x,sz.z)/2;
   const dir=new THREE.Vector3(Math.sin(side),lift,Math.cos(side)).normalize(),cam=new THREE.PerspectiveCamera(fov,asp,.05,dist*4);
   cam.position.copy(c).addScaledVector(dir,dist);cam.lookAt(c);
-  stage.add(new THREE.HemisphereLight(0xfff6ea,0xe8d6c4,2.4));const key=new THREE.DirectionalLight(0xfff2e0,2.6);key.position.copy(cam.position).add(new THREE.Vector3(-dist*.4,dist*.5,0));key.target.position.copy(c);stage.add(key,key.target);
+  stage.add(new THREE.HemisphereLight(0xfff6ea,0xd9c2aa,1.6));const key=new THREE.DirectionalLight(0xfff2e0,2.3);key.position.copy(cam.position).add(new THREE.Vector3(-dist*.4,dist*.5,0));key.target.position.copy(c);stage.add(key,key.target);
   const rt=new THREE.WebGLRenderTarget(w,h,{samples:4});rt.texture.colorSpace=THREE.SRGBColorSpace;
   const prev=renderer.getRenderTarget(),cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();let url=null;const resume=cutPaused(true);
   try{renderer.setRenderTarget(rt);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(stage,cam);const px=new Uint8Array(w*h*4);renderer.readRenderTargetPixels(rt,0,0,w,h,px);
