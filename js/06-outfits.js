@@ -3,13 +3,15 @@ import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
 import {BLOOM,BUD} from './hoods/bud.js';
+import {CROWN,CROWN_BLOOM} from './hoods/crown.js';
 /* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래)
    새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}을 만들어 import하고 HOODS 끝에 {key,name,mod}로 더한다.
    여기서 hoodParts(아틀라스 교체 영역)에 넣고 userData.hw로 번호를 붙인다(05 applyLook이 그 번호일 때만 보임).
    머리 처리: 개미탈은 탈 아래 앞머리(05), 모자형 탈은 안쪽 머리만 눌러 넣기(pressHair, 탈의 profile·top). 구역 정보 hood:'<key>' → 들어올 때 그 탈(08).
    번호 0~2는 기준 촬영·영상 대본(setup({hood}))이 쓰므로 바꾸지 않고 뒤에 붙인다. */
 const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'},
-  {key:'bud',name:'꽃봉오리 탈',mod:BUD},{key:'bloom',name:'핀 꽃 탈',mod:BLOOM}]; // 요정의 숲: 닫힌 봉오리 → 클라이맥스부터 활짝 핀 꽃(morphHood('bloom'))
+  {key:'bud',name:'꽃봉오리 탈',mod:BUD},{key:'bloom',name:'핀 꽃 탈',mod:BLOOM}, // 꽃봉오리 탈(2026-11-02부터 요정의 숲에서는 안 씀 — 목록에는 그대로)
+  {key:'crown',name:'화관(봉오리)',mod:CROWN},{key:'crownBloom',name:'화관(핌)',mod:CROWN_BLOOM}]; // 요정의 숲: 봉오리 화관 → 클라이맥스에 별꽃 보석이 들어가면 핀 화관(morphHood('crownBloom')) + 별가루
 HOODS.forEach((h,i)=>{if(!h.mod)return;const r=h.mod.build({head,wm,TM,SM});r.g.userData.hw=i;hoodParts.push(r.g);h.press=r;});
 WL.userData.hoods=HOODS;
 /* 디테일: 옷 구조 + 탐험대 패치 */
@@ -145,7 +147,7 @@ function wlMerge(list){
    wlMerge(WL.userData.hatG.children.slice());if(WL.userData.charm)wlMerge(WL.userData.charm.g.children.slice());applyOutfit();}
   // 탈 카테고리: 없음 → 개미탈 → 탐험 모자 (옷과 따로 쓰고 벗음)
   {const hwBtn=document.getElementById('hoodBtn');WL.userData.hw=0;
-   const applyHW=()=>{const hw=WL.userData.hw;WL.userData.hatG.visible=hw===2;WL.userData.applyLook();pressHair(hw===2||HOODS[hw].press?hw:0);hwBtn.textContent='탈: '+HOODS[hw].name;};
+   const applyHW=()=>{const hw=WL.userData.hw;WL.userData.hatG.visible=hw===2;WL.userData.applyLook();pressHair(hw===2||(HOODS[hw].press&&HOODS[hw].press.profile)?hw:0);hwBtn.textContent='탈: '+HOODS[hw].name;};
    hwBtn.addEventListener('click',()=>{WL.userData.hw=(WL.userData.hw+1)%HOODS.length;applyHW();});applyHW();
    // 이름으로 탈 쓰기 (구역 정보 hood, 영상 대본): setHood('ant')
    WL.userData.setHood=key=>{const i=HOODS.findIndex(h=>h.key===key);if(i<0){console.warn('원더룹: 없는 탈',key);return;}WL.userData.hw=i;applyHW();};

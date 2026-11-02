@@ -1,12 +1,12 @@
 /* 요정의 숲 — 세계 기본값 (설계 메모 wonderloop-studio/fairy-forest/wonderloop_fairy-forest_design.md "세계 규칙")
    이 세계의 구역(① 선착장 ② 공중정원 ③ 장터 ④ 수로·전망대)은 구역 정보에 ...FAIRY_WORLD 를 펼쳐 쓴다.
-   상상의 세계에 들어가면 탐험복 그대로 탈만 바꿔 쓰는 규칙(08 zoneLook): 탐험복(분홍 목수건) + 꽃봉오리 탈(닫힘 'bud' → 클라이맥스부터 'bloom').
+   상상의 세계에 들어가면 탐험복 그대로 탈만 바꿔 쓰는 규칙(08 zoneLook): 탐험복(분홍 목수건) + 꽃 화관(봉오리 'crown' → 클라이맥스에 별꽃 보석이 들어가면 'crownBloom', 2026-11-02 꽃봉오리 탈 대신).
    나침반은 개미굴 편에서 받아 온 상태로 시작한다. 도감은 넣지 않는다(codex.setup을 부르지 않음 — 성취감은 꽃잎 배지 같은 아이템으로). 대신 주민과 처음 이야기한 뒤 캐릭터 소개 카드 한 번(FAIRY_CARDS, game/profile.js).
    배경음은 코드로 연주하는 곡(music.js) — 구역마다 music:'fairy-…'. 아이템 획득 카드 아이콘은 assets/icons/fairy/<이름>.png(256 투명, 카드가 크림색 동그라미 위에 얹는다). */
 import * as G from '../../game/index.js';
 import {FAIRY_MUSIC} from './music.js';
 G.sound.synth(FAIRY_MUSIC);
-export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'bud',start:{compass:true}};
+export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'crown',start:{compass:true}}; // 2026-11-02 꽃봉오리 탈 대신 봉오리 화관 → 클라이맥스에 핀 화관(crownBloom)
 export const icon=id=>`assets/icons/fairy/${id}.png?v=${window.WL_V||''}`;
 /* 소개 카드 전신 그림(2D, 투명 배경 webp — 2026-11-02 받은 그림의 정면 모습): 없는 주민은 img:null → 게임 안 전신 렌더링 */
 const card=id=>`assets/cards/fairy/${id}.webp?v=${window.WL_V||''}`;

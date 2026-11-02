@@ -318,7 +318,8 @@ function updateWL(dt,t){
    if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass; // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
    (U.charms||[]).forEach(C=>{if(C.flag)C.g.visible=!!flags[C.flag];}); // 받은 아이템 키링은 받은 뒤에만 (game/items, 06 addCharm)
    (U.badges||[]).forEach(B=>B.g.visible=!!flags[B.flag]); // 꾸미기(배지)도 받은 뒤에만 (06 addBadge)
-   if(U.hoodMorph)U.hoodMorph.tick(dt);} // 탈 모습 바뀌기 연출 (06 morphHood)
+   if(U.hoodMorph)U.hoodMorph.tick(dt); // 탈 모습 바뀌기 연출 (06 morphHood)
+   for(let i=0;i<(U.hoods||[]).length;i++){const H=U.hoods[i];if(H.mod&&H.mod.tick&&H.press)H.mod.tick(H.press.g,dt,t,U,U.hw===i&&!U.hoodMorph);}} // 탈의 매 프레임 효과(핀 화관 별가루 — 쓰고 있을 때만 새로 나오고, 벗으면 남은 것만 사라짐)
   // 개미굴 움직임 효과: 대쉬 숙임·먼지, 공중 늘어남, 착지 찌그러짐 (위 "움직임 효과")
   D.lean+=((D.dashT>0?.45:0)-D.lean)*Math.min(1,dt*14);if(D.lean>.001)body.rotation.x=Math.max(body.rotation.x,D.lean); // 달리기 자세의 숙임과 겹치지 않게 — 모두 합쳐 개미굴처럼 0.45
   if(D.dashT>0&&!V.air){D.puffT-=dt;if(D.puffT<=0){spawnPuff(WL.position.x,GY,WL.position.z);D.puffT=.035;}}if(puffs.length)tickPuffs(dt);

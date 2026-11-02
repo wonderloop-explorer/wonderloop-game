@@ -128,7 +128,7 @@ function tickBody(){
   {const far=SK?Math.min(120,scene.fog.far+4):120;if(camera.far!==far){camera.far=far;camera.updateProjectionMatrix();}} // 하늘 있는 구역: 안개가 다 덮는 곳부터는 그리지 않는다(하늘 지붕은 그 안으로 줄어듦)
   cave+=((SK?0:caveTarget)-cave)*Math.min(1,dt*2.2);dayLabel(); // 하늘 있는 구역에서는 굴 조명을 쓰지 않는다
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}
-  const env={night:n,cave,flick,reduce};
+  const env={night:n,cave,flick,reduce};WL.userData.nightK=SK?Math.min(1,SK.t/2*1.3):n; // 탈 효과(화관 별가루)가 해 질 녘·밤에 더 또렷하게
   if(Z.mood){const m=Z.mood;hemi.intensity*=m.hemi??1;sun.intensity*=m.sun??1;fill.intensity*=m.fill??1; // 구역 분위기(땅속 등): 하늘빛·해를 줄이고 색을 물들인다 — 없으면 예전과 같다
     if(m.sky!=null){hemi.color.lerp(rawLin(m.sky),m.tint??.5);hemi.groundColor.lerp(rawLin(m.ground??m.sky),m.tint??.5);}}
   if(Z.light)Z.light(env,dt); // 구역 조명(램프·등불 등)과 효과의 밝기
@@ -165,14 +165,10 @@ function tickBody(){
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
     {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
        if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr)kt=Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):0;
-       /* 큰 장애물(집·바위·큰 줄기 — 구역 장애물 원 반지름 0.45 이상) 속으로 팔이 들어가면 그 앞까지(카메라가 물체 속에 들어가 화면이 한 색으로 덮이지 않게, 2026-11-02).
-          높이를 모르는 원이라 반지름으로 어림한 높이(반지름×1.9, 최대 2.6m — 돌은 낮고 집은 높다)보다 그 자리 카메라가 낮을 때만. 잎·꽃처럼 얇은 것은 막지 않고 game/occlude가 카메라 바로 앞이면 완전히 흐린다 */
-       const AR=Z.areas[zone.area];if(AR)for(const o of AR.obstacles){if(!o.c||o.c[2]<.45)continue;const R=o.c[2]+.35,px=_ct.x-o.c[0],pz=_ct.z-o.c[1],dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,a=dx*dx+dz*dz,b=2*(px*dx+pz*dz),c=px*px+pz*pz-R*R;
-         if(a<1e-6||c<=0)continue;const D=b*b-4*a*c;if(D<0)continue;const s=(-b-Math.sqrt(D))/(2*a);if(s>0&&s<kt&&_ct.y+(_cw.y-_ct.y)*s<Math.min(2.6,o.c[2]*1.9))kt=Math.max(0,s-.04);}
-       // 구역 정보 camBlock [[x,y,z,반지름]…]: 카메라가 들어가면 안 되는 공(합쳐 그려 흐려지지 않는 벽의 꽃머리·잎 등) — 팔이 공에 닿기 전까지만
-       if(Z.camBlock)for(const q of Z.camBlock){const R=q[3]+.4,px=_ct.x-q[0],py=_ct.y-q[1],pz=_ct.z-q[2],dx=_cw.x-_ct.x,dy=_cw.y-_ct.y,dz=_cw.z-_ct.z,a=dx*dx+dy*dy+dz*dz,b=2*(px*dx+py*dy+pz*dz),c=px*px+py*py+pz*pz-R*R;
-         if(a<1e-6||c<=0)continue;const D=b*b-4*a*c;if(D<0)continue;const s=(-b-Math.sqrt(D))/(2*a);if(s>0&&s<kt)kt=Math.max(0,s-.03);}}
-     C.pull=C.pull??1;C.pull+=(kt-C.pull)*Math.min(1,dt*(kt<C.pull?12:2.5));const k=Math.min(1,Math.max(CAM_MIN/d,C.pull));
+       /* 집·바위·큰 잎처럼 흐려질 수 있는 물체는 카메라를 당기지 않는다(game/occlude가 흐린다 — 2026-11-02, 꽃지붕 집 옆에서 당겼다 물러났다 하던 것). 당기는 건 이 카메라 방(둘레 벽)과 아래 땅뿐 */}
+     /* 부드럽게, 여유를 두고: 당길 때는 약 0.25초에 걸쳐, 놓을 때는 0.8초 동안 계속 열려 있어야 천천히(짧은 사이에 당겼다 물러났다 되풀이하지 않게) */
+     C.pull=C.pull??1;if(kt<C.pull-.02){C.pull+=(kt-C.pull)*Math.min(1,dt*4);C.relT=0;}else if(kt>C.pull+.02){C.relT=(C.relT||0)+dt;if(C.relT>.8)C.pull+=(kt-C.pull)*Math.min(1,dt*1.5);}else C.relT=0;
+     const k=Math.min(1,Math.max(CAM_MIN/d,C.pull));
      if(k<1)_cw.set(_ct.x+(_cw.x-_ct.x)*k,_ct.y+(_cw.y-_ct.y)*k,_ct.z+(_cw.z-_ct.z)*k);}
     /* 구역이 비춰 달라는 곳(game view.focus·hold): 그쪽 자리·보는 점으로 섞는다 — 들어갈 때·돌아올 때 0.45초 */
     {const V=GAME.view,r=V.req;let want=0;if(r){r.t+=dt;let at=null,from=null;
