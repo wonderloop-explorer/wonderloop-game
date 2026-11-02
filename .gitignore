@@ -9,3 +9,4 @@ captures/
 *.mkv
 *.srt
 *.vtt
+.cache/

@@ -15,6 +15,12 @@
 - **영상 제작 결과물은 공개 저장소에 커밋하지 않는다.** 영상 캡처 모드로 만든 영상·소리 시점 기록·자막 같은 영상 제작 결과물은 `.gitignore`로 막고(`captures/`, `*.mp4` 등), 보관은 비공개 저장소 `wonderloop-studio`(세계마다 폴더 하나)나 PC에 한다.
 - **버전 표시(캐시):** 커밋 전에 `python3 tools/stamp.py`를 돌린다. `js/`·`assets/`의 실행용 파일(.js .json .webp .png .jpg .glb) 내용 해시를 `index.html`의 importmap(js 파일마다 `?v=`), 시작 모듈 주소, `window.WL_V`(fetch 주소에 붙임)에 써서, Pages에 올리면 방문자가 옛 파일과 새 파일을 섞어 받지 않는다. `git config core.hooksPath tools/hooks`를 켜 두면 커밋할 때 저절로 돈다. 새로 fetch하는 파일 주소에는 `'?v='+window.WL_V`를 붙인다. stamp는 `version.json`도 쓰고, `index.html` 맨 앞 스크립트(`wl-vercheck`)가 그것을 캐시 없이 읽어 버전이 다르면 주소에 `&_v=새버전`을 붙여 다시 연다(사파리가 옛 index.html을 기억해 아이폰에서 화관이 안 보였다, 2026-11-02). 톱니 메뉴 성능 상자 맨 위에 `버전 …`(= `WL_V`, 파일 내용 해시 — 커밋 번호는 자기 커밋 안에 넣을 수 없어서). 주소에 `zone`이 없으면 `START_ZONE`(02, 이 브랜치는 `fairy-dock`)에서 시작, 촬영 모드는 늘 베이스캠프.
 
+- **스테이지 한 파일 빌드** (`tools/build-single.js`, 2026-11-02 — 개미굴 편처럼 서버 없이 더블클릭으로 열리고 GPT에 올려 코드 검토를 받는 HTML 하나): `node tools/build-single.js <구역>` → `dist/…html`(지금은 `fairy-dock` → `dist/fairy-forest-stage01.html`). 개발 구조는 그대로 두고 묶기만 한다.
+  - 새 스테이지: 스크립트 맨 위 `STAGES`에 한 줄(구역 이름 = 시작 구역 `WL_START_ZONE`, 결과 파일, 제목, 넣을 그림 폴더 `assets/…/*`)을 더하고 같은 명령으로.
+  - 묶는 방법: js/ 모든 모듈 + three.js r186(three.module·three.core·OrbitControls·BufferGeometryUtils — `.cache/three-<버전>/`에 받아 둠, 저장소에 안 넣음)을 원본 그대로 `<script type="text/x-wl-module" data-path="원본 경로">` 칸에(맨 위 원본 경로 주석, 줄이지 않음). 맨 끝 시작 스크립트가 import 경로를 다른 칸의 blob: 주소로 바꿔 이어 붙이고(모듈 순환이 없어야 한다 — 생기면 시작 스크립트가 알려 줌), `import.meta.url`은 파일 옆 js/… 주소로. 그림·아이콘·카드·텍스처 목록·난수 기록·소리는 data URI(`WL_FILES`) — fetch와 `<img>.src`가 `assets/…`를 찾으면 그것을, 없으면 404(개발판처럼 대신 그림). 글꼴은 Google Fonts 연결만(안 되면 기본 글꼴). 버전 확인 wl-vercheck·importmap은 빼고, 톱니 메뉴 성능 상자 맨 위에 `버전 … · 커밋 …`(`WL_BUILD`, 빌드한 원본 커밋 — 고치는 중이면 `+수정`).
+  - 순서: 개발 코드를 먼저 커밋 → 빌드 → dist 커밋(그래야 커밋 표시가 원본 커밋을 가리킨다). 15MB를 넘으면 스크립트가 멈추고 줄이는 방법(텍스처 128px·WebP 손실 압축, 카드·아이콘 WebP, 소리 96kbps 모노, 안 쓰는 assets 빼기)을 알려 준다. 지금 3.1MB.
+  - 확인: 파일을 file://로 열어 이야기 끝까지(대화 → 클로버 셋 → 이슬방울 → 나뭇잎배 → 홀씨 우산 → 활공), 휴대폰 크기도. 개발판과 같은 장면 비교는 둘 다 `?shot&zone=<구역>&bake=hand`(한 파일에는 구운 텍스처를 넣지 않으니 개발판도 그려서) — 2026-11-02 PC·휴대폰 단계 5장면씩 화소 차이 0(PC는 그림자 1~2단계).
+
 ## 코드 구조 (중요)
 - three.js r186(`0.186.1`) ES 모듈 + OrbitControls(`three/addons/`), `index.html`의 importmap으로 jsDelivr에서 불러온다. 빌드 도구 없음.
 - **화면 기준은 r128 시절 화면이다.** 업그레이드하면서 같은 그림이 나오도록 맞춘 곳 (three.js를 다시 올릴 때 꼭 확인):
