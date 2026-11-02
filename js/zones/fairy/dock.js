@@ -322,12 +322,11 @@ function startRide(){st.phase='riding';q('');boatman.wave(false);
   // 사공은 이슬배로 옮겨 타고 함께 간다
   bmG.visible=false;const bm2=fairy('boatman');bm2.root.position.set(0,hull.userData.floor(-.66),-.66*BL/2);bm2.root.scale.setScalar(.95);boat.add(bm2.root); // 사공은 배 뒤쪽 끝(노 젓는 자리), 원더룹은 앞쪽에 앉는다(ride fwd·pose)
   {const oar=bm2.root.userData.oar;bm2.arms[1].add(oar);oar.position.set(0,-.17,.03);}rower=bm2; // 배에서는 노를 왼손(+x, 마을 반대쪽 남쪽 강가)으로 — 카메라도 그쪽에서 봐서 마을 집·꽃지붕 속을 지나가지 않게
-  G.view.hold(()=>{const a=boat.rotation.y,fx=Math.sin(a),fz=Math.cos(a),sx=-fz,sz=fx,c=boat.position; // 노 젓는 쪽(사공 왼쪽, 배의 +x — 남쪽 강가) 비스듬한 앞옆에서 둘 다 보이게
-    const asp=G.view.camera.aspect,K=asp<1.25?Math.min(1.9,(1.25/asp)**.8):1; // 세로 화면은 멀리(따라가기 카메라와 같은 규칙)
-    return {at:[c.x+fx*.1,.5,c.z+fz*.1],from:[c.x-sx*6.2*K+fx*2.6,2.2+.4*K,c.z-sz*6.2*K+fz*2.6]};});
+  {const c=boat.position,tx=-.5-c.x,tz=cz(-.5)-.2-c.z,tl=Math.hypot(tx,tz)||1,fx=tx/tl,fz=tz/tl,sx=-fz,sz=fx; // 처음 각도(배가 갈 쪽 기준 — 배는 출발한 뒤에야 돌아선다): 노 젓는 쪽(사공 왼쪽, 배의 +x — 남쪽 강가) 비스듬한 앞옆에서 둘 다 보이게. 그 뒤로는 플레이어가 마음대로 돌린다(카메라 규칙)
+   G.view.start({at:[c.x,.85,c.z],from:[c.x-sx*6.2+fx*2.6,2.6,c.z-sz*6.2+fz*2.6]});}
   // 물길 가운데를 따라 건너편 둑까지(끝점은 둑에 살짝 올라 원더룹이 땅에 내린다)
   G.ride.ride({vehicle:boat,seat:hull.userData.floor(.46)+.005,fwd:.46*BL/2,pose:'앉기',speed:1.15,path:[BOAT0,[3,-.06,cz(3)-.9],[-.5,-.06,cz(-.5)-.2],[-4.5,-.06,cz(-4.5)-.6],[-6.6,-.06,zN(-6.6)+1],[-6.8,-.06,zN(-6.8)-.3]],
-    onEnd:()=>{rode=true;st.phase='gift';boat.remove(bm2.root);rower=null;G.view.hold(null);
+    onEnd:()=>{rode=true;st.phase='gift';boat.remove(bm2.root);rower=null;
       // 사공이 배 옆으로 한 걸음 나와(카메라에서 본 원더룹 옆쪽, 물가 땅) 원더룹을 보고 말한다 — 원더룹 뒤에 가려지지 않게
       {const cam=G.view.camera,f=new THREE.Vector3();cam.getWorldDirection(f);f.y=0;f.normalize();const rx=-f.z,rz=f.x;const W0=WL().position;
        const bx=W0.x+rx*1.05;bmG.position.set(bx,0,Math.min(zN(bx)-.35,W0.z+rz*1.05));small.visible=false;bmG.rotation.set(0,Math.atan2(W0.x-bmG.position.x,W0.z-bmG.position.z),0);bmG.visible=true;}

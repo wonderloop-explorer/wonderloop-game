@@ -161,7 +161,16 @@ function tickBody(){
       C.pitch=Math.min(PI/2-c.polar[0],Math.max(PI/2-c.polar[1],C.pitch));}}
     /* 거리: 플레이어가 정한 C.dist(휠·두 손가락)만 바꾼다 — 한 손가락 끌기는 각도만. 가장 가까이는 원더룹 전신이 화면에 다 들어오는 4m(세로 화면 배율을 곱한 뒤 값),
        방(camRoom) 같은 장애물 때문에 당겨지면 C.pull로 빨리 당기고, 장애물이 없어지면 정한 거리로 천천히 돌아간다 */
-    const asp=camera.aspect,fk=asp<1.25?Math.min(2.1,1.25/asp):1;C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
+    const asp=camera.aspect,fk=asp<1.25?Math.min(2.1,1.25/asp):1;
+    /* 카메라 규칙(CLAUDE.md): 탈것·활공 중에도 카메라를 붙박지 않는다. view.start는 처음 각도만 0.8초에 걸쳐 맞추고 놓아 준다.
+       짧은 연출(view.focus·hold) 중에 플레이어가 끌기·두 손가락·휠·방향키로 카메라를 만지면 연출을 끝내고 지금 카메라 자리에서 바로 조작을 넘겨준다 */
+    {const V=GAME.view;if(C.user!==C.userSeen){C.userSeen=C.user;V.aim=null;
+       if(V.req||C.fw>0){const ox=camera.position.x-WL.position.x,oy=camera.position.y-WL.position.y-.85,oz=camera.position.z-WL.position.z,L=Math.hypot(ox,oy,oz)||1;
+         C.yaw=Math.atan2(ox,oz);C.pitch=Math.min(1.15,Math.max(-.55,Math.asin(oy/L)));C.dist=Math.min(13,Math.max(CAM_MIN/fk,L/fk));V.req=null;C.fw=0;}}
+     if(V.aim){const a=V.aim;if(!a.rel){const o=a.at||[WL.position.x,WL.position.y+.85,WL.position.z];a.rel=[a.from[0]-o[0],a.from[1]-o[1],a.from[2]-o[2]];}a.t+=dt;
+       const [ox,oy,oz]=a.rel,L=Math.hypot(ox,oy,oz)||1,gy=Math.atan2(ox,oz),k=Math.min(1,dt*6);let dy=gy-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));
+       C.yaw+=dy*k;C.pitch+=(Math.min(1.15,Math.max(-.55,Math.asin(oy/L)))-C.pitch)*k;C.dist+=(Math.min(13,Math.max(CAM_MIN/fk,L))-C.dist)*k;if(a.t>.8)V.aim=null;}} // from 거리는 가로 화면 기준(세로 화면은 따라가기와 같은 배율로 멀리)
+    C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
     {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
        if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr)kt=Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):0;
@@ -185,7 +194,7 @@ function tickBody(){
   if(!rig)controls.update();GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
-    statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':
+    statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':
       `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${Math.round(1000/FRAME_MS)}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계 · 플레이 ${Math.floor(P.play/60)}분${idle(performance.now())?' · 쉬는 중 20프레임':''}`);}
   nextFrame();
 }

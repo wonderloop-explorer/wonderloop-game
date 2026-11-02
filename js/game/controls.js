@@ -92,9 +92,9 @@ function initControls(ctx){build();if(SHOT)return;
   cv.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===2){drag=null;pinch={d:span(),dist:input.cam.dist};input.pinching=true;}else if(pts.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
   cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(p){p.x=e.clientX;p.y=e.clientY;}
-    if(pinch&&pts.size>=2){if(input.cam.on){const d=span();if(d>10)input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,pinch.dist*pinch.d/d));}return;} // 벌리면 가까이, 오므리면 멀리
+    if(pinch&&pts.size>=2){if(input.cam.on){const d=span();if(d>10)input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,pinch.dist*pinch.d/d));input.cam.user=(input.cam.user||0)+1;}return;} // 벌리면 가까이, 오므리면 멀리
     if(!drag||drag.id!==e.pointerId||!input.cam.on)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
-    input.cam.yaw-=dx*CAM.yawPx;input.cam.pitch=Math.min(CAM.pitchMax,Math.max(CAM.pitchMin,input.cam.pitch+dy*CAM.pitchPx));});
+    if(dx||dy)input.cam.user=(input.cam.user||0)+1;input.cam.yaw-=dx*CAM.yawPx;input.cam.pitch=Math.min(CAM.pitchMax,Math.max(CAM.pitchMin,input.cam.pitch+dy*CAM.pitchPx));});
   const endDrag=e=>{pts.delete(e.pointerId);if(drag&&drag.id===e.pointerId)drag=null;if(pts.size<2&&pinch){pinch=null;drag=null;} // 두 손가락을 떼는 동안 남은 손가락으로 카메라가 튀지 않게
     if(!pts.size&&input.pinching)setTimeout(()=>{input.pinching=false;},0);}; // 다 뗄 때까지는 '눌러서 걷기'로 보지 않는다(08)
   cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
@@ -106,10 +106,11 @@ function initControls(ctx){build();if(SHOT)return;
   // 그래도 페이지가 확대돼 버리면(사파리가 막기를 무시한 경우) 배율 1로 되돌린다
   {const vv=window.visualViewport,meta=document.querySelector('meta[name=viewport]');if(vv&&meta){const base=meta.content;let t=0;
     vv.addEventListener('resize',()=>{if(vv.scale>1.01){clearTimeout(t);meta.content=base+', minimum-scale=1';t=setTimeout(()=>{meta.content=base;},300);}});}}
-  cv.addEventListener('wheel',e=>{if(!input.cam.on)return;e.preventDefault();input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,input.cam.dist+e.deltaY*CAM.wheel));},{passive:false});}
+  cv.addEventListener('wheel',e=>{if(!input.cam.on)return;e.preventDefault();input.cam.user=(input.cam.user||0)+1;input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,input.cam.dist+e.deltaY*CAM.wheel));},{passive:false});}
 /* 08이 매 프레임: 키로 하는 카메라 거리(-/+), 대쉬 단추 식힘 표시 */
 function tickControls(dt,dashCool){if(SHOT)return;const c=input.cam;
-  if(c.on){if(keys.ArrowLeft)c.yaw+=dt*2.3;if(keys.ArrowRight)c.yaw-=dt*2.3; // 개미굴: 방향키는 카메라
+  if(c.on){if(keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||keys.Minus||keys.NumpadSubtract||keys.Equal||keys.NumpadAdd)c.user=(c.user||0)+1; // 플레이어가 카메라를 만진 횟수 — 08이 보고 짧은 카메라 연출을 끝낸다
+    if(keys.ArrowLeft)c.yaw+=dt*2.3;if(keys.ArrowRight)c.yaw-=dt*2.3; // 개미굴: 방향키는 카메라
     if(keys.ArrowUp)c.pitch=Math.max(CAM.pitchMin,c.pitch-dt*1.3);if(keys.ArrowDown)c.pitch=Math.min(CAM.pitchMax,c.pitch+dt*1.3);
     if(keys.Minus||keys.NumpadSubtract)c.dist=Math.min(CAM.distMax,c.dist+dt*CAM.keyZoom);if(keys.Equal||keys.NumpadAdd)c.dist=Math.max(c.minD||CAM.distMin,c.dist-dt*CAM.keyZoom);}
   if(dashBtn)dashBtn.classList.toggle('cool',!!dashCool);}

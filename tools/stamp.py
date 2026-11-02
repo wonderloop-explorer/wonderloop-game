@@ -7,7 +7,9 @@
 버전은 js/와 assets/ 안 실행용 파일(.js .json .webp .png .jpg .glb) 내용 전체의 해시 10자리다. 하나라도 바뀌면 버전이 바뀐다.
 - importmap에 js 파일마다 "./js/x.js": "./js/x.js?v=버전"을 넣는다 → 모듈끼리의 import, 도구의 import도 모두 같은 버전 주소로 간다.
 - 시작 모듈 <script src="js/08-main.js?v=버전">, window.WL_V='버전' (fetch로 읽는 json·텍스처 주소에 붙인다).
-index.html 자체는 Pages가 최대 10분 캐시하지만, 옛 index.html은 옛 버전 주소만 가리키므로 옛 파일·새 파일이 섞이지 않는다.
+index.html 자체는 Pages가 최대 10분 캐시하고, 사파리는 로컬 서버(http.server)의 index.html을 더 오래 기억하기도 한다(2026-11-02, 아이폰에서 화관이 안 보였다).
+그래서 version.json({"v":버전})도 쓰고, index.html 맨 앞 작은 스크립트가 이것을 캐시 없이 읽어 버전이 다르면 주소에 &_v=새버전을 붙여 다시 연다
+(주소가 달라 사파리도 새 index.html을 받는다). 톱니 메뉴 성능 상자 맨 위에 '버전 …'이 보인다.
 """
 import hashlib, json, os, re, sys
 
@@ -45,6 +47,8 @@ def stamp(html, v):
     html = html[:m.start(2)] + '\n' + json.dumps(im, indent=2, ensure_ascii=False) + '\n' + html[m.end(2):]
     html = re.sub(r'<script>window\.WL_V=.*?</script>\n', '', html)
     html = html.replace('<script type="importmap">', f"<script>window.WL_V='{v}';</script>\n<script type=\"importmap\">", 1)
+    if 'wl-vercheck' not in html:  # 사파리가 옛 index.html을 기억해도 새 버전으로 다시 연다(맨 위 설명)
+        html = html.replace('<script type="importmap">', "<script id=\"wl-vercheck\">fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.v&&j.v!==window.WL_V){const u=new URL(location.href);if(u.searchParams.get('_v')!==j.v){u.searchParams.set('_v',j.v);location.replace(u);}}}).catch(()=>{});</script>\n<script type=\"importmap\">", 1)
     html = re.sub(r'src="js/08-main\.js(\?v=[0-9a-f]*)?"', f'src="js/08-main.js?v={v}"', html)
     return html
 
@@ -56,9 +60,17 @@ if __name__ == '__main__':
     if '--check' in sys.argv:
         if new != old:
             sys.exit(f'index.html 버전 표시가 낡았다 → python3 tools/stamp.py (버전 {v})')
+        try:
+            with open(os.path.join(ROOT, 'version.json'), encoding='utf-8') as f:
+                if json.load(f).get('v') != v:
+                    sys.exit(f'version.json 버전이 낡았다 → python3 tools/stamp.py (버전 {v})')
+        except FileNotFoundError:
+            sys.exit('version.json이 없다 → python3 tools/stamp.py')
         print('버전 표시 최신', v)
     else:
         if new != old:
             with open(INDEX, 'w', encoding='utf-8') as f:
                 f.write(new)
+        with open(os.path.join(ROOT, 'version.json'), 'w', encoding='utf-8') as f:
+            f.write(json.dumps({'v': v}) + '\n')
         print('버전', v)
