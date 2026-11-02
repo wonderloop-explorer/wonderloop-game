@@ -64,7 +64,7 @@ function shaftTex(){const c=document.createElement('canvas');c.width=64;c.height
   g.fillStyle=hz;g.fillRect(0,0,64,256);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
 const SHAFT_C=[new THREE.Color('#fff0c4'),new THREE.Color('#ffc7a6'),new THREE.Color('#9fb4ff')],SHAFT_O=[.3,.22,.09];
 export function deepForest({root,cx=0,cz=0,gaps=[]}){
-  const group=new THREE.Group();group.name='deepForest';group.position.set(cx,0,cz);root.add(group);const mats=[],movers=[];
+  let shafts=null;const group=new THREE.Group();group.name='deepForest';group.position.set(cx,0,cz);root.add(group);const mats=[],movers=[];
   LAYERS.forEach((L,i)=>{const w=MOB&&i>1?512:1024,tex=layerTex('layer'+i,{w,h:w/2,...L});
     const m=toon('#ffffff',{map:tex,side:THREE.DoubleSide});m.alphaTest=.5;mats.push(m);
     const mesh=new THREE.Mesh(ring(L.r,L.H,L.reps,48,i<2?gaps:[],.17),m);mesh.castShadow=mesh.receiveShadow=false;mesh.userData.noMerge=true;
@@ -82,9 +82,11 @@ export function deepForest({root,cx=0,cz=0,gaps=[]}){
      for(const k of [0,Math.PI/2]){geos.push(new THREE.PlaneGeometry(W,H).translate(0,H/2,0).rotateZ(tilt).rotateY(ry+k).translate(Math.cos(a)*d,0,Math.sin(a)*d));}});
    const P=[],U=[],I=[];let o=0;geos.forEach(q=>{const pa=q.attributes.position,ua=q.attributes.uv;for(let k=0;k<pa.count;k++){P.push(pa.getX(k),pa.getY(k),pa.getZ(k));U.push(ua.getX(k),ua.getY(k));}q.index.array.forEach(ix=>I.push(ix+o));o+=pa.count;});
    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.setIndex(I);
-   const mesh=new THREE.Mesh(g,shaftMat);mesh.renderOrder=3;mesh.userData.noMerge=true;group.add(mesh);}
+   const mesh=new THREE.Mesh(g,shaftMat);mesh.renderOrder=3;mesh.userData.noMerge=true;group.add(mesh);shafts=mesh;}
   const _c=new THREE.Color(),ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
   return {group,
     update(camera,SK){if(camera)movers.forEach(o=>o.holder.position.set((camera.position.x-cx)*o.k,0,(camera.position.z-cz)*o.k));
       const t=SK?SK.t:0,i=Math.min(1,Math.floor(t)),u=ss(0,1,t-i);_c.copy(SHAFT_C[i]).lerp(SHAFT_C[i+1],u);shaftMat.color.copy(_c);shaftMat.opacity=SHAFT_O[i]+(SHAFT_O[i+1]-SHAFT_O[i])*u;},
+    /* 자동 화질(08): 2단계부터 먼 두 겹(카메라를 따라오는 겹)·빛줄기를 끈다 */
+    setLevel(L){movers.forEach(o=>o.holder.visible=L<2);if(shafts)shafts.visible=L<2;},
     dispose(){mats.forEach(m=>{if(m.map&&m.map!==CRAYON())m.map.dispose();});shaftMat.map.dispose();}};}

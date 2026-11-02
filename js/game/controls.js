@@ -101,6 +101,11 @@ function initControls(ctx){build();if(SHOT)return;
   // 사파리 페이지 확대 막기: 핀치(gesture*)·두 손가락 끌기 (두 번 누르기 확대는 index.html touch-action:manipulation)
   ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
   document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+  document.addEventListener('touchstart',e=>{if(e.touches.length>1){input.multiT=performance.now();e.preventDefault();}},{passive:false}); // 조이스틱·단추·카드 위에서 시작한 두 손가락도
+  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+  // 그래도 페이지가 확대돼 버리면(사파리가 막기를 무시한 경우) 배율 1로 되돌린다
+  {const vv=window.visualViewport,meta=document.querySelector('meta[name=viewport]');if(vv&&meta){const base=meta.content;let t=0;
+    vv.addEventListener('resize',()=>{if(vv.scale>1.01){clearTimeout(t);meta.content=base+', minimum-scale=1';t=setTimeout(()=>{meta.content=base;},300);}});}}
   cv.addEventListener('wheel',e=>{if(!input.cam.on)return;e.preventDefault();input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,input.cam.dist+e.deltaY*CAM.wheel));},{passive:false});}
 /* 08이 매 프레임: 키로 하는 카메라 거리(-/+), 대쉬 단추 식힘 표시 */
 function tickControls(dt,dashCool){if(SHOT)return;const c=input.cam;

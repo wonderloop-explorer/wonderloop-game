@@ -1,0 +1,69 @@
+{
+ "설명": "휴대폰 단계 가림 방식 전후(2026-11-02 오후): before = 흐려 보기 덧그리기(944e138), after = 덧그리기 없이 물체 전체 0.3 흐림 + 휴대폰 카메라 방 15.5m + 두 프레임에 한 번 계산. 헤드리스 크롬 + 실제 GPU(Apple M4), 390×844·기기 배율 3, ?zone=fairy-dock&quality=mobile. 아이폰 실제 값은 톱니 단추의 성능 표시로.",
+ "before": {
+  "name": "before",
+  "start": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 2.87,
+   "gpuMsP95": 4.93,
+   "gpuMsPerSec": 86,
+   "calls": 143,
+   "tris": 226689,
+   "px": "585x1266"
+  },
+  "behindLeaf": {
+   "sec": 10.1,
+   "fps": 30,
+   "gpuMsAvg": 3.19,
+   "gpuMsP95": 4.97,
+   "gpuMsPerSec": 96,
+   "calls": 135,
+   "tris": 224941,
+   "px": "585x1266"
+  },
+  "walk": {
+   "sec": 20.2,
+   "fps": 30,
+   "gpuMsAvg": 3.1,
+   "gpuMsP95": 5.52,
+   "gpuMsPerSec": 93,
+   "calls": 160,
+   "tris": 231484,
+   "px": "585x1266"
+  }
+ },
+ "after": {
+  "name": "after",
+  "start": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 2.3,
+   "gpuMsP95": 2.79,
+   "gpuMsPerSec": 69,
+   "calls": 96,
+   "tris": 112760,
+   "px": "585x1266"
+  },
+  "behindLeaf": {
+   "sec": 10,
+   "fps": 30,
+   "gpuMsAvg": 2.28,
+   "gpuMsP95": 2.5,
+   "gpuMsPerSec": 68,
+   "calls": 119,
+   "tris": 116252,
+   "px": "585x1266"
+  },
+  "walk": {
+   "sec": 20.1,
+   "fps": 30,
+   "gpuMsAvg": 1.69,
+   "gpuMsP95": 2.5,
+   "gpuMsPerSec": 51,
+   "calls": 119,
+   "tris": 118093,
+   "px": "585x1266"
+  }
+ }
+}

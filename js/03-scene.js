@@ -26,7 +26,8 @@ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,stencil:true})
 /* 그리기 해상도: 기기 픽셀 비율(최대 2)을 쓰되, 그리는 화소가 1440p(2560×1440)를 넘지 않게 낮춘다 — 5K 아이맥 전체 화면이 1470만 화소를 그려 팬이 돌던 문제.
    휴대폰 단계는 최대 1.5배(개미굴과 같음 — 아이폰 기본 3배를 그대로 그리면 화소가 4배라 기기가 뜨거워진다, 2026-11-01). 촬영 모드(?shot)는 08이 1로 고정하고 wlShot.size로 크기를 정하므로 건드리지 않는다(1440p 영상 품질 그대로). */
 const MAX_PX=2560*1440,FIXED_PR=new URLSearchParams(location.search).has('shot');
-const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,QUALITY.tier==='mobile'?1.5:2);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
+let PR_CAP=QUALITY.tier==='mobile'?1.5:2; // 08 자동 화질 조절이 휴대폰에서 1.25·1로 낮출 수 있다(setPixelCap)
+const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,PR_CAP);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
 renderer.setPixelRatio(fitPixelRatio(stage.clientWidth,stage.clientHeight));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.shadowMap.enabled=QUALITY.shadows;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -41,6 +42,7 @@ function placeCamera(){
   return asp;
 }
 placeCamera();window.addEventListener('resize',placeCamera);
+function setPixelCap(v){PR_CAP=v;placeCamera();}
 // ROOM_T: '방 전체' 카메라가 바라보는 점 (구역·방마다 바뀜), ui.dist: 그때의 거리
 // 따라가기 카메라 거리: 가로 화면은 7.5, 세로처럼 좁은 화면(화면비 1.25 미만)은 방 카메라와 같은 규칙으로 1.25/화면비배(최대 2.1배) 멀리
 const followDist=()=>{const asp=camera.aspect;return 7.5*(asp<1.25?Math.min(2.1,1.25/asp):1);};
@@ -94,4 +96,4 @@ function setupView(z,area){
   setAreaCamera(z.areas[area].camera,true);
   mergeStatic(z);setOpt(optimized);}
 setupView(zone.cur,zone.area);
-export {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui};
+export {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui};

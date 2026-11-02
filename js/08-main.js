@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {PI,QUALITY,rawLin,rngLoaded,scene} from './01-textures.js';
 import {ZONES,areaAt,doorAt,groundY,loadZone,unloadZone,zone} from './02-zone.js';
-import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setupView,statsEl,sun,ui} from './03-scene.js';
+import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui} from './03-scene.js';
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
@@ -52,19 +52,19 @@ async function goZone(id,spawn){
   try{const nz=await loadZone(id),old=zone.cur;unloadZone(old);zone.cur=nz;
     const sp=spawn||nz.spawn;stopWalk();WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;
     zone.area=areaAt(sp.x,sp.z)||Object.keys(nz.areas)[0];setupView(nz,zone.area);
-    WL.userData.atlas.clear('swap');zoneLook(nz);doorLock=true;GAME.sound.sfx('enter'); // 구역에 들어갈 때 (개미굴 enter)
+    WL.userData.atlas.clear('swap');zoneLook(nz);if(PERF.level&&nz.quality)nz.quality(PERF.level);doorLock=true;GAME.sound.sfx('enter'); // 구역에 들어갈 때 (개미굴 enter)
     const zb=document.getElementById('zoneBtn');if(zb)zb.textContent='구역: '+nz.name;
   }finally{zoneBusy=false;}
   return true;}
 /* 세계의 옷·탈: 상상의 세계(구역 정보에 hood가 있는 곳)에 들어가면 탐험복 그대로 탈만 그 세계 것으로 바꿔 쓴다.
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
 function zoneLook(z){const U=WL.userData;{const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
-  GAME.occlude.xray(!!z.world); // 세계 구역: 가려진 원더룹 윤곽이 비쳐 보인다(베이스캠프 기준 화면은 그대로)
+  GAME.occlude.xray(!!z.world&&QUALITY.shadows); // 세계 구역(컴퓨터 단계): 가려진 원더룹 윤곽선(베이스캠프 기준 화면은 그대로, 휴대폰은 없음)
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);}
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
 GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
-GAME.occlude.xray(!!zone.cur.world); // 처음 구역 (zoneLook은 initGame보다 먼저 불려서)
+GAME.occlude.xray(!!zone.cur.world&&QUALITY.shadows); // 처음 구역 (zoneLook은 initGame보다 먼저 불려서)
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES)};
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
 if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;
@@ -72,7 +72,9 @@ if(new URLSearchParams(location.search).has('zonetest')){const b=document.create
 const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* 시험용 단추: 평소에는 숨김 — 왼쪽 위 톱니 단추로 열고 닫거나, 주소 뒤 ?debug 면 열린 채 시작 */
 {const b=document.getElementById('dbgBtn'),set=on=>{document.body.classList.toggle('debug',on);b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'시험용 단추 닫기':'시험용 단추 열기');};
- set(new URLSearchParams(location.search).has('debug'));b.addEventListener('click',()=>set(!document.body.classList.contains('debug')));}
+ set(new URLSearchParams(location.search).has('debug'));
+ b.addEventListener('click',()=>{const vv=window.visualViewport;if(performance.now()-(GAME.controls.input.multiT||0)<800||(vv&&vv.scale>1.01))return; // 두 손가락 동작 끝에 잘못 눌린 것은 무시(저절로 열리지 않게)
+   set(!document.body.classList.contains('debug'));});}
 
 /* ---------- 애니메이션 ---------- */
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
@@ -88,7 +90,15 @@ const tickErrSeen=new Set();
    창이 가려지거나(document.hidden) 다른 창을 보고 있으면(blur) 그리기를 멈췄다가 돌아오면(focus·누르기) 다시 그린다. 멈춘 동안 게임 시간도 멈춘다(돌아온 첫 프레임 간격은 0.05초로 자른다). */
 let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_MS=1000/(QUALITY.tier==='mobile'?30:60);
 const schedule=()=>{if(!rafOn){rafOn=true;requestAnimationFrame(frame);}}; // 루프가 두 갈래로 갈라지지 않게 예약은 한 번만
-function frame(now){rafOn=false;if(paused)return;if(now-lastFrame<FRAME_MS-2){schedule();return;}lastFrame=now;tick();}
+function frame(now){rafOn=false;if(paused)return;if(now-lastFrame<FRAME_MS-2){schedule();return;}lastFrame=now;const w0=performance.now();tick();perfTick(now,performance.now()-w0);}
+/* 실제 기기 성능(톱니 단추를 열면 화면 아래 표시): 1초마다 초당 프레임·프레임 간격·한 프레임 계산 시간·픽셀 비율·드로우콜·삼각형.
+   자동 화질 조절(휴대폰 단계만): 초당 프레임이 목표(30)보다 3초 연달아 26 아래면 한 단계씩 낮춘다 —
+   1 공중 입자 끔 · 2 먼 배경 겹·빛줄기 끔(구역 정보 quality(단계)) · 3 픽셀 비율 1.25 · 4 픽셀 비율 1. 다시 올리지는 않는다(오르내림 반복 막기). 빛·그림자 개수는 건드리지 않는다 */
+const PERF={t0:0,last:0,n:0,iv:0,work:0,fps:0,ivA:0,workA:0,bad:0,level:0};
+function perfTick(now,work){const P=PERF;if(!P.last||now-P.last>500){P.t0=now;P.last=now;P.n=P.iv=P.work=0;return;}P.iv+=now-P.last;P.work+=work;P.n++;P.last=now;
+  if(now-P.t0<1000)return;P.fps=P.n*1000/(now-P.t0);P.ivA=P.iv/P.n;P.workA=P.work/P.n;P.t0=now;P.n=P.iv=P.work=0;
+  if(QUALITY.tier==='mobile'&&!SHOT){if(P.fps<26)P.bad++;else P.bad=0;if(P.bad>=3&&P.level<4){P.level++;P.bad=0;applyQuality();}}}
+function applyQuality(){const L=PERF.level;if(zone.cur&&zone.cur.quality)zone.cur.quality(L);if(L>=3)setPixelCap(L>=4?1:1.25);}
 const nextFrame=()=>{if(!SHOT&&!paused)schedule();};
 if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
@@ -153,7 +163,9 @@ function tickBody(){
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
   if(!rig)controls.update();GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
-  ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render;statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`;}
+  ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
+    statsEl.textContent=`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':
+      `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${Math.round(1000/FRAME_MS)}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계`);}
   nextFrame();
 }
 tick();
