@@ -1,0 +1,30 @@
+{
+ "quality": "mobile",
+ "pass": true,
+ "scenes": [
+  {
+   "name": "big-leaf",
+   "ok": true,
+   "faded": 2,
+   "wlPixels": 40525,
+   "darkFrac": 0,
+   "brightRatio": 1.11
+  },
+  {
+   "name": "stem",
+   "ok": true,
+   "faded": 2,
+   "wlPixels": 69197,
+   "darkFrac": 0,
+   "brightRatio": 1.012
+  },
+  {
+   "name": "house-wall",
+   "ok": true,
+   "faded": 1,
+   "wlPixels": 69521,
+   "darkFrac": 0,
+   "brightRatio": 1.354
+  }
+ ]
+}

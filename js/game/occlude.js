@@ -1,6 +1,8 @@
 /* 원더룹 — 가리면 비쳐 보이기 (개미굴 occlude와 같은 방식)
    NPC 같은 움직이는 캐릭터가 카메라와 원더룹 사이에 서서 원더룹을 가리면, 그 캐릭터를 반투명하게(불투명도 30%) 해서 원더룹이 비쳐 보이게 한다.
-   휴대폰 단계의 세계 구역은 큰 풀·잎도 이 방식(물체 전체 0.3, 덧그리기·윤곽선 없음 — 아이폰에서 덧그리기가 원더룹을 까맣게, 큰 잎을 삼각형 반투명 조각으로 보이게 했다, 2026-11-02).
+   세계 구역은 큰 풀·잎·집도 이 방식(물체 전체 0.3, 덧그리기·윤곽선 없음 — 아이폰에서 덧그리기가 원더룹을 까맣게, 큰 잎을 삼각형 반투명 조각으로 보이게 했다, 2026-11-02).
+   컴퓨터도 2026-11-02부터 같은 방식: 아래 흐려 보기 cut·윤곽선 xray는 지금 어느 구역도 쓰지 않는다(윤곽선 재질 matcap이 그림의 투명한 가운데를 무시해
+   흐린 물체가 두 겹 넘게 겹치면 원더룹 전체를 진갈색으로 칠했다). 다시 쓰려면 tools/occlude-test.js가 컴퓨터·휴대폰 둘 다 통과해야 한다.
    add(root, r, h): 가릴 수 있는 캐릭터와 크기 — 반지름 r, 키 h(발부터 머리까지 여러 높이에서 원더룹 쪽 시선과 r보다 가까우면 가린 것으로 본다). 구역을 떠날 때 clearOcclude()가 비운다.
    재질은 캐릭터마다 따로여야 한다(같이 쓰는 재질이면 다른 물체도 함께 투명해진다). 투명해지는 동안 깊이를 쓰지 않아 뒤의 원더룹이 보인다.
    흐려 보기 cut(root, {skip}) (요정의 숲부터, 2026-11-02 점무늬 → 부드러운 흐림): 구역의 모든 물체(잎·줄기·꽃·버섯·바위·소품·NPC) 가운데
@@ -19,17 +21,19 @@ const _c=new THREE.Vector3(),_d=new THREE.Vector3(),_p=new THREE.Vector3(),_x=ne
 function initOcclude(c){ctx=c;}
 /* boxes(선택, 휴대폰 세계 구역의 큰 풀·잎 — 2026-11-02): 부품마다 월드 상자. 카메라에서 원더룹 발·허리·가슴·머리 네 점으로 가는 시선 가운데 하나라도 상자를 지나면 가린 것(여러 겹이면 겹마다 따로 흐려짐),
    카메라가 상자 안이나 0.9m 안, 또는 보는 쪽 1m 앞이 상자에 닿으면 '바로 앞'이라 완전히 흐려 숨긴다(화면 전체·반이 초록으로 덮이지 않게). 상자가 없으면 예전처럼 가운데 기둥(r·h)으로 본다 */
-function add(root,r=.5,h=1,{near=false,speed=12,boxes=null,set=null}={}){LIST.push({root,r,h,k:0,f:0,near,speed,boxes,set});} // set(k,f): 재질을 직접 바꾸지 않고 구역 쪽이 흐림 값을 받는다(한 덩어리로 합쳐 그린 물체 — 부품마다 불투명도 표) // near: 카메라 바로 옆(가로 r+1.2m 안)에 걸려도 흐림 · speed: 흐려지는 빠르기(6 ≈ 0.2초)
+function add(root,r=.5,h=1,{near=false,speed=12,boxes=null,set=null}={}){LIST.push({root,r,h,k:0,f:0,near,speed,boxes,set,hold:0,holdF:0});} // set(k,f): 재질을 직접 바꾸지 않고 구역 쪽이 흐림 값을 받는다(한 덩어리로 합쳐 그린 물체 — 부품마다 불투명도 표) // near: 카메라 바로 옆(가로 r+1.2m 안)에 걸려도 흐림 · speed: 흐려지는 빠르기(6 ≈ 0.2초)
 function setFade(o,k,f=0){const a=(1-.7*k)*(1-f);if(o.set){o.set(k,f,a);return;}o.root.traverse(m=>{if(!m.isMesh&&!m.isSprite)return;if(o.boxes)m.visible=a>.03;const ms=Array.isArray(m.material)?m.material:[m.material];
   ms.forEach(mt=>{if(!mt)return;const u=mt.userData;if(u.o0===undefined){u.o0=mt.opacity;u.t0=mt.transparent;u.d0=mt.depthWrite;}
     if(k>.02||f>.02){if(!mt.transparent){mt.transparent=true;mt.needsUpdate=true;}mt.opacity=u.o0*a;mt.depthWrite=k<.5&&f<.5&&u.d0;}
     else{if(mt.transparent!==u.t0){mt.transparent=u.t0;mt.needsUpdate=true;}mt.opacity=u.o0;mt.depthWrite=u.d0;}});});}
 const _ray=new THREE.Ray(),_bx=new THREE.Box3(),_pts=[.1,.45,.75,1.05],_fw=new THREE.Vector3(),_q=new THREE.Vector3();
-function boxHit(o,W){let near=false,hit=false;ctx.camera.getWorldDirection(_fw);for(const b of o.boxes){_bx.copy(b).expandByScalar(.06);
-    if(_bx.distanceToPoint(_c)<.9||_bx.distanceToPoint(_q.copy(_c).addScaledVector(_fw,1))<.55){near=true;break;} // 카메라 안·바로 옆·바로 앞(보는 쪽 1m) — 그보다 먼 것은 사이에 걸릴 때만 0.3
-    _bx.expandByScalar(.22); // 시선은 원더룹 가운데 줄로만 보니, 몸 너비만큼 넓혀 가장자리에 걸친 줄기·잎도
+/* 여유 두기(2026-11-02 — 원더룹이 꽃지붕 집 벽에 붙어 서면 경계에 걸려 프레임마다 흐렸다 돌아왔다 깜빡였다): 이미 흐려진 물체는 더 넓게 봐서 돌아오는 경계를 흐려지기 시작하는 경계보다 멀리 둔다
+   (몸 너비 0.22 → 0.42, 원더룹 앞 0.25 → 0.05, 바로 앞 0.9 → 1.3m), 마지막으로 걸린 뒤 0.35초는 그대로 흐림(tickOcclude) */
+function boxHit(o,W){let near=false,hit=false;const was=o.k>.5,wasF=o.f>.5;ctx.camera.getWorldDirection(_fw);for(const b of o.boxes){_bx.copy(b).expandByScalar(.06);
+    if(_bx.distanceToPoint(_c)<(wasF?1.3:.9)||_bx.distanceToPoint(_q.copy(_c).addScaledVector(_fw,1))<(wasF?.85:.55)){near=true;break;} // 카메라 안·바로 옆·바로 앞(보는 쪽 1m) — 그보다 먼 것은 사이에 걸릴 때만 0.3
+    _bx.expandByScalar(was?.42:.22); // 시선은 원더룹 가운데 줄로만 보니, 몸 너비만큼 넓혀 가장자리에 걸친 줄기·잎도
     if(!hit)for(const y of _pts){_x.set(W.position.x,W.position.y+y,W.position.z).sub(_c);const L=_x.length();_ray.set(_c,_x.divideScalar(L));
-      if(_ray.intersectBox(_bx,_p)){const t=_p.distanceTo(_c);if(t<L-.25){hit=true;break;}}}}
+      if(_ray.intersectBox(_bx,_p)){const t=_p.distanceTo(_c);if(t<L-(was?.05:.25)){hit=true;break;}}}}
   return near?2:hit?1:0;}
 function tickOcclude(dt){tickXray(dt);if(!ctx||!LIST.length)return;const cam=ctx.camera,W=ctx.WL;
   _c.copy(cam.position);_d.set(W.position.x,W.position.y+.75,W.position.z).sub(_c);const len=_d.length();if(len<.1)return;_d.divideScalar(len);
@@ -38,6 +42,7 @@ function tickOcclude(dt){tickXray(dt);if(!ctx||!LIST.length)return;const cam=ctx
       else{o.root.getWorldPosition(_p);const y0=_p.y;
       for(let i=0;i<4&&!hit;i++){_p.y=y0+o.h*(.15+i*.25);const t=_x.copy(_p).sub(_c).dot(_d);if(t>.2&&t<len-.3)hit=_x.copy(_c).addScaledVector(_d,t).distanceTo(_p)<o.r;}
       if(!hit&&o.near){_p.y=y0;hit=Math.hypot(_p.x-_c.x,_p.z-_c.z)<o.r+1.2&&_c.y<y0+o.h+1.5&&_c.y>y0-1;}}}
+    if(o.boxes){o.hold=hit?.35:Math.max(0,o.hold-dt);o.holdF=full?.35:Math.max(0,o.holdF-dt);hit=hit||o.hold>0;full=full||o.holdF>0;}
     const s=Math.min(1,dt*o.speed),k=o.k+((hit?1:0)-o.k)*s,f=o.f+((full?1:0)-o.f)*s;if(k<.01&&o.k<.01&&f<.01&&o.f<.01)return;o.k=k<.01?0:k;o.f=f<.01?0:f;setFade(o,o.k,o.f);});}
 /* ---------- 흐려 보기 ---------- */
 const CUT={value:new THREE.Vector4(0,0,1,0)},PASS={value:0},LAYER=5; // CUT: xy 그리기 화소 자리(아래가 0), z 반지름(화소), w 원더룹까지 깊이(0이면 꺼짐) · PASS 0 보통 그리기, 1 흐린 조각 덧그리기
