@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {PI,QUALITY,add,blob,boxAt,cylAt,group,lathe,pencil,rng,shadowBlob} from '../../01-textures.js';
 import * as G from '../../game/index.js';
-import {FAIRY_CARDS,FAIRY_SKY,FAIRY_WORLD,WATER,icon} from './world.js';
+import {FAIRY_BADGE,FAIRY_CARDS,FAIRY_SKY,FAIRY_WORLD,WATER,icon} from './world.js';
 import {bakeFairy,clearFairyCache,dandelionPuff,fairy,leafBoat as boatLeaf} from './fairies.js';
 import {clearPaintCache,fbm,painted,toon} from './paint.js';
 import {deepForest} from './forest.js';
@@ -417,7 +417,7 @@ if(hasUmb()){st.phase='done';fixed=3;rode=true;CLOVERS.forEach(c=>{c.done=true;c
 /* ---------- 스테이지 완료 안내: 우산을 펼쳐 처음 땅에 내려앉으면 한 번(저장 flags['clear:fairy-dock']) — 짧은 효과음·반짝임, 3초 뒤 저절로. 보상·결과창 없음 ---------- */
 const cheer=G.fx.particles({parent:root,n:28,box:[.45,.1,.45],vel:[0,1.2,0],sway:.5,color:'#ffe6a6',size:.13,life:[.7,1.3],additive:true,rate:0,seed:73});cheer.points.visible=false;let cheerT=0;
 function stageClear(){G.state.setFlag(CLEAR,true);q('');const W=WL();if(W){cheer.burst(28,{x:W.position.x,y:W.position.y+.9,z:W.position.z});cheerT=1.6;}
-  G.ui.itemCard({title:'이슬방울 선착장 탐험 완료!',text:'다음 목적지: 민들레 공중정원',icon:icon('badge'),sec:3,sound:'success',who:'완료'});}
+  G.ui.stageBadge({...FAIRY_BADGE,stage:'이슬방울 선착장',next:'민들레 공중정원'});} // 스테이지 완료 배지(엔진 공통 ui.stageBadge — 2026-11-03 아이템 카드 모양 대신)
 /* ---------- 나침반 시작 연출: 요정의 숲에 처음 들어오면 한 번(사공과 이미 이야기했으면 없음) — 진행을 막지 않는다 ----------
    배낭의 나침반 키링이 톡 흔들리며 반짝이고 바늘이 사공(선착장) 쪽을 가리킨다(07 charmPoint), 혼잣말 한 줄, 발밑에 선착장 쪽 빛 알갱이 줄(fx.guide, 2.6초).
    개미굴에서 받은 더듬이 나침반이 길 찾기에 실제로 쓰이게(2026-11-02). 그리기는 빛 줄 1회 + 반짝임 1회, 3초 안에 치운다 */
@@ -539,6 +539,7 @@ return {...FAIRY_WORLD,
   sky:SK,mergeColors:MOB, // 휴대폰: 움직이지 않는 소품·무리를 텍스처마다 한 덩어리로(03 색 접기)
   // 활공은 구역 정보 glide 없이 아이템으로(민들레 솜털 우산을 가졌을 때 — 07, game/items canGlide)
   spawn:hasUmb()?{x:-6.6,z:-8.6,ry:PI}:{x:.2,z:8.6,ry:PI}, // 우산을 이미 받았으면 건너편(이슬배에서 내린 자리)에서 // 길 입구 조금 안쪽 — 숲 방(camRoom) 가장자리면 휴대폰 카메라가 원더룹에 바짝 붙는다
+  titleView:{from:[-1.5,2.6,-5.1],r:9,y:.7,speed:.05,a0:.15}, // 게임 첫 화면 뒤 배경: 선착장 둘레를 천천히 도는 카메라(game/front)
   camRoom:{c:[-.5,0],r:MOB?15:19.5}, // 따라가기 카메라가 머무는 방 — 휴대폰은 둘레 벽(합쳐 그린 큰 잎, 흐려지지 않음, 14m부터) 언저리까지(더 줄이면 세로 화면 카메라가 원더룹에 바짝 붙는다), 컴퓨터는 흐려 보기가 있어 벽 바깥까지
   platforms:[{r:[DOCK.x0,DOCK.x1,DOCK.z0,DOCK.z1],top:DOCK.top},...ROCKS],
   walkLinks:[[-6.8,zN(-6.8)-.35]], // 이슬배에서 내리는 자리(끼임 자동 시험이 건너편 마을도 걸어서 닿는 곳으로 본다)

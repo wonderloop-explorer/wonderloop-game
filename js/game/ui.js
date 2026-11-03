@@ -86,7 +86,20 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
 @media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast,#wlProf{transition:none}#wlNotice:not(.on),#wlGet:not(.on),#wlProf:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
 @media (max-width:600px){#wlDlg .line{font-size:1.12rem}#wlDlg .who{font-size:.95rem}}
-@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}}`;
+@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}}
+#wlBadge{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 11vh);width:min(560px,calc(100vw - 20px));aspect-ratio:var(--ar,3.37);transform:translate(-50%,0);z-index:21;pointer-events:none;display:none}
+#wlBadge.on{display:block;animation:wlbIn .7s cubic-bezier(.25,1.6,.45,1) both}#wlBadge.out{animation:wlbOut .45s ease-in both}
+#wlBadge .bg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 8px 14px rgba(30,14,36,.35))}
+#wlBadge .medal{position:absolute;border-radius:50%;overflow:hidden;animation:wlbMedal .7s ease-in-out .45s both}#wlBadge .medal img{position:absolute;max-width:none}
+#wlBadge .txt{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.15em;overflow:hidden}
+#wlBadge .t{margin:0;font-family:"Jua","Gowun Dodum",sans-serif;color:#4a2a2a;line-height:1.15;white-space:nowrap}
+#wlBadge .s{margin:0;font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;color:#86604e;line-height:1.2;white-space:nowrap}
+#wlBadge .sp{position:absolute;left:50%;top:55%;width:5%;aspect-ratio:1;background:#ffe39a;clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);filter:drop-shadow(0 0 4px rgba(255,220,130,.95));opacity:0;animation:wlbSp 1.1s ease-out var(--d) both}
+@keyframes wlbIn{0%{opacity:0;transform:translate(-50%,0) scale(.5)}55%{opacity:1;transform:translate(-50%,0) scale(1.06)}78%{transform:translate(-50%,0) scale(.98)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes wlbOut{to{opacity:0;transform:translate(-50%,-6%) scale(.94)}}
+@keyframes wlbMedal{0%,100%{transform:scale(1)}45%{transform:scale(1.16)}}
+@keyframes wlbSp{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1) rotate(90deg)}}
+@media (prefers-reduced-motion: reduce){#wlBadge.on,#wlBadge.out,#wlBadge .medal{animation:none}#wlBadge .sp{display:none}}`;
 const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="who"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
@@ -95,6 +108,7 @@ root.innerHTML=`<div id="wlDlg" role="dialog" aria-live="polite"><span class="wh
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
+<div id="wlBadge" role="status" aria-live="polite"><img class="bg" alt=""><span class="medal" aria-hidden="true"><img alt=""></span><div class="txt"><p class="t"></p><p class="s"></p></div></div>
 <p id="wlQuest" class="wl-hint"></p><p id="wlPrompt" class="wl-hint"></p><button id="wlAct" class="wl-hint" type="button">말 걸기</button>`;
 {const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
  if(!document.querySelector('link[data-wl-font]')){const l=document.createElement('link');l.rel='stylesheet';l.dataset.wlFont='1';l.href='https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap';document.head.appendChild(l);}
@@ -161,6 +175,29 @@ function itemCard({title='',text='',icon=null,sec=2.8,sound='itemget',who='아�
   const img=gt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
 function closeItemCard(){if(cardOn!=='item')return;gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
+/* 스테이지 완료 배지 (엔진 공통, 2026-11-03 — 요정의 숲부터): stageBadge({img, stage, next, title?, sub?, sec, sound, box, medal})
+   세계 그림(투명 배지, 가운데 크림색 칸 = 글자 자리)에 큰 글자 "<stage> 탐험 완료!"(Jua·진갈색)와 작은 글자 "다음 목적지: <next>"(Gowun Dodum·연한 갈색)를 얹는다.
+   box = 크림색 칸 [왼, 위, 오른, 아래](그림 폭·높이에 대한 비율), medal = 위 꽃 메달 [가운데 x, 가운데 y, 지름](비율) — 세계 설정 badge에 함께 둔다.
+   통통 튀며 나타나고, 꽃 메달이 살짝 커졌다 돌아오고, 둘레로 반짝이가 흩어진다(짧은 효과음). sec초(기본 3.6, 게임 시간) 뒤 부드럽게 사라진다. 글자는 칸에 맞게 저절로 줄인다.
+   막지 않는다. 카드 자리를 함께 써서 다른 카드와 겹치지 않는다. 시점 기록 kind 'card' who '완료' */
+const bd=$('#wlBadge');let bdDone=null,bdCue=null,bdEnd=0,bdOut=0;
+function stageBadge({img,stage='',next='',title=null,sub=null,sec=3.6,sound='success',box=[.128,.414,.868,.893],medal=[.4995,.2186,.13],ar=3.365}){
+  const T=title??(stage?stage+' 탐험 완료!':''),S=sub??(next?'다음 목적지: '+next:'');
+  return enqueue('badge',r=>{bdDone=r;bd.style.setProperty('--ar',ar);const im=bd.querySelector('.bg');im.src=img;im.alt=T;
+    const tx=bd.querySelector('.txt');tx.style.cssText=`left:${box[0]*100}%;top:${box[1]*100}%;width:${(box[2]-box[0])*100}%;height:${(box[3]-box[1])*100}%`;
+    bd.querySelector('.t').textContent=T;bd.querySelector('.s').textContent=S;bd.querySelectorAll('.sp').forEach(x=>x.remove());
+    for(let i=0;i<10;i++){const a=i/10*Math.PI*2+.3,sp=document.createElement('i');sp.className='sp';sp.style.cssText=`--dx:${Math.cos(a)*(46+(i%3)*8)}%;--dy:${Math.sin(a)*(90+(i%2)*30)}%;--d:${.3+(i%4)*.06}s`;bd.appendChild(sp);}
+    bd.classList.remove('out');bd.classList.add('on');
+    // 크기에 맞춰: 메달 자리(같은 그림을 배경으로 오려 내 위에 겹침)·글자 크기(칸 폭에 맞게 줄임)
+    requestAnimationFrame(()=>{const W=bd.clientWidth,H=bd.clientHeight,md=bd.querySelector('.medal'),d=medal[2]*W;
+      md.style.cssText=`left:${medal[0]*W-d/2}px;top:${medal[1]*H-d/2}px;width:${d}px;height:${d}px`; // 같은 그림을 <img>로 겹쳐 메달 칸만 보이게(한 파일 빌드는 <img>.src만 그림 자료로 바꿔 준다)
+      const mi=md.querySelector('img');mi.src=img;mi.style.cssText=`width:${W}px;height:${H}px;left:${-(medal[0]*W-d/2)}px;top:${-(medal[1]*H-d/2)}px`;
+      const t=bd.querySelector('.t'),s=bd.querySelector('.s'),bw=tx.clientWidth*.92;let ft=W*.058,fs=W*.034;t.style.fontSize=ft+'px';s.style.fontSize=fs+'px';
+      for(let i=0;i<30&&t.scrollWidth>bw;i++){ft*=.94;t.style.fontSize=ft+'px';}for(let i=0;i<30&&s.scrollWidth>bw;i++){fs*=.94;s.style.fontSize=fs+'px';}});
+    bdEnd=clock.t+sec;bdOut=0;bdCue=cue({kind:'card',who:'완료',text:T,sub:S,dur:0});sfx(sound);});}
+function closeBadge(){if(cardOn!=='badge')return;bd.classList.remove('on','out');endCue(bdCue);bdCue=null;const d=bdDone;bdDone=null;cardDone();if(d)d();}
+cardCloser('badge',closeBadge);
+const badgeShown=()=>cardOn==='badge';
 /* 캐릭터 소개 카드 (도감 대신 — 요정의 숲부터, game/profile.js가 부른다): profileCard({name, intro, likes, quote, img, sec})
    아이템 카드와 같은 테두리·글꼴, 왼쪽 동그라미에 초상(img: 2D 그림 경로 또는 게임 안에서 렌더링한 그림). 화면 위 가운데(휴대폰에서 원더룹·대화창을 가리지 않게).
    막지 않는다: 걷기·대화는 그대로, 아무 키나 누르기·터치로 닫히고(0.6초 뒤부터) sec초(기본 12, 게임 시간) 뒤 저절로. 시점 기록 kind 'card' who '소개' */
@@ -176,7 +213,7 @@ cardCloser('profile',closeProfile);
 /* 안내 문구 (개미굴 #toast): toast('…') — 위 가운데 칩, 2.8초(게임 시간). 안내 표시라 영상에는 안 나온다 */
 const ts=$('#wlToast');let tsEnd=0;
 function toast(msg,sec=2.8){ts.textContent=msg;ts.classList.add('on');tsEnd=clock.t+sec;}
-const tickCut=()=>{if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice();if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
+const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice();if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
   if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;}tickFade();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));
@@ -202,7 +239,7 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
 // 소리 안내 (개미굴과 같은 문구): 화면에 돌아왔는데 소리가 깨어나지 않으면, M으로 끄고 켤 때
 soundHooks.onWakeFail=()=>toast('소리가 멈췄다면 화면을 한 번 눌러 주세요');
 soundHooks.onMute=m=>toast(m?'소리 꺼짐 (M으로 다시 켜기)':'소리 켜짐');

@@ -77,4 +77,6 @@ import {WL,hairParts,head,hoodParts,wm} from './04-character.js';
   WL.userData.applyLook=applyLook;applyLook();
   const HNAMES=['지그재그 앞머리','둥근 단발','지그재그 단발'];const hairBtn=document.getElementById('hairBtn');
   hairBtn.addEventListener('click',()=>{hairIdx=(hairIdx+1)%hairStyles.length;applyLook();hairBtn.textContent='머리: '+HNAMES[hairIdx];});
+  // 옷 갈아입기(game/front)가 고르는 머리: setHair(번호)·getHair()·hairNames
+  WL.userData.hairNames=HNAMES;WL.userData.getHair=()=>hairIdx;WL.userData.setHair=i=>{hairIdx=Math.max(0,Math.min(hairStyles.length-1,i|0));applyLook();hairBtn.textContent='머리: '+HNAMES[hairIdx];};
 }

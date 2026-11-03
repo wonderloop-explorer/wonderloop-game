@@ -27,7 +27,7 @@ const STAGES = {
     out: 'dist/fairy-forest-stage01.html',
     title: '원더룹 요정의 숲 — STAGE 01 이슬방울 선착장',
     // 넣을 파일(저장소 기준, * 한 칸). 텍스처 목록(textures.json)은 넣고, 그 안의 그림은 개발판이 실제로 읽는 것만(BAKE_LOAD 'hand' — 손으로 고친 것)
-    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/icons/fairy/*', 'assets/cards/fairy/*', 'assets/audio/fairy*'],
+    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/icons/fairy/*', 'assets/cards/fairy/*', 'assets/titles/fairy/*', 'assets/ui/fairy/*', 'assets/audio/fairy*'],
   },
 };
 

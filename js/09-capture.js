@@ -16,11 +16,11 @@
      export default {world:'santa', script:'opening', zone:'basecamp', setup:{outfit:1}, flags:{compass:true}, burnTitles:true, titleRibbon:'원더룹', titleDeco:(g,ch)=>{…},
        segments:[{name:'도착', noWL:false, async run(c){ c.place(0,2,0); c.camera('follow'); await c.walk(1,0); await c.settle(); }}]}
    c(구간 안에서 쓰는 것): wait(초) until(조건,최대초) place(x,z,방향) walk(x,z) go(구역,자리) talk(NPC 이름) say(누가,대사,초,소리id)
-     narrate(대사 또는 {text,id}) title(로고 글자,{sec,ribbon,sub,burn}) ending(로고 글자,{sec,ribbon,sub,sub2,burn}) camera('follow'|'room'|{az,pol,dist}) set({action,expr,outfit,light,hood})
+     narrate(대사 또는 {text,id}) title(로고 글자,{sec,ribbon,sub,burn,art}) — art:true(또는 대본 titleArt:true)면 세계 그림 타이틀(front.img) ending(로고 글자,{sec,ribbon,sub,sub2,burn}) camera('follow'|'room'|{az,pol,dist}) set({action,expr,outfit,light,hood})
      settle(초=3: 나레이션·대화·카드·이벤트가 다 끝난 뒤 여운) flag(이름,값) auto{dialog, linePad, card, result, resultHold} G S WL
    저절로 하는 것: 대사는 목소리 길이 + 0.6초 뒤 넘김, 안내 카드·비밀 카드·도감 카드는 읽을 시간(최소 3.5초) 뒤 닫음, 결과창은 4초 뒤 첫 단추, 엔딩 화면은 6초 뒤 첫 단추. */
 import * as THREE from 'three';
-import {drawTitle,fontsReady} from './game/title.js';
+import {drawTitle,fontsReady,loadArt} from './game/title.js';
 const clamp01=x=>Math.max(0,Math.min(1,x));
 const MUXER='https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.mjs';
 const FPS=24,STEPS=3,DT=1/72,ASPECTS={'16x9':[2560,1440],'9x16':[1080,1920]},BITRATE={'16x9':50e6,'9x16':30e6};
@@ -216,6 +216,8 @@ async function take(aspect,opt={}){
   async function showTitle(kind,text,o){const end=kind==='ending',sec=o.sec??(end?6:3.5);
     const burn=o.burn??(curDef&&curDef.burnTitles)??sc.burnTitles??true;
     const ob={kind,logo:text,ribbon:o.ribbon??(end?(sc.endingRibbon||'탐험가의 대모험'):(sc.titleRibbon||'원더룹')),sub:o.sub||'',sub2:o.sub2||'',deco:o.deco||sc.titleDeco||null};
+    // 그림 타이틀(세계 설정 front.img — 게임 첫 화면과 같은 그림·움직임): 호출 {art:true} 또는 대본 titleArt:true면 지금 구역의 세계 그림, 객체면 그 그림. 엔딩은 front.ending.img
+    {const want=o.art??(end?sc.endingArt:sc.titleArt),F=window.wlZone.cur&&window.wlZone.cur.front,img=want===true?(F&&(end?F.ending&&F.ending.img:F.img)):want||null;if(img)ob.art=await loadArt(img);}
     G.core.cue({kind:'title',text,who:end?'엔딩':'타이틀',sub:[ob.sub,ob.sub2].filter(Boolean).join(' / '),dur:sec,burned:!!burn});
     if(burn)overlays.push({o:ob,t0:G.clock.t,sec});
     await G.core.wait(sec);}

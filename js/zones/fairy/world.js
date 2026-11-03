@@ -6,8 +6,19 @@
 import * as G from '../../game/index.js';
 import {FAIRY_MUSIC} from './music.js';
 G.sound.synth(FAIRY_MUSIC);
-export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'crown',start:{compass:true},
+export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'crown',start:{compass:true},front:null,
   bend:{k:.006,d0:8}}; // 둥근 땅(game/bend): 카메라에서 8m 밖부터 아래로 k×(거리−8)² — 톱니 메뉴 '중'이 이 값, 약 ×0.5·강 ×2 // 2026-11-02 꽃봉오리 탈 대신 봉오리 화관 → 클라이맥스에 핀 화관(crownBloom)
+/* 게임 첫 화면·스테이지 완료 배지·엔딩 그림(엔진 공통 game/front·ui.stageBadge·title — 2026-11-03). 그림 원본은 wonderloop-studio fairy-forest/ref/match/title-logo.png·stage-badge.png
+   front.img: 원본 로고를 리본·큰 제목 두 장으로 나눈 투명 webp(1200×522, 같은 크기로 겹침 — 리본이 먼저 내려오고 큰 제목이 통통), twinkle = 그림 속 별·이슬 자리 [x, y, 지연초](그림 폭·높이 비율).
+   img를 null로 두면 title.js 코드 로고(ribbon·logo 글자). ending.img는 STAGE 04 엔딩 로고 자리(아직 없음).
+   badge: 완료 배지 그림(1400×416) — box 가운데 크림색 칸 [왼, 위, 오른, 아래], medal 위 꽃 메달 [x, y, 지름](비율) */
+const asset=p=>`${p}?v=${window.WL_V||''}`;
+export const FAIRY_FRONT={ribbon:'원더룹의 대모험',logo:'요정의 숲 탐방',sub:'요정들의 첫별 축제에 놀러 가요',
+  img:{ribbon:asset('assets/titles/fairy/title-ribbon.webp'),logo:asset('assets/titles/fairy/title-logo.webp'),w:1200,h:522,
+    twinkle:[[.4625,.425,0],[.963,.544,1.4],[.428,.468,2.6],[.649,.808,3.3],[.373,.913,.8]]},
+  help:[['탈것','가까이 가면 생기는 단추(E)로 타요 · 타는 동안에도 카메라는 돌릴 수 있어요'],['민들레 우산','받은 뒤에는 점프하거나 높은 데서 떨어질 때 저절로 펼쳐져 천천히 내려와요']],
+  ending:{img:null}};
+export const FAIRY_BADGE={img:asset('assets/ui/fairy/stage-badge.webp'),box:[.128,.414,.868,.893],medal:[.4992,.2153,.13],ar:1400/416};
 export const icon=id=>`assets/icons/fairy/${id}.png?v=${window.WL_V||''}`;
 /* 소개 카드 전신 그림(2D, 투명 배경 webp — 2026-11-02 받은 그림의 정면 모습): 없는 주민은 img:null → 게임 안 전신 렌더링 */
 const card=id=>`assets/cards/fairy/${id}.webp?v=${window.WL_V||''}`;
@@ -29,3 +40,5 @@ export const FAIRY_CARDS={
   mushroom:{name:'버섯 요정',intro:'축제 소식을 제일 먼저 알려 주는 마을 안내 요정.',likes:'비 온 다음 날의 축축한 흙',quote:'보이는 건 모자뿐이야. 진짜 내 몸은 땅속에 길게길게 뻗어 있거든!',img:card('mushroom'),bg:'#fbe0c8'},
   strider:{name:'아기 소금쟁이',intro:'물 위 걷기를 연습 중인 수줍은 아기. 아직 가끔 미끄러져요.',likes:'연잎 그늘 아래 조용한 물',quote:'톡톡톡! 물결로 하는 인사, 너도 할 줄 알지?',img:null,bg:'#fbf0bf'}, // 숨겨진 비밀 장면을 마친 뒤 meet('strider', 그 모델)
 };
+FAIRY_WORLD.front=FAIRY_FRONT; // 게임 첫 화면(game/front)
+FAIRY_WORLD.badge=FAIRY_BADGE; // 스테이지 완료 배지(ui.stageBadge) — 구역 정보에서도 보이게

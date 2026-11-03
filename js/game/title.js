@@ -2,7 +2,10 @@
    - drawTitle(g, W, H, o, t, a) → 그린 영역 {x0,y0,x1,y1}: 캔버스에 그린다 → 영상 캡처 모드가 영상에 직접 그려 넣는다(09, 대본 c.title·c.ending, burn).
      o = {ribbon:'원더룹', logo:'산타 마을 탐방', sub, sub2, kind:'title'|'ending', deco(g, 첫글자 정보)}, t = 나온 뒤 흐른 초, a = 불투명도.
    - logoEl({ribbon, logo, sub, kind}): 같은 모양의 HTML(게임 첫 화면·엔딩 화면용, kind:'ending'이면 게임 엔딩 로고 크기).
-   세계마다 다른 꾸밈(개미굴의 첫 글자 더듬이 같은 것)은 deco로 넘긴다. 이 파일에는 세계 전용 그림을 넣지 않는다. */
+   세계마다 다른 꾸밈(개미굴의 첫 글자 더듬이 같은 것)은 deco로 넘긴다. 이 파일에는 세계 전용 그림을 넣지 않는다.
+   - 그림 타이틀(2026-11-03, 요정의 숲부터 — 세계 설정 front.img = {ribbon, logo, w, h, twinkle}): 리본·큰 제목을 따로 그린 투명 그림 두 장.
+     o.art = await loadArt(front.img) 를 넘기면 drawTitle이 코드 로고 대신 그림을 게임 첫 화면(game/front CSS)과 같은 움직임으로 그린다 —
+     리본이 먼저 살짝 내려오고(0~0.8초) 큰 제목이 통통(0.4~1.35초, 0.55 → 1.08 → 0.97 → 1), 그 뒤 아주 느리게 숨쉬듯, 그림 속 별·이슬 자리(twinkle)가 가끔 반짝. */
 const FONT='"Jua","Gowun Dodum",sans-serif';
 const RIB_FONT='"Gowun Dodum","Apple SD Gothic Neo",sans-serif';   // 리본 글씨: 개미굴 게임 .ribbon과 같이 Gowun Dodum 보통 굵기(400)
 const COLS=['#ffd46a','#ffb86b','#8fe0c8','#c8b0ff','#f7a8c0','#8fd0ff'];   // .logo2 글자 색 차례
@@ -32,7 +35,25 @@ function subText(g,text,cx,cy,a,sz){g.save();g.globalAlpha=a;g.font=sz+'px '+FON
 function shade(g,W,H,a){g.save();g.globalAlpha=a*.55;const gr=g.createLinearGradient(0,H*.15,0,H*.85);gr.addColorStop(0,'rgba(40,60,110,0)');gr.addColorStop(.5,'rgba(40,50,90,.45)');gr.addColorStop(1,'rgba(40,60,110,0)');g.fillStyle=gr;g.fillRect(0,0,W,H);g.restore();}
 /* 로고 크기: 기준 높이 1080에서 타이틀 190px·엔딩 170px, 화면 폭의 86%를 넘지 않게(세로 영상) */
 function fit(g,text,base,W){g.save();g.font=base+'px '+FONT;const w=[...text].reduce((s,c)=>s+(c===' '?base*.28:g.measureText(c).width*1.02),0);g.restore();return Math.min(base,base*W*.86/Math.max(1,w));}
-function drawTitle(g,W,H,o,t,a){if(a<=0)return;const u=Math.min(W,H)/1080,end=o.kind==='ending';
+/* 그림 타이틀: 그림 두 장을 받아 둔다(같은 그림은 한 번) */
+const ARTS=new Map();
+function loadArt(img){if(!img)return Promise.resolve(null);const key=img.ribbon+'|'+img.logo;if(ARTS.has(key))return ARTS.get(key);
+  const ld=src=>new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=src;});
+  const p=Promise.all([ld(img.ribbon),ld(img.logo)]).then(([rib,logo])=>rib&&logo?{rib,logo,ar:(img.w||logo.width)/(img.h||logo.height),twinkle:img.twinkle||[]}:null);ARTS.set(key,p);return p;}
+const pop=u=>u<=0?0:u<.5?.55+.53*(u/.5)*(2-u/.5):u<.75?1.08-.11*((u-.5)/.25):u<1?.97+.03*((u-.75)/.25):1; // CSS wlfPop과 같은 곡선
+function star(g,x,y,r){g.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,rr=i%2?r*.18:r;g.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);}g.closePath();g.fill();}
+function drawArt(g,W,H,o,t,a){const A=o.art,u=Math.min(W,H)/1080,port=H>W;
+  const w=Math.min(W*(port?.9:.62),H*(port?.36:.5)*A.ar),h=w/A.ar,cx=W/2,cy=H*(port?.36:.42);shade(g,W,H,a*.6);
+  const k=clamp(t/.8),drop=(1-ease(k))*h*.22,sway=t>1.4?Math.sin((t-1.4)*2*Math.PI/7)*.5*Math.PI/180:0;
+  g.save();g.globalAlpha=a*k;g.translate(cx,cy+h*.2-drop);g.rotate(sway);g.drawImage(A.rib,-w/2,-h/2-h*.2,w,h);g.restore();
+  const s=pop((t-.4)/.95),br=t>1.6?1+.012*Math.sin((t-1.6)*2*Math.PI/5.5):1,rot=t>1.6?-.35*Math.PI/180*Math.sin((t-1.6)*2*Math.PI/5.5):0;
+  if(s>0){g.save();g.globalAlpha=a*clamp((t-.4)/.3);g.translate(cx,cy+h*.22);g.rotate(rot);g.scale(s*br,s*br);g.drawImage(A.logo,-w/2,-h/2-h*.22,w,h);g.restore();}
+  if(t>1.6)A.twinkle.forEach(([x,y,d=0])=>{const ph=((t-1.6+4.2-d)%4.2)/4.2;if(ph<.64)return;const q=ph<.76?(ph-.64)/.12:ph<.88?1-.65*(ph-.76)/.12:.35*(1-(ph-.88)/.12);
+    const px=cx-w/2+x*w,py=cy-h/2+y*h,r=w*.045*q;g.save();g.globalAlpha=a*Math.min(1,q*1.2);const gr=g.createRadialGradient(px,py,0,px,py,r*1.4);gr.addColorStop(0,'rgba(255,252,228,.95)');gr.addColorStop(.4,'rgba(255,226,140,.45)');gr.addColorStop(1,'rgba(255,226,140,0)');
+      g.fillStyle=gr;g.beginPath();g.arc(px,py,r*1.4,0,7);g.fill();g.fillStyle='#fffbe6';star(g,px,py,r*.8);g.restore();});
+  if(o.sub)subText(g,o.sub,cx,cy+h/2+40*u,a*clamp((t-1.4)/.6),40*u);
+  return {x0:cx-w/2,x1:cx+w/2,y0:cy-h/2,y1:cy+h/2+(o.sub?70*u:0)};}
+function drawTitle(g,W,H,o,t,a){if(a<=0)return;if(o.art)return drawArt(g,W,H,o,t,a);const u=Math.min(W,H)/1080,end=o.kind==='ending';
   // 크기: 개미굴 녹화 페이지에서 실제로 쓴 값(1080 기준 타이틀 리본 40·로고 190, 엔딩 36·170). 로고가 화면 폭에 맞춰 줄면 리본도 같은 배율로
   // 리본과 로고 사이 간격도 1080 기준 값(타이틀 29%→47%, 엔딩 27%→44%)을 로고 크기에 비례해서 — 세로 화면에서 리본이 떠 보이지 않게
   const base=(end?170:190)*u,sz=fit(g,o.logo||'',base,W),rs=sz/base,mid=H*(end?.44:.47),gap=(end?.17:.18)*1080*u*rs;
@@ -67,4 +88,4 @@ function logoEl({ribbon:rb,logo:text='',sub,kind}={}){css();const el=document.cr
   el.appendChild(h);if(sub){const p=document.createElement('p');p.className='sub';p.textContent=sub;el.appendChild(p);}return el;}
 /* 캔버스에 쓰기 전에 글꼴을 받아 둔다 (영상 첫 프레임부터 같은 글꼴) */
 const fontsReady=()=>document.fonts?Promise.all(['400 40px Jua','700 40px Jua','40px "Gowun Dodum"'].map(f=>document.fonts.load(f,'원더룹 가나다'))).catch(()=>{}):Promise.resolve();
-export {COLS as LOGO_COLS,drawTitle,fontsReady,logoEl};
+export {COLS as LOGO_COLS,drawTitle,fontsReady,loadArt,logoEl};

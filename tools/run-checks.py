@@ -65,7 +65,7 @@ with sync_playwright() as p:
         r = pg.evaluate("(async()=>{const r=await (await import('/tools/stuck-test.js')).run();delete r.그림;return r})()")
         R['stuck'] = {'summary': r.get('요약'), 'errors': errs}; print('끼임', r.get('요약'), flush=True); ctx.close()
     if 'cam' in only:
-        ctx, pg, errs = page(b, U + '?zone=fairy-dock&quality=mobile', (390, 844), True, 3, shot=False)
+        ctx, pg, errs = page(b, U + '?zone=fairy-dock&quality=mobile&notitle', (390, 844), True, 3, shot=False)
         pg.wait_for_timeout(3000)
         r = pg.evaluate("(async()=>{const r=await (await import('/tools/cam-walk-test.js')).run();delete r.그림;return r})()")
         R['cam'] = {'paths': [{'이름': x['이름'], '바뀜': x['바뀜']} for x in r['길']], 'errors': errs}; print('카메라 걷기', R['cam']['paths'], flush=True); ctx.close()
