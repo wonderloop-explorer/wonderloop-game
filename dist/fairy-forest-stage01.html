@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <!-- 원더룹 요정의 숲 — STAGE 01 이슬방울 선착장
-     한 파일 빌드: node tools/build-single.js fairy-dock (원본 저장소 wonderloop-game, 커밋 7704d95, 버전 f9cd527d55, 2026-11-02)
+     한 파일 빌드: node tools/build-single.js fairy-dock (원본 저장소 wonderloop-game, 커밋 31b61a9, 버전 cec8ff5d3c, 2026-11-03)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -106,6 +106,7 @@ body.debug #dbgBtn{opacity:1;background:var(--chipline)}
   <button id="actBtn" type="button">동작: 서기</button>
   <button id="emphBtn" type="button">캐릭터 강조: 자동</button>
   <button id="outfitBtn" type="button">옷: 평상복</button>
+  <button id="bendBtn" type="button">둥근 땅: 중</button>
   <button id="resetBtn" type="button">진행 초기화</button>
   <div class="hint" id="stats" aria-live="polite"></div>
   <div class="hint">끌어서 돌려 보고, 휠이나 두 손가락으로 확대해요. 바닥을 누르면 원더룹이 걸어가고, 원더룹을 누르면 인사해요. 버섯 랜턴은 눌러서 켜고 꺼요.</div>
@@ -113,14 +114,15 @@ body.debug #dbgBtn{opacity:1;background:var(--chipline)}
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="f9cd527d55";
-window.WL_BUILD={"commit":"7704d95","date":"2026-11-02","stage":"fairy-dock"};
+window.WL_V="cec8ff5d3c";
+window.WL_BUILD={"commit":"31b61a9","date":"2026-11-03","stage":"fairy-dock"};
 window.WL_START_ZONE="fairy-dock";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
 /* ===== 원본: js/01-textures.js ===== */
 /* 원더룹 베이스캠프 — 색연필 텍스처·재질·메쉬 헬퍼 */
 import * as THREE from 'three';
+import './game/bend.js'; // 둥근 땅: 셰이더 조각을 고치고 모든 재질에 uniform을 끼워 넣는다 — 재질이 하나라도 생기기 전에(그래서 맨 처음)
 const PI=Math.PI;
 /* ---------- 난수: 용도별 시드 ----------
    예전엔 시드 난수 R() 하나를 01~07이 차례로 꺼내 써서, 어디에 무언가를 더하면 그 뒤 텍스처·소품이 모두 바뀌었다.
@@ -485,7 +487,7 @@ export {B,BUILD,C,M,PI,QUALITY,TEXSET,UP,add,aoPlane,blob,blobMany,blobTex,boxAt
      hood: 'ant'                         들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
      platforms: [{r:[x0,x1,z0,z1]|c:[x,z,반지름], top}]   높은 발판(버섯 갓·가지 등): 위에 서고, 아래에서 걸어 들어가면 막힘(STEP보다 높으면)
      bouncers: [{c:[x,z,반지름], top, height, to:[x,z]}]   튀는 발판(버섯 갓): 밟기만 하면 top+height 높이로 튀어 to에 내려앉음(to 없으면 제자리)
-     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   glide: true 늘 활공·false 활공 안 함·없으면 활공 아이템(민들레 솜털 우산, game/items canGlide)을 가졌을 때(07, 펼치는 물건은 06 setGlideProp)
+     bounce(b)  튀는 발판이 튀길 때 구역이 부르는 함수(갓 출렁임·소리)   bend: {k,d0} 둥근 땅 세기(game/bend — 없으면 끔, 실내·베이스캠프는 넣지 않는다)   glide: true 늘 활공·false 활공 안 함·없으면 활공 아이템(민들레 솜털 우산, game/items canGlide)을 가졌을 때(07, 펼치는 물건은 06 setGlideProp)
      발판은 매 프레임 그 값을 읽는다 → p.top·c[2]를 바꾸면 자라는 발판(버섯 계단 등). 서 있는 발판이 천천히 자라면 원더룹도 함께 올라간다(한 프레임에 STEP보다 크게 바꾸지 않기)
      winds: [{c|r, dir:[x,z], strength, up, y:[아래,위], on}]   바람 구역: 공중·활공 중에만 dir 쪽으로 밀어 준다(초당 strength), up이 있으면 활공 중 위로 띄움(바람길).
                                          구역 코드가 dir·on을 바꾸면 바람 방향이 바뀐다(장난꾸러기 바람). 걷는 동안에는 밀지 않는다
@@ -1426,6 +1428,7 @@ import './05-hair-headwear.js';
 import './06-outfits.js';
 import {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
+import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
@@ -1477,7 +1480,8 @@ async function goZone(id,spawn){
   return true;}
 /* 세계의 옷·탈: 상상의 세계(구역 정보에 hood가 있는 곳)에 들어가면 탐험복 그대로 탈만 그 세계 것으로 바꿔 쓴다.
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
-function zoneLook(z){const U=WL.userData;{const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
+function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥근 땅 세기는 구역 정보 bend(없으면 끔 — 실내·베이스캠프)
+  {const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);}
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
@@ -1492,6 +1496,9 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
  set(new URLSearchParams(location.search).has('debug'));
  b.addEventListener('click',()=>{const vv=window.visualViewport;if(performance.now()-(GAME.controls.input.multiT||0)<800||(vv&&vv.scale>1.01))return; // 두 손가락 동작 끝에 잘못 눌린 것은 무시(저절로 열리지 않게)
    set(!document.body.classList.contains('debug'));});}
+/* 둥근 땅(시험용, 톱니 메뉴): 끔 → 약 → 중 → 강 → 끔 (game/bend — 그림만 휜다, 이 기기에 기억). 구역 정보 bend가 없는 곳(실내·베이스캠프)은 늘 끔 */
+function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const I=bendInfo();b.textContent=I.on?`둥근 땅: ${I.label}`:'둥근 땅: 이 구역 없음';b.disabled=!I.on;}
+{const b=document.getElementById('bendBtn');if(b)b.addEventListener('click',()=>{const I=bendInfo();if(!I.on)return;setLevel((I.level+1)%4);bendBtn();});}
 /* 진행 초기화(시험용, 톱니 메뉴): 저장된 진행(flags — 우산·완료·소개 카드)·도감을 지우고 다시 연다. 실수로 눌리지 않게 3초 안에 한 번 더 눌러야 */
 {const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
    if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
@@ -1533,7 +1540,8 @@ if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   window.addEventListener('blur',()=>setPaused(true));['focus','pointerdown','keydown'].forEach(ev=>window.addEventListener(ev,()=>setPaused(document.hidden)));}
 /* 한 화면 그리기: 보통 그리기 + 흐려 보기 덧그리기(game/occlude — 세계 구역에서 원더룹을 가리는 조각만). 화면 통계는 둘을 합친 값 */
 renderer.info.autoReset=false;
-function renderFrame(){renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
+/* 둥근 땅(game/bend): 그리기 직전 카메라 자리를 넣는다(그림자 그리기도 같은 값) */
+function renderFrame(){setBend(camera);renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
 function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
   try{renderFrame();}catch(e2){}}if(!ok)nextFrame();}
 function tickBody(){
@@ -1948,6 +1956,62 @@ async function start(){
     }catch(e){msg('녹화 실패: '+(e&&e.message||e));console.error(e);window.wlCapture.error=String(e&&e.stack||e);}}
   else msg('화면비를 고르면 새 페이지에서 처음부터 녹화해요. 녹화 중에는 이 탭을 그대로 두세요.');}
 start();
+
+</script>
+<script type="text/x-wl-module" data-path="js/game/bend.js">
+/* ===== 원본: js/game/bend.js ===== */
+/* 원더룹 — 둥근 땅 (동물의 숲처럼, 2026-11-03)
+   그릴 때만 카메라에서 수평으로 멀수록 아래로 내린다: 아래로 = k × max(0, 거리 − d0)²  (거리는 카메라 기준 x·z).
+   평평한 땅이 둥근 섬처럼 넘어가 보이고, 먼 곳은 지평선 아래로 숨는다. 실제 위치·충돌·이동·판정·카메라 당김은 평평한 그대로(그림만 바뀜).
+   어떻게: three 셰이더 조각을 한 번 고친다 — project_vertex(화면 위치)·worldpos_vertex(그림자 좌표·빛)·스프라이트 꼭짓점.
+     → 기본 재질(Standard·Toon·Basic·Lambert·Points·Sprite), 합친 덩어리, 인스턴싱, 뼈대(Skinned), 그림자 깊이 그리기까지 모두 같은 만큼 휜다.
+     uniform wlBend(vec4: x = k, y·z = 카메라 x·z, w = d0) 하나를 모든 재질이 같이 쓴다(Material.onBeforeCompile에 끼워 넣음 — 구역 코드가 재질에 붙이는 onBeforeCompile은 그대로 불린다).
+     k가 0이면 셰이더가 예전 계산을 그대로 탄다(베이스캠프·실내·기준 촬영 화면 그대로).
+   직접 쓴 셰이더(ShaderMaterial)는 #include <common> 뒤 정점 위치에 wlBent(modelMatrix*…)를 써야 한다(crown.js 별가루 견본). 휘면 안 되는 것(하늘 지붕·별)은 material.userData.noBend=true.
+   매 프레임 자바스크립트 일은 08이 setBend(카메라 x·z)로 uniform 값 셋만 바꾸는 것뿐. 세기는 구역 정보 bend:{k,d0}(없으면 끔) × 톱니 메뉴 단계(끔·약·중·강). */
+import * as THREE from 'three';
+const BEND = { value: new THREE.Vector4(0, 0, 0, 8) }, NONE = { value: new THREE.Vector4(0, 0, 0, 8) };
+const C = THREE.ShaderChunk;
+if (!C.common.includes('wlBend')) {
+  C.common += `
+uniform vec4 wlBend; // 둥근 땅(game/bend.js): x 세기 k, yz 카메라 x·z, w 평평하게 둘 거리 d0
+vec4 wlBent( vec4 w ) { vec2 d = w.xz - wlBend.yz; float r = max( 0.0, length( d ) - wlBend.w ); w.y -= wlBend.x * r * r; return w; }`;
+  const pv = 'mvPosition = modelViewMatrix * mvPosition;';
+  if (!C.project_vertex.includes(pv)) console.warn('원더룹: 둥근 땅 패치 실패(project_vertex)');
+  C.project_vertex = C.project_vertex.replace(pv, 'if ( wlBend.x > 0.0 ) mvPosition = viewMatrix * wlBent( modelMatrix * mvPosition ); else mvPosition = modelViewMatrix * mvPosition;');
+  const wp = 'worldPosition = modelMatrix * worldPosition;';
+  if (!C.worldpos_vertex.includes(wp)) console.warn('원더룹: 둥근 땅 패치 실패(worldpos_vertex)');
+  C.worldpos_vertex = C.worldpos_vertex.replace(wp, wp + '\n\tif ( wlBend.x > 0.0 ) worldPosition = wlBent( worldPosition );');
+  const sp = 'vec4 mvPosition = modelViewMatrix[ 3 ];', S = THREE.ShaderLib.sprite;
+  if (!S.vertexShader.includes(sp)) console.warn('원더룹: 둥근 땅 패치 실패(sprite)');
+  S.vertexShader = S.vertexShader.replace(sp, 'vec4 mvPosition = wlBend.x > 0.0 ? viewMatrix * wlBent( modelMatrix[ 3 ] ) : modelViewMatrix[ 3 ];');
+}
+// 모든 재질에 uniform 끼워 넣기: onBeforeCompile을 바꿔 단 재질도 그 함수 뒤에 wlBend가 붙는다
+{ const P = THREE.Material.prototype, add = (m, sh) => { sh.uniforms.wlBend = m.userData && m.userData.noBend ? NONE : BEND; };
+  if (!Object.getOwnPropertyDescriptor(P, 'onBeforeCompile') || !P.__wlBend) {
+    P.__wlBend = true;
+    Object.defineProperty(P, 'onBeforeCompile', { configurable: true,
+      get() { const m = this; return this.__wlObc || (this.__wlObc = function (sh, r) { add(m, sh); }); }, // this 대신 m(앞 함수를 this 없이 부르는 곳이 있다 — 07)
+      set(f) { const m = this; this.__wlUser = typeof f === 'function' ? f : null; this.__wlObc = this.__wlUser ? function (sh, r) { f.call(this, sh, r); add(m, sh); } : null; } });
+    // three의 기본 프로그램 열쇠는 onBeforeCompile.toString()이다 — 감싼 함수는 모두 같은 글이라, 원래 함수의 글로(다른 셰이더 패치끼리 프로그램을 같이 쓰지 않게)
+    const key0 = P.customProgramCacheKey;
+    P.customProgramCacheKey = function () { return this.__wlUser ? this.__wlUser.toString() : key0.call({ onBeforeCompile: () => {} }); };
+  } }
+/* 단계: 0 끔 · 1 약 · 2 중 · 3 강 — 구역 정보 bend:{k,d0}의 k가 '중', 약은 ×0.5, 강은 ×2 */
+const LEVELS = ['끔', '약', '중', '강'], MUL = [0, .5, 1, 2];
+let zoneBend = null, level = 2, paused = 0;
+try { const v = localStorage.getItem('wl-bend'); if (v != null && v !== '') level = Math.max(0, Math.min(3, +v)); } catch (e) {}
+function setZoneBend(b) { zoneBend = b && b.k > 0 ? { k: b.k, d0: b.d0 ?? 8 } : null; }
+function setLevel(l) { level = l; try { localStorage.setItem('wl-bend', String(l)); } catch (e) {} }
+const bendK = () => (zoneBend && !paused ? zoneBend.k * MUL[level] : 0);
+/* 08이 그리기 직전에(카메라가 움직인 뒤) */
+function setBend(cam) { const v = BEND.value; v.x = bendK(); v.y = cam.position.x; v.z = cam.position.z; v.w = zoneBend ? zoneBend.d0 : 8; }
+/* 잠깐 끄기(소개 카드 초상 찍기 등): const resume = bendPaused(); … resume(); */
+function bendPaused() { paused++; const x = BEND.value.x; BEND.value.x = 0; return () => { paused--; BEND.value.x = paused ? 0 : x; }; }
+/* 그림 위치 계산(자바스크립트 쪽 — 화면 위 안내를 3D 자리에 맞출 때): 평평한 자리 p를 휜 자리로 */
+function bentY(x, z, y) { const v = BEND.value; if (!(v.x > 0)) return y; const r = Math.max(0, Math.hypot(x - v.y, z - v.z) - v.w); return y - v.x * r * r; }
+const bendInfo = () => ({ on: !!zoneBend, level, label: LEVELS[level], k: bendK(), d0: zoneBend ? zoneBend.d0 : null });
+export { BEND, LEVELS, bendInfo, bendK, bendPaused, bentY, setBend, setLevel, setZoneBend };
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/codex.js">
@@ -2876,6 +2940,7 @@ import * as THREE from 'three';
 import {flags,setFlag} from './state.js';
 import {profileCard} from './ui.js';
 import {cutPaused} from './occlude.js';
+import {bendPaused} from './bend.js';
 let ctx=null,W='',CARDS={};
 function initProfile(c){ctx=c;}
 function setup({world,cards}){W=world||'';CARDS=cards||{};}
@@ -2892,12 +2957,13 @@ function portrait(root,{side=.42,lift=.12,w=512,h=512}={}){if(!ctx||!ctx.rendere
   stage.add(new THREE.HemisphereLight(0xfff6ea,0xd9c2aa,1.6));const key=new THREE.DirectionalLight(0xfff2e0,2.3);key.position.copy(cam.position).add(new THREE.Vector3(-dist*.4,dist*.5,0));key.target.position.copy(c);stage.add(key,key.target);
   const rt=new THREE.WebGLRenderTarget(w,h,{samples:4});rt.texture.colorSpace=THREE.SRGBColorSpace;
   const prev=renderer.getRenderTarget(),cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();let url=null;const resume=cutPaused(true);
+  const resumeBend=bendPaused(); // 초상은 둥근 땅을 끄고(평평하게) 찍는다
   try{renderer.setRenderTarget(rt);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(stage,cam);const px=new Uint8Array(w*h*4);renderer.readRenderTargetPixels(rt,0,0,w,h,px);
     const cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),im=g.createImageData(w,h);
     for(let r=0;r<h;r++)im.data.set(px.subarray((h-1-r)*w*4,(h-r)*w*4),r*w*4); // 렌더 타깃은 아래부터 → 뒤집기
     g.putImageData(im,0,0);url=cv.toDataURL('image/png');}
   catch(e){console.warn('원더룹: 소개 카드 초상 렌더링 실패',e);}
-  finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();hid.forEach(o=>o.visible=true);op.forEach(([mt,o,d,t])=>{mt.opacity=o;mt.depthWrite=d;if(mt.transparent!==t){mt.transparent=t;mt.needsUpdate=true;}});rt.dispose();
+  finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();resumeBend();hid.forEach(o=>o.visible=true);op.forEach(([mt,o,d,t])=>{mt.opacity=o;mt.depthWrite=d;if(mt.transparent!==t){mt.transparent=t;mt.needsUpdate=true;}});rt.dispose();
     if(par)par.add(root);else stage.remove(root);root.position.copy(pos);root.quaternion.copy(quat);root.scale.copy(scl);root.updateMatrixWorld(true);}
   return url;}
 function meet(id,root){const c=CARDS[id];if(!c||seen(id))return Promise.resolve(false);setFlag('meet:'+W+':'+id,true);
@@ -3025,8 +3091,9 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
   const dot=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d'),gr=g.createRadialGradient(16,16,0,16,16,16);
     gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,250,230,.8)');gr.addColorStop(1,'rgba(255,250,230,0)');g.fillStyle=gr;g.fillRect(0,0,32,32);const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;return tx;})();
   const smat=new THREE.PointsMaterial({map:dot,size:3,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff6dc});
+  smat.userData.noBend=true; // 하늘·별은 둥근 땅에서 휘지 않는다(game/bend — 카메라를 따라다니는 먼 하늘)
   const stars=new THREE.Points(sg,smat);stars.renderOrder=-9;stars.frustumCulled=false;
-  const fmat=new THREE.PointsMaterial({map:dot,size:9,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff2c8});
+  const fmat=new THREE.PointsMaterial({map:dot,size:9,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff2c8});fmat.userData.noBend=true;
   const first=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array([radius*.35,radius*.55,-radius*.6]),3)),fmat);
   first.renderOrder=-9;first.frustumCulled=false;
   const g=new THREE.Group();g.name='sky';g.add(dome,stars,first);(parent||null)&&parent.add(g);
@@ -3744,8 +3811,9 @@ function makeDust(){const N=QUALITY.tier==='mobile'?72:150,geo=new THREE.BufferG
   const pos=new Float32Array(N*3),col=new Float32Array(N*3),sz=new Float32Array(N),al=new Float32Array(N),sh=new Float32Array(N);
   for(const [k,a,n] of [['position',pos,3],['color',col,3],['aSize',sz,1],['aAlpha',al,1],['aShape',sh,1]])geo.setAttribute(k,new THREE.BufferAttribute(a,n).setUsage(THREE.DynamicDrawUsage));
   const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uScale:{value:500},uBright:{value:1}},vertexColors:true,
-    vertexShader:`attribute float aSize;attribute float aAlpha;attribute float aShape;uniform float uScale;varying vec3 vC;varying float vA;varying float vS;
-      void main(){vC=color;vA=aAlpha;vS=aShape;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=max(1.5,aSize*uScale/-mv.z);gl_Position=projectionMatrix*mv;}`,
+    vertexShader:`#include <common>
+      attribute float aSize;attribute float aAlpha;attribute float aShape;uniform float uScale;varying vec3 vC;varying float vA;varying float vS;
+      void main(){vC=color;vA=aAlpha;vS=aShape;vec4 mv=wlBend.x>0.?viewMatrix*wlBent(modelMatrix*vec4(position,1.)):modelViewMatrix*vec4(position,1.); /* 둥근 땅(game/bend)도 같은 만큼 */gl_PointSize=max(1.5,aSize*uScale/-mv.z);gl_Position=projectionMatrix*mv;}`,
     fragmentShader:`uniform float uBright;varying vec3 vC;varying float vA;varying float vS;
       void main(){vec2 p=gl_PointCoord*2.-1.;float r=length(p),a;
         if(vS>.5){vec2 q=abs(p);a=(1.-q.y)*exp(-q.x*13.)+(1.-q.x)*exp(-q.y*13.);a=a*.85+exp(-r*r*22.)*1.1;a*=1.-smoothstep(.75,1.,r);} // 네 갈래 반짝이 ✦
@@ -4654,7 +4722,8 @@ const inWater=(x,z)=>Math.min(z-zN(x),zS(x)-z)+(fbm(x*.9+11,z*.9+3)-.5)*.7; // +
  [[0,10.6],[.2,8.7],[.8,6.9],[1.6,5.1],[2.6,3.4],[3.5,1.7],[4.2,.1]].forEach(([x,z],i)=>flat.push(add(new THREE.CylinderGeometry(.42+(i%2)*.08,.46,.07,9),T(['#e8ddd0','#ddd2c4','#efe6da'][i%3],'stone'),x,.03,z,{ry:i,line:false,cast:false})));}
 // 물: 연한 파스텔 청록 + 잔물결(천천히 흐름). 시간마다 색이 바뀐다(WATER)
 const waterMat=toon(WATER[0].c,{map:TX.ripple,emissive:WATER[0].e,ei:WATER[0].ei});
-const water=new THREE.Mesh(new THREE.PlaneGeometry(SIZE,13,1,1).rotateX(-PI/2),waterMat);water.position.set(0,-.1,-5.2);water.receiveShadow=true;root.add(water);keep.push(water);flat.push(water);
+// 물은 1m 칸으로 나눈다 — 둥근 땅(game/bend)은 꼭짓점마다 휘어서, 네 귀퉁이뿐이면 물이 둑 밑으로 가라앉는다
+const water=new THREE.Mesh(new THREE.PlaneGeometry(SIZE,13,48,13).rotateX(-PI/2),waterMat);water.position.set(0,-.1,-5.2);water.receiveShadow=true;root.add(water);keep.push(water);flat.push(water);
 const WC=WATER.map(w=>({c:new THREE.Color(w.c),e:new THREE.Color(w.e),ei:w.ei}));
 // 물에는 못 들어감(선착장만): 0.5m 폭 띠마다 그 사이 물길을 막는다
 for(let x=-SIZE/2;x<SIZE/2;x+=.5){const xs=[x,x+.25,x+.5],n=Math.min(...xs.map(zN))+.05,s=Math.max(...xs.map(zS))-.12;
@@ -5245,7 +5314,9 @@ export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,leafBoat};
    · 머리 위: 큰 잎 실루엣 판(높이 15~21m)을 겹쳐 하늘을 거의 덮고, 틈으로만 하늘빛이 보인다.
    · 빛줄기: 겹 사이로 내려오는 희미한 빛 다섯 줄기(십자 판 한 묶음, 더하기 섞기). 낮 따뜻한 빛 · 해 질 녘 복숭아빛 · 밤 푸른 달빛으로 약하게(SK.t).
    · gaps: 비워 둘 방향(라디안, 중심에서 본 각) — 별꽃 전망대 꽃봉오리가 보이는 북쪽 틈. 가까운 두 겹만 비운다.
-   그리기: 겹마다 1회 + 머리 위 1회 + 빛줄기 1회 = 6회(휴대폰은 두 겹씩 묶어 4회). 그림자를 드리우지 않는다. 휴대폰 단계도 같은 모습(텍스처만 조금 작게). */
+   그리기: 겹마다 1회 + 머리 위 1회 + 빛줄기 1회 = 6회(휴대폰은 두 겹씩 묶어 4회). 그림자를 드리우지 않는다. 휴대폰 단계도 같은 모습(텍스처만 조금 작게).
+   둥근 땅(game/bend)을 켜도 네 겹 모두 그린다 — 먼 두 겹은 19·23m로 키가 커서 3~9m 내려가도 지평선 아래로 숨지 않고, 빼면 휴대폰 세로 화면 위쪽에
+   벽 풀잎 사이로 흰 하늘 줄이 보였다(2026-11-03 비교 촬영). */
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {QUALITY,rng} from '../../01-textures.js';
@@ -5444,7 +5515,8 @@ export const fbm=(x,z)=>vnoise(x,z)*.6+vnoise(x*2.1+5,z*2.1+3)*.3+vnoise(x*4.3+9
 import * as G from '../../game/index.js';
 import {FAIRY_MUSIC} from './music.js';
 G.sound.synth(FAIRY_MUSIC);
-export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'crown',start:{compass:true}}; // 2026-11-02 꽃봉오리 탈 대신 봉오리 화관 → 클라이맥스에 핀 화관(crownBloom)
+export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'crown',start:{compass:true},
+  bend:{k:.006,d0:8}}; // 둥근 땅(game/bend): 카메라에서 8m 밖부터 아래로 k×(거리−8)² — 톱니 메뉴 '중'이 이 값, 약 ×0.5·강 ×2 // 2026-11-02 꽃봉오리 탈 대신 봉오리 화관 → 클라이맥스에 핀 화관(crownBloom)
 export const icon=id=>`assets/icons/fairy/${id}.png?v=${window.WL_V||''}`;
 /* 소개 카드 전신 그림(2D, 투명 배경 webp — 2026-11-02 받은 그림의 정면 모습): 없는 주민은 img:null → 게임 안 전신 렌더링 */
 const card=id=>`assets/cards/fairy/${id}.webp?v=${window.WL_V||''}`;
