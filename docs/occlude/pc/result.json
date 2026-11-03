@@ -32,7 +32,7 @@
    "faded": 1,
    "wlPixels": 33719,
    "darkFrac": 0,
-   "brightRatio": 0.923,
+   "brightRatio": 0.924,
    "washDiff": 0.0103
   },
   {
@@ -42,7 +42,7 @@
    "wlPixels": 62530,
    "darkFrac": 0,
    "brightRatio": 1.027,
-   "washDiff": 0.0105
+   "washDiff": 0.0114
   },
   {
    "name": "layers",
@@ -51,7 +51,7 @@
    "wlPixels": 36324,
    "darkFrac": 0.0001,
    "brightRatio": 0.96,
-   "washDiff": 0.0045
+   "washDiff": 0.0064
   }
  ]
 }
