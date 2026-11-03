@@ -2,7 +2,6 @@
 import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
-import {BLOOM,BUD} from './hoods/bud.js';
 import {CROWN,CROWN_BLOOM} from './hoods/crown.js';
 /* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래)
    새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}을 만들어 import하고 HOODS 끝에 {key,name,mod}로 더한다.
@@ -10,7 +9,6 @@ import {CROWN,CROWN_BLOOM} from './hoods/crown.js';
    머리 처리: 개미탈은 탈 아래 앞머리(05), 모자형 탈은 안쪽 머리만 눌러 넣기(pressHair, 탈의 profile·top). 구역 정보 hood:'<key>' → 들어올 때 그 탈(08).
    번호 0~2는 기준 촬영·영상 대본(setup({hood}))이 쓰므로 바꾸지 않고 뒤에 붙인다. */
 const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'},
-  {key:'bud',name:'꽃봉오리 탈',mod:BUD},{key:'bloom',name:'핀 꽃 탈',mod:BLOOM}, // 꽃봉오리 탈(2026-11-02부터 요정의 숲에서는 안 씀 — 목록에는 그대로)
   {key:'crown',name:'화관(봉오리)',mod:CROWN},{key:'crownBloom',name:'화관(핌)',mod:CROWN_BLOOM}]; // 요정의 숲: 봉오리 화관 → 클라이맥스에 별꽃 보석이 들어가면 핀 화관(morphHood('crownBloom')) + 별가루
 HOODS.forEach((h,i)=>{if(!h.mod)return;const r=h.mod.build({head,wm,TM,SM});r.g.userData.hw=i;hoodParts.push(r.g);h.press=r;});
 WL.userData.hoods=HOODS;
@@ -52,7 +50,8 @@ function wlMerge(list){
     const fl=add2(wm(roundBox(.07,.017,.019,.35),vestD),wlBody);fl.position.set(s*.177,.46,.179);fl.rotation.y=s*.82;});
   add2(wm(new THREE.CylinderGeometry(.232,.232,.034,30),TM('#7a4a32','leather2',{rep:[6,1],stitch:'h'})),wlBody).position.y=.322;
   {const bk=add2(wm(roundBox(.035,.024,.01,.4),SM('#f2b63c')),wlBody);bk.position.set(0,.322,.233);}
-  {const nkM=SM('#ec8b7d');const nk=add2(wm(new THREE.TorusGeometry(.16,.042,10,28),nkM),wlBody);nk.rotation.x=PI/2;nk.position.y=.605;
+  const nkM=SM('#ec8b7d'),bandM=TM('#ec8b7d','plain',{hatch:.45},THREE.DoubleSide);
+  {const nk=add2(wm(new THREE.TorusGeometry(.16,.042,10,28),nkM),wlBody);nk.rotation.x=PI/2;nk.position.y=.605;
    // 가슴을 덮는 큰 삼각 반다나: 조끼·셔츠 면을 따라 휘어짐
    {const VP=[[.33,.236],[.4,.238],[.45,.24],[.52,.233],[.565,.218],[.603,.185]];
     const Rv=y=>{for(let k=1;k<VP.length;k++){if(y<=VP[k][0]){const a=VP[k-1],b=VP[k],u=(y-a[0])/(b[0]-a[0]);return a[1]+(b[1]-a[1])*u;}}return VP[VP.length-1][1];};
@@ -61,7 +60,7 @@ function wlMerge(list){
       for(let i=0;i<=NX;i++){const u=i/NX*2-1,x=u*half,e=Math.min(1,t*2.5),R=Rv(y)+.013;pos.push(x,y,Math.sqrt(Math.max(0,R*R-x*x)));uv.push(u*.5+.5,1-t);}}
     for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const a=j*(NX+1)+i,b=a+NX+1;idx.push(a,b,a+1,a+1,b,b+1);}
     const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));bg.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));bg.setIndex(idx);bg.computeVertexNormals();
-    add2(wm(bg,TM('#ec8b7d','plain',{hatch:.45},THREE.DoubleSide)),wlBody);}}
+    add2(wm(bg,bandM),wlBody);}}
   // 탐험가 모자: 머리 위에 얹히고 앞챙이 살짝 들려 앞머리가 보임
   {const hatG=new THREE.Group();hatG.position.set(0,.33,-.1);hatG.rotation.x=-.3;hatG.scale.setScalar(.9);head.add(hatG);WL.userData.hatG=hatG;
    const hatM=TM('#dcc48e','canvas',{rep:[4,2]},THREE.DoubleSide);
@@ -164,6 +163,16 @@ function wlMerge(list){
          const u=(k-.4)/.6,L=hoodObjs(to);scale(L,.93+.07*easeBack(u)+.06*Math.sin(Math.PI*u));const m=HOODS[to].mod;if(m&&m.animate&&HOODS[to].press)m.animate(HOODS[to].press.g,u);}
        if(k>=1){scale(hoodObjs(to),1);WL.userData.hoodMorph=null;if(onEnd)try{onEnd();}catch(e){console.error(e);}}}};};}
   const ob=document.getElementById('outfitBtn');const showOutfit=()=>ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();showOutfit();});
+  /* 탐험복 조끼·목수건 색(옷 갈아입기 창, 2026-11-03): 0 기본 · 1 · 2. 같은 천 결 그림에 색 배율만 곱한 재질로 바꿔 끼운다(아틀라스 색은 소수라 1을 넘어도 되고, 새 그림 층이 필요 없다 —
+     부품 재질이 바뀌면 07이 그 부품 정점만 다시 적는다). 기준 촬영·영상 대본은 늘 기본 색 */
+  {const VEST=[['기본','#c99d5c','#a87e43'],['풀잎','#8fae6a','#6e8f4c'],['하늘','#8db3d2','#6a8fb0']],SCARF=[['기본','#ec8b7d'],['민트','#7ccbb0'],['해바라기','#f2c14e']];
+   const tint=(m,from,to)=>{const k=m.clone(),a=new THREE.Color(from),b=new THREE.Color(to);k.color.setRGB(m.color.r*b.r/a.r,m.color.g*b.g/a.g,m.color.b*b.b/a.b);return k;};
+   const cache=new Map(),pick=(m,from,to)=>{if(from===to)return m;const key=m.uuid+to;if(!cache.has(key))cache.set(key,tint(m,from,to));return cache.get(key);};
+   const swap=(base,want)=>WL.traverse(o=>{if(!o.isMesh)return;for(const [m,mm] of base){if(o.material===m||o.userData.wlBaseMat===m){o.userData.wlBaseMat=m;o.material=mm;}}});
+   WL.userData.vestColors=VEST.map(v=>v[0]);WL.userData.scarfColors=SCARF.map(v=>v[0]);
+   WL.userData.setVest=i=>{const v=VEST[i]||VEST[0];swap([[vestM,pick(vestM,VEST[0][1],v[1])],[vestD,pick(vestD,VEST[0][2],v[2])]]);WL.userData.vestIdx=VEST.indexOf(v);};
+   WL.userData.setScarf=i=>{const v=SCARF[i]||SCARF[0];swap([[nkM,pick(nkM,SCARF[0][1],v[1])],[bandM,pick(bandM,SCARF[0][1],v[1])]]);WL.userData.scarfIdx=SCARF.indexOf(v);};
+   WL.userData.vestIdx=0;WL.userData.scarfIdx=0;}
   // 이름으로 옷 입기 (구역 정보 outfit): setOutfit('explorer'|'casual')
   WL.userData.setOutfit=key=>{outfit=key==='explorer'?1:0;applyOutfit();showOutfit();};
 }

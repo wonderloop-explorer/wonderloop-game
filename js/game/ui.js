@@ -52,7 +52,8 @@ const css=`
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:15;white-space:nowrap}
 #wlQuest{top:calc(env(safe-area-inset-top,0px) + 14px);margin:0;padding:.45rem .95rem;font-size:.98rem;background:rgba(46,28,44,.66);color:#fff4e4;box-shadow:none;border-radius:999px;line-height:1.35}
 @media (max-width:700px){#wlQuest{left:calc(env(safe-area-inset-left,0px) + 76px);right:calc(env(safe-area-inset-right,0px) + 14px);transform:none;white-space:normal;text-align:center;box-sizing:border-box}} /* 휴대폰: 왼쪽 위 톱니 옆부터 오른쪽 끝까지(개미굴처럼 줄바꿈) */
-#wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px)}
+#wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px);font-size:1.2rem;padding:.5rem 1.25rem .55rem}
+#wlPrompt.wl-felt:not(#wl_a):not(#wl_b)::before{display:none} /* 'E 말 걸기' 안내: 점선 없이 조금 크게 */
 #wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .8rem;
   background:#f2b63c;color:#3e2834;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none;box-sizing:border-box} /* 개미굴 #act: 노란 동그라미(글자가 길면 알약) */ /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
 #wlSecret{position:fixed;inset:0;display:none;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.25);z-index:31}

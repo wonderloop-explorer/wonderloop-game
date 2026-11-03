@@ -20,7 +20,7 @@ import {logoEl} from './title.js';
 import {icon,mk,setIcons,setTheme,tape} from './felt.js';
 const Q=new URLSearchParams(location.search),SHOT=Q.has('shot'),NO=SHOT||Q.has('notitle');
 const coarse=matchMedia('(pointer:coarse)').matches;
-const LOOK_KEY='wl-look',HELP_KEY='wl-help-seen';
+const LOOK_KEY='wl-look2',HELP_KEY='wl-help-seen';
 const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
 const css=`
 #wlFront{position:fixed;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:space-between;box-sizing:border-box;
@@ -73,6 +73,7 @@ const css=`
 #wlWard .opts button{position:relative;font-size:.98rem;padding:.4rem .85rem;min-height:42px;box-sizing:border-box;white-space:nowrap;--fr:999px;--fd:4px;border-width:3px}
 #wlWard .opts button[aria-pressed="true"]{--fbg:var(--f-apri);--fst:var(--f-stitch-apri)}
 #wlWard .spin{display:flex;gap:.5rem;margin-top:.9rem}#wlWard .spin button{position:relative;flex:1;text-align:center;padding:.45rem;min-height:42px;box-sizing:border-box;font-size:1rem;--fr:999px;--fd:4px}
+#wlWard .wl-felt:not(#wl_a):not(#wl_b)::before{display:none} /* 옷 갈아입기 창은 바느질 점선 없이(단추가 많아 어수선해서) */
 #wlWard .done{position:relative;flex:none;display:block;width:100%;box-sizing:border-box;margin-top:.9rem;text-align:center;font-size:1.15rem;padding:.65rem 1rem;min-height:48px;--fr:999px} /* 휴대폰 아래 시트에서도 '다 골랐어요'는 늘 보이게 */
 /* 게임 중 화면 구석(개미굴 편과 같은 자리·모양 — 2026-11-03): 오른쪽 위 노란 '☰ 메뉴' 하나(누르면 소리·옷 갈아입기·조작법 칩이 아래로), 왼쪽 위 받은 물건(노란 칩 + 아이콘).
    위 할 일 안내가 휴대폰에서 화면 폭을 다 쓰면 그 높이(--qh, ui.setQuest)만큼 아래로 내려간다. 왼쪽 위 시험용 톱니(52px) 아래에서 시작 */
@@ -87,9 +88,9 @@ const css=`
 #wlItems .wl-chip{min-height:36px;padding:.3rem .8rem .3rem .45rem;font-size:.9rem;color:#1e1418}#wlItems .wl-ic{width:24px;height:24px}
 body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
 let ctx=null,VIEW=null,el=null,ward=null,corner=null,menu=null,items=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false;
-const look={outfit:null,hair:null};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
+const look={vest:0,scarf:0};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
 /* 08 zoneLook이 세계 옷을 입힌 뒤 부른다: 플레이어가 고른 옷·머리(있으면). 탈은 그대로 */
-function applyLook(U){if(SHOT||!U)return;if(look.outfit&&U.setOutfit)U.setOutfit(look.outfit);if(look.hair!=null&&U.setHair)U.setHair(look.hair);}
+function applyLook(U){if(SHOT||!U)return;if(U.setVest)U.setVest(look.vest|0);if(U.setScarf)U.setScarf(look.scarf|0);} // 탐험복 조끼·목수건 색(옷·머리는 세계 기본 — 탐험복·지그재그 단발)
 const hasProgress=()=>Object.keys(flags).some(k=>k!=='compass'&&flags[k]);
 function btn(cls,text,on,ic=null){const b=document.createElement('button');b.type='button';b.className=cls+' wl-felt wl-btn';if(ic)b.appendChild(icon(ic));b.append(mk(text));b.addEventListener('click',on);return b;}
 function build(){const root=document.querySelector('.wlg');if(!root||el)return;const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
@@ -147,10 +148,10 @@ function opts(list,cur,pick){const box=document.createElement('div');box.classNa
 function lab(t){const p=document.createElement('p');p.className='lab';p.textContent=t;return p;}
 function renderWard(){const U=ctx.WL.userData;ward.innerHTML='';const P=document.createElement('div');P.className='panel wl-felt';
   const k=document.createElement('p');k.className='k wl-felt apri';k.append(icon('wardrobe'),'옷 갈아입기');const note=document.createElement('p');note.className='note';
-  note.textContent=(coarse?'화면을 끌면':'화면을 끌거나 아래 단추로')+' 원더룹을 돌려 볼 수 있어요. 고른 옷과 머리는 다음에 열어도 그대로예요.';
+  note.textContent=(coarse?'화면을 끌면':'화면을 끌거나 아래 단추로')+' 원더룹을 돌려 볼 수 있어요. 고른 색은 다음에 열어도 그대로예요.';
   const B=document.createElement('div');B.className='body';
-  B.append(k,note,lab('옷'),opts(['평상복','탐험복'],U.outfit?1:0,i=>{look.outfit=i?'explorer':'casual';U.setOutfit(look.outfit);save();sfx('click');}),
-    lab('머리'),opts(U.hairNames||[],U.getHair?U.getHair():0,i=>{look.hair=i;U.setHair(i);save();sfx('click');}));
+  B.append(k,note,lab('조끼 색'),opts(U.vestColors||[],U.vestIdx|0,i=>{look.vest=i;U.setVest(i);save();sfx('click');}),
+    lab('목수건 색'),opts(U.scarfColors||[],U.scarfIdx|0,i=>{look.scarf=i;U.setScarf(i);save();sfx('click');}));
   const faces=U.exprNames||[];
   B.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('blip');}));
   const spin=document.createElement('div');spin.className='spin';spin.append(btn('','↺ 돌리기',()=>{ctx.WL.rotation.y+=Math.PI/4;}),btn('','돌리기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;}));
