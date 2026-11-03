@@ -72,21 +72,22 @@ function voice(v){const dur=LEN[v.id]||estimate(v.text);const sp={end:clock.t+du
   const c=cue({kind:v.kind||'dialogue',id:v.id||null,file:SRC[v.id]||null,text:v.text||'',who:v.who||'',dur:+dur.toFixed(3)});
   return {dur,end:clock.t+dur,cue:c,stop(){SPEAK.delete(sp);if(src)try{src.stop();}catch(e){}if(S.tts)try{speechSynthesis.cancel();}catch(e){}if(clock.t<c.t+dur-1e-3)c.cut=+(clock.t-c.t).toFixed(4);}};} // 다 끝난 뒤 멈추면 끊김 아님
 /* 배경음 (구역마다 하나) */
-let want=null,B=null; // want: 틀어야 할 배경음 {id,gain,fade,cue}, B: 지금 울리는 것 {id,g,src|h}
+let want=null,B=null,nullT=0; // want: 틀어야 할 배경음 {id,gain,fade,cue}, B: 지금 울리는 것 {id,g,src|h}
 function bedCue(w){return cue({kind:'music',id:w.id,file:SRC[w.id]||null,dur:0,loop:true,...(!BUF[w.id]&&SYN[w.id]?{synth:true}:{})});}
 function fadeOut(sec){if(!B)return;const b=B;B=null;const c=ctx,now=c.currentTime;b.g.gain.cancelScheduledValues(now);b.g.gain.setValueAtTime(b.g.gain.value,now);b.g.gain.linearRampToValueAtTime(0,now+sec);
   setTimeout(()=>{try{if(b.src)b.src.stop();if(b.h)b.h.stop();b.g.disconnect();}catch(e){}},sec*1000+100);}
 function bed(id,o={}){if((want&&want.id)===(id||undefined))return;
   if(want)want.cue.dur=+(clock.t-want.cue.t).toFixed(3);
   want=id?{id,gain:o.gain??1,fade:o.fade??1.5}:null;if(want){want.cue=bedCue(want);if(SRC[id]&&!BUF[id])load(id);}
-  if(B)fadeOut(o.fade??1.2);}
+  nullT=0;} // 바로 끄지 않는다 — 같은 곡을 곧 다시 틀면(처음부터 다시 하기로 구역을 다시 만들 때) 끊김 없이 이어지게(2026-11-03). 끄는 건 tickBed가
 function tickBed(dt){
   if(want){if(!cues.includes(want.cue))want.cue=bedCue(want); // 영상 캡처가 녹화 시작 때 기록을 비우면 그 시점부터 다시
     want.cue.dur=+(clock.t-want.cue.t).toFixed(3);}
   if(!awake())return;const c=ctx;
   {let talk=false;SPEAK.forEach(sp=>{if(clock.t<sp.end)talk=true;else SPEAK.delete(sp);}); // 목소리가 나오는 동안 배경음 40%
    const g=(talk?.4:1)*.5;if(Math.abs(musicBus.gain.value-g)>.002&&musicBus.duckTo!==g){musicBus.duckTo=g;musicBus.gain.setTargetAtTime(g,c.currentTime,talk?.12:.25);}}
-  if(B&&(!want||B.id!==want.id))fadeOut(1.2);
+  if(!want)nullT+=dt;
+  if(B&&((!want&&nullT>.8)||(want&&B.id!==want.id)))fadeOut(1.2); // 곡이 없어진 뒤 0.8초 기다렸다가(구역을 다시 만드는 사이)
   if(want&&!B){const b=BUF[want.id],y=SYN[want.id];if(!b&&!(y&&y.bed))return;
     const g=c.createGain(),now=c.currentTime;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(want.gain,now+want.fade);g.connect(musicBus);B={id:want.id,g};
     if(b){const s=c.createBufferSource();s.buffer=b;s.loop=true;s.connect(g);s.start();B.src=s;}else B.h=y.bed(c,g);}

@@ -36,8 +36,9 @@ const css=`
 #wlGet img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 0 .7px #7a5236) drop-shadow(0 0 .7px #7a5236)}#wlGet img:not([src]){display:none}
 #wlGet .t{margin:0;font-size:1.2rem;font-family:"Jua",sans-serif}
 #wlGet .s{margin:.2rem 0 0;font-size:.9rem;color:var(--ink-soft)}
-#wlToast{--fd:3px;font-family:"Jua","Gowun Dodum",sans-serif;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translate(-50%,-10px);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:22;
-  background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:.45rem .9rem;font-size:.9rem;margin:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap}
+/* 안내 문구: 개미굴 #toast처럼 어두운 반투명 알약 + 크림색 Gowun Dodum(2026-11-03 — 펠트 테두리는 너무 튀었다) */
+#wlToast{font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translate(-50%,-10px);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:22;
+  background:rgba(46,28,44,.72);color:#fff4e4;border-radius:999px;padding:.5rem 1.15rem;font-size:1rem;margin:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap;box-shadow:none}
 #wlToast.on{opacity:1;transform:translate(-50%,0)}
 #wlNotice .s{margin:0;color:var(--ink-soft);line-height:1.55;font-size:.95rem}
 #wlNotice .h{margin:.5rem 0 0;font-size:.8rem;color:var(--ink-soft)}
@@ -51,7 +52,7 @@ const css=`
 #wlQuest,#wlPrompt{position:fixed;left:50%;transform:translateX(-50%);background:var(--panel);color:var(--ink);box-shadow:0 4px 14px rgba(30,14,36,.22);border-radius:999px;padding:.4rem 1rem;font-size:1rem;font-family:"Jua","Gowun Dodum",sans-serif;--fd:3px;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:15;white-space:nowrap}
 #wlQuest .wl-arrow{display:inline-block;margin-right:.5rem;color:#ffd23f;transition:transform .15s linear} /* 가야 할 쪽 화살표(game/goal) */
-#wlQuest{top:calc(env(safe-area-inset-top,0px) + 14px);margin:0;padding:.45rem .95rem;font-size:.98rem;background:rgba(46,28,44,.66);color:#fff4e4;box-shadow:none;border-radius:999px;line-height:1.35}
+#wlQuest{top:calc(env(safe-area-inset-top,0px) + 14px);margin:0;padding:.45rem .95rem;font-size:.98rem;font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;background:rgba(46,28,44,.66);color:#fff4e4;box-shadow:none;border-radius:999px;line-height:1.35}
 @media (max-width:700px){#wlQuest{left:calc(env(safe-area-inset-left,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 14px);transform:none;white-space:normal;text-align:center;box-sizing:border-box}body.wl-dev #wlQuest{left:calc(env(safe-area-inset-left,0px) + 76px)}} /* 휴대폰: 왼쪽 끝부터 오른쪽 끝까지(개미굴처럼 줄바꿈), ?debug 면 톱니 옆부터 */
 #wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px);font-size:1.2rem;padding:.5rem 1.25rem .55rem}
 #wlPrompt.wl-felt:not(#wl_a):not(#wl_b)::before{display:none} /* 'E 말 걸기' 안내: 점선 없이 조금 크게 */
@@ -116,7 +117,7 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"><span class="who wl-tape mint wl-mk"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" class="wl-felt" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
-<div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint wl-felt" role="status" aria-live="polite"></p>
+<div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
 <div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><i class="tw" style="--x:8%;--y:6%;--d:0s"></i><i class="tw" style="--x:93%;--y:14%;--d:.7s"></i><i class="tw" style="--x:5%;--y:62%;--d:1.3s"></i><i class="tw" style="--x:95%;--y:78%;--d:.35s"></i><i class="tw" style="--x:50%;--y:2%;--d:1.8s"></i><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>

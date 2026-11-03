@@ -406,7 +406,6 @@ G.dialog.npc({name:'버섯 요정',root:shroom.root,bubbleY:1.05,onDone:()=>{if(
   {when:()=>hasUmb(),lines:['우산 받았구나! 바위 위에서 뛰어내려 봐. 깃털처럼 내려올걸?']}]});
 const boatNpc=G.dialog.npc({name:'사공 요정',root:boatman.root,bubbleY:1.3,talkR:.9,onDone:()=>afterBoatman(),variants:[
   {when:()=>st.phase==='arrive',lines:['어이쿠, 손님이구나! 첫별 축제 가는 길이지?','그런데 큰일이야. 아침 바람에 클로버 잎들이 뒤틀려서 물길을 꽉 막아 버렸어.','물길이 막히면 이슬방울이 못 굴러와. 이슬이 없으니 이슬배가 못 떠나고 있단다!','저기 강가에 뒤틀린 클로버 잎 세 개 보이지? 손으로 돌려서 바로 놓아 줄 수 있겠니?']},
-  {when:()=>st.phase==='collect'||st.phase==='rolling',lines:['작은 이슬방울 다섯 개! 강가에서 반짝이는 걸 찾아 주렴. 가까이 가면 저절로 주워져.']},
   {when:()=>st.phase==='clovers',lines:['클로버는 이쪽 강가를 따라 셋 있어. 살랑살랑 반짝이는 잎이야. 가까이 가서 돌려 줘!']},
   {when:()=>st.phase==='boat'&&!nearBoat(),lines:['이슬배가 찰랑찰랑 찼어! 자, 타렴. 내가 노를 저어 줄게.']}, // 배 앞에서는 사공 '말 걸기' 대신 '이슬배 타기'만(헷갈리지 않게 — 2026-11-03)
   {when:()=>st.phase==='done',lines:['우산은 뛰어내릴 때 저절로 펼쳐져. 다음은 민들레 공중정원이야!']}]});
@@ -426,21 +425,6 @@ function openChannel(){st.phase='rolling';G.dialog.say('사공 요정','물길�
   // 물길이 열리면 카메라가 원더룹 대신 굴러오는 이슬방울을 따라 비추고, 나뭇잎배에 퐁 들어간 뒤 0.8초 있다가 원더룹 쪽으로 돌아온다(2026-11-02)
   dropCam=-1;G.view.hold(()=>{if(dropCam===0)return null;const p=bigDrop.visible?bigDrop.position:boat.position;const asp=G.view.camera.aspect,K=asp<1.25?Math.min(1.6,(1.25/asp)**.6):1,fx=p.x+5.2*K;return {at:[p.x,.35,p.z],from:[fx,2.4,cz(fx)+.6]};});} // 물길 위(소품이 없는 곳)에서 굴러오는 쪽을 마주 보며
 let dropCam=0; // -1 굴러오는 중, 양수 = 배에 들어간 뒤 남은 초
-/* 돌발(2026-11-03 — 개미굴 수레 사건처럼): 굴러온 큰 이슬방울이 선착장 기둥에 톡 부딪혀 작은 방울 다섯으로 흩어진다 → 강가에서 모으기(0/5).
-   가까이(0.9m) 가면 저절로 주워져 배로 포물선을 그리며 날아간다. 다섯을 모으면 배가 찰랑 차서 탈 수 있다. 실패·시간 제한 없음 */
-const DEWS=[[1.4,.8],[3,2.2],[5.6,1.1],[7.6,1.9],[9,.3]].map(([x,z],i)=>{const sp=openSpot(x,z,{d0:0,d1:.9,r:.3,prefer:[0,1]})||[x,z];const b=dewBall(.14);b.visible=false;root.add(b);keep.push(b);
-  return {b,x:sp[0],z:sp[1],st:'none',t:0,i};});
-let dewGot=0;
-function scatterDew(){st.phase='collect';dewGot=0;DEWS.forEach(d=>{d.st='fly';d.t=0;d.b.visible=true;d.b.position.set(BOAT0[0],.4,BOAT0[2]);});q('흩어진 이슬방울을 모아요 (0/5)');
-  G.dialog.say('사공 요정','어이쿠! 기둥에 톡 부딪혀서 작은 방울로 흩어졌네… 다섯 개만 모아 주겠니?',3.4).then(ok=>ok&&st.phase==='collect'&&dewGot<5&&G.ui.notice({kicker:'미션',title:'흩어진 이슬방울을 모아 주세요',text:'강가에 흩어진 작은 이슬방울 다섯 개. 가까이 가면 저절로 주워져 이슬배로 날아가요.'}));}
-function tickDew(dt,t){if(st.phase!=='collect'&&!DEWS.some(d=>d.st==='fly'||d.st==='home'))return;const W=WL();
-  DEWS.forEach(d=>{const b=d.b;if(d.st==='fly'){d.t=Math.min(1,d.t+dt/.8);const u=d.t;b.position.set(BOAT0[0]+(d.x-BOAT0[0])*u,.14+.4*(1-u)+Math.sin(u*PI)*1.6,BOAT0[2]+(d.z-BOAT0[2])*u);if(u>=1)d.st='rest';}
-    else if(d.st==='rest'){b.position.set(d.x,.16+Math.abs(Math.sin(t*2.6+d.i))*.09,d.z);b.rotation.y=t;
-      if(W&&!G.core.blocking('talk')&&Math.hypot(W.position.x-d.x,W.position.z-d.z)<.9){d.st='home';d.t=0;dewGot++;G.sound.sfx('pickup');q(dewGot<5?`흩어진 이슬방울을 모아요 (${dewGot}/5)`:'이슬방울을 다 모았어요!');}}
-    else if(d.st==='home'){d.t=Math.min(1,d.t+dt/.7);const u=d.t;b.position.set(d.x+(boat.position.x-d.x)*u,.16+Math.sin(u*PI)*1.4,d.z+(boat.position.z-d.z)*u);b.scale.setScalar(1-u*.6);
-      if(u>=1){d.st='done';b.visible=false;if(DEWS.every(q=>q.st==='done'))dewDone();}}});}
-function dewDone(){boatReady=true;st.phase='boat';boatDew.visible=true;dewPop=0;splash.burst(24,{x:boat.position.x,y:.35,z:boat.position.z});splashT=1.2;G.sound.sfx('success');q('이슬배에 타요');
-  G.dialog.say('사공 요정','다 모였다! 이슬배가 찰랑찰랑 찼어. 자, 타렴!',2.8);}
 /* 이슬배 타기: 배가 찼을 때만. 선착장 끝(배 옆) 가까이 오면 '이슬배 타기' 단추 — 사공보다 먼저(위 사공 대화 nearBoat). 배 위로 클로버처럼 작은 반짝이가 올라온다(update) */
 const BOARD=[4.55,-4.7],nearBoat=()=>{const W=WL();return !!W&&Math.hypot(W.position.x-BOARD[0],W.position.z-BOARD[1])<2.4;};
 G.interact.add({root:boat,at:BOARD,face:[4.55,-5.75],label:'이슬배 타기',action:'서기',dur:.2,once:true,near:2.6,when:()=>st.phase==='boat',onDone:()=>startRide()});
@@ -568,8 +552,8 @@ function update(dt,t){
   // 큰 이슬방울이 물길을 따라 굴러와 이슬배에 퐁 들어감
   if(drop){drop.t+=dt;const T2=3.2,u=Math.min(1,drop.t/T2),x=-14+(BOAT0[0]+14)*u,z=cz(x)-.3+(BOAT0[2]-(cz(BOAT0[0])-.3))*u*u;
     bigDrop.position.set(x,.5+Math.abs(Math.sin(u*PI*3))*.25*(1-u),z);bigDrop.rotation.z=-x*1.8;
-    if(u>=1){dropCam=.8;bigDrop.visible=false;drop=null;splash.burst(36,{x:BOAT0[0],y:.35,z:BOAT0[2]});splashT=1.4;G.sound.sfx('pop');scatterDew();}}
-  tickDew(dt,t);
+    if(u>=1){dropCam=.8;bigDrop.visible=false;drop=null;boatReady=true;st.phase='boat';boatDew.visible=true;dewPop=0;splash.burst(36,{x:BOAT0[0],y:.35,z:BOAT0[2]});splashT=1.4;G.sound.sfx('pop');q('이슬배를 타고 강을 건너요');
+      G.ui.notice({kicker:'알림',title:'이슬배가 준비됐어요!',text:'이슬방울이 배 안으로 쏙 들어갔어요. 이제 이슬배를 타고 강을 건너요.'});}} // 아무 키(Enter)·화면 아무 곳 누르기로 닫힘(ui.notice)
   // 우산을 펴고 활공하기 시작하면 안내 문구와 아이템 카드를 치운다(할 일을 해냈으니까)
   if(hasUmb()&&!st.glided){const W=WL();if(W&&W.userData.vert.air&&W.userData.vert.vy<-.3&&W.userData.vert.glide>.05){st.glided=true;q('');G.ui.closeItemCard();}} // 우산이 펴지기 시작할 때(배에서 둑으로 내려설 때의 작은 낙하는 빼고) // 우산이 펴지기 직전(떨어지기 시작할 때) 치워 펴지는 순간에는 카드가 없다
   // 스테이지 완료: 우산을 펼쳐(활공) 처음 땅에 내려앉으면 한 번 — 짧은 안내, 저장(flags)
@@ -607,14 +591,8 @@ function update(dt,t){
 /* 목표 안내(game/goal — 빛 기둥·이름표·발밑 동그라미 길·할 일 화살표, 2026-11-03): 지금 할 일의 자리. 연출(물길·이슬배 타기·우산 받기) 동안은 숨김 */
 let goalKey='';
 function goalTick(){const W=WL();let g=null;
-  if(st.phase==='arrive'&&talkedN<2&&W){let b=null,bd=1e9;const cand=[...villagers.filter(v=>v.d.side==='S'&&!v.talked).map(v=>({r:v.v.root,name:v.d.name,id:'v'+v.i})),...(shroomTalked?[]:[{r:shroom.root,name:'버섯 요정',id:'shroom'}])];
-    cand.forEach(c=>{const d=Math.hypot(W.position.x-c.r.position.x,W.position.z-c.r.position.z);if(d<bd){bd=d;b=c;}});
-    if(b)g={key:b.id,at:()=>[b.r.position.x,b.r.position.z],label:b.name,h:1.9};}
-  else if(st.phase==='arrive')g={key:'boatman',at:()=>[bmG.position.x,bmG.position.z],label:'사공 요정',h:2.2};
-  else if(st.phase==='clovers'&&W){let b=null,bd=1e9;CLOVERS.forEach(c=>{if(c.done||c.u>=0)return;const d=Math.hypot(W.position.x-c.x,W.position.z-c.g.position.z);if(d<bd){bd=d;b=c;}});
-    if(b)g={key:'clover'+b.x,at:[b.x,b.g.position.z],y:0,label:'클로버 잎',h:2.2};}
-  else if(st.phase==='collect'&&W){let b=null,bd=1e9;DEWS.forEach(d=>{if(d.st!=='rest')return;const e=Math.hypot(W.position.x-d.x,W.position.z-d.z);if(e<bd){bd=e;b=d;}});
-    if(b)g={key:'dew'+b.i,at:[b.x,b.z],label:'이슬방울',h:1.7};}
+  // 빛 기둥·이름표는 미션 목적지에만(2026-11-03): 마을 주민과 이야기하기·클로버(살랑이는 반짝임이 대신)에는 넣지 않는다
+  if(st.phase==='arrive'&&talkedN>=2)g={key:'boatman',at:()=>[bmG.position.x,bmG.position.z],label:'사공 요정',h:2.2};
   else if(st.phase==='boat')g={key:'boat',at:BOARD,y:DOCK.top,label:'이슬배 타기',h:2.4};
   else if(st.phase==='done'&&!G.state.flags[CLEAR]&&!st.glided){const r=ROCKS[1];g={key:'rock',at:[r.c[0],r.c[1]],y:r.top,label:'높은 바위',h:2.4};}
   const k=g?g.key:'';if(k!==goalKey){goalKey=k;G.goal.set(g);}}
@@ -626,7 +604,7 @@ return {...FAIRY_WORLD,
   // 활공은 구역 정보 glide 없이 아이템으로(민들레 솜털 우산을 가졌을 때 — 07, game/items canGlide)
   spawn:hasUmb()?{x:-6.6,z:-8.6,ry:PI}:{x:.2,z:8.6,ry:PI}, // 우산을 이미 받았으면 건너편(이슬배에서 내린 자리)에서 // 길 입구 조금 안쪽 — 숲 방(camRoom) 가장자리면 휴대폰 카메라가 원더룹에 바짝 붙는다
   titleView:{from:[-1.5,2.6,-5.1],r:9,y:.7,speed:.05,a0:.15},
-  storyView:[{from:[2,17,19],at:[0,0,-2]},{from:[-6,7.5,11],at:[-1,1,2]},{from:[9,3.2,3],at:[4.6,.6,-3.6]}], // 이야기 소개 카메라: 하늘 → 마을 → 선착장(game/front) // 게임 첫 화면 뒤 배경: 선착장 둘레를 천천히 도는 카메라(game/front)
+  storyView:[{from:[0,4.3,13.5],at:[1.5,.6,-4.5]},{from:[-9,3,7],at:[-1,.8,0]},{from:[-2,2.8,-4.5],at:[5,.5,-2.5]}], // 이야기 소개 카메라: 마을 전체 → 마을 길 → 선착장(game/front) — 잎 지붕(5~6.5m) 아래에서(위에서 내려다보면 잎만 보였다) // 게임 첫 화면 뒤 배경: 선착장 둘레를 천천히 도는 카메라(game/front)
   camRoom:{c:[-.5,0],r:MOB?15:19.5}, // 따라가기 카메라가 머무는 방 — 휴대폰은 둘레 벽(합쳐 그린 큰 잎, 흐려지지 않음, 14m부터) 언저리까지(더 줄이면 세로 화면 카메라가 원더룹에 바짝 붙는다), 컴퓨터는 흐려 보기가 있어 벽 바깥까지
   platforms:[{r:[DOCK.x0,DOCK.x1,DOCK.z0,DOCK.z1],top:DOCK.top},...ROCKS],
   walkLinks:[[-6.8,zN(-6.8)-.35]], // 이슬배에서 내리는 자리(끼임 자동 시험이 건너편 마을도 걸어서 닿는 곳으로 본다)

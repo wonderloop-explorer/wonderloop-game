@@ -185,24 +185,34 @@ function ladybug(){const root=new THREE.Group();root.name='fairy:ladybug';const 
   [-1,1].forEach(s=>{const e=mesh(new THREE.TorusGeometry(.012,.004,4,8,PI),wh,head,s*.025,.02,.05);e.rotation.z=PI;});
   root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
   return {root,tick(dt,t){body.scale.y=1+Math.sin(t*1.6)*.03;}};}
-/* 아기 소금쟁이(숨겨진 비밀, 2026-11-03): 물 위에 서는 가늘고 긴 다리 여섯, 길쭉한 갈색 몸, 큰 점 눈·볼터치. 길이 약 0.5m(원더룹보다 훨씬 작다).
-   strider() → {root, tick(dt,t)} — 앞다리로 물을 톡톡(인사), 몸이 살짝 미끄러졌다 돌아온다. 발 끝은 y=0(물 면) */
-function strider(){const root=new THREE.Group();root.name='fairy:strider';const body=new THREE.Group();root.add(body);body.position.y=.13;
-  const bm=mat('#9a7350'),dk=mat('#6e4e34'),ink=mat(INK,'plain'),pink=mat(CHEEK,'plain'),wh=mat('#fffaf0','plain');
-  const torso=mesh(new THREE.SphereGeometry(.07,12,9),bm,body,0,0,-.05);torso.scale.set(.85,.7,2.1);
-  const head=mesh(new THREE.SphereGeometry(.062,14,10),bm,body,0,.02,.11);
-  [-1,1].forEach(sx=>{const e=mesh(new THREE.SphereGeometry(.026,10,8),wh,head,sx*.034,.026,.03);mesh(new THREE.SphereGeometry(.016,8,6),ink,e,0,.002,.015);
-    const c=mesh(new THREE.CircleGeometry(.013,10),pink,head,sx*.045,-.012,.042);c.lookAt(c.position.clone().multiplyScalar(3).add(head.getWorldPosition(new THREE.Vector3())));});
-  [-1,1].forEach(sx=>{const a=mesh(new THREE.CylinderGeometry(.004,.004,.09,5),dk,head,sx*.018,.07,.0);a.rotation.z=-sx*.35;a.rotation.x=-.4;});
-  const legs=[];const L=[[.08,.2,.5],[0,.32,.05],[-.11,.34,-.45]]; // [몸 z, 길이, 펼침 각]
-  L.forEach(([z,len,ay],i)=>[-1,1].forEach(sx=>{const piv=new THREE.Group();piv.position.set(sx*.04,0,z);body.add(piv);
-    const up=mesh(new THREE.CylinderGeometry(.006,.005,len*.45,5).translate(0,len*.225,0),dk,piv);up.rotation.z=-sx*1.0;
-    const knee=new THREE.Group();knee.position.set(sx*Math.sin(1.0)*len*.45,Math.cos(1.0)*len*.45,0);piv.add(knee);
-    const lo=mesh(new THREE.CylinderGeometry(.005,.003,len*.75,5).translate(0,-len*.375,0),dk,knee);lo.rotation.z=sx*1.12;
-    const foot=mesh(new THREE.SphereGeometry(.012,6,4),dk,knee,sx*Math.sin(1.12)*len*.75,-Math.cos(1.12)*len*.75,0);foot.scale.y=.4;
-    piv.rotation.y=sx*ay;legs.push({piv,sx,i});}));
+/* 아기 소금쟁이(숨겨진 비밀, 2026-11-03 — 받은 그림 그대로: 연하늘 달걀 몸·점 눈·볼터치·웃는 입, 청록 마디 다리 여섯·끝에 동그란 발, 발밑 물결).
+   strider() → {root, tick(dt,t)} — 앞다리 하나를 들어 톡톡(인사), 몸이 살짝 위아래로, 발밑 물결이 퍼진다. 몸 폭 약 0.34m, 다리 끝까지 약 0.8m. 발 끝 y=0(물 면), 얼굴 앞 +z */
+function strider(){const root=new THREE.Group();root.name='fairy:strider';const body=new THREE.Group();root.add(body);body.position.y=.27;
+  const bm=mat('#cfe3ea'),lg=mat('#8fbab6'),ink=mat('#4a2a24','plain'),pink=mat(CHEEK,'plain');
+  const r=.17;const torso=mesh(new THREE.SphereGeometry(r,18,14),bm,body);torso.scale.set(1.05,.86,1);
+  const onF=(x,y)=>{const z=Math.sqrt(Math.max(0,r*r-x*x-y*y));return new THREE.Vector3(x,y*.86,z);};
+  const stick=(m,p,out=.004)=>{m.position.copy(p).add(p.clone().normalize().multiplyScalar(out));m.lookAt(m.position.clone().multiplyScalar(2));torso.add(m);m.castShadow=false;return m;};
+  const tf=new THREE.Group();torso.add(tf);tf.scale.set(1/1.05,1/.86,1); // 얼굴 조각은 몸 늘임을 되돌려 동그랗게
+  const st2=(m,p,out)=>{const q=onF(p[0],p[1]);m.position.set(q.x*1.05,q.y,q.z).add(new THREE.Vector3(q.x,q.y,q.z).normalize().multiplyScalar(out));m.lookAt(m.position.clone().multiplyScalar(2));tf.add(m);m.castShadow=false;return m;};
+  [-1,1].forEach(s=>{const e=st2(new THREE.Mesh(new THREE.SphereGeometry(.024,10,8),ink),[s*.062,.03],-.006);e.scale.z=.5;});
+  [-1,1].forEach(s=>st2(new THREE.Mesh(new THREE.CircleGeometry(.03,14),pink),[s*.1,-.02],.006));
+  {const m=st2(new THREE.Mesh(new THREE.TorusGeometry(.03,.007,6,12,PI),ink),[0,-.03],.002);m.rotateZ(PI);}
+  const legs=[];const L=[[.07,.55],[0,1.57],[-.07,2.55]]; // [몸 z, 옆으로 펼치는 각(앞→뒤)]
+  L.forEach(([z,ay],i)=>[-1,1].forEach(sx=>{const piv=new THREE.Group();piv.position.set(sx*.13,-.02,z);body.add(piv);
+    piv.rotation.y=sx>0?-(Math.PI/2-ay):(Math.PI/2-ay); // 바깥쪽으로 펼침
+    const up=mesh(new THREE.CapsuleGeometry(.014,.17,3,6).translate(0,.085,0),lg,piv);up.rotation.z=-sx*.95;
+    const knee=new THREE.Group();knee.position.set(sx*Math.sin(.95)*.17,Math.cos(.95)*.17,0);piv.add(knee);
+    const LO=.37,lo=mesh(new THREE.CapsuleGeometry(.012,LO,3,6).translate(0,-LO/2,0),lg,knee);lo.rotation.z=sx*.42; // 무릎(약 0.35m)에서 물 면까지
+    const foot=mesh(new THREE.SphereGeometry(.024,8,6),lg,knee,sx*Math.sin(.42)*LO,-Math.cos(.42)*LO-.01,0);
+    legs.push({piv,knee,up,sx,i});}));
+  // 발밑 물결: 얇은 고리 여섯(흰색, 반투명) — 천천히 퍼졌다 사라짐
+  const ringMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.6,depthWrite:false});const rings=[];
+  root.updateMatrixWorld(true);legs.forEach((l,j)=>{const p=new THREE.Vector3();l.knee.children[1].getWorldPosition(p);root.worldToLocal(p);
+    const g=new THREE.Mesh(new THREE.RingGeometry(.03,.04,18).rotateX(-PI/2),ringMat.clone());g.position.set(p.x,.01,p.z);g.userData.ph=j*.37;root.add(g);rings.push(g);});
   root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
-  return {root,tick(dt,t){const k=Math.sin(t*5);legs.forEach(l=>{if(l.i===0)l.piv.rotation.x=-Math.max(0,k)*.35*(l.sx>0?1:.4);});body.position.y=.13+Math.sin(t*2.4)*.006;
-    root.position.x+=Math.sin(t*.9)*.0015;body.rotation.y=Math.sin(t*.7)*.12;}};}
+  const wave=legs.find(l=>l.i===0&&l.sx<0); // 왼쪽 앞다리로 톡톡 인사
+  return {root,tick(dt,t){body.position.y=.27+Math.sin(t*2.4)*.008;
+    if(wave){const k=Math.max(0,Math.sin(t*3));wave.up.rotation.z=wave.sx*-.95-wave.sx*.6*k;wave.knee.rotation.z=-wave.sx*.4*k;}
+    rings.forEach(g=>{const u=((t*.6+g.userData.ph)%1);g.scale.setScalar(1+u*2.2);g.material.opacity=.55*(1-u);});}};}
 function clearFairyCache(){for(const k in vmats){vmats[k].dispose();delete vmats[k];}if(vTex){vTex.dispose();vTex=null;}for(const k in mats){mats[k].dispose();delete mats[k];}if(capTex){capTex.dispose();capTex=null;}if(gillTex){gillTex.dispose();gillTex=null;}}
 export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,ladybug,leafBoat,strider,villager};

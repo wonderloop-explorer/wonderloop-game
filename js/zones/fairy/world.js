@@ -55,7 +55,7 @@ export const WATER=[{c:'#8fdcd3',e:'#4fb5b2',ei:.14},{c:'#8cbcb8',e:'#f0a088',ei
 export const FAIRY_CARDS={
   boatman:{name:'사공 요정',intro:'선착장에서 이슬배를 모는 뱃사공. 물길이라면 눈 감고도 알아요.',likes:'바람 없는 아침의 잔잔한 물길',quote:'이슬배는 천천히 가야 제맛이란다!',img:card('boatman'),bg:'#d8e9f6'},
   mushroom:{name:'버섯 요정',intro:'축제 소식을 제일 먼저 알려 주는 마을 안내 요정.',likes:'비 온 다음 날의 축축한 흙',quote:'보이는 건 모자뿐이야. 진짜 내 몸은 땅속에 길게길게 뻗어 있거든!',img:card('mushroom'),bg:'#fbe0c8'},
-  strider:{name:'아기 소금쟁이',intro:'물 위 걷기를 연습 중인 수줍은 아기. 아직 가끔 미끄러져요.',likes:'연잎 그늘 아래 조용한 물',quote:'톡톡톡! 물결로 하는 인사, 너도 할 줄 알지?',img:null,bg:'#fbf0bf',secret:true,portrait:{side:.5,lift:.9}}, // 숨겨진 비밀 장면을 마친 뒤 meet('strider', 그 모델)
+  strider:{name:'아기 소금쟁이',intro:'물 위 걷기를 연습 중인 수줍은 아기. 아직 가끔 미끄러져요.',likes:'연잎 그늘 아래 조용한 물',quote:'톡톡톡! 물결로 하는 인사, 너도 할 줄 알지?',img:card('strider'),bg:'#dcecf0',secret:true}, // 숨겨진 비밀 장면을 마친 뒤 meet('strider', 그 모델)
   ladybug:{name:'낮잠 무당벌레',intro:'축제 전에 클로버 그늘에서 한숨 자 두는 중. 깨면 바로 날아갈 수 있어요.',likes:'햇볕 든 클로버 잎 뒤',quote:'음냐… 첫별 뜨면 깨워 줘…',img:null,bg:'#fbd9d2',secret:true,portrait:{side:.5,lift:.8}},
 };
 FAIRY_WORLD.front=FAIRY_FRONT; // 게임 첫 화면(game/front)
