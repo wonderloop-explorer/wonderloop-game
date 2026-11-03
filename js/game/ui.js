@@ -13,7 +13,7 @@ const HINT_LAYER=5;
 const css=`
 .wlg{--panel:rgba(255,246,234,.95);--bubble:#fffaf2;--ink:#3e2834;--ink-soft:#75565e;--accent:#3f9fa0;--accent-ink:#fffaf2;--tag:#f2b63c;--tag-ink:#3e2834;--chip:rgba(46,28,44,.66);--chip-ink:#fff4e4;
   font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;color:var(--ink)}
-@media (prefers-color-scheme: dark){.wlg{--panel:rgba(44,30,42,.95);--ink:#fbe9d8;--ink-soft:#d9bfb3;--accent:#5cc4b9;--accent-ink:#1f1418;--chip:rgba(20,12,20,.7);--chip-ink:#fbe9d8;--bubble:#2e2030;--tag:#f2b63c;--tag-ink:#2a1a22}}
+/* 기기 어두운 화면 설정과 상관없이 늘 크림색 바탕 + 진갈색 글자(2026-11-03 — 아이폰 다크 모드에서 대화창이 어두운 보라로 나왔다. 아이템 카드·소개 카드와 같은 색) */
 .wlg button{all:unset;box-sizing:border-box;cursor:pointer;font-family:inherit}
 #wlDlg{cursor:pointer;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 92px);width:min(30rem,calc(100vw - 32px));box-sizing:border-box;
   background:var(--bubble);color:var(--ink);border-radius:20px;padding:1.3rem 1.2rem .9rem;box-shadow:0 14px 40px rgba(30,14,36,.4);display:none;z-index:20}
@@ -46,12 +46,12 @@ const css=`
 #wlResult p.sec{margin:-.4rem 0 1.1rem;color:#c08a20;font-weight:700}#wlResult p.sec:empty{display:none}
 #wlResult .b1{display:block;width:100%;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.05rem;padding:.8rem 1.2rem}
 #wlResult .b2{display:block;width:100%;text-align:center;margin-top:.6rem;border:2px solid var(--accent);border-radius:14px;font-size:1rem;padding:.7rem 1.2rem}
-#wlQuest,#wlPrompt{position:fixed;left:50%;transform:translateX(-50%);background:rgba(46,28,44,.66);color:#fff4e4;border-radius:999px;padding:.45rem .95rem;font-size:.95rem;
+#wlQuest,#wlPrompt{position:fixed;left:50%;transform:translateX(-50%);background:var(--panel);color:var(--ink);box-shadow:0 4px 14px rgba(30,14,36,.22);border-radius:999px;padding:.45rem .95rem;font-size:.95rem;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:15;white-space:nowrap}
 #wlQuest{top:calc(env(safe-area-inset-top,0px) + 92px)}
 #wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px)}
-#wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);width:66px;height:66px;border-radius:50%;
-  background:var(--tag);color:var(--tag-ink);font-size:.9rem;display:none;place-items:center;z-index:16;touch-action:none}
+#wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .8rem;
+  background:var(--tag);color:var(--tag-ink);font-size:.9rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none} /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
 #wlSecret{position:fixed;inset:0;display:none;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.25);z-index:31}
 #wlSecret .card{background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:4px solid #e3ad35;border-radius:22px;padding:1.4rem 1.5rem 1.2rem;width:min(21rem,100%);box-sizing:border-box;text-align:center;
   box-shadow:inset 0 0 0 3px #fff6d6,0 0 34px rgba(255,196,70,.65),0 18px 50px rgba(30,14,36,.5)}

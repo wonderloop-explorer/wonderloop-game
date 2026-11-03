@@ -13,14 +13,16 @@ export const icon=id=>`assets/icons/fairy/${id}.png?v=${window.WL_V||''}`;
 const card=id=>`assets/cards/fairy/${id}.webp?v=${window.WL_V||''}`;
 /* 시간별 하늘·빛 (game/sky.js keys — 08 시간 단추 "시간: 낮 / 해 질 녘 / 밤"과 엔진 시간 흐름이 같은 값을 쓴다)
    낮: 따뜻한 오후 파스텔(잎 사이 햇빛 얼룩은 구역이 그린다) · 해 질 녘: 복숭아·분홍 지평선 → 연보라 위, 해가 낮게 깔려 긴 그림자, 버섯등이 하나둘
-   밤(첫별): 깊은 남색·보라 하늘에 별. 어둡기만 하지 않게 하늘빛을 푸른 보라로 남기고 보조광을 올려 얼굴이 보이게 — 따뜻한 빛은 구역의 버섯등·반딧불·꽃이 맡는다.
+   밤(첫별): 깊은 남색 하늘에 별과 옅은 은하수(milky). 땅·풀·잎은 푸른 초록으로 차분하게 — 하늘빛을 푸른 청록으로, 달빛(sun)은 옆에서 낮게 비춰 가장자리에만 옅은 푸른 빛.
+     따뜻한 빛은 구역의 버섯등 아래 빛 웅덩이·반딧불·꽃이 맡는다(장면 전체 따뜻한 주변광은 줄임 — 초록이 올리브빛으로 탁해졌다, 2026-11-03).
+   낮(2026-11-03): 해를 조금 줄여(0.86 → 0.8) 흰 소품·디딤돌이 순백으로 날아가지 않게.
    안개는 가까이(먼 들판·지평선을 흐리게 — 야외의 아늑한 방). 물 색도 구역이 같은 시간 값으로 바꾼다(WATER). */
 export const FAIRY_SKY=[
-  {top:'#a9d3ea',horizon:'#fbe6c8',hemi:'#fff0d6',ground:'#c9a874',hemiI:.5,sun:'#ffdcaa',sunI:.86,sunDir:[6,-11,5],fill:.24,fog:'#f4e6cc',fogNear:13,fogFar:58,stars:0},
+  {top:'#a9d3ea',horizon:'#fbe6c8',hemi:'#fff0d6',ground:'#c9a874',hemiI:.5,sun:'#ffd9a8',sunI:.8,sunDir:[6,-11,5],fill:.24,fog:'#f4e6cc',fogNear:13,fogFar:58,stars:0},
   {top:'#a68ed2',horizon:'#ffbf9c',hemi:'#f9c9b4',ground:'#a8807a',hemiI:.5,sun:'#ffa070',sunI:.62,sunDir:[11,-3.2,3],fill:.22,fog:'#f2b6a6',fogNear:12,fogFar:52,stars:0},
-  {top:'#1b1d58',horizon:'#53468c',hemi:'#8a8fe0',ground:'#3c3260',hemiI:.2,sun:'#b9c3ff',sunI:.12,sunDir:[-4,-11,2],fill:.26,fog:'#3b3672',fogNear:10,fogFar:46,stars:1}];
-/* 물 색 [낮, 해 질 녘, 밤]: 색·발광 — 연한 파스텔 청록 → 노을빛을 받은 분홍 청록 → 달빛 남색 */
-export const WATER=[{c:'#8fdcd3',e:'#4fb5b2',ei:.14},{c:'#e4c3c3',e:'#e09a8c',ei:.2},{c:'#45578f',e:'#5a5cb8',ei:.16}];
+  {top:'#141d4c',horizon:'#3b4a84',hemi:'#7fa8e8',ground:'#2a5258',hemiI:.27,sun:'#a9c8ff',sunI:.2,sunDir:[-9,-7,3],fill:.2,fog:'#2c3c68',fogNear:10,fogFar:46,stars:1,milky:.55}];
+/* 물 색 [낮, 해 질 녘, 밤]: 색·발광 — 연한 파스텔 청록 → 노을빛이 비친 복숭아빛 청록 → 깊은 청록(가운데는 남색으로 — 구역이 물길 가운데·가장자리 그러데이션) */
+export const WATER=[{c:'#8fdcd3',e:'#4fb5b2',ei:.14},{c:'#8cbcb8',e:'#f0a088',ei:.22},{c:'#2e7488',e:'#25607e',ei:.2}];
 /* 캐릭터 소개 카드 (도감 대신 — game/profile.js). img를 채우면 2D 그림, 비우면 게임 안 초상 렌더링. portrait: 얼굴 높이·거리·옆 각도 */
 export const FAIRY_CARDS={
   boatman:{name:'사공 요정',intro:'선착장에서 이슬배를 모는 뱃사공. 물길이라면 눈 감고도 알아요.',likes:'바람 없는 아침의 잔잔한 물길',quote:'이슬배는 천천히 가야 제맛이란다!',img:card('boatman'),bg:'#d8e9f6'},

@@ -21,8 +21,20 @@ const _c=new THREE.Vector3(),_d=new THREE.Vector3(),_p=new THREE.Vector3(),_x=ne
 function initOcclude(c){ctx=c;}
 /* boxes(선택, 휴대폰 세계 구역의 큰 풀·잎 — 2026-11-02): 부품마다 월드 상자. 카메라에서 원더룹 발·허리·가슴·머리 네 점으로 가는 시선 가운데 하나라도 상자를 지나면 가린 것(여러 겹이면 겹마다 따로 흐려짐),
    카메라가 상자 안이나 0.9m 안, 또는 보는 쪽 1m 앞이 상자에 닿으면 '바로 앞'이라 완전히 흐려 숨긴다(화면 전체·반이 초록으로 덮이지 않게). 상자가 없으면 예전처럼 가운데 기둥(r·h)으로 본다 */
-function add(root,r=.5,h=1,{near=false,speed=12,boxes=null,set=null}={}){LIST.push({root,r,h,k:0,f:0,near,speed,boxes,set,hold:0,holdF:0});} // set(k,f): 재질을 직접 바꾸지 않고 구역 쪽이 흐림 값을 받는다(한 덩어리로 합쳐 그린 물체 — 부품마다 불투명도 표) // near: 카메라 바로 옆(가로 r+1.2m 안)에 걸려도 흐림 · speed: 흐려지는 빠르기(6 ≈ 0.2초)
-function setFade(o,k,f=0){const a=(1-.7*k)*(1-f);if(o.set){o.set(k,f,a);return;}o.root.traverse(m=>{if(!m.isMesh&&!m.isSprite)return;if(o.boxes)m.visible=a>.03;const ms=Array.isArray(m.material)?m.material:[m.material];
+/* 흐림 정도(2026-11-03 — 머리 위 잎 지붕·아주 큰 잎·꽃지붕 집이 0.3으로 흐려지면 화면 절반 넘게 연두·분홍 막을 씌운 것처럼 보였다):
+   화면에서 작게 보이는 물체는 0.3, 화면을 크게 덮거나(부품 상자를 화면에 비춘 넓이가 1/4 넘게) 카메라 가까이(3m 안) 있는 물체는 0.1까지(그 사이는 부드럽게 섞음).
+   roof(잎 지붕 높이, 선택): 카메라가 그 높이보다 위에서 내려다보는데 사이에 오면 아예 숨긴다. 여러 겹이 함께 흐려지면 겹친 막이 한 겹(0.3)보다 진해지지 않게
+   겹마다 더 옅게(n겹이면 1−0.7^(1/n)). 바뀌는 값은 모두 같은 빠르기로 부드럽게 따라가 깜빡이지 않는다 */
+const A_SMALL=.3,A_BIG=.1;
+function add(root,r=.5,h=1,{near=false,speed=12,boxes=null,set=null,roof=null}={}){LIST.push({root,r,h,k:0,f:0,near,speed,boxes,set,roof,hold:0,holdF:0,a:A_SMALL});}
+// set(k,f,a): 재질을 직접 바꾸지 않고 구역 쪽이 흐림 값을 받는다(한 덩어리로 합쳐 그린 물체 — 부품마다 불투명도 표)
+// near: 카메라 바로 옆(가로 r+1.2m 안)에 걸려도 흐림 · speed: 흐려지는 빠르기(6 ≈ 0.2초)
+/* 한 겹만(2026-11-03): 흐려진 물체 안에서 앞면·뒷면·겹친 꽃잎이 0.3씩 여러 번 섞이면 한 물체가 진한 막이 된다(꽃지붕 집 — 벽 앞뒤 + 지붕 꽃잎 여섯).
+   흐려지는 동안 같은 모양을 깊이만 먼저 그려(색은 안 씀) 가장 앞면 한 겹만 반투명으로 섞이게 — 흐려지는 물체마다 그리기 +1, 평소에는 0 */
+const PRE=new THREE.MeshBasicMaterial({colorWrite:false,side:THREE.DoubleSide,transparent:true,depthWrite:true});
+function prepass(m){const p=new THREE.Mesh(m.geometry,PRE);p.userData.isPre=true;p.renderOrder=1;p.castShadow=p.receiveShadow=false;p.frustumCulled=m.frustumCulled;p.raycast=()=>{};p.visible=false;m.add(p);return p;}
+function setFade(o,k,f=0){const a=(1-(1-o.a)*k)*(1-f);if(o.set){o.set(k,f,a);return;}o.root.traverse(m=>{if(!m.isMesh&&!m.isSprite||m.userData.isPre)return;if(o.boxes){m.visible=a>.03;
+    const on=k>.02||f>.02;if(on&&!m.userData.pre&&m.isMesh)m.userData.pre=prepass(m);if(m.userData.pre){m.userData.pre.visible=on;m.renderOrder=on?2:0;}}const ms=Array.isArray(m.material)?m.material:[m.material];
   ms.forEach(mt=>{if(!mt)return;const u=mt.userData;if(u.o0===undefined){u.o0=mt.opacity;u.t0=mt.transparent;u.d0=mt.depthWrite;}
     if(k>.02||f>.02){if(!mt.transparent){mt.transparent=true;mt.needsUpdate=true;}mt.opacity=u.o0*a;mt.depthWrite=k<.5&&f<.5&&u.d0;}
     else{if(mt.transparent!==u.t0){mt.transparent=u.t0;mt.needsUpdate=true;}mt.opacity=u.o0;mt.depthWrite=u.d0;}});});}
@@ -35,15 +47,36 @@ function boxHit(o,W){let near=false,hit=false;const was=o.k>.5,wasF=o.f>.5;ctx.c
     if(!hit)for(const y of _pts){_x.set(W.position.x,W.position.y+y,W.position.z).sub(_c);const L=_x.length();_ray.set(_c,_x.divideScalar(L));
       if(_ray.intersectBox(_bx,_p)){const t=_p.distanceTo(_c);if(t<L-(was?.05:.25)){hit=true;break;}}}}
   return near?2:hit?1:0;}
+/* 화면을 얼마나 덮는지: 부품 상자마다 화면에 비춘 네모 넓이(화면 = 1)를 더한다 — 카메라 뒤로 넘어가는 상자는 화면을 다 덮는 것으로 */
+const _v=new THREE.Vector3(),_pm=new THREE.Matrix4();
+function cover(o){let sum=0;for(const b of o.boxes){let x0=1,x1=-1,y0=1,y1=-1,behind=false;
+    for(let i=0;i<8;i++){_v.set(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).applyMatrix4(_pm);
+      const w=_pm.elements[3]*(i&1?b.max.x:b.min.x)+_pm.elements[7]*(i&2?b.max.y:b.min.y)+_pm.elements[11]*(i&4?b.max.z:b.min.z)+_pm.elements[15];if(w<=.05){behind=true;break;}
+      x0=Math.min(x0,_v.x);x1=Math.max(x1,_v.x);y0=Math.min(y0,_v.y);y1=Math.max(y1,_v.y);}
+    if(behind)return 1;sum+=Math.max(0,Math.min(1,x1)-Math.max(-1,x0))*Math.max(0,Math.min(1,y1)-Math.max(-1,y0))/4;if(sum>=1)return 1;}
+  return sum;}
+const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 function tickOcclude(dt){tickXray(dt);if(!ctx||!LIST.length)return;const cam=ctx.camera,W=ctx.WL;
   _c.copy(cam.position);_d.set(W.position.x,W.position.y+.75,W.position.z).sub(_c);const len=_d.length();if(len<.1)return;_d.divideScalar(len);
+  _pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);
+  const hits=[];
   LIST.forEach(o=>{let hit=false,full=false;if(o.root.visible!==false&&o.root.parent){
-      if(o.boxes){const r=boxHit(o,W);hit=r>0;full=r===2;}
+      if(o.boxes){const r=boxHit(o,W);hit=r>0;full=r===2;if(hit&&!full&&o.roof!=null&&_c.y>o.roof-.3)full=true;} // 잎 지붕을 위에서 내려다보면 아예 숨김
       else{o.root.getWorldPosition(_p);const y0=_p.y;
       for(let i=0;i<4&&!hit;i++){_p.y=y0+o.h*(.15+i*.25);const t=_x.copy(_p).sub(_c).dot(_d);if(t>.2&&t<len-.3)hit=_x.copy(_c).addScaledVector(_d,t).distanceTo(_p)<o.r;}
       if(!hit&&o.near){_p.y=y0;hit=Math.hypot(_p.x-_c.x,_p.z-_c.z)<o.r+1.2&&_c.y<y0+o.h+1.5&&_c.y>y0-1;}}}
     if(o.boxes){o.hold=hit?.35:Math.max(0,o.hold-dt);o.holdF=full?.35:Math.max(0,o.holdF-dt);hit=hit||o.hold>0;full=full||o.holdF>0;}
-    const s=Math.min(1,dt*o.speed),k=o.k+((hit?1:0)-o.k)*s,f=o.f+((full?1:0)-o.f)*s;if(k<.01&&o.k<.01&&f<.01&&o.f<.01)return;o.k=k<.01?0:k;o.f=f<.01?0:f;setFade(o,o.k,o.f);});}
+    o.hit=hit;o.full=full;if(hit&&!full)hits.push(o);});
+  const n=hits.length;
+  LIST.forEach(o=>{const hit=o.hit,full=o.full,s=Math.min(1,dt*o.speed);
+    // 흐릴 때 남길 불투명도: 크게 덮을수록·가까울수록 옅게, 여러 겹이면 겹친 막이 한 겹보다 진해지지 않게
+    let at=o.a;if(hit&&!full&&o.boxes){let dmin=1e9;for(const b of o.boxes)dmin=Math.min(dmin,b.distanceToPoint(_c));
+      const deep=Math.max(ss(.12,.28,cover(o)),ss(4,2.5,dmin));at=A_SMALL+(A_BIG-A_SMALL)*deep;if(n>1)at=1-Math.pow(1-at,1/n);}
+    else if(!hit)at=o.a; // 돌아오는 동안은 그대로(흐림이 풀리는 길에 값이 바뀌어 번쩍이지 않게)
+    const a=o.a+(at-o.a)*s,k=o.k+((hit?1:0)-o.k)*s,f=o.f+((full?1:0)-o.f)*s;
+    if(k<.01&&o.k<.01&&f<.01&&o.f<.01){o.a=at;return;}o.a=a;o.k=k<.01?0:k;o.f=f<.01?0:f;setFade(o,o.k,o.f);});}
+/* 시험용: 지금 흐려진 물체를 잠깐 다 숨긴다(가림 시험이 '막이 없을 때' 화면과 비교) → 되돌리는 함수 */
+function hideFaded(){const L=LIST.filter(o=>o.k>.02||o.f>.02);L.forEach(o=>setFade(o,1,1));return()=>L.forEach(o=>setFade(o,o.k,o.f));}
 /* ---------- 흐려 보기 ---------- */
 const CUT={value:new THREE.Vector4(0,0,1,0)},PASS={value:0},LAYER=5; // CUT: xy 그리기 화소 자리(아래가 0), z 반지름(화소), w 원더룹까지 깊이(0이면 꺼짐) · PASS 0 보통 그리기, 1 흐린 조각 덧그리기
 let cutOn=false,cutRoot=null,scanT=1;const CUT_MATS=new Set();
@@ -100,4 +133,4 @@ function tickXray(dt){xrT+=dt;scanT+=dt;if(xrOn&&xrT>1){xrT=0;xrBuild();}if(cutO
 function cutPaused(){const w=CUT.value.w;CUT.value.w=0;return()=>{CUT.value.w=w;};}
 function clearOcclude(){LIST.length=0;cutOn=false;cutRoot=null;CUT.value.w=0;CUT_MATS.clear();}
 const list=()=>LIST; // 시험용: 지금 흐려진 물체 보기
-export {add,clearOcclude,cut,cutPaused,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};
+export {add,clearOcclude,cut,cutPaused,hideFaded,prepass,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};

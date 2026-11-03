@@ -5,6 +5,7 @@
    keys: [낮, 해 질 녘, 밤] 세 개. 빠진 값은 기본값(DEFAULT_KEYS). 색은 16진수(sRGB), 세기는 03의 옛 조명 단위(08이 끝에서 π를 곱함).
      top·horizon 하늘 위·지평선 색, hemi·ground 하늘빛·땅 반사빛 색, hemiI 하늘빛 세기, sun·sunI 해 색·세기, sunDir 해가 비추는 방향,
      fill 보조광 세기, fog 안개 색(보통 지평선 색), fogNear·fogFar 안개 거리, stars 별 보임(0~1).
+     milky 옅은 은하수 띠(0~1, 기본 0 — 별과 함께 나타남). sky({starSize}) 별 크기(화소, 기본 3).
    별: 밤으로 갈수록 나타난다. 첫별(firstStar, 하늘 한 점)이 먼저 뜨고(t 1.55~1.8) 나머지가 뒤따른다(1.75~2). SK.firstStar 로 자리를 옮길 수 있다.
    비용: 하늘 둥근 지붕 1회 + 별 1회 그리기. 안개는 08이 처음부터 늘 켜 두고(멀리 밀어 둠) 값만 바꾼다 — 안개를 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다. */
 import * as THREE from 'three';
@@ -13,16 +14,19 @@ const DEFAULT_KEYS=[
   {top:'#7f8fc4',horizon:'#f6b98a',hemi:'#f7c9a6',ground:'#a7787a',hemiI:.42,sun:'#ff9f6a',sunI:.5,sunDir:[11,-4,3],fill:.16,fog:'#e9b494',fogNear:22,fogFar:80,stars:0},
   {top:'#1c2350',horizon:'#4a4778',hemi:'#8b92c8',ground:'#4a3e58',hemiI:.2,sun:'#9fb0e8',sunI:.08,sunDir:[-4,-11,2],fill:.1,fog:'#30325a',fogNear:18,fogFar:70,stars:1},
 ];
-const CKEYS=['top','horizon','hemi','ground','sun','fog'],NKEYS=['hemiI','sunI','fill','fogNear','fogFar','stars'];
+const CKEYS=['top','horizon','hemi','ground','sun','fog'],NKEYS=['hemiI','sunI','fill','fogNear','fogFar','stars','milky'];
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
-function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
-  const K=DEFAULT_KEYS.map((d,i)=>Object.assign({},d,keys[i]||{}));
+function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3}={}){
+  const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
   // 하늘 둥근 지붕: 지평선 → 위로 색이 바뀐다(땅 아래는 지평선 색). 카메라를 따라다닌다
-  const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()}};
+  const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0}};
   const mat=new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader:'uniform vec3 top;uniform vec3 horizon;varying vec3 vP;void main(){float h=normalize(vP).y;float k=smoothstep(-.02,.55,h);gl_FragColor=vec4(mix(horizon,top,pow(k,.8)),1.);\n#include <colorspace_fragment>\n}'});
+    // 은하수(milky): 하늘을 비스듬히 가로지르는 옅은 띠 — 가운데가 밝고 잔물결처럼 얼룩진 푸른 흰빛(그리기는 하늘 지붕 그대로 1회)
+    fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
+      'if(milky>0.){float b=dot(d,normalize(vec3(.55,.42,.72)));float m=exp(-b*b*28.)*smoothstep(.05,.35,h);float n=.6+.4*sin(d.x*23.+sin(d.z*17.)*2.)*sin(d.z*19.+d.y*11.);c+=vec3(.16,.19,.3)*m*n*milky;}'+
+      'gl_FragColor=vec4(c,1.);\n#include <colorspace_fragment>\n}'});
   const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,24,12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
   // 별: 위쪽 하늘에 고르게(지평선 근처는 드물게). 첫별은 따로 크게
   let r=seed;const R=()=>(r=(r*16807)%2147483647)/2147483647;
@@ -30,7 +34,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
   const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(P,3));
   const dot=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d'),gr=g.createRadialGradient(16,16,0,16,16,16);
     gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,250,230,.8)');gr.addColorStop(1,'rgba(255,250,230,0)');g.fillStyle=gr;g.fillRect(0,0,32,32);const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;return tx;})();
-  const smat=new THREE.PointsMaterial({map:dot,size:3,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff6dc});
+  const smat=new THREE.PointsMaterial({map:dot,size:starSize,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff6dc});
   smat.userData.noBend=true; // 하늘·별은 둥근 땅에서 휘지 않는다(game/bend — 카메라를 따라다니는 먼 하늘)
   const stars=new THREE.Points(sg,smat);stars.renderOrder=-9;stars.frustumCulled=false;
   const fmat=new THREE.PointsMaterial({map:dot,size:9,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff2c8});fmat.userData.noBend=true;
@@ -54,7 +58,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
       if(L.fog){L.fog.color.copy(cur.fog);L.fog.near=num('fogNear');L.fog.far=num('fogFar');}
       if(sunDirOut)sunDirOut.copy(cur.dir.copy(a.dir).lerp(b.dir,u).normalize());
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
-      smat.opacity=st*ss(1.75,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
+      smat.opacity=st*ss(1.75,2,S.t);uni.milky.value=num('milky')*ss(1.7,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
       if(camera){g.position.copy(camera.position);g.scale.setScalar(Math.min(1,camera.far*.9/radius));}},  // 08이 카메라 먼 거리를 안개 끝으로 당기면 하늘도 그 안으로
     dispose(){dot.dispose();}};
   return S;}

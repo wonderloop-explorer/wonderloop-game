@@ -5,10 +5,10 @@
   {
    "name": "big-leaf",
    "ok": true,
-   "faded": 2,
+   "faded": 3,
    "wlPixels": 40602,
    "darkFrac": 0,
-   "brightRatio": 1.11
+   "brightRatio": 1.019
   },
   {
    "name": "stem",
@@ -16,7 +16,7 @@
    "faded": 2,
    "wlPixels": 69197,
    "darkFrac": 0,
-   "brightRatio": 1.012
+   "brightRatio": 1.006
   },
   {
    "name": "house-wall",
@@ -24,7 +24,34 @@
    "faded": 1,
    "wlPixels": 69521,
    "darkFrac": 0,
-   "brightRatio": 1.354
+   "brightRatio": 1.046
+  },
+  {
+   "name": "canopy-above",
+   "ok": true,
+   "faded": 1,
+   "wlPixels": 37487,
+   "darkFrac": 0,
+   "brightRatio": 1.004,
+   "washDiff": 0.0049
+  },
+  {
+   "name": "house-close",
+   "ok": true,
+   "faded": 1,
+   "wlPixels": 69560,
+   "darkFrac": 0,
+   "brightRatio": 1.046,
+   "washDiff": 0.0174
+  },
+  {
+   "name": "layers",
+   "ok": true,
+   "faded": 3,
+   "wlPixels": 40414,
+   "darkFrac": 0,
+   "brightRatio": 1.019,
+   "washDiff": 0.0026
   }
  ]
 }

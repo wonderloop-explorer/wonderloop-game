@@ -87,6 +87,9 @@ function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
 /* 안개: 처음부터 늘 켜 두고 하늘 없는 구역에서는 아주 멀리 밀어 둔다(그림은 그대로) — 구역마다 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다 */
 const FOG_OFF=1e4;scene.fog=new THREE.Fog(0xffffff,FOG_OFF,FOG_OFF*2);
+/* 휴대폰 세로 화면 따라가기(2026-11-03 — 아이폰 세로에서 길가 풀이 풍경보다 크게 보이던 구간): 거리 배율 상한 2.1 → 1.85(원더룹이 너무 작아지지 않게),
+   처음 각도 0.42 라디안 위에서(풀 너머로), 보는 점을 0.6m 올려 원더룹을 화면 조금 아래에 두고 가는 쪽이 더 보이게. 가로 화면·컴퓨터는 그대로 */
+const PORTRAIT={far:2,pitch:.42,lift:.6};
 const _fv=new THREE.Vector3();const CAM_MIN=4; // 따라가기 카메라 가장 가까운 거리(m) — 원더룹 전신이 다 보이게(세로 시야 30°에서 키 1.1m + 여백)
 const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector3();
 /* 촬영 모드(?shot): 고정 시간 간격(기본 1/60초, 영상 캡처 중에는 wlShot.dt=1/72)으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
@@ -161,14 +164,15 @@ function tickBody(){
   /* 개미굴 따라가기 카메라: 원더룹 둘레 yaw(가로)·pitch(위아래 -0.55~1.15)·거리(3~13, 세로 화면은 방 카메라와 같은 배율로 멀리).
      자리는 초당 7, 보는 점은 초당 10으로 따라가고, 땅 밑으로는 0.7 위까지만 내려간다. 처음엔 지금 카메라 방향에서 이어 받는다.
      벽이 있는 방은 방 카메라 각도 범위 안에서(아래). 넓은 야외는 개미굴 값 그대로 */
-  if(rig){if(!C.ready){const sp=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));C.yaw=sp.theta;C.pitch=Math.min(1.15,Math.max(-.55,PI/2-sp.phi));C.dist=7.5;C.ready=true;}
+  if(rig){if(!C.ready){const sp=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));C.yaw=sp.theta;C.pitch=Math.min(1.15,Math.max(-.55,PI/2-sp.phi));C.dist=7.5;C.ready=true;
+    if(camera.aspect<1)C.pitch=Math.max(C.pitch,PORTRAIT.pitch);} // 세로 화면 처음 각도: 조금 더 위에서(키 큰 풀 너머로 원더룹 전신과 가는 길이 함께) — 그 뒤로는 플레이어 것
     if(spin)C.yaw+=spinDir*dt*.18;
     // 벽이 있는 방(방 카메라에 가로 범위가 있는 곳)은 그 방의 열린 쪽 각도 안에서만 — 개미굴도 구역마다 카메라 자리를 방 안으로 묶었다
     {const A=Z.areas[zone.area],c=A&&A.camera;if(c&&c.azimuth){const y0=c.azimuth[0],y1=c.azimuth[1];let y=C.yaw;while(y<y0-PI)y+=2*PI;while(y>y1+PI)y-=2*PI;C.yaw=Math.min(y1,Math.max(y0,y));
       C.pitch=Math.min(PI/2-c.polar[0],Math.max(PI/2-c.polar[1],C.pitch));}}
     /* 거리: 플레이어가 정한 C.dist(휠·두 손가락)만 바꾼다 — 한 손가락 끌기는 각도만. 가장 가까이는 원더룹 전신이 화면에 다 들어오는 4m(세로 화면 배율을 곱한 뒤 값),
        방(camRoom) 같은 장애물 때문에 당겨지면 C.pull로 빨리 당기고, 장애물이 없어지면 정한 거리로 천천히 돌아간다 */
-    const asp=camera.aspect,fk=asp<1.25?Math.min(2.1,1.25/asp):1;
+    const asp=camera.aspect,fk=asp<1.25?Math.min(asp<1?PORTRAIT.far:2.1,1.25/asp):1;
     /* 카메라 규칙(CLAUDE.md): 탈것·활공 중에도 카메라를 붙박지 않는다. view.start는 처음 각도만 0.8초에 걸쳐 맞추고 놓아 준다.
        짧은 연출(view.focus·hold) 중에 플레이어가 끌기·두 손가락·휠·방향키로 카메라를 만지면 연출을 끝내고 지금 카메라 자리에서 바로 조작을 넘겨준다 */
     {const V=GAME.view;if(C.user!==C.userSeen){C.userSeen=C.user;V.aim=null;
@@ -177,7 +181,7 @@ function tickBody(){
      if(V.aim){const a=V.aim;if(!a.rel){const o=a.at||[WL.position.x,WL.position.y+.85,WL.position.z];a.rel=[a.from[0]-o[0],a.from[1]-o[1],a.from[2]-o[2]];}a.t+=dt;
        const [ox,oy,oz]=a.rel,L=Math.hypot(ox,oy,oz)||1,gy=Math.atan2(ox,oz),k=Math.min(1,dt*6);let dy=gy-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));
        C.yaw+=dy*k;C.pitch+=(Math.min(1.15,Math.max(-.55,Math.asin(oy/L)))-C.pitch)*k;C.dist+=(Math.min(13,Math.max(CAM_MIN/fk,L))-C.dist)*k;if(a.t>.8)V.aim=null;}} // from 거리는 가로 화면 기준(세로 화면은 따라가기와 같은 배율로 멀리)
-    C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;_ct.set(WL.position.x,WL.position.y+.85,WL.position.z);
+    C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;_ct.set(WL.position.x,WL.position.y+.85+(asp<1?PORTRAIT.lift:0),WL.position.z);
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
     {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
        if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr)kt=Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):0;
