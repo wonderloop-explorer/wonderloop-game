@@ -62,7 +62,8 @@ const inWater=(x,z)=>Math.min(z-zN(x),zS(x)-z)+(fbm(x*.9+11,z*.9+3)-.5)*.7; // +
  [[0,10.6],[.2,8.7],[.8,6.9],[1.6,5.1],[2.6,3.4],[3.5,1.7],[4.2,.1]].forEach(([x,z],i)=>flat.push(add(new THREE.CylinderGeometry(.42+(i%2)*.08,.46,.07,9),T(['#e8ddd0','#ddd2c4','#efe6da'][i%3],'stone'),x,.03,z,{ry:i,line:false,cast:false})));}
 // 물: 연한 파스텔 청록 + 잔물결(천천히 흐름). 시간마다 색이 바뀐다(WATER)
 const waterMat=toon(WATER[0].c,{map:TX.ripple,emissive:WATER[0].e,ei:WATER[0].ei});
-const water=new THREE.Mesh(new THREE.PlaneGeometry(SIZE,13,1,1).rotateX(-PI/2),waterMat);water.position.set(0,-.1,-5.2);water.receiveShadow=true;root.add(water);keep.push(water);flat.push(water);
+// 물은 1m 칸으로 나눈다 — 둥근 땅(game/bend)은 꼭짓점마다 휘어서, 네 귀퉁이뿐이면 물이 둑 밑으로 가라앉는다
+const water=new THREE.Mesh(new THREE.PlaneGeometry(SIZE,13,48,13).rotateX(-PI/2),waterMat);water.position.set(0,-.1,-5.2);water.receiveShadow=true;root.add(water);keep.push(water);flat.push(water);
 const WC=WATER.map(w=>({c:new THREE.Color(w.c),e:new THREE.Color(w.e),ei:w.ei}));
 // 물에는 못 들어감(선착장만): 0.5m 폭 띠마다 그 사이 물길을 막는다
 for(let x=-SIZE/2;x<SIZE/2;x+=.5){const xs=[x,x+.25,x+.5],n=Math.min(...xs.map(zN))+.05,s=Math.max(...xs.map(zS))-.12;

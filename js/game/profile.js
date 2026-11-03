@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import {flags,setFlag} from './state.js';
 import {profileCard} from './ui.js';
 import {cutPaused} from './occlude.js';
+import {bendPaused} from './bend.js';
 let ctx=null,W='',CARDS={};
 function initProfile(c){ctx=c;}
 function setup({world,cards}){W=world||'';CARDS=cards||{};}
@@ -27,12 +28,13 @@ function portrait(root,{side=.42,lift=.12,w=512,h=512}={}){if(!ctx||!ctx.rendere
   stage.add(new THREE.HemisphereLight(0xfff6ea,0xd9c2aa,1.6));const key=new THREE.DirectionalLight(0xfff2e0,2.3);key.position.copy(cam.position).add(new THREE.Vector3(-dist*.4,dist*.5,0));key.target.position.copy(c);stage.add(key,key.target);
   const rt=new THREE.WebGLRenderTarget(w,h,{samples:4});rt.texture.colorSpace=THREE.SRGBColorSpace;
   const prev=renderer.getRenderTarget(),cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();let url=null;const resume=cutPaused(true);
+  const resumeBend=bendPaused(); // 초상은 둥근 땅을 끄고(평평하게) 찍는다
   try{renderer.setRenderTarget(rt);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(stage,cam);const px=new Uint8Array(w*h*4);renderer.readRenderTargetPixels(rt,0,0,w,h,px);
     const cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),im=g.createImageData(w,h);
     for(let r=0;r<h;r++)im.data.set(px.subarray((h-1-r)*w*4,(h-r)*w*4),r*w*4); // 렌더 타깃은 아래부터 → 뒤집기
     g.putImageData(im,0,0);url=cv.toDataURL('image/png');}
   catch(e){console.warn('원더룹: 소개 카드 초상 렌더링 실패',e);}
-  finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();hid.forEach(o=>o.visible=true);op.forEach(([mt,o,d,t])=>{mt.opacity=o;mt.depthWrite=d;if(mt.transparent!==t){mt.transparent=t;mt.needsUpdate=true;}});rt.dispose();
+  finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();resumeBend();hid.forEach(o=>o.visible=true);op.forEach(([mt,o,d,t])=>{mt.opacity=o;mt.depthWrite=d;if(mt.transparent!==t){mt.transparent=t;mt.needsUpdate=true;}});rt.dispose();
     if(par)par.add(root);else stage.remove(root);root.position.copy(pos);root.quaternion.copy(quat);root.scale.copy(scl);root.updateMatrixWorld(true);}
   return url;}
 function meet(id,root){const c=CARDS[id];if(!c||seen(id))return Promise.resolve(false);setFlag('meet:'+W+':'+id,true);

@@ -122,8 +122,9 @@ function makeDust(){const N=QUALITY.tier==='mobile'?72:150,geo=new THREE.BufferG
   const pos=new Float32Array(N*3),col=new Float32Array(N*3),sz=new Float32Array(N),al=new Float32Array(N),sh=new Float32Array(N);
   for(const [k,a,n] of [['position',pos,3],['color',col,3],['aSize',sz,1],['aAlpha',al,1],['aShape',sh,1]])geo.setAttribute(k,new THREE.BufferAttribute(a,n).setUsage(THREE.DynamicDrawUsage));
   const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uScale:{value:500},uBright:{value:1}},vertexColors:true,
-    vertexShader:`attribute float aSize;attribute float aAlpha;attribute float aShape;uniform float uScale;varying vec3 vC;varying float vA;varying float vS;
-      void main(){vC=color;vA=aAlpha;vS=aShape;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=max(1.5,aSize*uScale/-mv.z);gl_Position=projectionMatrix*mv;}`,
+    vertexShader:`#include <common>
+      attribute float aSize;attribute float aAlpha;attribute float aShape;uniform float uScale;varying vec3 vC;varying float vA;varying float vS;
+      void main(){vC=color;vA=aAlpha;vS=aShape;vec4 mv=wlBend.x>0.?viewMatrix*wlBent(modelMatrix*vec4(position,1.)):modelViewMatrix*vec4(position,1.); /* 둥근 땅(game/bend)도 같은 만큼 */gl_PointSize=max(1.5,aSize*uScale/-mv.z);gl_Position=projectionMatrix*mv;}`,
     fragmentShader:`uniform float uBright;varying vec3 vC;varying float vA;varying float vS;
       void main(){vec2 p=gl_PointCoord*2.-1.;float r=length(p),a;
         if(vS>.5){vec2 q=abs(p);a=(1.-q.y)*exp(-q.x*13.)+(1.-q.x)*exp(-q.y*13.);a=a*.85+exp(-r*r*22.)*1.1;a*=1.-smoothstep(.75,1.,r);} // 네 갈래 반짝이 ✦

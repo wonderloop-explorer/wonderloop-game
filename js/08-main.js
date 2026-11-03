@@ -8,6 +8,7 @@ import './05-hair-headwear.js';
 import './06-outfits.js';
 import {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
+import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
@@ -59,7 +60,8 @@ async function goZone(id,spawn){
   return true;}
 /* 세계의 옷·탈: 상상의 세계(구역 정보에 hood가 있는 곳)에 들어가면 탐험복 그대로 탈만 그 세계 것으로 바꿔 쓴다.
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
-function zoneLook(z){const U=WL.userData;{const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
+function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥근 땅 세기는 구역 정보 bend(없으면 끔 — 실내·베이스캠프)
+  {const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);}
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
@@ -74,6 +76,9 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
  set(new URLSearchParams(location.search).has('debug'));
  b.addEventListener('click',()=>{const vv=window.visualViewport;if(performance.now()-(GAME.controls.input.multiT||0)<800||(vv&&vv.scale>1.01))return; // 두 손가락 동작 끝에 잘못 눌린 것은 무시(저절로 열리지 않게)
    set(!document.body.classList.contains('debug'));});}
+/* 둥근 땅(시험용, 톱니 메뉴): 끔 → 약 → 중 → 강 → 끔 (game/bend — 그림만 휜다, 이 기기에 기억). 구역 정보 bend가 없는 곳(실내·베이스캠프)은 늘 끔 */
+function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const I=bendInfo();b.textContent=I.on?`둥근 땅: ${I.label}`:'둥근 땅: 이 구역 없음';b.disabled=!I.on;}
+{const b=document.getElementById('bendBtn');if(b)b.addEventListener('click',()=>{const I=bendInfo();if(!I.on)return;setLevel((I.level+1)%4);bendBtn();});}
 /* 진행 초기화(시험용, 톱니 메뉴): 저장된 진행(flags — 우산·완료·소개 카드)·도감을 지우고 다시 연다. 실수로 눌리지 않게 3초 안에 한 번 더 눌러야 */
 {const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
    if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
@@ -115,7 +120,8 @@ if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   window.addEventListener('blur',()=>setPaused(true));['focus','pointerdown','keydown'].forEach(ev=>window.addEventListener(ev,()=>setPaused(document.hidden)));}
 /* 한 화면 그리기: 보통 그리기 + 흐려 보기 덧그리기(game/occlude — 세계 구역에서 원더룹을 가리는 조각만). 화면 통계는 둘을 합친 값 */
 renderer.info.autoReset=false;
-function renderFrame(){renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
+/* 둥근 땅(game/bend): 그리기 직전 카메라 자리를 넣는다(그림자 그리기도 같은 값) */
+function renderFrame(){setBend(camera);renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
 function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
   try{renderFrame();}catch(e2){}}if(!ok)nextFrame();}
 function tickBody(){

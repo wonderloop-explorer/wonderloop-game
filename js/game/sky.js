@@ -31,8 +31,9 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7}={}){
   const dot=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d'),gr=g.createRadialGradient(16,16,0,16,16,16);
     gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,250,230,.8)');gr.addColorStop(1,'rgba(255,250,230,0)');g.fillStyle=gr;g.fillRect(0,0,32,32);const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;return tx;})();
   const smat=new THREE.PointsMaterial({map:dot,size:3,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff6dc});
+  smat.userData.noBend=true; // 하늘·별은 둥근 땅에서 휘지 않는다(game/bend — 카메라를 따라다니는 먼 하늘)
   const stars=new THREE.Points(sg,smat);stars.renderOrder=-9;stars.frustumCulled=false;
-  const fmat=new THREE.PointsMaterial({map:dot,size:9,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff2c8});
+  const fmat=new THREE.PointsMaterial({map:dot,size:9,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff2c8});fmat.userData.noBend=true;
   const first=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array([radius*.35,radius*.55,-radius*.6]),3)),fmat);
   first.renderOrder=-9;first.frustumCulled=false;
   const g=new THREE.Group();g.name='sky';g.add(dome,stars,first);(parent||null)&&parent.add(g);

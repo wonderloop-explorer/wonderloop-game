@@ -6,7 +6,8 @@
 import * as G from '../../game/index.js';
 import {FAIRY_MUSIC} from './music.js';
 G.sound.synth(FAIRY_MUSIC);
-export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'crown',start:{compass:true}}; // 2026-11-02 꽃봉오리 탈 대신 봉오리 화관 → 클라이맥스에 핀 화관(crownBloom)
+export const FAIRY_WORLD={world:'fairy-forest',outfit:'explorer',hood:'crown',start:{compass:true},
+  bend:{k:.006,d0:8}}; // 둥근 땅(game/bend): 카메라에서 8m 밖부터 아래로 k×(거리−8)² — 톱니 메뉴 '중'이 이 값, 약 ×0.5·강 ×2 // 2026-11-02 꽃봉오리 탈 대신 봉오리 화관 → 클라이맥스에 핀 화관(crownBloom)
 export const icon=id=>`assets/icons/fairy/${id}.png?v=${window.WL_V||''}`;
 /* 소개 카드 전신 그림(2D, 투명 배경 webp — 2026-11-02 받은 그림의 정면 모습): 없는 주민은 img:null → 게임 안 전신 렌더링 */
 const card=id=>`assets/cards/fairy/${id}.webp?v=${window.WL_V||''}`;

@@ -15,6 +15,7 @@
 - **영상 제작 결과물은 공개 저장소에 커밋하지 않는다.** 영상 캡처 모드로 만든 영상·소리 시점 기록·자막 같은 영상 제작 결과물은 `.gitignore`로 막고(`captures/`, `*.mp4` 등), 보관은 비공개 저장소 `wonderloop-studio`(세계마다 폴더 하나)나 PC에 한다.
 - **버전 표시(캐시):** 커밋 전에 `python3 tools/stamp.py`를 돌린다. `js/`·`assets/`의 실행용 파일(.js .json .webp .png .jpg .glb) 내용 해시를 `index.html`의 importmap(js 파일마다 `?v=`), 시작 모듈 주소, `window.WL_V`(fetch 주소에 붙임)에 써서, Pages에 올리면 방문자가 옛 파일과 새 파일을 섞어 받지 않는다. `git config core.hooksPath tools/hooks`를 켜 두면 커밋할 때 저절로 돈다. 새로 fetch하는 파일 주소에는 `'?v='+window.WL_V`를 붙인다. stamp는 `version.json`도 쓰고, `index.html` 맨 앞 스크립트(`wl-vercheck`)가 그것을 캐시 없이 읽어 버전이 다르면 주소에 `&_v=새버전`을 붙여 다시 연다(사파리가 옛 index.html을 기억해 아이폰에서 화관이 안 보였다, 2026-11-02). 톱니 메뉴 성능 상자 맨 위에 `버전 …`(= `WL_V`, 파일 내용 해시 — 커밋 번호는 자기 커밋 안에 넣을 수 없어서). 주소에 `zone`이 없으면 `START_ZONE`(02, 이 브랜치는 `fairy-dock`)에서 시작, 촬영 모드는 늘 베이스캠프.
 
+- **자동 시험 한 번에** (`tools/run-checks.py`, 2026-11-03): 촬영 서버를 띄우고 `python3 tools/run-checks.py <이름> --prev <앞 이름>` — 기준·동작 촬영(앞 이름과 바이트 비교), 규칙, 휴대폰 확인, 가림(PC·휴대폰), 끼임, 카메라 걷기를 차례로 돌려 `docs/compare/<이름>-checks.json`에 남긴다(`--only base,rig,rules,phone,occlude,stuck,cam`으로 골라서). 아이폰에서 열 서버는 `python3 tools/shot-server.py 8001 --lan`(같은 와이파이, 캐시 금지).
 - **스테이지 한 파일 빌드** (`tools/build-single.js`, 2026-11-02 — 개미굴 편처럼 서버 없이 더블클릭으로 열리고 GPT에 올려 코드 검토를 받는 HTML 하나): `node tools/build-single.js <구역>` → `dist/…html`(지금은 `fairy-dock` → `dist/fairy-forest-stage01.html`). 개발 구조는 그대로 두고 묶기만 한다.
   - 새 스테이지: 스크립트 맨 위 `STAGES`에 한 줄(구역 이름 = 시작 구역 `WL_START_ZONE`, 결과 파일, 제목, 넣을 그림 폴더 `assets/…/*`)을 더하고 같은 명령으로.
   - 묶는 방법: js/ 모든 모듈 + three.js r186(three.module·three.core·OrbitControls·BufferGeometryUtils — `.cache/three-<버전>/`에 받아 둠, 저장소에 안 넣음)을 원본 그대로 `<script type="text/x-wl-module" data-path="원본 경로">` 칸에(맨 위 원본 경로 주석, 줄이지 않음). 맨 끝 시작 스크립트가 import 경로를 다른 칸의 blob: 주소로 바꿔 이어 붙이고(모듈 순환이 없어야 한다 — 생기면 시작 스크립트가 알려 줌), `import.meta.url`은 파일 옆 js/… 주소로. 그림·아이콘·카드·텍스처 목록·난수 기록·소리는 data URI(`WL_FILES`) — fetch와 `<img>.src`가 `assets/…`를 찾으면 그것을, 없으면 404(개발판처럼 대신 그림). 글꼴은 Google Fonts 연결만(안 되면 기본 글꼴). 버전 확인 wl-vercheck·importmap은 빼고, 톱니 메뉴 성능 상자 맨 위에 `버전 … · 커밋 …`(`WL_BUILD`, 빌드한 원본 커밋 — 고치는 중이면 `+수정`).
@@ -110,6 +111,16 @@
   - 캐릭터 동작 확인: `tools/rig-shots.js`(동작 9가지 × 3시각 × 4각도 × 모자·개미탈, 평상복 동작, 표정·깜빡임, 깡충, 걷기·뛰기 키링, 굴 림 라이트 — 282장, 부품 행렬·키링 각도 JSON 포함). 바꾸기 전·후를 `docs/compare/` 아래에 찍어 비교한다.
   - 림 라이트 확인: `tools/rim-shots.js`(어두운 굴 × 모자·개미탈·평상복 × 서기·나침반 보기 × 4각도). 림 라이트는 아틀라스로 그리는 캐릭터 부품 모두에 켜져 있다(머리카락·탈 앞머리는 07 림 셰이더).
   - 촬영 도구는 **페이지가 다 뜬 뒤**(`window.wlShot`이 생긴 뒤) import한다. 먼저 import하면 04가 01~03보다 먼저 실행돼 시드 난수 순서가 바뀌고 그림 전체가 달라진다. 촬영 순서가 시간 흐름이라 전후 비교는 새로 연 페이지에서 찍는다.
+
+## 둥근 땅 규칙 (모든 야외 스테이지, 2026-11-03 — `js/game/bend.js` 맨 위 주석)
+- 동물의 숲처럼 **그릴 때만** 카메라에서 수평으로 멀수록 아래로 내린다: 아래로 = `k × max(0, 거리 − d0)²`(거리는 카메라 기준 x·z). 실제 위치·충돌·이동·상호작용·가림 판정·카메라 당김·끼임 시험은 평평한 그대로(그림만 바뀜).
+- 세기: 구역 정보 `bend:{k, d0}`(없으면 끔 — 실내·베이스캠프). 요정의 숲은 `FAIRY_WORLD.bend = {k:.006, d0:8}`(톱니 메뉴 '중' — 원더룹 둘레는 거의 평평, 카메라에서 17m 0.5m·25m 1.7m·36m 4.7m 내려감). 톱니 메뉴 "둥근 땅: 끔 → 약(×0.5) → 중 → 강(×2)", 이 기기에 기억(`localStorage 'wl-bend'`), 구역에 값이 없으면 "이 구역 없음".
+- 적용 범위(하나라도 빠지면 그것만 떠 보인다): three 셰이더 조각 `project_vertex`(화면 위치)·`worldpos_vertex`(그림자 좌표·빛)·스프라이트 꼭짓점을 01이 맨 처음 불러오는 `bend.js`가 한 번 고친다 → 기본 재질(Standard·Toon·Basic·Lambert·Points·Sprite) 모두, 합친 덩어리(03 병합·`bakeGroup`·`fadeMerge`), 인스턴싱(무리·`fx.guide`), 뼈대(원더룹·화관), 그림자 깊이 그리기(PC 그림자 맵)까지 같은 만큼. uniform `wlBend`(x 세기, yz 카메라 x·z, w d0) 하나를 모든 재질이 같이 쓴다 — `Material.onBeforeCompile`에 끼워 넣으니 재질에 onBeforeCompile을 달아도 그대로 된다(프로그램 열쇠는 원래 함수 글로).
+- **새 재질·셰이더를 만들 때 꼭**: (1) 직접 쓴 `ShaderMaterial` 정점 셰이더는 맨 위 `#include <common>`, 위치는 `wlBend.x>0.?viewMatrix*wlBent(modelMatrix*vec4(position,1.)):modelViewMatrix*vec4(position,1.)`(견본 `crown.js` 별가루) (2) `#include <project_vertex>`를 다른 글로 바꿔치지 않기(뒤에 덧붙이는 건 괜찮다) (3) 휘면 안 되는 것(카메라를 따라다니는 하늘 지붕·별)은 `material.userData.noBend=true` (4) **땅에 깔리는 큰 평면은 꼭짓점을 1~2m 칸으로 나눈다** — 꼭짓점마다 휘어서, 네 귀퉁이뿐이면 가운데가 땅 밑으로 가라앉는다(선착장 물 48×13 한 장이 사라졌다 → 48×13칸) (5) 화면 위 HTML 표시를 3D 자리에 맞출 때는 `bentY(x,z,y)`로 휜 높이를.
+- 끄고 찍기: 소개 카드 초상(`profile.portrait`)은 `bendPaused()`로 평평하게. 08 `renderFrame`이 그리기 직전 `setBend(camera)`(자바스크립트 일은 값 셋 바꾸기뿐, 셰이더는 정점마다 몇 줄).
+- 세기가 0이면 셰이더가 예전 계산을 그대로 탄다 → 베이스캠프 기준 촬영·동작 촬영은 바이트까지 그대로(2026-11-03 기준 24·동작 284 차이 0).
+- 숲 배경: 먼 두 겹(31·36m, 키 19·23m)은 '중'에서 3~5m 내려가도 지평선 아래로 숨지 않아 그대로 그린다(빼면 휴대폰 세로 화면 위쪽에 흰 하늘 줄이 보였다). 휴대폰 성능은 켜기 전후 같다 — 걷는 동안 드로우콜 평균 53.1 → 53.0(최대 58), 삼각형 13만, 프레임 간격 36.9 → 36.2ms(`docs/perf/bend-2026-11-03.json`).
+- 확인: 끔·약·중·강 같은 자리, 낮·해 질 녘·밤 하늘 경계, 가림 시험(`tools/occlude-test.js` — 휜 그림에서도 통과), 이야기 끝까지.
 
 ## 카메라 규칙 (모든 스테이지, 2026-11-02)
 - 카메라는 플레이어 것이다. 걷기·탈것·활공·날기 무엇을 하든 카메라를 붙박지 않는다 — 끌기로 각도, 두 손가락·휠로 거리를 늘 바꿀 수 있고, 손을 떼면 그 각도를 지킨다(억지로 원래 각도로 되돌리지 않는다).

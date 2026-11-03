@@ -65,10 +65,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    port = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 8000
+    host = '0.0.0.0' if '--lan' in sys.argv else '127.0.0.1'  # --lan: 같은 와이파이의 아이폰에서 열기(예: python3 tools/shot-server.py 8001 --lan)
     # 연결 대기 줄을 넉넉히: 페이지가 구운 텍스처 수십 장을 한꺼번에 받으면 기본값(5)을 넘어 연결이 끊기고(ERR_CONNECTION_RESET),
     # 못 받은 텍스처를 대신 그려 촬영 그림이 1~4단계씩 달라진다(2026-10-31)
     class Server(http.server.ThreadingHTTPServer):
         request_queue_size = 128
         daemon_threads = True
-    Server(('127.0.0.1', port), Handler).serve_forever()
+    Server((host, port), Handler).serve_forever()
