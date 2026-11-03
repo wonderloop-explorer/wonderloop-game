@@ -50,6 +50,7 @@ const css=`
 #wlResult .b2{display:block;width:100%;text-align:center;margin-top:.6rem;border:2px solid var(--accent);border-radius:14px;font-size:1rem;padding:.7rem 1.2rem}
 #wlQuest,#wlPrompt{position:fixed;left:50%;transform:translateX(-50%);background:var(--panel);color:var(--ink);box-shadow:0 4px 14px rgba(30,14,36,.22);border-radius:999px;padding:.4rem 1rem;font-size:1rem;font-family:"Jua","Gowun Dodum",sans-serif;--fd:3px;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:15;white-space:nowrap}
+#wlQuest .wl-arrow{display:inline-block;margin-right:.5rem;color:#ffd23f;transition:transform .15s linear} /* 가야 할 쪽 화살표(game/goal) */
 #wlQuest{top:calc(env(safe-area-inset-top,0px) + 14px);margin:0;padding:.45rem .95rem;font-size:.98rem;background:rgba(46,28,44,.66);color:#fff4e4;box-shadow:none;border-radius:999px;line-height:1.35}
 @media (max-width:700px){#wlQuest{left:calc(env(safe-area-inset-left,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 14px);transform:none;white-space:normal;text-align:center;box-sizing:border-box}body.wl-dev #wlQuest{left:calc(env(safe-area-inset-left,0px) + 76px)}} /* 휴대폰: 왼쪽 끝부터 오른쪽 끝까지(개미굴처럼 줄바꿈), ?debug 면 톱니 옆부터 */
 #wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px);font-size:1.2rem;padding:.5rem 1.25rem .55rem}
@@ -59,36 +60,44 @@ const css=`
 #wlSecret{position:fixed;inset:0;display:none;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.25);z-index:31}
 #wlSecret .card{background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:4px solid #e3ad35;border-radius:22px;padding:1.4rem 1.5rem 1.2rem;width:min(21rem,100%);box-sizing:border-box;text-align:center;
   box-shadow:inset 0 0 0 3px #fff6d6,0 0 34px rgba(255,196,70,.65),0 18px 50px rgba(30,14,36,.5)}
-#wlSecret .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.95rem}#wlSecret img{width:96px;height:96px;margin:.5rem auto 0;display:block}#wlSecret img:not([src]){display:none}
+/* 비밀 카드 금빛 반짝임(개미굴 비밀 카드처럼, 2026-11-03): 카드 둘레 별 다섯이 차례로 반짝, 카드가 살짝 빛나며 숨쉼, 그림 둘레 금빛 고리 */
+#wlSecret .card{position:relative;animation:wlSecIn .5s cubic-bezier(.2,1.4,.4,1) both,wlSecGlow 2.4s ease-in-out .5s infinite}
+#wlSecret .tw{position:absolute;left:var(--x);top:var(--y);width:26px;height:26px;transform:translate(-50%,-50%) scale(0);pointer-events:none;background:#ffe9a0;
+  clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);filter:drop-shadow(0 0 6px rgba(255,210,90,.95));animation:wlSecTw 2.2s ease-in-out var(--d) infinite}
+#wlSecret img{border-radius:50%;background:#fff8e8;box-shadow:0 0 0 4px #e3ad35,0 0 18px rgba(255,196,70,.8)}
+@keyframes wlSecTw{0%,55%,100%{transform:translate(-50%,-50%) scale(0) rotate(0);opacity:0}70%{transform:translate(-50%,-50%) scale(1) rotate(30deg);opacity:1}85%{transform:translate(-50%,-50%) scale(.4) rotate(50deg);opacity:.6}}
+@keyframes wlSecGlow{0%,100%{box-shadow:inset 0 0 0 3px #fff6d6,0 0 26px rgba(255,196,70,.55),0 18px 50px rgba(30,14,36,.5)}50%{box-shadow:inset 0 0 0 3px #fff6d6,0 0 46px rgba(255,196,70,.9),0 18px 50px rgba(30,14,36,.5)}}
+@keyframes wlSecIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){#wlSecret .card{animation:none}#wlSecret .tw{display:none}}
+#wlSecret .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.95rem}#wlSecret img{width:112px;height:112px;margin:.6rem auto 0;display:block;object-fit:contain}#wlSecret img:not([src]){display:none}
 #wlSecret h2{margin:.5rem 0 .4rem;font-size:1.45rem;font-weight:400;font-family:"Jua",sans-serif}#wlSecret .f{margin:0;line-height:1.65}#wlSecret .n{margin:.6rem 0 0;color:#9a6a18;font-size:.9rem}#wlSecret .n:empty{display:none}
 #wlSecret button{display:block;width:100%;margin-top:1rem;text-align:center;border-radius:14px;background:#e3ad35;color:#fffaf2;font-size:1.05rem;padding:.75rem 1.2rem}
 body.wl-nohints .wl-hint{visibility:hidden!important}
 .wlg button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 #wlCut{position:fixed;inset:0;display:none;place-items:center;background:#1e0e24;z-index:45;cursor:pointer}#wlCut.on{display:grid;animation:wlCutIn .6s ease-out}
-#wlProf{--pp:#fff6ea;--pi:#3e2834;--ps:#75565e;--pb:#fffaf2;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);width:min(30rem,calc(100vw - 24px));box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;z-index:21;
-  background:var(--pp);color:var(--pi);border-radius:20px;padding:.9rem 1.1rem 1rem;box-shadow:0 14px 40px rgba(30,14,36,.38);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s;word-break:keep-all;overflow-wrap:break-word;color-scheme:light}
-/* 소개 카드는 기기의 어두운 화면 설정과 상관없이 늘 크림색 바탕 + 진갈색 글자(아이템 카드와 같은 색) */
-/* 카드가 열린 동안 위쪽 할 일 문구는 잠시 숨김(카드 뒤로 비쳐 보이지 않게) */
-.wlg.prof-on #wlQuest{visibility:hidden}
-#wlProf.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto;cursor:pointer}
-#wlProf .hd{display:flex;align-items:center;gap:.85rem;margin-bottom:.55rem}
-#wlProf .ic{flex:none;width:5.6rem;height:5.6rem;border-radius:50%;background:var(--pbg,#f3ead6);display:grid;place-items:center;overflow:hidden}
-#wlProf .ic img{width:84%;height:84%;object-fit:contain;display:block}#wlProf .ic img:not([src]){display:none}
-#wlProf .k{margin:0 0 .15rem -.2rem;display:inline-block;padding:.12rem .7rem .16rem;font-size:.85rem}
-#wlProf .t{margin:.25rem 0 0;font-size:1.32rem;font-weight:400;line-height:1.2;font-family:"Jua",sans-serif}
-#wlProf .s{margin:0;font-size:.92rem;line-height:1.45;color:var(--ps)}
-#wlProf .l{margin:.4rem 0 0;font-size:.88rem;line-height:1.4;display:flex;gap:.45rem;align-items:baseline}
-#wlProf .l b{flex:none;font-weight:400;font-size:.72rem;background:rgba(117,86,94,.13);color:var(--ps);border-radius:999px;padding:.05rem .5rem}
-#wlProf .q{position:relative;margin:.55rem 0 0 .3rem;padding:.4rem .7rem;font-size:.92rem;line-height:1.42;background:var(--pb);border:1.5px solid rgba(167,122,82,.35);border-radius:12px}
-#wlProf .q::before{content:"";position:absolute;left:-7px;top:11px;width:10px;height:10px;background:var(--pb);border-left:1.5px solid rgba(167,122,82,.35);border-bottom:1.5px solid rgba(167,122,82,.35);transform:rotate(45deg)}
-#wlProf .q:empty,#wlProf .l:empty{display:none}
-@media (max-width:600px){#wlProf{padding:.6rem .8rem .65rem;border-radius:16px;top:calc(env(safe-area-inset-top,0px) + 8px)}#wlProf .hd{gap:.6rem;margin-bottom:.35rem}#wlProf .ic{width:3.4rem;height:3.4rem}
-  #wlProf .k{font-size:.66rem;padding:.02rem .5rem}#wlProf .t{font-size:1.05rem;margin-top:.15rem}#wlProf .s{font-size:.8rem;line-height:1.35}#wlProf .l{font-size:.78rem;margin-top:.25rem;gap:.35rem}#wlProf .l b{font-size:.64rem}
-  #wlProf .q{font-size:.8rem;line-height:1.35;padding:.3rem .55rem;margin-top:.35rem}} /* 휴대폰: 화면 높이의 1/4 아래 */
+/* 캐릭터 소개 카드 — 개미굴 '새 도감 카드'(#dexPop .dcard)와 같은 모양(2026-11-03): 화면 가운데, 뒤를 어둡게, 동그라미 그림·이름·한 줄 소개·좋아하는 것·한마디·친구 수, 아래 단추.
+   늘 크림색 바탕 + 진갈색 글자(기기 어두운 화면 설정과 상관없이) */
+#wlProf{position:fixed;inset:0;z-index:31;display:none;place-items:center;padding:1rem;box-sizing:border-box;background:rgba(30,14,36,.5);color-scheme:light}
+#wlProf.on{display:grid}
+#wlProf .dcard{width:min(22rem,100%);max-height:calc(100dvh - 2rem);overflow-y:auto;background:#fff6ea;color:#3e2834;border-radius:22px;padding:1.4rem 1.4rem 1.2rem;text-align:center;box-sizing:border-box;
+  box-shadow:0 18px 50px rgba(30,14,36,.5);animation:wlDexRise .45s cubic-bezier(.2,1.4,.4,1) both;word-break:keep-all;overflow-wrap:break-word}
+@keyframes wlDexRise{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+#wlProf .k{margin:0;display:inline-block;background:#f2b63c;color:#3e2834;border-radius:999px;padding:.15rem .7rem;font-size:.85rem;font-family:"Gowun Dodum",sans-serif}
+#wlProf .ic{display:grid;place-items:center;width:132px;height:132px;margin:.7rem auto .3rem;border-radius:50%;background:var(--pbg,#f3ead6);overflow:hidden}
+#wlProf .ic img{width:86%;height:86%;object-fit:contain;display:block}#wlProf .ic img:not([src]){display:none}
+#wlProf .t{margin:.2rem 0 .5rem;font-family:"Jua","Gowun Dodum",sans-serif;font-weight:400;font-size:1.6rem}
+#wlProf .s{margin:0;line-height:1.7;font-size:1.1rem}
+#wlProf .l{margin:.7rem 0 0;padding:.6rem .8rem;border-radius:14px;background:rgba(242,182,60,.18);line-height:1.55;font-size:.98rem;text-align:left}
+#wlProf .l b{display:inline-block;margin-right:.4rem;background:#f2b63c;color:#3e2834;border-radius:999px;padding:.02rem .5rem;font-size:.78rem;font-weight:400}
+#wlProf .q{margin:.6rem 0 0;line-height:1.6;font-size:.98rem;color:#75565e}#wlProf .q:not(:empty)::before{content:"“"}#wlProf .q:not(:empty)::after{content:"”"}
+#wlProf .n{margin:.8rem 0 0;font-size:.85rem;color:#75565e}
+#wlProf .q:empty,#wlProf .l:empty,#wlProf .n:empty{display:none}
+#wlProf button{display:block;width:100%;margin-top:1rem;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.4rem;cursor:pointer}
+@media (max-height:700px){#wlProf .ic{width:104px;height:104px;margin-top:.5rem}#wlProf .t{font-size:1.4rem}#wlProf .s{font-size:1rem}}
 #wlCut img{width:100%;height:100%;object-fit:contain}#wlCut p{position:absolute;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);margin:0;font-size:.8rem;color:rgba(255,246,234,.7)}
 @keyframes wlCutIn{from{opacity:0}to{opacity:1}}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
-@media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast,#wlProf{transition:none}#wlNotice:not(.on),#wlGet:not(.on),#wlProf:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
+@media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast{transition:none}#wlProf .dcard{animation:none}#wlNotice:not(.on),#wlGet:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
 @media (max-width:600px){#wlDlg .line{font-size:1.06rem;line-height:1.55}#wlDlg{padding:1.15rem 1.05rem .75rem}#wlDlg .who{font-size:.95rem}}
 @media (pointer:coarse){#wlDlg,#wlGet{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}} /* 터치 화면: 조이스틱·단추 위로 */
 #wlBadge{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 11vh);width:min(560px,calc(100vw - 20px));transform:translate(-50%,0);z-index:21;pointer-events:none;display:none}
@@ -108,8 +117,8 @@ const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"><span class="who wl-tape mint wl-mk"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" class="wl-felt" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint wl-felt" role="status" aria-live="polite"></p>
-<div id="wlProf" class="wl-felt" role="status" aria-live="polite"><div class="hd"><span class="ic"><img alt=""></span><div><p class="k wl-tape mint wl-mk">새 친구</p><p class="t"></p></div></div><p class="s"></p><p class="l"></p><p class="q"></p></div>
-<div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
+<div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
+<div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><i class="tw" style="--x:8%;--y:6%;--d:0s"></i><i class="tw" style="--x:93%;--y:14%;--d:.7s"></i><i class="tw" style="--x:5%;--y:62%;--d:1.3s"></i><i class="tw" style="--x:95%;--y:78%;--d:.35s"></i><i class="tw" style="--x:50%;--y:2%;--d:1.8s"></i><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
 <div id="wlBadge" role="status" aria-live="polite"><img class="bg" alt=""><span class="medal" aria-hidden="true"><img alt=""></span><div class="txt"><p class="t"></p><p class="s"></p></div></div>
@@ -118,10 +127,12 @@ root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"
  if(!document.querySelector('link[data-wl-font]')){const l=document.createElement('link');l.rel='stylesheet';l.dataset.wlFont='1';l.href='https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap';document.head.appendChild(l);}
  document.body.appendChild(root);injectFelt();}
 const $=s=>root.querySelector(s);
-const coarse=matchMedia('(pointer:coarse)').matches;
+const coarse=matchMedia('(pointer:coarse)').matches,SHOT_UI=new URLSearchParams(location.search).has('shot'); // 촬영 모드: 소개 카드는 sec초 뒤 저절로(영상·시험이 기다리지 않게)
 /* 대화창 */
 const dlg=$('#wlDlg');
-function showDialog(who,text,more){dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';}
+/* 탐험가 이름(탐험가 소개 창에서 바꾼 이름 — localStorage 'wl-look2'.name): 대화창 이름표의 '원더룹'을 그 이름으로. 촬영 모드는 늘 '원더룹' */
+const heroName=()=>{if(SHOT_UI)return '원더룹';try{const n=(JSON.parse(localStorage.getItem('wl-look2')||'{}').name||'').trim();return n||'원더룹';}catch(e){return '원더룹';}};
+function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';}
 function hideDialog(){dlg.style.display='none';}
 const dialogShown=()=>dlg.style.display==='block';
 /* 카드 자리 하나: 안내 카드·결과창·비밀 카드는 한 번에 하나만 보인다(줄 세우기 — 결과창과 비밀 카드가 겹치지 않게).
@@ -206,14 +217,18 @@ const badgeShown=()=>cardOn==='badge';
    아이템 카드와 같은 테두리·글꼴, 왼쪽 동그라미에 초상(img: 2D 그림 경로 또는 게임 안에서 렌더링한 그림). 화면 위 가운데(휴대폰에서 원더룹·대화창을 가리지 않게).
    막지 않는다: 걷기·대화는 그대로, 아무 키나 누르기·터치로 닫히고(0.6초 뒤부터) sec초(기본 12, 게임 시간) 뒤 저절로. 시점 기록 kind 'card' who '소개' */
 const pf=$('#wlProf');let pfDone=null,pfCue=null,pfEnd=0;
-function profileCard({name='',intro='',likes='',quote='',img=null,bg=null,kicker='새 친구',sec=12}){return enqueue('profile',r=>{pfDone=r;pf.querySelector('.k').textContent=kicker;pf.querySelector('.t').textContent=name;pf.querySelector('.s').textContent=intro;
+function profileCard({name='',intro='',likes='',quote='',img=null,bg=null,kicker='새 친구',count='',button='반가워요!',sec=12}){return enqueue('profile',r=>{pfDone=r;pf.querySelector('.k').textContent=kicker;pf.querySelector('.t').textContent=name;pf.querySelector('.s').textContent=intro;
   {const l=pf.querySelector('.l');l.textContent='';if(likes){const b=document.createElement('b');b.textContent='좋아하는 것';const sp=document.createElement('span');sp.textContent=likes;l.append(b,sp);}}
-  pf.querySelector('.q').textContent=quote?quote.replace(/^["“]|["”]$/g,''):'';pf.querySelector('.ic').style.setProperty('--pbg',bg||'#f3ead6');
-  const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=clock.t+sec;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');sfx('itemget');});}
-function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');root.classList.remove('prof-on');endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
+  pf.querySelector('.q').textContent=quote?quote.replace(/^["“]|["”]$/g,''):'';pf.querySelector('.ic').style.setProperty('--pbg',bg||'#f3ead6');pf.querySelector('.n').textContent=count;pf.querySelector('button').textContent=button;
+  const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=SHOT_UI?clock.t+sec:Infinity;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');block('profile',true);sfx('dex');
+  setTimeout(()=>{if(cardOn==='profile'&&!coarse)pf.querySelector('button').focus({preventScroll:true});},50);});}
+function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');root.classList.remove('prof-on');block('profile',false);endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
 const profileShown=()=>cardOn==='profile';
 cardCloser('profile',closeProfile);
-['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='profile'&&performance.now()-cardOpenT>600)closeProfile();}));
+pf.querySelector('button').addEventListener('click',()=>{sfx('click');closeProfile();});
+// 도감 카드처럼 단추로 닫는다 — 키보드는 E·Enter·Space·Esc(0.6초 뒤부터), 뒤 어두운 곳을 눌러도
+window.addEventListener('keydown',e=>{if(cardOn!=='profile'||performance.now()-cardOpenT<=600)return;if(['KeyE','Enter','Space','Escape','NumpadEnter'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();closeProfile();}},true);
+pf.addEventListener('pointerdown',e=>{if(e.target===pf&&performance.now()-cardOpenT>600)closeProfile();});
 /* 안내 문구 (개미굴 #toast): toast('…') — 위 가운데 칩, 2.8초(게임 시간). 안내 표시라 영상에는 안 나온다 */
 const ts=$('#wlToast');let tsEnd=0;
 function toast(msg,sec=2.8){ts.textContent=msg;ts.classList.add('on');tsEnd=clock.t+sec;}

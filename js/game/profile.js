@@ -12,7 +12,7 @@ import {flags,setFlag} from './state.js';
 import {profileCard} from './ui.js';
 import {cutPaused} from './occlude.js';
 import {bendPaused} from './bend.js';
-let ctx=null,W='',CARDS={};
+let ctx=null,W='',CARDS={};const PICS={};
 function initProfile(c){ctx=c;}
 function setup({world,cards}){W=world||'';CARDS=cards||{};}
 const seen=id=>!!flags['meet:'+W+':'+id];
@@ -38,7 +38,12 @@ function portrait(root,{side=.42,lift=.12,w=512,h=512}={}){if(!ctx||!ctx.rendere
     if(par)par.add(root);else stage.remove(root);root.position.copy(pos);root.quaternion.copy(quat);root.scale.copy(scl);root.updateMatrixWorld(true);}
   return url;}
 function meet(id,root){const c=CARDS[id];if(!c||seen(id))return Promise.resolve(false);setFlag('meet:'+W+':'+id,true);
-  const img=c.img||(root?portrait(root,c.portrait):null);
-  return profileCard({name:c.name,intro:c.intro,likes:c.likes,quote:c.quote,img,bg:c.bg}).then(()=>true);}
+  const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;
+  const ids=Object.keys(CARDS),n=ids.filter(seen).length; // 친구 수(개미굴 '자연 도감 8/11'처럼) — 탐험 가방의 '만난 친구'와 같은 수
+  return profileCard({name:c.name,intro:c.intro,likes:c.likes,quote:c.quote,img,bg:c.bg,kicker:c.secret?'숨겨진 친구':'새 친구',count:`만난 친구 ${n}/${ids.length}`,button:'가방에 넣기'}).then(()=>true);}
+/* 탐험 가방(game/front)이 그림을 다시 쓸 수 있게: 처음 만날 때 찍은 초상은 기억해 둔다 */
+/* 비밀 장면처럼 카드 없이 '만났다'만 적을 때(숨겨진 비밀 카드가 대신 뜬다): 기록 + 초상을 찍어 돌려준다(탐험 가방 그림) */
+function found(id,root){const c=CARDS[id];if(!c)return null;setFlag('meet:'+W+':'+id,true);const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;return img;}
 const clearProfile=()=>{CARDS={};};
-export {clearProfile,initProfile,meet,portrait,seen,setup};
+const cards=()=>CARDS,pic=id=>PICS[id]||(CARDS[id]&&CARDS[id].img)||null;
+export {cards,clearProfile,found,initProfile,meet,pic,portrait,seen,setup};

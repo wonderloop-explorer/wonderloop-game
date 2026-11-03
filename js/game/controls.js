@@ -37,6 +37,7 @@ const css=`
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.45);z-index:40}
 @media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
 #wlHelp[hidden]{display:none}
+#wlHelp .snd{margin:0;padding-left:1.1rem;line-height:1.6;color:var(--f-soft);word-break:keep-all}#wlHelp .snd li{margin:.2rem 0}#wlHelp .snd b{color:var(--f-ink);font-weight:700}#wlHelp .play{margin:0;line-height:1.65;color:var(--f-soft);word-break:keep-all}
 #wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow-y:auto;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
 #wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400;font-family:"Jua",sans-serif}
 #wlHelp h3{margin:1rem 0 .45rem;font-size:1rem;font-weight:400;color:var(--f-soft);font-family:"Jua",sans-serif}
@@ -47,8 +48,8 @@ const css=`
 /* 조작법 창(2026-11-03 개미굴 조작법과 같게): 컴퓨터는 키보드, 휴대폰은 터치 — 오른쪽 위 '조작법' 단추(game/front)·H 키로 열고 닫는다.
    세계마다 새로 생긴 것(탈것·우산 활공 등)은 세계 front.help로 '이 세계에서' 칸에(setHelpExtra). 늘 크림색 바탕·진갈색 글자, 휴대폰 세로는 화면 위쪽에 */
 const KEYS_HELP=[['<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>','걷기 (카메라가 보는 쪽이 앞)'],['방향키 · 마우스 끌기','카메라 돌리기'],['휠 · <kbd>-</kbd><kbd>+</kbd>','카메라 확대·축소'],['<kbd>Space</kbd>','점프'],['<kbd>Shift</kbd>','대쉬 · 누른 채면 달리기'],
-  ['<kbd>E</kbd>','말 걸기 · 손으로 하기 · 대화 넘기기'],['<kbd>F</kbd>','세계 도구 쓰기'],['<kbd>C</kbd>','옷 갈아입기'],['<kbd>M</kbd>','소리 끄고 켜기'],['<kbd>H</kbd>','조작법 열고 닫기'],['<kbd>Esc</kbd>','창 닫기']];
-const TOUCH_HELP=[['왼쪽 아래 동그라미','끌어서 걷기 (끝까지 밀면 달리기)'],['한 손가락 끌기','카메라 돌리기'],['두 손가락','벌리면 가까이 · 오므리면 멀리'],['점프 · 대쉬','오른쪽 아래 단추'],['말 걸기','가까이 가면 생기는 노란 단추 (손으로 하기·타기도)'],['메뉴','오른쪽 위 노란 단추 — 소리·옷 갈아입기·조작법'],['땅 누르기','그 자리로 걸어가기']];
+  ['<kbd>E</kbd>','말 걸기 · 손으로 하기 · 대화 넘기기'],['<kbd>F</kbd>','세계 도구 쓰기'],['<kbd>B</kbd>','탐험 가방 열기 (받은 물건·만난 친구·숨겨진 비밀)'],['<kbd>C</kbd>','탐험가 소개 · 옷 갈아입기'],['<kbd>M</kbd>','소리 끄고 켜기'],['<kbd>H</kbd>','조작법 열고 닫기'],['<kbd>Esc</kbd>','창 닫기']];
+const TOUCH_HELP=[['왼쪽 아래 동그라미','끌어서 걷기 (끝까지 밀면 달리기)'],['한 손가락 끌기','카메라 돌리기'],['두 손가락','벌리면 가까이 · 오므리면 멀리'],['점프 · 대쉬','오른쪽 아래 단추'],['말 걸기','가까이 가면 생기는 노란 단추 (손으로 하기·타기도)'],['가방','왼쪽 위 노란 단추 — 받은 물건·만난 친구·숨겨진 비밀'],['메뉴','오른쪽 위 노란 단추 — 소리·옷 갈아입기·조작법'],['땅 누르기','그 자리로 걸어가기']];
 let extra=null;
 let help=null,toolBtn=null,dashBtn=null;
 function build(){const root=document.querySelector('.wlg');if(!root)return;
@@ -56,7 +57,7 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   const box=document.createElement('div');
   box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
-<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
+<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><h3>소리가 안 들릴 때</h3><ul class="snd"><li>오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.</li><li>다른 앱에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.</li><li>아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.</li><li>그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.</li></ul><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
   help=root.querySelector('#wlHelp');help.querySelector('button').addEventListener('click',()=>showHelp(false));
   help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});
@@ -74,7 +75,10 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   dashBtn.addEventListener('pointerdown',e=>{e.preventDefault();input.dashReq=true;});}
 function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);if(on)help.querySelector('button').focus({preventScroll:true});} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
 /* 세계마다 새로 생긴 조작(front.help: [[이름, 설명]…]) — '이 세계에서' 칸 */
-function setHelpExtra(list){extra=list||null;if(!help)return;const box=help.querySelector('.extra');box.innerHTML='';if(!extra||!extra.length)return;
+/* setHelpExtra(list, play): 세계마다 '이렇게 놀아요'(play — 한 단락, 개미굴 조작법과 같게)와 '이 세계에서'(list) */
+function setHelpExtra(list,play=null){extra=list||null;if(!help)return;const box=help.querySelector('.extra');box.innerHTML='';
+  if(play){const h=document.createElement('h3');h.textContent='이렇게 놀아요';const p=document.createElement('p');p.className='play';p.textContent=play;box.append(h,p);}
+  if(!extra||!extra.length)return;
   const h=document.createElement('h3');h.textContent='이 세계에서';const dl=document.createElement('dl');extra.forEach(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.append(dt,dd);});box.append(h,dl);}
 const helpShown=()=>!!help&&!help.hidden;
 function setTool(t){tool=t||null;if(!toolBtn)return;toolBtn.style.display=tool?'block':'none';if(tool)toolBtn.textContent=tool.label||'도구';}
@@ -90,7 +94,8 @@ function initControls(ctx){build();if(SHOT)return;
     else if(e.code==='ShiftLeft'||e.code==='ShiftRight')input.dashReq=true;
     else if(e.code==='KeyF')useTool();
     else if(e.code==='KeyH')showHelp(true);
-    else if(e.code==='KeyC'&&hooks.onWardrobe)hooks.onWardrobe();});
+    else if(e.code==='KeyC'&&hooks.onWardrobe)hooks.onWardrobe();
+    else if(e.code==='KeyB'&&hooks.onBag)hooks.onBag();});
   window.addEventListener('keyup',e=>{keys[e.code]=false;});
   window.addEventListener('blur',releaseAll);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseAll();});

@@ -17,7 +17,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {PI,QUALITY,add,blob,boxAt,cylAt,group,lathe,pencil,rng,shadowBlob} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {FAIRY_BADGE,FAIRY_CARDS,FAIRY_SKY,FAIRY_WORLD,WATER,icon} from './world.js';
-import {bakeFairy,clearFairyCache,dandelionPuff,fairy,leafBoat as boatLeaf} from './fairies.js';
+import {bakeFairy,clearFairyCache,dandelionPuff,fairy,leafBoat as boatLeaf,strider} from './fairies.js';
 import {clearPaintCache,fbm,painted,toon} from './paint.js';
 import {deepForest} from './forest.js';
 export function build({root}){
@@ -327,6 +327,21 @@ const SHROOM=[-2.3,5.5];const shroom=fairy('mushroom');if(MOB)bakeFairy(shroom,{
 shadowBlob(SHROOM[0],SHROOM[1],.35,.35);
 G.occlude.add(shroom.root,.35,.9);
 G.profile.setup({world:FAIRY_WORLD.world,cards:FAIRY_CARDS}); // 처음 이야기한 뒤 소개 카드 한 번 (도감 대신)
+/* ---------- 숨겨진 비밀: 아기 소금쟁이 (2026-11-03 — 개미굴 비밀 장면처럼 표시 없이, 가까이 가면 금빛 반짝임만) ----------
+   서쪽 강가 연잎 그늘(길에서 벗어난 곳)에서 물 위 걷기를 연습하는 아기. 6.5m 안이면 위에 ✦ 반짝임(안내 표시), 물가 1.7m 안이면 비밀 카드(금빛) → 탐험 가방 '숨겨진 비밀'에.
+   찾은 기록은 flags['meet:fairy-forest:strider'](profile.found) — 다시 열면 아기는 그대로 있고 반짝임·카드는 없다 */
+const SEC={x:-11.3};SEC.z=zS(SEC.x)-.75;SEC.shore=[SEC.x,zS(SEC.x)+.55];
+const baby=strider();baby.root.position.set(SEC.x,-.085,SEC.z);baby.root.rotation.y=PI*.8;root.add(baby.root);keep.push(baby.root);
+const secStar=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,60);gr.addColorStop(0,'rgba(255,248,214,1)');gr.addColorStop(.25,'rgba(255,214,110,.75)');gr.addColorStop(1,'rgba(255,214,110,0)');
+  g.fillStyle=gr;g.fillRect(0,0,128,128);g.fillStyle='#fffbe6';g.beginPath();[[64,6],[73,55],[122,64],[73,73],[64,122],[55,73],[6,64],[55,55]].forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.fill();
+  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,color:'#ffe08a',fog:false}));
+  sp.position.set(SEC.x,.5,SEC.z);sp.visible=false;root.add(sp);G.ui.hint(sp);return sp;})();
+const secFound=()=>G.profile.seen('strider');
+function secretTick(t){const W=WL();if(!W||secFound()){secStar.visible=false;return;}const d=Math.hypot(W.position.x-SEC.x,W.position.z-SEC.z);
+  secStar.visible=d<6.5&&G.ui.hintsVisible();if(secStar.visible){const k=.5+.5*Math.sin(t*3.1),s=.35+.35*k*k;secStar.scale.set(s,s,1);secStar.material.rotation=t*.6;secStar.material.opacity=.45+.55*k;}
+  if(Math.hypot(W.position.x-SEC.shore[0],W.position.z-SEC.shore[1])<1.7&&!G.core.blocking()&&!G.ui.cardShown()&&!(W.userData.vert&&W.userData.vert.air)){
+    const img=G.profile.found('strider',baby.root);G.sound.sfx('dex');const c=FAIRY_CARDS.strider;
+    G.ui.secret({kicker:'숨겨진 비밀 발견!',title:'물 위를 걷는 아기 소금쟁이',text:'연잎 그늘에서 아기 소금쟁이가 물 위 걷기를 연습하고 있어요. 다리 끝의 가는 털이 물을 밀어내서 가라앉지 않는대요.',icon:img,count:'발견한 비밀 1/1 · '+c.name,button:'가방에 넣기'});}}
 /* ---------- 이슬배 (원더룹이 타는 길쭉한 나뭇잎배, 2026-11-02 그릇 배 대신) + 굴러오는 큰 이슬방울 ----------
    원더룹은 앞쪽에 앉고(ride pose '앉기'), 사공은 뒤쪽 끝에 서서 배 옆 바깥으로 노를 젓는다(노 끝이 물에 닿는 곳에 작은 물결). 굴러온 이슬방울은 배 가운데에 담겨 반짝인다 */
 const BOAT0=[4.55,-.06,-5.75],BL=2.7;
@@ -504,6 +519,7 @@ function update(dt,t){
   // 스테이지 완료: 우산을 펼쳐(활공) 처음 땅에 내려앉으면 한 번 — 짧은 안내, 저장(flags)
   if(hasUmb()&&!G.state.flags[CLEAR]){const V=WL()&&WL().userData.vert;if(V){if(V.glide>.5)st.soared=true;else if(st.soared&&!V.air){st.soared=false;stageClear();}}}
   if(intro)intro.tick(dt);
+  goalTick();secretTick(t);baby.tick(dt,t);
   if(cheerT>0){cheerT-=dt;cheer.points.visible=cheerT>0;cheer.update(dt,null);}
   if(!umb&&hasUmb())syncUmbrella(); // 처음 열 때(WL이 장면에 붙은 뒤) 이미 가진 우산 모양을 단다
   // 시간(0 낮 · 1 해 질 녘 · 2 밤): 물 색, 햇빛 얼룩, 버섯등(등마다 켜지는 때가 다름), 꽃·반딧불
@@ -532,6 +548,15 @@ function update(dt,t){
   boatGlint.points.visible=st.phase==='boat';if(st.phase==='boat')boatGlint.update(dt,null);
   if(dropCam>0){dropCam-=dt;if(dropCam<=0){dropCam=0;G.view.hold(null);}}
   if(umb){const W=WL(),k=W?W.userData.vert.glide:0;umb.userData.sway(t,.25+.75*k);}}
+/* 목표 안내(game/goal — 빛 기둥·이름표·발밑 동그라미 길·할 일 화살표, 2026-11-03): 지금 할 일의 자리. 연출(물길·이슬배 타기·우산 받기) 동안은 숨김 */
+let goalKey='';
+function goalTick(){const W=WL();let g=null;
+  if(st.phase==='arrive')g={key:'boatman',at:()=>[bmG.position.x,bmG.position.z],label:'사공 요정',h:2.2};
+  else if(st.phase==='clovers'&&W){let b=null,bd=1e9;CLOVERS.forEach(c=>{if(c.done||c.u>=0)return;const d=Math.hypot(W.position.x-c.x,W.position.z-c.g.position.z);if(d<bd){bd=d;b=c;}});
+    if(b)g={key:'clover'+b.x,at:[b.x,b.g.position.z],y:0,label:'클로버 잎',h:2.2};}
+  else if(st.phase==='boat')g={key:'boat',at:BOARD,y:DOCK.top,label:'이슬배 타기',h:2.4};
+  else if(st.phase==='done'&&!G.state.flags[CLEAR]&&!st.glided){const r=ROCKS[1];g={key:'rock',at:[r.c[0],r.c[1]],y:r.top,label:'높은 바위',h:2.4};}
+  const k=g?g.key:'';if(k!==goalKey){goalKey=k;G.goal.set(g);}}
 let slow=0,fno=0,qLevel=0,splashT=0,dewPop=1; // splashT: 물보라가 남아 있는 동안만 그린다
 function quality(L){qLevel=L;pollen.points.visible=L<1;if(L>=1)flies.points.visible=false;forest.setLevel(L);} // 08 자동 화질 조절
 return {...FAIRY_WORLD,

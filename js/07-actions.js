@@ -43,7 +43,9 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
    움직임 효과(개미굴 그대로): 대쉬 — 몸을 0.45 앞으로 숙이고(초당 14로), 땅에 있으면 0.035초마다 발밑 먼지(0.5초 동안 커지며 흐려지고 떠오름), 더듬이는 뒤로 ·
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
-const DRV={walk:1.5,run:1.5*8/5,dash:1.5*17/5,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
+/* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
+const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.4;
+const DRV={walk:WALK,run:WALK*8/5,dash:WALK*17/5,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
 const PUFF_S=.6,puffTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.5,'rgba(255,255,255,.5)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
@@ -248,7 +250,7 @@ function updateWL(dt,t){
    else D.spd=0;}
   if(V.jump){WL.position.x+=V.jump.vx*dt;WL.position.z+=V.jump.vz*dt;} // 튀어 날아가는 중: 걷기 대신
   else if(wlTarget&&!WL.userData.riding){const dx=wlTarget.x-WL.position.x,dz=wlTarget.z-WL.position.z,d=Math.hypot(dx,dz);
-    if(d<0.06)wlTarget=null;else{const st=Math.min(1.5*dt*(WL.userData.action==='뛰기'?1.9:1),d),nx=WL.position.x+dx/d*st,nz=WL.position.z+dz/d*st;
+    if(d<0.06)wlTarget=null;else{const st=Math.min(DRV.walk*dt*(WL.userData.action==='뛰기'?1.9:1),d),nx=WL.position.x+dx/d*st,nz=WL.position.z+dz/d*st;
       let diff=Math.atan2(dx,dz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);
       const fy=H?V.y:undefined; // 높이가 있는 구역: 발보다 높은 발판 옆면은 막힘
       if(canGo(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}
@@ -277,7 +279,7 @@ function updateWL(dt,t){
     GY=V.y;}
   unstick(dt,H);
   V.px=X;V.pz=Z;
-  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
+  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*(SHOTM?11:16)*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*0.5;legs[1].rotation.x=-sw*0.5;

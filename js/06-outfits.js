@@ -169,7 +169,7 @@ function wlMerge(list){
    const tint=(m,from,to)=>{const k=m.clone(),a=new THREE.Color(from),b=new THREE.Color(to);k.color.setRGB(m.color.r*b.r/a.r,m.color.g*b.g/a.g,m.color.b*b.b/a.b);return k;};
    const cache=new Map(),pick=(m,from,to)=>{if(from===to)return m;const key=m.uuid+to;if(!cache.has(key))cache.set(key,tint(m,from,to));return cache.get(key);};
    const swap=(base,want)=>WL.traverse(o=>{if(!o.isMesh)return;for(const [m,mm] of base){if(o.material===m||o.userData.wlBaseMat===m){o.userData.wlBaseMat=m;o.material=mm;}}});
-   WL.userData.vestColors=VEST.map(v=>v[0]);WL.userData.scarfColors=SCARF.map(v=>v[0]);
+   WL.userData.vestColors=VEST.map(v=>v[0]);WL.userData.scarfColors=SCARF.map(v=>v[0]);WL.userData.vestHex=VEST.map(v=>v[1]);WL.userData.scarfHex=SCARF.map(v=>v[1]); // 색 이름·점 색(탐험가 소개 창)
    WL.userData.setVest=i=>{const v=VEST[i]||VEST[0];swap([[vestM,pick(vestM,VEST[0][1],v[1])],[vestD,pick(vestD,VEST[0][2],v[2])]]);WL.userData.vestIdx=VEST.indexOf(v);};
    WL.userData.setScarf=i=>{const v=SCARF[i]||SCARF[0];swap([[nkM,pick(nkM,SCARF[0][1],v[1])],[bandM,pick(bandM,SCARF[0][1],v[1])]]);WL.userData.scarfIdx=SCARF.indexOf(v);};
    WL.userData.vestIdx=0;WL.userData.scarfIdx=0;}

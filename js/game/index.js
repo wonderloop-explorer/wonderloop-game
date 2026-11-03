@@ -16,6 +16,7 @@ import {clearCompanions,initCompanions,tickCompanions} from './companion.js';
 import {clearControls,initControls} from './controls.js';
 import {clearProfile,initProfile} from './profile.js';
 import {initFront} from './front.js';
+import {clearGoal,initGoal,tickGoal} from './goal.js';
 /* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기)
    view.focus({at:[x,y,z], from:[x,y,z]?, dist, sec}): 따라가기 카메라가 sec초 동안 at을 비췄다가 돌아온다(미션 장소 알려 주기, 2026-11-02).
      from이 없으면 원더룹 쪽에서 dist(기본 7)만큼 떨어져 비스듬히 내려다본다. 들어갈 때·돌아올 때 0.45초씩 부드럽게(08 따라가기 카메라가 섞는다).
@@ -33,9 +34,9 @@ const view={camera:null,aim:null,
   focus({at,from=null,dist=7,sec=2}){return new Promise(done=>{view.req={at,from,dist,sec,t:0,done};});},
   hold(fn){view.req=fn?{fn,t:0}:null;}};
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);}
-function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);}
-function clearZoneGame(){STEPS++;view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();setQuest('');setPrompt('');}
+function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);}
+function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickGoal(dt);}
+function clearZoneGame(){STEPS++;view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearGoal();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart});}
 export {clickNPC,clearZoneGame,clock,cues,initGame,startFront,steps,updateGame,view};
@@ -60,3 +61,4 @@ export * as course from './course.js';
 export * as ride from './ride.js';
 export * as companion from './companion.js';
 export * as front from './front.js';
+export * as goal from './goal.js';

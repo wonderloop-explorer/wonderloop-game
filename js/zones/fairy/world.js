@@ -17,6 +17,22 @@ export const FAIRY_FRONT={ribbon:'원더룹의 대모험',logo:'요정의 숲 �
   img:{ribbon:asset('assets/titles/fairy/title-ribbon.webp'),logo:asset('assets/titles/fairy/title-logo.webp'),w:1200,h:522,
     twinkle:[[.4625,.425,0],[.963,.544,1.4],[.428,.468,2.6],[.649,.808,3.3],[.373,.913,.8]]},
   itemIcons:{umbrella:asset('assets/icons/fairy/umbrella.png')}, // 왼쪽 위 받은 물건 칩 아이콘(game/front) — 나침반은 기본 SVG
+  // 첫 화면 소개 두 줄(개미굴 .sub)·탐험가 소개 패널·모험 떠나기 전 이야기 소개(개미굴 #show·#story — 2026-11-03)
+  intro:'꽃 화관을 쓰고 요정 마을에 온 탐험가 원더룹이\n첫별 축제가 열리는 별꽃 전망대로 떠나요',
+  explorer:{bio:'요정 마을의 첫별 축제가 너무 궁금해서 꽃 화관을 쓰고 찾아온 탐험가 원더룹이에요. 처음 보는 건 꼭 손으로 만져 봐요.',
+    goal:'첫별이 뜨는 밤, 별꽃 전망대의 축제까지 가 보기',
+    deco:{label:'화관',list:[{name:'봉오리 화관',hood:'crown'},{name:'활짝 핀 화관',hood:'crownBloom',flag:'gem',lock:'별꽃 전망대에서 첫별이 뜨면 열려요'}]},
+    map:[['이슬방울 선착장','fairy-dock'],['민들레 공중정원',null],['버섯 장터',null],['별꽃 전망대',null]]},
+  story:['숲속 아주 깊은 곳, 커다란 클로버와 연잎 사이에 작은 요정들의 마을이 있대요.',
+    '오늘 밤은 일 년에 한 번, 별꽃 전망대에서 첫별 축제가 열리는 날이에요.',
+    '첫 번째 길은 이슬방울 선착장. 이슬배를 타야 강 건너 마을로 갈 수 있어요.'],
+  play:'바닥에 반짝이는 동그라미 길과 빛 기둥을 따라가면 다음 목표가 나와요. 위 가운데 안내의 화살표도 가야 할 쪽을 가리켜요. 요정들과 이야기하며 부탁을 들어주고, 받은 물건과 만난 친구는 왼쪽 위 가방에 모여요. 어딘가 금빛으로 반짝이는 곳에는 숨겨진 비밀이 있어요.',
+  // 탐험 가방(game/front — 왼쪽 위 '가방' 단추, B 키): 받은 물건·만난 친구·숨겨진 비밀을 도감처럼 한 창에. 아직 못 받은 것은 ??? + 어디서
+  bag:{title:'탐험 가방 · 요정의 숲',
+    items:[{id:'compass',name:'더듬이 나침반',f:'개미굴 여왕개미에게 받은 나침반. 가야 할 쪽을 바늘로 살짝 알려 줘요.',where:'개미굴'},
+      {id:'umbrella',name:'민들레 솜털 우산',f:'사공 요정의 선물. 뛰어내리거나 떨어질 때 펼쳐져 사뿐히 내려와요.',where:'이슬방울 선착장'},
+      {id:'badge',name:'???',where:'민들레 공중정원'},{id:'can',name:'???',where:'버섯 장터'},{id:'gem',name:'???',where:'별꽃 전망대'}],
+    friends:['boatman','mushroom'],secrets:[{id:'strider',where:'이슬방울 선착장'}]},
   help:[['탈것','가까이 가면 생기는 단추(E)로 타요 · 타는 동안에도 카메라는 돌릴 수 있어요'],['민들레 우산','받은 뒤에는 점프하거나 높은 데서 떨어질 때 저절로 펼쳐져 천천히 내려와요']],
   ending:{img:null}};
 export const FAIRY_BADGE={img:asset('assets/ui/fairy/stage-badge.webp'),box:[.128,.414,.868,.893],medal:[.4992,.2153,.13],ar:1400/416};
@@ -39,7 +55,7 @@ export const WATER=[{c:'#8fdcd3',e:'#4fb5b2',ei:.14},{c:'#8cbcb8',e:'#f0a088',ei
 export const FAIRY_CARDS={
   boatman:{name:'사공 요정',intro:'선착장에서 이슬배를 모는 뱃사공. 물길이라면 눈 감고도 알아요.',likes:'바람 없는 아침의 잔잔한 물길',quote:'이슬배는 천천히 가야 제맛이란다!',img:card('boatman'),bg:'#d8e9f6'},
   mushroom:{name:'버섯 요정',intro:'축제 소식을 제일 먼저 알려 주는 마을 안내 요정.',likes:'비 온 다음 날의 축축한 흙',quote:'보이는 건 모자뿐이야. 진짜 내 몸은 땅속에 길게길게 뻗어 있거든!',img:card('mushroom'),bg:'#fbe0c8'},
-  strider:{name:'아기 소금쟁이',intro:'물 위 걷기를 연습 중인 수줍은 아기. 아직 가끔 미끄러져요.',likes:'연잎 그늘 아래 조용한 물',quote:'톡톡톡! 물결로 하는 인사, 너도 할 줄 알지?',img:null,bg:'#fbf0bf'}, // 숨겨진 비밀 장면을 마친 뒤 meet('strider', 그 모델)
+  strider:{name:'아기 소금쟁이',intro:'물 위 걷기를 연습 중인 수줍은 아기. 아직 가끔 미끄러져요.',likes:'연잎 그늘 아래 조용한 물',quote:'톡톡톡! 물결로 하는 인사, 너도 할 줄 알지?',img:null,bg:'#fbf0bf',secret:true,portrait:{side:.5,lift:.9}}, // 숨겨진 비밀 장면을 마친 뒤 meet('strider', 그 모델)
 };
 FAIRY_WORLD.front=FAIRY_FRONT; // 게임 첫 화면(game/front)
 FAIRY_WORLD.badge=FAIRY_BADGE; // 스테이지 완료 배지(ui.stageBadge) — 구역 정보에서도 보이게

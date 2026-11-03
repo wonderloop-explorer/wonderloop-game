@@ -1,7 +1,7 @@
 /* 원더룹 — 입력·조명 단계·카메라 따라가기·구역 오가기·애니메이션 루프 */
 import * as THREE from 'three';
 import {PI,QUALITY,rawLin,rngLoaded,scene} from './01-textures.js';
-import {ZONES,areaAt,blocked,doorAt,groundY,loadZone,overlap,unloadZone,zone} from './02-zone.js';
+import {ZONES,areaAt,blocked,doorAt,floorAt,groundY,loadZone,overlap,unloadZone,zone} from './02-zone.js';
 import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui} from './03-scene.js';
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
@@ -66,10 +66,11 @@ function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥�
   GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
-GAME.initGame({scene,camera,renderer,WL});window.wlGame=GAME; // 콘솔·시험 도구용
+GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5)});window.wlGame=GAME; // 콘솔·시험 도구용
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.startFront({ctx:{scene,camera,renderer,WL},zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
+{const b=document.getElementById('wlBoot');if(b){if(new URLSearchParams(location.search).has('shot'))b.remove();else requestAnimationFrame(()=>requestAnimationFrame(()=>{b.classList.add('gone');setTimeout(()=>b.remove(),600);}));}} // 첫 로딩 화면: 첫 구역을 그린 뒤 서서히
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES),blocked,overlap}; // blocked·overlap: 끼임 자동 시험(tools/stuck-test.js)
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
 if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;

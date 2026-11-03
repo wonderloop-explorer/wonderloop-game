@@ -136,5 +136,24 @@ function dandelionPuff({stem=1.75,reach=0,R=.44}={}){const g=new THREE.Group();g
     const b=1+Math.sin(t*3.2)*.025*k;layers[0].scale.setScalar(b);top.rotation.z=Math.sin(t*1.3)*.06*k;};
   return g;}
 /* 구역을 떠날 때: 요정 재질·갓 무늬 캐시를 놓는다(다음 구역에서 다시 만들면 같은 그림) */
+/* 아기 소금쟁이(숨겨진 비밀, 2026-11-03): 물 위에 서는 가늘고 긴 다리 여섯, 길쭉한 갈색 몸, 큰 점 눈·볼터치. 길이 약 0.5m(원더룹보다 훨씬 작다).
+   strider() → {root, tick(dt,t)} — 앞다리로 물을 톡톡(인사), 몸이 살짝 미끄러졌다 돌아온다. 발 끝은 y=0(물 면) */
+function strider(){const root=new THREE.Group();root.name='fairy:strider';const body=new THREE.Group();root.add(body);body.position.y=.13;
+  const bm=mat('#9a7350'),dk=mat('#6e4e34'),ink=mat(INK,'plain'),pink=mat(CHEEK,'plain'),wh=mat('#fffaf0','plain');
+  const torso=mesh(new THREE.SphereGeometry(.07,12,9),bm,body,0,0,-.05);torso.scale.set(.85,.7,2.1);
+  const head=mesh(new THREE.SphereGeometry(.062,14,10),bm,body,0,.02,.11);
+  [-1,1].forEach(sx=>{const e=mesh(new THREE.SphereGeometry(.026,10,8),wh,head,sx*.034,.026,.03);mesh(new THREE.SphereGeometry(.016,8,6),ink,e,0,.002,.015);
+    const c=mesh(new THREE.CircleGeometry(.013,10),pink,head,sx*.045,-.012,.042);c.lookAt(c.position.clone().multiplyScalar(3).add(head.getWorldPosition(new THREE.Vector3())));});
+  [-1,1].forEach(sx=>{const a=mesh(new THREE.CylinderGeometry(.004,.004,.09,5),dk,head,sx*.018,.07,.0);a.rotation.z=-sx*.35;a.rotation.x=-.4;});
+  const legs=[];const L=[[.08,.2,.5],[0,.32,.05],[-.11,.34,-.45]]; // [몸 z, 길이, 펼침 각]
+  L.forEach(([z,len,ay],i)=>[-1,1].forEach(sx=>{const piv=new THREE.Group();piv.position.set(sx*.04,0,z);body.add(piv);
+    const up=mesh(new THREE.CylinderGeometry(.006,.005,len*.45,5).translate(0,len*.225,0),dk,piv);up.rotation.z=-sx*1.0;
+    const knee=new THREE.Group();knee.position.set(sx*Math.sin(1.0)*len*.45,Math.cos(1.0)*len*.45,0);piv.add(knee);
+    const lo=mesh(new THREE.CylinderGeometry(.005,.003,len*.75,5).translate(0,-len*.375,0),dk,knee);lo.rotation.z=sx*1.12;
+    const foot=mesh(new THREE.SphereGeometry(.012,6,4),dk,knee,sx*Math.sin(1.12)*len*.75,-Math.cos(1.12)*len*.75,0);foot.scale.y=.4;
+    piv.rotation.y=sx*ay;legs.push({piv,sx,i});}));
+  root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
+  return {root,tick(dt,t){const k=Math.sin(t*5);legs.forEach(l=>{if(l.i===0)l.piv.rotation.x=-Math.max(0,k)*.35*(l.sx>0?1:.4);});body.position.y=.13+Math.sin(t*2.4)*.006;
+    root.position.x+=Math.sin(t*.9)*.0015;body.rotation.y=Math.sin(t*.7)*.12;}};}
 function clearFairyCache(){for(const k in mats){mats[k].dispose();delete mats[k];}if(capTex){capTex.dispose();capTex=null;}if(gillTex){gillTex.dispose();gillTex=null;}}
-export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,leafBoat};
+export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,leafBoat,strider};
