@@ -37,14 +37,16 @@ const css=`
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.45);z-index:40}
 @media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
 #wlHelp[hidden]{display:none}
+#wlHelp .hsc{flex:1;min-height:0;overflow-y:auto;margin:0 -.4rem;padding:0 .4rem} /* 내용만 스크롤 — 창 테두리 바느질 점선은 '알겠어요' 단추까지 늘 한 바퀴(2026-11-03: 스크롤하면 점선이 중간에서 끊겼다) */
 #wlHelp .snd{margin:0;padding-left:1.1rem;line-height:1.6;color:var(--f-soft);word-break:keep-all}#wlHelp .snd li{margin:.2rem 0}#wlHelp .snd b{color:var(--f-ink);font-weight:700}#wlHelp .play{margin:0;line-height:1.65;color:var(--f-soft);word-break:keep-all}
-#wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow-y:auto;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
+#wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow:hidden;display:flex;flex-direction:column;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
 #wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400;font-family:"Jua",sans-serif}
 #wlHelp h3{margin:1rem 0 .45rem;font-size:1rem;font-weight:400;color:var(--f-soft);font-family:"Jua",sans-serif}
 #wlHelp dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:.45rem .9rem;line-height:1.5}
 #wlHelp dt{white-space:nowrap;font-family:"Jua",sans-serif;color:var(--f-ink)}#wlHelp dd{margin:0;color:var(--f-soft)}
 #wlHelp kbd{font:inherit;font-size:.85rem;background:var(--f-cream);color:var(--f-ink);border:1.5px solid var(--f-edge);box-shadow:0 2px 0 var(--f-edge);border-radius:7px;padding:0 .4rem;margin-right:.2rem}
-#wlHelp button{position:sticky;bottom:0;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1.1rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.15rem;padding:.65rem 1.2rem;--fr:999px}`;
+#wlHelp button{position:relative;flex:none;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1.1rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.15rem;padding:.65rem 1.2rem;--fr:999px}
+@media (pointer:coarse) and (orientation:portrait){#wlHelp .hcard{max-height:min(60vh,calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 96px - env(safe-area-inset-bottom,0px)))}} /* 휴대폰 세로: 창 아래 끝('알겠어요')이 화면 안에, 아래쪽 원더룹은 보이게 — 위 기본 높이 규칙보다 뒤에 둔다 */`;
 /* 조작법 창(2026-11-03 개미굴 조작법과 같게): 컴퓨터는 키보드, 휴대폰은 터치 — 오른쪽 위 '조작법' 단추(game/front)·H 키로 열고 닫는다.
    세계마다 새로 생긴 것(탈것·우산 활공 등)은 세계 front.help로 '이 세계에서' 칸에(setHelpExtra). 늘 크림색 바탕·진갈색 글자, 휴대폰 세로는 화면 위쪽에 */
 const KEYS_HELP=[['<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>','걷기 (카메라가 보는 쪽이 앞)'],['방향키 · 마우스 끌기','카메라 돌리기'],['휠 · <kbd>-</kbd><kbd>+</kbd>','카메라 확대·축소'],['<kbd>Space</kbd>','점프'],['<kbd>Shift</kbd>','대쉬 · 누른 채면 달리기'],
@@ -57,7 +59,7 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   const box=document.createElement('div');
   box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
-<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><h3>소리가 안 들릴 때</h3><ul class="snd"><li>오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.</li><li>다른 앱에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.</li><li>아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.</li><li>그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.</li></ul><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
+<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><div class="hsc"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><h3>소리가 안 들릴 때</h3><ul class="snd"><li>오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.</li><li>다른 앱에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.</li><li>아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.</li><li>그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.</li></ul></div><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
   help=root.querySelector('#wlHelp');help.querySelector('button').addEventListener('click',()=>showHelp(false));
   help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});

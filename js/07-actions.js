@@ -279,7 +279,7 @@ function updateWL(dt,t){
     GY=V.y;}
   unstick(dt,H);
   V.px=X;V.pz=Z;
-  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*(SHOTM?11:16)*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
+  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*(SHOTM?11:16)*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('footstep',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*0.5;legs[1].rotation.x=-sw*0.5;

@@ -45,6 +45,8 @@ const S={
   tremble:[1.02,(c,t,D)=>{for(let i=0;i<14;i++)tone(c,'sine',mf(96+(i%2?2:0)),t+.25+i*.055,.09,.022*(1-i/16),D);[84,88].forEach((m,i)=>bell(c,m,t+i*.1,1.1,.045,D));}],
   chime:[1.16,(c,t,D)=>[84,79,88].forEach((m,i)=>bell(c,m,t+i*.08,1,.05,D))],
   thunder:[3,(c,t,D)=>{rumbleBurst(c,t,3,D);noise(c,t,.5,.5,D,'lowpass',380,.7,90);tone(c,'sine',38,t,2.5,.3,D);}],
+  // 원더룹 전용(2026-11-03, 개미굴에 없던 소리): 걸음마다 부드러운 발소리 — 개미굴 step(아주 작은 사각 잡음)은 배경음에 묻혀 안 들렸다. 낮은 '통' + 풀 스치는 소리, 걸음마다 높낮이가 조금씩
+  footstep:[.12,(c,t,D)=>{const f=rr(105,135);tone(c,'sine',f,t,.08,.11,D,{slide:f*.6,a:.004});noise(c,t,.07,.09,D,'lowpass',rr(900,1300),.9,350);noise(c,t+.01,.05,.035,D,'bandpass',rr(2600,3400),1.4);}],
   pop:[.5,(c,t,D)=>{tone(c,'sine',480,t,.14,.16,D,{slide:1150});[76,79,84].forEach((m,i)=>tone(c,'triangle',mf(m),t+.12+i*.08,.22,.09,D));}],
 };
 const ANT={};for(const k in S){const [dur,fn]=S[k];ANT[k]={dur,play(c,out){fn(c,c.currentTime,out);}};}

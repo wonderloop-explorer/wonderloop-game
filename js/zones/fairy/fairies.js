@@ -140,7 +140,7 @@ function dandelionPuff({stem=1.75,reach=0,R=.44}={}){const g=new THREE.Group();g
    재질은 흰 천 결 그림 한 장에 색만 곱한 것(vmat)이라 bakeFairy(into: body)로 주민 하나가 그리기 1번(휴대폰 스테이지 예산).
    villager(kind, {petal, dress, hair, cap}) → {root, body, tick(dt, t, moving)} — 걸을 때 통통 튀고 팔을 흔든다. 키 약 0.75(원더룹보다 작게), 얼굴 앞 +z, 발바닥 y=0 */
 let vTex=null;const vmats={};
-function vmat(c){if(!vTex)vTex=pencil('#ffffff','suede',{rep:[2,2]});return vmats[c]||(vmats[c]=new THREE.MeshStandardMaterial({map:vTex,color:new THREE.Color(c),roughness:.95,metalness:0}));}
+function vmat(c){if(!vTex)vTex=pencil('#ffffff','suede',{rep:[2,2]});const two=c.endsWith('|2'),hex=two?c.slice(0,-2):c;return vmats[c]||(vmats[c]=new THREE.MeshStandardMaterial({map:vTex,color:new THREE.Color(hex),roughness:.95,metalness:0,side:two?THREE.DoubleSide:THREE.FrontSide}));} // '색|2' = 양면
 function vface(head,r){const ink=vmat(INK),pink=vmat(CHEEK);const onFace=(x,y,out=0)=>{const z=Math.sqrt(Math.max(0,r*r-x*x-y*y));return new THREE.Vector3(x,y,z).normalize().multiplyScalar(r+out);};
   const stick=(m,p)=>{m.position.copy(p);m.lookAt(p.clone().multiplyScalar(2));head.add(m);m.castShadow=false;return m;};
   [-1,1].forEach(s=>{const e=stick(new THREE.Mesh(new THREE.SphereGeometry(r*.12,10,8),ink),onFace(s*r*.34,r*.02,-r*.03));e.scale.set(.9,1.1,.55);});
@@ -153,8 +153,9 @@ function villager(kind,o={}){const root=new THREE.Group();root.name='villager:'+
   if(kind==='mushroom'){const cap=o.cap||'#e9824a';
     vm(lathe([[0,0],[.15,.01],[.21,.07],[.23,.17],[.21,.27],[.15,.33],[0,.35]].map(q=>new THREE.Vector2(q[0],q[1])),14),'#f2dfc0',body,0,.04,0);
     head=new THREE.Group();head.position.set(0,.24,0);body.add(head);r=.22;vface(head,r);
-    const c=vm(lathe([[0,.22],[.11,.2],[.21,.14],[.29,.06],[.31,0]].map(q=>new THREE.Vector2(q[0],q[1])),16),cap,body,0,.3,0);c.material=vmat(cap);
-    [[0,.47,.12],[.12,.44,.06],[-.1,.45,.08]].forEach(([x,y,z])=>{const d=vm(new THREE.SphereGeometry(.045,8,6),'#fbf1de',body,x,y,z);d.scale.y=.4;});
+    const c=vm(lathe([[0,.24],[.12,.22],[.22,.16],[.3,.07],[.33,.01],[.32,-.03],[.27,-.05]].map(q=>new THREE.Vector2(q[0],q[1])),16),cap,body,0,.3,0); // 갓: 두께가 있게 테두리를 안쪽으로 말아 넣고
+    {const m=vmat(cap+'|2');c.material=m;} // 갓 안쪽 면도 그려(양면) 아래에서 봐도 속이 비지 않게(2026-11-03)
+    [[0,.522,.12],[.12,.522,.06],[-.1,.527,.08]].forEach(([x,y,z])=>{const d=vm(new THREE.SphereGeometry(.045,8,6),'#fbf1de',body,x,y,z);d.scale.y=.4;});
     [-1,1].forEach(s=>{const a=lim(s*.2,.16,.05,.035,'#f2dfc0',limbs);a.rotation.z=s*.7;});[-1,1].forEach(s=>lim(s*.07,.08,.02,.035,'#f2dfc0',legs));}
   else{const dress=o.dress||(kind==='wind'?'#a9d8b0':'#f6dc84');
     vm(lathe([[0,0],[.16,0],[.16,.03],[.12,.18],[.09,.29],[.05,.31],[0,.31]].map(q=>new THREE.Vector2(q[0],q[1])),12),dress,body,0,.13,0);
