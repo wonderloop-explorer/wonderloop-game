@@ -15,8 +15,8 @@
    "ok": true,
    "faded": 2,
    "wlPixels": 62222,
-   "darkFrac": 0,
-   "brightRatio": 1.006
+   "darkFrac": 0.0041,
+   "brightRatio": 1.001
   },
   {
    "name": "house-wall",
@@ -32,8 +32,8 @@
    "faded": 1,
    "wlPixels": 33719,
    "darkFrac": 0,
-   "brightRatio": 0.924,
-   "washDiff": 0.0103
+   "brightRatio": 0.923,
+   "washDiff": 0.0166
   },
   {
    "name": "house-close",
@@ -42,7 +42,7 @@
    "wlPixels": 62530,
    "darkFrac": 0,
    "brightRatio": 1.027,
-   "washDiff": 0.0114
+   "washDiff": 0.0115
   },
   {
    "name": "layers",
@@ -51,7 +51,7 @@
    "wlPixels": 36324,
    "darkFrac": 0.0001,
    "brightRatio": 0.96,
-   "washDiff": 0.0064
+   "washDiff": 0.0139
   }
  ]
 }

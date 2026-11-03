@@ -47,7 +47,7 @@ function setArrow(ang){const q=document.getElementById('wlQuest');if(!q)return;i
   if(!arrow){arrow=document.createElement('span');arrow.className='wl-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='➜';}
   if(arrow.parentNode!==q&&q.textContent)q.prepend(arrow);arrow.style.transform=`rotate(${ang}rad)`;}
 function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hintsVisible()){G.visible=false;setArrow(null);return;}G.visible=true;t0+=dt;
-  const gy=P.y??(ctx.ground?ctx.ground(P.x,P.z):0);beam.position.set(P.x,gy,P.z);tag.position.set(P.x,gy+(cur.h||2.7)+Math.sin(t0*3)*.08,P.z);
+  const gy=P.y??cur.y??(ctx.ground?ctx.ground(P.x,P.z):0);beam.position.set(P.x,gy,P.z);tag.position.set(P.x,gy+(cur.h||2.7)+Math.sin(t0*3)*.08,P.z);
   // 동그라미 길: 원더룹 앞 0.9m부터 목표 쪽으로 GAP마다, 목표 1.1m 앞까지(가까운 N개만)
   const w=W.position,dx=P.x-w.x,dz=P.z-w.z,L=Math.hypot(dx,dz),ux=dx/(L||1),uz=dz/(L||1);let n=0;
   for(let i=0;i<N;i++){const d=.9+i*GAP;if(d>L-1.1)break;const x=w.x+ux*d,z=w.z+uz*d,y=Math.max(ctx.ground?ctx.ground(x,z):0,-.05)+.03;

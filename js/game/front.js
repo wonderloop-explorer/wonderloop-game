@@ -222,7 +222,12 @@ async function begin(fr){if(busy)return;busy=true;sfx('click');
   if(!store.get(HELP_KEY)){store.set(HELP_KEY,'1');showHelp(true);}} // 처음 시작할 때 한 번 조작법(닫으면 나침반 연출·버섯 요정 순서로 이어진다)
 /* ---------- 이야기 소개(모험 떠나기 → 탐방하는 곳 소개 몇 장 → 게임) ---------- */
 function openStory(){const L=(zone().front&&zone().front.story)||[];if(!L.length){begin(fresh);return;}
-  storyOn=true;let i=0;el.classList.remove('on');orbit();
+  storyOn=true;let i=0;el.classList.remove('on');
+  // 카메라: 구역 정보 storyView:[{from,at}…](장마다 한 자리)가 있으면 개미굴처럼 하늘에서 마을로 천천히 내려오며 장마다 그 자리로, 없으면 첫 화면처럼 돌아보기
+  const SV=zone().storyView;if(SV&&SV.length){const c={from:[...SV[0].from],at:[...SV[0].at]};let last=performance.now();
+    VIEW.hold(()=>{const now=performance.now(),k=1-Math.exp(-Math.min(.1,(now-last)/1000)*.9);last=now;const T=SV[Math.min(i,SV.length-1)];
+      for(let j=0;j<3;j++){c.from[j]+=(T.from[j]-c.from[j])*k;c.at[j]+=(T.at[j]-c.at[j])*k;}return {from:[...c.from],at:[...c.at]};});}
+  else orbit();
   const draw=()=>{story.innerHTML='';const c=document.createElement('div');c.className='scard';const t=document.createElement('p');t.className='stext';t.textContent=L[i];
     const bs=document.createElement('div');bs.className='sbtns';const last=i===L.length-1;
     bs.append(pbtn('skip','건너뛰기',()=>end()),pbtn('next',last?'모험 시작!':'다음',()=>{sfx('blip');if(last)end();else{i++;draw();}}));

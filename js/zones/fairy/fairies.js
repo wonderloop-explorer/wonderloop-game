@@ -8,7 +8,7 @@
    얼굴 앞은 +z. 발바닥이 y=0. 그림자는 휴대폰 단계에서 구역이 shadowBlob을 단다. */
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {M,PI,lathe} from '../../01-textures.js';
+import {M,PI,lathe,lin,pencil} from '../../01-textures.js';
 import {toon} from './paint.js';
 const SKIN='#f4cfa6',CHEEK='#f39a9a',INK='#4a2a24';
 const mats={};const mat=(c,k='suede',o)=>{o=Object.assign({flat:false},o);const key=c+k+JSON.stringify(o);return mats[key]||(mats[key]=M(c,k,o));}; // 부드러운 음영(원더룹과 같게)
@@ -136,6 +136,54 @@ function dandelionPuff({stem=1.75,reach=0,R=.44}={}){const g=new THREE.Group();g
     const b=1+Math.sin(t*3.2)*.025*k;layers[0].scale.setScalar(b);top.rotation.z=Math.sin(t*1.3)*.06*k;};
   return g;}
 /* 구역을 떠날 때: 요정 재질·갓 무늬 캐시를 놓는다(다음 구역에서 다시 만들면 같은 그림) */
+/* 마을 주민 요정(2026-11-03 — 개미굴 마을처럼 북적이게): 꽃 요정·바람 요정·작은 버섯 요정. 기준 그림 fairy-flower·fairy-wind·fairy-mushroom의 생김새를 따르되 색만 여러 가지.
+   재질은 흰 천 결 그림 한 장에 색만 곱한 것(vmat)이라 bakeFairy(into: body)로 주민 하나가 그리기 1번(휴대폰 스테이지 예산).
+   villager(kind, {petal, dress, hair, cap}) → {root, body, tick(dt, t, moving)} — 걸을 때 통통 튀고 팔을 흔든다. 키 약 0.75(원더룹보다 작게), 얼굴 앞 +z, 발바닥 y=0 */
+let vTex=null;const vmats={};
+function vmat(c){if(!vTex)vTex=pencil('#ffffff','suede',{rep:[2,2]});return vmats[c]||(vmats[c]=new THREE.MeshStandardMaterial({map:vTex,color:new THREE.Color(c),roughness:.95,metalness:0}));}
+function vface(head,r){const ink=vmat(INK),pink=vmat(CHEEK);const onFace=(x,y,out=0)=>{const z=Math.sqrt(Math.max(0,r*r-x*x-y*y));return new THREE.Vector3(x,y,z).normalize().multiplyScalar(r+out);};
+  const stick=(m,p)=>{m.position.copy(p);m.lookAt(p.clone().multiplyScalar(2));head.add(m);m.castShadow=false;return m;};
+  [-1,1].forEach(s=>{const e=stick(new THREE.Mesh(new THREE.SphereGeometry(r*.12,10,8),ink),onFace(s*r*.34,r*.02,-r*.03));e.scale.set(.9,1.1,.55);});
+  [-1,1].forEach(s=>stick(new THREE.Mesh(new THREE.CircleGeometry(r*.16,14),pink),onFace(s*r*.55,-r*.2,r*.035)));
+  const m=stick(new THREE.Mesh(new THREE.TorusGeometry(r*.13,r*.032,6,14,PI),ink),onFace(0,-r*.17,0));m.rotateZ(PI);}
+function villager(kind,o={}){const root=new THREE.Group();root.name='villager:'+kind;const body=new THREE.Group();root.add(body);
+  const vm=(g,c,par=body,x=0,y=0,z=0)=>{const m=new THREE.Mesh(g,vmat(c));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;par.add(m);return m;};
+  const limbs=[],legs=[];const lim=(x,y,len,rad,c,arr)=>{const piv=new THREE.Group();piv.position.set(x,y,0);body.add(piv);vm(new THREE.CapsuleGeometry(rad,len,3,6).translate(0,-len/2-rad*.5,0),c,piv);arr.push(piv);return piv;};
+  let head,r=.17;
+  if(kind==='mushroom'){const cap=o.cap||'#e9824a';
+    vm(lathe([[0,0],[.15,.01],[.21,.07],[.23,.17],[.21,.27],[.15,.33],[0,.35]].map(q=>new THREE.Vector2(q[0],q[1])),14),'#f2dfc0',body,0,.04,0);
+    head=new THREE.Group();head.position.set(0,.24,0);body.add(head);r=.22;vface(head,r);
+    const c=vm(lathe([[0,.22],[.11,.2],[.21,.14],[.29,.06],[.31,0]].map(q=>new THREE.Vector2(q[0],q[1])),16),cap,body,0,.3,0);c.material=vmat(cap);
+    [[0,.47,.12],[.12,.44,.06],[-.1,.45,.08]].forEach(([x,y,z])=>{const d=vm(new THREE.SphereGeometry(.045,8,6),'#fbf1de',body,x,y,z);d.scale.y=.4;});
+    [-1,1].forEach(s=>{const a=lim(s*.2,.16,.05,.035,'#f2dfc0',limbs);a.rotation.z=s*.7;});[-1,1].forEach(s=>lim(s*.07,.08,.02,.035,'#f2dfc0',legs));}
+  else{const dress=o.dress||(kind==='wind'?'#a9d8b0':'#f6dc84');
+    vm(lathe([[0,0],[.16,0],[.16,.03],[.12,.18],[.09,.29],[.05,.31],[0,.31]].map(q=>new THREE.Vector2(q[0],q[1])),12),dress,body,0,.13,0);
+    if(kind==='flower')vm(new THREE.CylinderGeometry(.162,.165,.04,12,1,true),o.hem||'#f2a6b4',body,0,.15,0);
+    [-1,1].forEach(s=>lim(s*.055,.15,.06,.03,SKIN,legs));
+    head=new THREE.Group();head.position.set(0,.6,0);body.add(head);vm(new THREE.SphereGeometry(r,16,12),SKIN,head);vface(head,r);
+    [-1,1].forEach(s=>{const e=vm(new THREE.ConeGeometry(r*.24,r*.6,5).translate(0,r*.3,0),SKIN,head,s*r*.86,r*.08,-r*.04);e.rotation.z=-s*1.2;e.scale.z=.5;});
+    [-1,1].forEach(s=>{const a=lim(s*.1,.4,.1,.028,SKIN,limbs);a.rotation.z=s*.4;});
+    if(kind==='flower'){const pc=o.petal||'#f4a7b9';
+      [-2.05,-1.1,0,1.1,2.05].forEach((a,i)=>{const p=vm(new THREE.SphereGeometry(.16,10,8),pc,head,Math.sin(a)*r*1.3,Math.cos(a)*r*1.15+.02,-r*.5);p.scale.set(1,1.2,.55);p.rotation.z=-a;}); // 기준 그림처럼 머리보다 큰 꽃잎 다섯
+      const g=vm(new THREE.IcosahedronGeometry(.05,0),'#f2c14e',head,0,r*.95,r*.25);}
+    else{const hc=o.hair||'#8a5a3c';const h=vm(new THREE.SphereGeometry(r*1.05,16,10,0,PI*2,0,PI*.55),hc,head);h.rotation.x=-.5;
+      [-1,1].forEach(s=>{const c=vm(new THREE.TorusGeometry(.055,.018,6,12,PI*1.5),hc,head,s*.06,r*1.05,-.02);c.rotation.set(0,s*.3,s>0?-.3:PI+.3);});
+      [-1,1].forEach(s=>{const w=vm(new THREE.SphereGeometry(.16,12,8),o.wing||'#bcd8f2',body,s*.15,.48,-.13);w.scale.set(.75,1,.12);w.rotation.set(.1,s*.5,s*.35);});}}
+  root.traverse(m=>{if(m.isMesh)m.castShadow=true;});
+  let ph=(root.id*1.37)%6; // 난수 대신 물체 번호로(촬영 모드에서도 같은 그림)
+  return {root,body,head,kind,tick(dt,t,moving=false){ph+=dt*(moving?9:2);const hop=moving?Math.abs(Math.sin(ph))*.05:Math.abs(Math.sin(ph*.5))*.008;body.position.y=hop;
+    if(kind==='mushroom')body.rotation.z=Math.sin(ph)*(moving?.12:.04);else head.rotation.z=Math.sin(t*.9+root.id)*.06;
+    limbs.forEach((a,i)=>{a.rotation.x=moving?Math.sin(ph+(i?PI:0))*.6:Math.sin(t*1.3+i)*.08;});legs.forEach((l,i)=>{l.rotation.x=moving?Math.sin(ph+(i?0:PI))*.5:0;});}};}
+/* 무당벌레(숨겨진 비밀 둘째): 클로버 그늘에서 낮잠 — 빨간 등딱지(검은 점 다섯)·검은 머리·감은 눈. 길이 약 0.3m */
+function ladybug(){const root=new THREE.Group();root.name='fairy:ladybug';const body=new THREE.Group();root.add(body);
+  const red=mat('#e2493c'),blk=mat('#3a2a2a'),wh=mat('#fffaf0','plain');
+  const shell=mesh(new THREE.SphereGeometry(.13,16,10,0,PI*2,0,PI/2),red,body,0,.03,0);shell.scale.set(1,.85,1.2);
+  mesh(new THREE.CylinderGeometry(.115,.115,.03,16),blk,body,0,.03,0).scale.set(1,1,1.2);
+  [[.06,.1,.05],[-.06,.1,.05],[.07,.08,-.08],[-.07,.08,-.08],[0,.115,-.02]].forEach(([x,y,z])=>{const d=mesh(new THREE.SphereGeometry(.025,8,6),blk,body,x,y,z);d.scale.y=.5;});
+  const head=mesh(new THREE.SphereGeometry(.05,12,8),blk,body,0,.05,.15);
+  [-1,1].forEach(s=>{const e=mesh(new THREE.TorusGeometry(.012,.004,4,8,PI),wh,head,s*.025,.02,.05);e.rotation.z=PI;});
+  root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
+  return {root,tick(dt,t){body.scale.y=1+Math.sin(t*1.6)*.03;}};}
 /* 아기 소금쟁이(숨겨진 비밀, 2026-11-03): 물 위에 서는 가늘고 긴 다리 여섯, 길쭉한 갈색 몸, 큰 점 눈·볼터치. 길이 약 0.5m(원더룹보다 훨씬 작다).
    strider() → {root, tick(dt,t)} — 앞다리로 물을 톡톡(인사), 몸이 살짝 미끄러졌다 돌아온다. 발 끝은 y=0(물 면) */
 function strider(){const root=new THREE.Group();root.name='fairy:strider';const body=new THREE.Group();root.add(body);body.position.y=.13;
@@ -155,5 +203,5 @@ function strider(){const root=new THREE.Group();root.name='fairy:strider';const 
   root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
   return {root,tick(dt,t){const k=Math.sin(t*5);legs.forEach(l=>{if(l.i===0)l.piv.rotation.x=-Math.max(0,k)*.35*(l.sx>0?1:.4);});body.position.y=.13+Math.sin(t*2.4)*.006;
     root.position.x+=Math.sin(t*.9)*.0015;body.rotation.y=Math.sin(t*.7)*.12;}};}
-function clearFairyCache(){for(const k in mats){mats[k].dispose();delete mats[k];}if(capTex){capTex.dispose();capTex=null;}if(gillTex){gillTex.dispose();gillTex=null;}}
-export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,leafBoat,strider};
+function clearFairyCache(){for(const k in vmats){vmats[k].dispose();delete vmats[k];}if(vTex){vTex.dispose();vTex=null;}for(const k in mats){mats[k].dispose();delete mats[k];}if(capTex){capTex.dispose();capTex=null;}if(gillTex){gillTex.dispose();gillTex=null;}}
+export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,ladybug,leafBoat,strider,villager};
