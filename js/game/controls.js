@@ -25,25 +25,25 @@ let tool=null;
 const typing=t=>t&&(/INPUT|TEXTAREA|SELECT/.test(t.tagName)||t.isContentEditable);
 const css=`
 #wlJoy,#wlJump,#wlDash{position:fixed;display:none;touch-action:none;z-index:16}
-#wlJoy{left:calc(env(safe-area-inset-left,0px) + 22px);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);width:120px;height:120px;border-radius:50%;background:var(--chip)}
-#wlKnob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--chip-ink);opacity:.85}
-#wlJump,#wlDash{border-radius:50%;background:var(--chip);color:var(--chip-ink);place-items:center}
-#wlJump{right:calc(env(safe-area-inset-right,0px) + 24px);bottom:calc(env(safe-area-inset-bottom,0px) + 34px);width:76px;height:76px;font-size:1rem}
+#wlJoy{left:calc(env(safe-area-inset-left,0px) + 22px);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);width:120px;height:120px;border-radius:50%;background:var(--chip);--fr:999px;opacity:.78;box-sizing:border-box}
+#wlKnob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--chip-ink);--fr:999px;--fd:3px;box-sizing:border-box}
+#wlJump,#wlDash{border-radius:50%;background:var(--chip);color:var(--chip-ink);place-items:center;--fr:999px;opacity:.86;box-sizing:border-box}
+#wlJump{right:calc(env(safe-area-inset-right,0px) + 24px);bottom:calc(env(safe-area-inset-bottom,0px) + 34px);width:76px;height:76px;font-size:1.05rem}
 #wlDash{right:calc(env(safe-area-inset-right,0px) + 112px);bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:64px;height:64px;font-size:.9rem;transition:opacity .2s}
-#wlDash.cool{opacity:.4}
+#wlDash.cool{opacity:.45}
 @media (pointer:coarse){#wlJoy{display:block}#wlJump,#wlDash{display:grid}}
 #wlTool{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 56px);display:none;z-index:16;
   background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:.45rem .9rem;font-size:.9rem;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.45);z-index:40}
 @media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 92px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
 #wlHelp[hidden]{display:none}
-#wlHelp .hcard{width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow-y:auto;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
-#wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400}
-#wlHelp h3{margin:1rem 0 .45rem;font-size:.95rem;font-weight:400;color:var(--ink-soft)}
+#wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow-y:auto;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
+#wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400;font-family:"Jua",sans-serif}
+#wlHelp h3{margin:1rem 0 .45rem;font-size:1rem;font-weight:400;color:var(--f-soft);font-family:"Jua",sans-serif}
 #wlHelp dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:.45rem .9rem;line-height:1.5}
-#wlHelp dt{white-space:nowrap}#wlHelp dd{margin:0;color:var(--ink-soft)}
-#wlHelp kbd{font:inherit;font-size:.85rem;background:var(--tag);color:var(--tag-ink);border-radius:8px;padding:.05rem .45rem;margin-right:.2rem}
-#wlHelp button{display:block;width:100%;margin-top:1.1rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.05rem;padding:.75rem 1.2rem}`;
+#wlHelp dt{white-space:nowrap;font-family:"Jua",sans-serif;color:var(--f-ink)}#wlHelp dd{margin:0;color:var(--f-soft)}
+#wlHelp kbd{font:inherit;font-size:.85rem;background:var(--f-cream);color:var(--f-ink);border:1.5px solid var(--f-edge);box-shadow:0 2px 0 var(--f-edge);border-radius:7px;padding:0 .4rem;margin-right:.2rem}
+#wlHelp button{position:sticky;bottom:0;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1.1rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.1rem;padding:.7rem 1.2rem;--fr:16px}`;
 /* 조작법 창(2026-11-03 개미굴 조작법과 같게): 컴퓨터는 키보드, 휴대폰은 터치 — 오른쪽 위 '조작법' 단추(game/front)·H 키로 열고 닫는다.
    세계마다 새로 생긴 것(탈것·우산 활공 등)은 세계 front.help로 '이 세계에서' 칸에(setHelpExtra). 늘 크림색 바탕·진갈색 글자, 휴대폰 세로는 화면 위쪽에 */
 const KEYS_HELP=[['<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>','걷기 (카메라가 보는 쪽이 앞)'],['방향키 · 마우스 끌기','카메라 돌리기'],['휠 · <kbd>-</kbd><kbd>+</kbd>','카메라 확대·축소'],['<kbd>Space</kbd>','점프'],['<kbd>Shift</kbd>','대쉬 · 누른 채면 달리기'],
@@ -54,9 +54,9 @@ let help=null,toolBtn=null,dashBtn=null;
 function build(){const root=document.querySelector('.wlg');if(!root)return;
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const box=document.createElement('div');
-  box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
+  box.innerHTML=`<div id="wlJoy" class="wl-hint wl-felt" aria-hidden="true"><div id="wlKnob" class="wl-felt apri"></div></div><button id="wlJump" class="wl-hint wl-felt wl-btn" type="button">점프</button><button id="wlDash" class="wl-hint wl-felt wl-btn" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
-<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><button type="button">알겠어요</button></div></div>`;
+<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><button type="button" class="wl-felt apri wl-btn">알겠어요</button></div></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
   help=root.querySelector('#wlHelp');help.querySelector('button').addEventListener('click',()=>showHelp(false));
   help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});
