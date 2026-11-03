@@ -51,7 +51,7 @@ const css=`
 #wlQuest,#wlPrompt{position:fixed;left:50%;transform:translateX(-50%);background:var(--panel);color:var(--ink);box-shadow:0 4px 14px rgba(30,14,36,.22);border-radius:999px;padding:.4rem 1rem;font-size:1rem;font-family:"Jua","Gowun Dodum",sans-serif;--fd:3px;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:15;white-space:nowrap}
 #wlQuest{top:calc(env(safe-area-inset-top,0px) + 14px);margin:0;padding:.45rem .95rem;font-size:.98rem;background:rgba(46,28,44,.66);color:#fff4e4;box-shadow:none;border-radius:999px;line-height:1.35}
-@media (max-width:700px){#wlQuest{left:calc(env(safe-area-inset-left,0px) + 76px);right:calc(env(safe-area-inset-right,0px) + 14px);transform:none;white-space:normal;text-align:center;box-sizing:border-box}} /* 휴대폰: 왼쪽 위 톱니 옆부터 오른쪽 끝까지(개미굴처럼 줄바꿈) */
+@media (max-width:700px){#wlQuest{left:calc(env(safe-area-inset-left,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 14px);transform:none;white-space:normal;text-align:center;box-sizing:border-box}body.wl-dev #wlQuest{left:calc(env(safe-area-inset-left,0px) + 76px)}} /* 휴대폰: 왼쪽 끝부터 오른쪽 끝까지(개미굴처럼 줄바꿈), ?debug 면 톱니 옆부터 */
 #wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px);font-size:1.2rem;padding:.5rem 1.25rem .55rem}
 #wlPrompt.wl-felt:not(#wl_a):not(#wl_b)::before{display:none} /* 'E 말 걸기' 안내: 점선 없이 조금 크게 */
 #wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .8rem;

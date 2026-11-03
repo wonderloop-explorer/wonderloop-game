@@ -75,9 +75,10 @@ window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area
 if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;
   document.querySelector('.bar').appendChild(b);b.addEventListener('click',()=>{const L=Object.keys(ZONES);goZone(L[(L.indexOf(zone.cur.id)+1)%L.length]);});}
 const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-/* 시험용 단추: 평소에는 숨김 — 왼쪽 위 톱니 단추로 열고 닫거나, 주소 뒤 ?debug 면 열린 채 시작 */
+/* 시험용 단추: 평소에는 숨김 — 주소 뒤 ?debug 면 왼쪽 위 톱니 단추가 생기고 열린 채 시작(톱니로 닫고 열기).
+   ?debug 가 없으면 톱니 단추도 없다(공개 주소·한 파일 HTML에서 플레이하는 사람에게 안 보이게, 2026-11-03) */
 {const b=document.getElementById('dbgBtn'),set=on=>{document.body.classList.toggle('debug',on);b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'시험용 단추 닫기':'시험용 단추 열기');};
- set(new URLSearchParams(location.search).has('debug'));
+ const dev=new URLSearchParams(location.search).has('debug');document.body.classList.toggle('wl-dev',dev);set(dev);
  b.addEventListener('click',()=>{const vv=window.visualViewport;if(performance.now()-(GAME.controls.input.multiT||0)<800||(vv&&vv.scale>1.01))return; // 두 손가락 동작 끝에 잘못 눌린 것은 무시(저절로 열리지 않게)
    set(!document.body.classList.contains('debug'));});}
 /* 둥근 땅(시험용, 톱니 메뉴): 끔 → 약 → 중 → 강 → 끔 (game/bend — 그림만 휜다, 이 기기에 기억). 구역 정보 bend가 없는 곳(실내·베이스캠프)은 늘 끔 */

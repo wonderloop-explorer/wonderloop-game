@@ -317,7 +317,7 @@ pre.src .n{display:inline-block;width:4.2em;padding-right:.8em;text-align:right;
 
 
 def page(title, body):
-    return f'<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)}</title><style>{CSS}</style></head><body><main id="top">{body}</main></body></html>\n'
+    return f'<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)}</title><style>{CSS}</style></head><body><main id="top">{body}</main></body></html>\n'
 
 
 def code_block(f):
