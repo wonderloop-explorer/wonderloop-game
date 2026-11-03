@@ -9,7 +9,7 @@
    아이템 획득 카드 = itemCard(itemget 소리, 2.8초), 안내 문구 = toast(위 가운데 칩, 2.8초), 결과창 = result(열 때 success 소리, 단추 click). */
 import {block,clock,cue} from './core.js';
 import {sfx,soundHooks} from './sound.js';
-import {injectFelt,ribbonize} from './felt.js';
+import {injectFelt,mk,tape} from './felt.js';
 const HINT_LAYER=5;
 const css=`
 .wlg{--panel:rgba(255,246,234,.95);--bubble:#fffaf2;--ink:#3e2834;--ink-soft:#75565e;--accent:#3f9fa0;--accent-ink:#fffaf2;--tag:#f2b63c;--tag-ink:#3e2834;--chip:rgba(46,28,44,.66);--chip-ink:#fff4e4;
@@ -18,8 +18,8 @@ const css=`
 .wlg button{all:unset;box-sizing:border-box;cursor:pointer;font-family:inherit}
 #wlDlg{cursor:pointer;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 92px);width:min(30rem,calc(100vw - 32px));box-sizing:border-box;
   background:var(--bubble);color:var(--ink);border-radius:20px;padding:1.3rem 1.2rem .9rem;box-shadow:0 14px 40px rgba(30,14,36,.4);display:none;z-index:20}
-#wlDlg .who{position:absolute;left:16px;top:-15px;z-index:1;background:var(--f-apri);color:var(--f-ink);border:2px solid var(--f-edge);box-shadow:0 2px 0 var(--f-depth);border-radius:999px;padding:.15rem .75rem;font-size:.9rem;font-family:"Jua",sans-serif}
-#wlDlg .line{margin:0;font-size:1.16rem;line-height:1.62;font-family:"Jua","Gowun Dodum",sans-serif;color:var(--f-ink)}
+#wlDlg .who{position:absolute;left:-12px;top:-20px;z-index:1;padding:.3rem 1.05rem .35rem;font-size:1rem;font-family:"Jua",sans-serif} /* 민트 마스킹테이프 이름표 — 대화창 왼쪽 위 모서리에 걸쳐 붙임 */
+#wlDlg .line{margin:0;font-size:1.16rem;line-height:1.62;color:var(--f-ink)} /* 대화 본문은 읽기 쉬운 Gowun Dodum */
 #wlDlg .more{margin:.35rem 0 0;text-align:right;font-size:.8rem;color:var(--ink-soft)}
 #wlNotice{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;display:flex;gap:1rem;align-items:center;
   width:min(26rem,calc(100vw - 32px));box-sizing:border-box;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.2rem 1.3rem;box-shadow:0 18px 50px rgba(30,14,36,.5);
@@ -49,10 +49,10 @@ const css=`
 #wlResult .b2{display:block;width:100%;text-align:center;margin-top:.6rem;border:2px solid var(--accent);border-radius:14px;font-size:1rem;padding:.7rem 1.2rem}
 #wlQuest,#wlPrompt{position:fixed;left:50%;transform:translateX(-50%);background:var(--panel);color:var(--ink);box-shadow:0 4px 14px rgba(30,14,36,.22);border-radius:999px;padding:.4rem 1rem;font-size:1rem;font-family:"Jua","Gowun Dodum",sans-serif;--fd:3px;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:15;white-space:nowrap}
-#wlQuest{top:calc(env(safe-area-inset-top,0px) + 92px);margin:0;--fd:3px}
+#wlQuest{top:calc(env(safe-area-inset-top,0px) + 92px);margin:0;padding:.45rem 1.5rem .5rem;font-size:1.05rem}
 #wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px)}
 #wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .8rem;
-  background:var(--tag);color:var(--tag-ink);font-size:1rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none;box-sizing:border-box;--fr:33px;opacity:.94} /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
+  background:var(--tag);color:var(--tag-ink);font-size:1.05rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none;box-sizing:border-box} /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
 #wlSecret{position:fixed;inset:0;display:none;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.25);z-index:31}
 #wlSecret .card{background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:4px solid #e3ad35;border-radius:22px;padding:1.4rem 1.5rem 1.2rem;width:min(21rem,100%);box-sizing:border-box;text-align:center;
   box-shadow:inset 0 0 0 3px #fff6d6,0 0 34px rgba(255,196,70,.65),0 18px 50px rgba(30,14,36,.5)}
@@ -71,7 +71,7 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 #wlProf .hd{display:flex;align-items:center;gap:.85rem;margin-bottom:.55rem}
 #wlProf .ic{flex:none;width:5.6rem;height:5.6rem;border-radius:50%;background:var(--pbg,#f3ead6);display:grid;place-items:center;overflow:hidden}
 #wlProf .ic img{width:84%;height:84%;object-fit:contain;display:block}#wlProf .ic img:not([src]){display:none}
-#wlProf .k{margin:0;display:inline-block;background:#f2b63c;color:#3e2834;border-radius:999px;padding:.08rem .6rem;font-size:.76rem}
+#wlProf .k{margin:0 0 .15rem -.2rem;display:inline-block;padding:.12rem .7rem .16rem;font-size:.85rem}
 #wlProf .t{margin:.25rem 0 0;font-size:1.32rem;font-weight:400;line-height:1.2;font-family:"Jua",sans-serif}
 #wlProf .s{margin:0;font-size:.92rem;line-height:1.45;color:var(--ps)}
 #wlProf .l{margin:.4rem 0 0;font-size:.88rem;line-height:1.4;display:flex;gap:.45rem;align-items:baseline}
@@ -102,15 +102,15 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 @keyframes wlbSp{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1) rotate(90deg)}}
 @media (prefers-reduced-motion: reduce){#wlBadge.on,#wlBadge.out,#wlBadge .medal{animation:none}#wlBadge .sp{display:none}}`;
 const root=document.createElement('div');root.className='wlg';
-root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"><span class="who"></span><p class="line"></p><p class="more"></p></div>
+root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"><span class="who wl-tape mint wl-mk"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" class="wl-felt" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint wl-felt" role="status" aria-live="polite"></p>
-<div id="wlProf" class="wl-felt" role="status" aria-live="polite"><div class="hd"><span class="ic"><img alt=""></span><div><p class="k">새 친구</p><p class="t"></p></div></div><p class="s"></p><p class="l"></p><p class="q"></p></div>
+<div id="wlProf" class="wl-felt" role="status" aria-live="polite"><div class="hd"><span class="ic"><img alt=""></span><div><p class="k wl-tape mint wl-mk">새 친구</p><p class="t"></p></div></div><p class="s"></p><p class="l"></p><p class="q"></p></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
 <div id="wlBadge" role="status" aria-live="polite"><img class="bg" alt=""><span class="medal" aria-hidden="true"><img alt=""></span><div class="txt"><p class="t"></p><p class="s"></p></div></div>
-<p id="wlQuest" class="wl-hint"></p><p id="wlPrompt" class="wl-hint wl-felt"></p><button id="wlAct" class="wl-hint wl-felt apri wl-btn" type="button">말 걸기</button>`;
+<p id="wlQuest" class="wl-hint"></p><p id="wlPrompt" class="wl-hint wl-felt"></p><button id="wlAct" class="wl-hint wl-glass act" type="button">말 걸기</button>`;
 {const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
  if(!document.querySelector('link[data-wl-font]')){const l=document.createElement('link');l.rel='stylesheet';l.dataset.wlFont='1';l.href='https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap';document.head.appendChild(l);}
  document.body.appendChild(root);injectFelt();}
@@ -232,10 +232,10 @@ function chooseResult(i=0){if(!resultShown())return false;const b=rs.querySelect
 function clearCards(){CQ.splice(0).forEach(c=>c.r(-1));closeNotice();closeSecret();closeItemCard();closeProfile();if(cardOn&&closers[cardOn])closers[cardOn]();if(resultShown()){rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;cardOn=null;}}
 /* 할 일 문구·말 걸기 안내 */
 const quest=$('#wlQuest'),prompt=$('#wlPrompt'),act=$('#wlAct');
-const questTx=ribbonize(quest); // 할 일 안내 = 크림 펠트 리본 띠(game/felt)
+const questTx=tape(quest); // 할 일 안내 = 분홍 마스킹테이프 띠(game/felt)
 function setQuest(t){questTx.textContent=t||'';quest.style.display=t?'block':'none';}
 /* setPrompt(글자, 터치 단추 글자): 키보드 화면은 안내 문구, 터치 화면은 말 걸기 단추. 대화 중에는 문구 없이 터치 단추만("다음"·"닫기") */
-function setPrompt(t,touchOnly){prompt.textContent=t||'';prompt.style.display=t&&!coarse?'block':'none';const b=touchOnly||t;act.style.display=b&&coarse?'grid':'none';if(b)act.textContent=b.replace(/^E\s*/,'');} // 개미굴 #act 자리(오른쪽, 점프 단추 위). 대화창은 터치 화면에서 그 위(206px)로 올라가 단추를 덮지 않는다
+function setPrompt(t,touchOnly){prompt.textContent=t||'';prompt.style.display=t&&!coarse?'block':'none';const b=touchOnly||t;act.style.display=b&&coarse?'grid':'none';if(b)act.replaceChildren(mk(b.replace(/^E\s*/,'')));} // 개미굴 #act 자리(오른쪽, 점프 단추 위). 대화창은 터치 화면에서 그 위(206px)로 올라가 단추를 덮지 않는다
 /* 안내 표시 묶음 */
 const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}

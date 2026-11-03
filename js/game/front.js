@@ -16,7 +16,7 @@ import {cardShown,setHints,toast,transition} from './ui.js';
 import {helpShown,input,setHelpExtra,showHelp} from './controls.js';
 import {flags,resetAll} from './state.js';
 import {logoEl} from './title.js';
-import {icon,ribbonize,setIcons,setTheme} from './felt.js';
+import {icon,mk,setIcons,setTheme,tape} from './felt.js';
 const Q=new URLSearchParams(location.search),SHOT=Q.has('shot'),NO=SHOT||Q.has('notitle');
 const coarse=matchMedia('(pointer:coarse)').matches;
 const LOOK_KEY='wl-look',HELP_KEY='wl-help-seen';
@@ -39,16 +39,16 @@ const css=`
 #wlFront .fl{position:absolute;left:var(--x);top:var(--y);pointer-events:none;opacity:0;animation:wlfFloat var(--t) ease-in-out var(--d) infinite}
 #wlFront .fl.p{width:1.7%;aspect-ratio:1/1.45;background:#f7b6c6;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;box-shadow:inset -1px -2px 0 rgba(200,110,130,.35)}
 #wlFront .fl.s{width:2.6%;aspect-ratio:1;background:#ffe9a6;clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);filter:drop-shadow(0 0 3px rgba(255,230,150,.9))}
-#wlFront .sub{position:relative;margin:.5rem 0 0;font-size:clamp(.95rem,2.3vh,1.2rem);padding:.3rem 1.1rem;text-align:center;--fd:3px;animation:wlfFade .8s ease 1.4s both}
+#wlFront .sub{position:relative;margin:.6rem 0 0;font-size:clamp(1rem,2.4vh,1.25rem);padding:.45rem 1.6rem .5rem;text-align:center;animation:wlfFade .8s ease 1.4s both}
 #wlFront .btns{display:flex;flex-direction:column;align-items:center;gap:.6rem;width:min(20rem,100%);animation:wlfFade .6s ease 1.2s both}
 /* 단추: 펠트 스티커(game/felt) — 주 단추 살구, 나머지 크림. 위치·크기만 여기서 */
-#wlFront .go{position:relative;display:block;width:100%;box-sizing:border-box;text-align:center;font-size:1.3rem;padding:.8rem 1rem .85rem;--fr:20px;--fd:5px}
-#wlFront .go.alt{font-size:1.1rem;padding:.65rem 1rem;--fd:4px}
+#wlFront .go{position:relative;display:block;width:100%;box-sizing:border-box;text-align:center;font-size:1.35rem;padding:.8rem 1rem .85rem;--fr:999px}
+#wlFront .go.alt{font-size:1.15rem;padding:.65rem 1rem}
 #wlFront .row{display:flex;gap:.6rem;width:100%}
-#wlFront .gh{position:relative;flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:46px;box-sizing:border-box;font-size:1rem;padding:.45rem .7rem;white-space:nowrap;--fr:999px;--fd:3px}
+#wlFront .gh{position:relative;flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:46px;box-sizing:border-box;font-size:1.02rem;padding:.45rem .7rem;white-space:nowrap;--fr:999px;--fd:4px}
 #wlFront .ask{position:relative;width:min(20rem,100%);box-sizing:border-box;padding:1.1rem 1.1rem 1.15rem;text-align:center}
 #wlFront .ask p{margin:0 0 .85rem;line-height:1.55;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.05rem}
-#wlFront .ask .row button{position:relative;flex:1;text-align:center;padding:.6rem .5rem;font-size:1.05rem;min-height:46px;box-sizing:border-box;--fr:16px;--fd:3px}
+#wlFront .ask .row button{position:relative;flex:1;text-align:center;padding:.6rem .5rem;font-size:1.05rem;min-height:46px;box-sizing:border-box;--fr:999px;--fd:4px}
 #wlFront[data-ask] .btns{display:none}#wlFront:not([data-ask]) .ask{display:none}
 @keyframes wlfDrop{from{opacity:0;transform:translateY(-22%)}to{opacity:1;transform:none}}
 @keyframes wlfPop{0%{opacity:0;transform:scale(.55)}50%{opacity:1;transform:scale(1.08)}75%{transform:scale(.97)}100%{opacity:1;transform:scale(1)}}
@@ -67,15 +67,14 @@ const css=`
 #wlWard .note{margin:.55rem 0 0;font-size:.88rem;line-height:1.5;color:var(--f-soft)}
 #wlWard .lab{margin:.85rem 0 .4rem;font-size:1rem;color:var(--f-soft);font-family:"Jua",sans-serif}
 #wlWard .opts{display:flex;flex-wrap:wrap;gap:.45rem}
-#wlWard .opts button{position:relative;font-size:.98rem;padding:.4rem .8rem;min-height:40px;box-sizing:border-box;white-space:nowrap;--fr:999px;--fd:3px;border-width:2px}
+#wlWard .opts button{position:relative;font-size:.98rem;padding:.4rem .85rem;min-height:42px;box-sizing:border-box;white-space:nowrap;--fr:999px;--fd:4px;border-width:3px}
 #wlWard .opts button[aria-pressed="true"]{--fbg:var(--f-apri);--fst:var(--f-stitch-apri)}
-#wlWard .spin{display:flex;gap:.5rem;margin-top:.9rem}#wlWard .spin button{position:relative;flex:1;text-align:center;padding:.45rem;min-height:42px;box-sizing:border-box;font-size:1rem;--fr:14px;--fd:3px}
-#wlWard .done{position:sticky;bottom:2px;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1rem;text-align:center;font-size:1.15rem;padding:.65rem 1rem;min-height:48px;--fr:16px} /* 휴대폰 아래 시트에서도 '다 골랐어요'는 늘 보이게 */
+#wlWard .spin{display:flex;gap:.5rem;margin-top:.9rem}#wlWard .spin button{position:relative;flex:1;text-align:center;padding:.45rem;min-height:42px;box-sizing:border-box;font-size:1rem;--fr:999px;--fd:4px}
+#wlWard .done{position:sticky;bottom:2px;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1rem;text-align:center;font-size:1.15rem;padding:.65rem 1rem;min-height:48px;--fr:999px} /* 휴대폰 아래 시트에서도 '다 골랐어요'는 늘 보이게 */
 /* 오른쪽 위 동그란 펠트 아이콘 단추(48px — 손가락 닿는 넓이 그대로). 이름은 마우스를 올리거나 길게 누르면 왼쪽에 작은 펠트 꼬리표로 */
 #wlCorner{position:fixed;right:calc(env(safe-area-inset-right,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 12px);z-index:41;display:none;flex-direction:column;align-items:flex-end;gap:.55rem}
 #wlCorner.on{display:flex}
-#wlCorner button{position:relative;width:48px;height:48px;box-sizing:border-box;display:grid;place-items:center;font-size:1.55rem;--fr:999px;--fd:3px}
-#wlCorner button[aria-expanded="true"]{--fbg:var(--f-apri);--fst:var(--f-stitch-apri)}
+#wlCorner button{position:relative;width:52px;height:52px;box-sizing:border-box;display:grid;place-items:center;font-size:1.6rem;--fd:4px}
 #wlCorner .lb{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);white-space:nowrap;font-size:.92rem;padding:.2rem .65rem;--fr:999px;--fd:2px;opacity:0;pointer-events:none;transition:opacity .15s}
 @media (hover:hover){#wlCorner button:hover .lb{opacity:1}}#wlCorner button:focus-visible .lb,#wlCorner button.lbl .lb{opacity:1} /* 손가락 화면은 길게 누를 때만(누른 뒤 남는 hover 없이) */
 .wlg.prof-on #wlCorner{visibility:hidden} /* 소개 카드가 위에 떠 있는 동안 */
@@ -85,9 +84,9 @@ const look={outfit:null,hair:null};try{Object.assign(look,JSON.parse(store.get(L
 /* 08 zoneLook이 세계 옷을 입힌 뒤 부른다: 플레이어가 고른 옷·머리(있으면). 탈은 그대로 */
 function applyLook(U){if(SHOT||!U)return;if(look.outfit&&U.setOutfit)U.setOutfit(look.outfit);if(look.hair!=null&&U.setHair)U.setHair(look.hair);}
 const hasProgress=()=>Object.keys(flags).some(k=>k!=='compass'&&flags[k]);
-function btn(cls,text,on,ic=null){const b=document.createElement('button');b.type='button';b.className=cls+' wl-felt wl-btn';if(ic)b.appendChild(icon(ic));b.append(text);b.addEventListener('click',on);return b;}
+function btn(cls,text,on,ic=null){const b=document.createElement('button');b.type='button';b.className=cls+' wl-felt wl-btn';if(ic)b.appendChild(icon(ic));b.append(mk(text));b.addEventListener('click',on);return b;}
 /* 동그란 아이콘 단추: 이름은 꼬리표(마우스 올림·길게 누름) — 길게 눌러 이름을 본 뒤 떼면 누른 것으로 치지 않는다 */
-function iconBtn(ic,name,on){const b=document.createElement('button');b.type='button';b.className='wl-felt wl-btn';b.setAttribute('aria-label',name);b.appendChild(icon(ic));
+function iconBtn(ic,name,on){const b=document.createElement('button');b.type='button';b.className='wl-glass';b.setAttribute('aria-label',name);b.appendChild(icon(ic));
   const lb=document.createElement('span');lb.className='lb wl-felt';lb.textContent=name;b.appendChild(lb);let t=0,long=false;
   b.addEventListener('pointerdown',()=>{long=false;clearTimeout(t);t=setTimeout(()=>{long=true;b.classList.add('lbl');},450);});
   const up=()=>{clearTimeout(t);setTimeout(()=>b.classList.remove('lbl'),900);};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
@@ -97,7 +96,7 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   ward=document.createElement('div');ward.id='wlWard';ward.setAttribute('role','dialog');ward.setAttribute('aria-label','옷 갈아입기');root.appendChild(ward);
   corner=document.createElement('div');corner.id='wlCorner';corner.className='wl-hint';root.appendChild(corner);
   corner.append(iconBtn('wardrobe','옷 갈아입기',()=>toggleWardrobe()),iconBtn('help','조작법',()=>{sfx('click');showHelp(!helpShown());}));
-  const how=corner.lastChild;how.setAttribute('aria-expanded','false');setInterval(()=>how.setAttribute('aria-expanded',helpShown()?'true':'false'),250);}
+  const how=corner.lastChild;how.setAttribute('aria-expanded','false');setInterval(()=>{const on=helpShown();how.setAttribute('aria-expanded',on?'true':'false');how.classList.toggle('act',on);},250);} // 열려 있으면 살구 반투명
 /* ---------- 첫 화면 ---------- */
 function art(F){const box=document.createElement('div');box.className='art';
   if(F.img){const r=new Image(),l=new Image();r.className='rib';l.className='logo';r.alt='';l.alt=[F.ribbon,F.logo].filter(Boolean).join(' ');r.src=F.img.ribbon;l.src=F.img.logo;box.append(l,r);
@@ -108,7 +107,7 @@ function art(F){const box=document.createElement('div');box.className='art';
   else box.appendChild(logoEl({ribbon:F.ribbon,logo:F.logo}));
   return box;}
 function renderFront(){const F=zone().front;el.innerHTML='';delete el.dataset.ask;
-  const top=document.createElement('div');top.className='top';top.appendChild(art(F));if(F.sub){const p=document.createElement('p');p.className='sub';p.textContent=F.sub;ribbonize(p);top.appendChild(p);} // 부제: 크림 펠트 작은 리본
+  const top=document.createElement('div');top.className='top';top.appendChild(art(F));if(F.sub){const p=document.createElement('p');p.className='sub';p.textContent=F.sub;tape(p);top.appendChild(p);} // 부제: 분홍 마스킹테이프 띠
   const B=document.createElement('div');B.className='btns';
   if(hasProgress()){B.append(btn('go apri','이어서 하기',()=>begin(false)),btn('go alt','처음부터',()=>{sfx('click');el.dataset.ask='1';el.querySelector('.ask .no').focus({preventScroll:true});}));}
   else B.appendChild(btn('go apri','시작하기',()=>begin(false)));

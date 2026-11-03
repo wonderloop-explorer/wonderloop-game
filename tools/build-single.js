@@ -152,11 +152,23 @@ window.WL_START_ZONE=${JSON.stringify(name)};
   const modTags = Object.keys(mods).map(p => `<script type="text/x-wl-module" data-path="${p}">\n/* ===== 원본: ${p.startsWith('three/') ? 'three.js ' + THREE_V + ' (' + p.slice(6) + ')' : p} ===== */\n${esc(mods[p])}\n</script>\n`).join('');
   const fileTag = `<script>/* 그림·목록 파일 (data URI, 원본 경로 → 내용) — 시작 스크립트의 fetch·<img>가 쓴다 */\nwindow.WL_FILES={\n${Object.entries(files).map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(',\n')}\n};</script>\n`;
   h = h.replace('</body>', () => cfg + modTags + fileTag + `<script>\n${esc(BOOT)}\n</script>\n</body>`);
+  // 글꼴: Jua(단추·안내·이름표·제목 — game/felt)는 게임 코드에 나오는 글자만 골라(서브셋 woff2) 이 파일 안에 넣는다 → 인터넷이 없어도 Jua로 보인다.
+  // 글자 목록은 빌드할 때마다 모든 모듈의 한글·영문·숫자·기호에서 저절로 모은다. 받기에 실패하면 넣지 않고(Google Fonts 연결 → 그것도 안 되면 기본 글꼴) 알린다.
+  let juaSize = 0;
+  try {
+    const chars = new Set();for (const p of Object.keys(mods)) if (!p.startsWith('three/')) for (const c of mods[p]) if (/[\uac00-\ud7a3\u3131-\u318e0-9A-Za-z!?.,:;()~·…'"%+\-\/]/.test(c)) chars.add(c);
+    const UA = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36' };
+    const css = await (await fetch('https://fonts.googleapis.com/css2?family=Jua&text=' + encodeURIComponent([...chars].sort().join('')), { headers: UA })).text();
+    const urls = [...css.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]);if (!urls.length) throw new Error('글꼴 주소 없음');
+    const faces = [];for (const u of urls) { const b = Buffer.from(await (await fetch(u)).arrayBuffer());juaSize += b.length;faces.push(`@font-face{font-family:'Jua';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,${b.toString('base64')}) format('woff2')}`); }
+    h = h.replace('</head>', () => `<style>/* Jua 서브셋 ${chars.size}자 (tools/build-single.js — 게임 코드의 글자만, SIL OFL 1.1) */\n${faces.join('\n')}\n</style>\n</head>`);
+  } catch (e) { console.warn('Jua 서브셋을 넣지 못했어요(Google Fonts 연결로 불러옴):', e.message); }
 
   const out = path.join(ROOT, S.out);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, h);
   const size = fs.statSync(out).size, mb = x => (x / 1024 / 1024).toFixed(2) + 'MB';
+  if (juaSize) console.log(`Jua 서브셋 ${(juaSize / 1024).toFixed(0)}KB(woff2) 넣음`);
   const codeSize = Object.values(mods).reduce((a, s) => a + Buffer.byteLength(s), 0), fileSize = Object.values(files).reduce((a, s) => a + s.length, 0);
   console.log(`${S.out} ${mb(size)} — 모듈 ${Object.keys(mods).length}개 ${mb(codeSize)}(three ${THREE_V} 포함), 파일 ${Object.keys(files).length}개 ${mb(fileSize)}(data URI), 커밋 ${head}${dirty}, 버전 ${ver}`);
   if (size > LIMIT) {

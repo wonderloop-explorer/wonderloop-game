@@ -106,7 +106,8 @@ let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_MS=1000/(QUALITY.tier===
 const schedule=()=>{if(!rafOn){rafOn=true;requestAnimationFrame(frame);}}; // 루프가 두 갈래로 갈라지지 않게 예약은 한 번만
 /* 쉴 때 아끼기(휴대폰 단계, 2026-11-02 발열): 대화·카드가 열려 있거나, 1.5초 넘게 손대지 않고 원더룹·카메라가 가만히 있으면 초당 20프레임.
    누르기·끌기·키·조이스틱, 원더룹이 움직이거나 탈것을 타거나 카메라가 움직이면 바로 30프레임으로 */
-const MOBILE=QUALITY.tier==='mobile';let lastAct=0;const _lw=new THREE.Vector3(),_lc=new THREE.Vector3();
+const MOBILE=QUALITY.tier==='mobile';document.body.classList.toggle('wl-lowfx',MOBILE); // 휴대폰 단계: 글자 마커 번짐(game/felt) 끄기
+let lastAct=0;const _lw=new THREE.Vector3(),_lc=new THREE.Vector3();
 ['pointerdown','pointermove','keydown','wheel','touchmove'].forEach(ev=>window.addEventListener(ev,()=>{lastAct=performance.now();},{passive:true,capture:true}));
 function markMotion(now){const I=GAME.controls.input;if(I.jx||I.jy||GAME.ride.riding()||_lw.distanceToSquared(WL.position)>1e-6||_lc.distanceToSquared(camera.position)>1e-5)lastAct=now;_lw.copy(WL.position);_lc.copy(camera.position);}
 const idle=now=>MOBILE&&!SHOT&&(GAME.core.blocking()||now-lastAct>1500);
