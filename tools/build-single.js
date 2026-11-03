@@ -156,7 +156,11 @@ window.WL_START_ZONE=${JSON.stringify(name)};
   // 글자 목록은 빌드할 때마다 모든 모듈의 한글·영문·숫자·기호에서 저절로 모은다. 받기에 실패하면 넣지 않고(Google Fonts 연결 → 그것도 안 되면 기본 글꼴) 알린다.
   let juaSize = 0;
   try {
-    const chars = new Set();for (const p of Object.keys(mods)) if (!p.startsWith('three/')) for (const c of mods[p]) if (/[\uac00-\ud7a3\u3131-\u318e0-9A-Za-z!?.,:;()~·…'"%+\-\/]/.test(c)) chars.add(c);
+    // 주석은 빼고(한글 주석이 많아 글자가 수천 개로 는다) 문자열 안의 글자만 — 화면에 나오는 글은 모두 문자열이다
+    const chars = new Set('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!?.,:;()~·…\'"%+-/ ');
+    for (const p of Object.keys(mods)) { if (p.startsWith('three/')) continue;
+      const src = mods[p].replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
+      for (const m of src.matchAll(/'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\]|\\.)*)`/g)) for (const c of (m[1] ?? m[2] ?? m[3] ?? '')) if (/[\uac00-\ud7a3\u3131-\u318e]/.test(c)) chars.add(c); }
     const UA = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36' };
     const css = await (await fetch('https://fonts.googleapis.com/css2?family=Jua&text=' + encodeURIComponent([...chars].sort().join('')), { headers: UA })).text();
     const urls = [...css.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]);if (!urls.length) throw new Error('글꼴 주소 없음');
