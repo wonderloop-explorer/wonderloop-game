@@ -377,7 +377,7 @@ const VILL=[
   {kind:'mushroom',name:'꼬마 버섯 요정',o:{cap:'#b99ae0'},a:[2.6,6.4],b:[6.2,6.9],side:'S',lines:['비 온 다음 날엔 내 키가 한 뼘씩 자라.','어른들이 그러는데, 진짜 우리는 땅속에서 서로 손을 잡고 있대.']},
   {kind:'flower',name:'꽃 요정',o:{petal:'#fbf1e2',hem:'#c9b2ee'},a:[9.6,-.7],face:[9.6,-3],side:'S',lines:['이슬배가 안 떠서 강 건너 친구를 못 보고 있어.','물길만 열리면 금방인데…']},
   {kind:'wind',name:'바람 요정',o:{dress:'#c7e6f2',hair:'#6e4a33'},a:[-11.5,3.2],b:[-7.5,4.6],side:'S',lines:['후~ 나는 바람으로 길 안내를 해. 오늘은 별꽃 전망대 쪽으로 불고 있어.']},
-  {kind:'flower',name:'꽃 요정',o:{petal:'#c9b2ee'},a:[-6,-9.2],b:[-1,-9.2],side:'N',lines:['강을 건너왔구나! 저 높은 바위에서 뛰어내리면 마을이 한눈에 보여.']},
+  {kind:'flower',name:'꽃 요정',o:{petal:'#c9b2ee'},a:[-6,-9.2],b:[-1,-9.2],side:'N',lines:['강을 건너왔구나! 이 길로 조금만 더 가면 민들레 공중정원이야. 문은 축제 전에 열린대.']},
   {kind:'mushroom',name:'꼬마 버섯 요정',o:{cap:'#e2493c'},a:[-10.5,-9.4],face:[-8.4,-11.6],side:'N',lines:['여긴 민들레 공중정원 가는 길이야. 문은 아직 닫혀 있지만, 축제 전엔 열릴 거야.']}];
 const vShadow=blobMany(VILL.length,.6);if(vShadow)root.add(vShadow);
 const villagers=VILL.map((d,i)=>{const v=villager(d.kind,d.o);bakeFairy(v,{into:v.body});v.root.position.set(d.a[0],0,d.a[1]);
@@ -403,12 +403,12 @@ q('마을 요정들과 이야기해요 (0/2)');
 let shroomTalked=false;
 G.dialog.npc({name:'버섯 요정',root:shroom.root,bubbleY:1.05,onDone:()=>{if(!shroomTalked){shroomTalked=true;villTalked();}return G.profile.meet('mushroom',shroom.root);},variants:[ // 소개 카드는 끝까지 들었을 때만(onDone — game/dialog)
   {when:()=>!hasUmb(),lines:['어머, 꽃봉오리 손님이네! 오늘 밤 첫별 축제 보러 왔구나?','축제는 별꽃 전망대에서 열려. 사공 아저씨 배를 타야 갈 수 있지.']},
-  {when:()=>hasUmb(),lines:['우산 받았구나! 바위 위에서 뛰어내려 봐. 깃털처럼 내려올걸?']}]});
+  {when:()=>hasUmb(),lines:['우산 받았구나! 민들레 공중정원에선 그걸 펴고 바람을 탄대. 부럽다~']}]});
 const boatNpc=G.dialog.npc({name:'사공 요정',root:boatman.root,bubbleY:1.3,talkR:.9,onDone:()=>afterBoatman(),variants:[
   {when:()=>st.phase==='arrive',lines:['어이쿠, 손님이구나! 첫별 축제 가는 길이지?','그런데 큰일이야. 아침 바람에 클로버 잎들이 뒤틀려서 물길을 꽉 막아 버렸어.','물길이 막히면 이슬방울이 못 굴러와. 이슬이 없으니 이슬배가 못 떠나고 있단다!','저기 강가에 뒤틀린 클로버 잎 세 개 보이지? 손으로 돌려서 바로 놓아 줄 수 있겠니?']},
   {when:()=>st.phase==='clovers',lines:['클로버는 이쪽 강가를 따라 셋 있어. 살랑살랑 반짝이는 잎이야. 가까이 가서 돌려 줘!']},
   {when:()=>st.phase==='boat'&&!nearBoat(),lines:['이슬배가 찰랑찰랑 찼어! 자, 타렴. 내가 노를 저어 줄게.']}, // 배 앞에서는 사공 '말 걸기' 대신 '이슬배 타기'만(헷갈리지 않게 — 2026-11-03)
-  {when:()=>st.phase==='done',lines:['우산은 뛰어내릴 때 저절로 펼쳐져. 다음은 민들레 공중정원이야!']}]});
+  {when:()=>st.phase==='done',lines:['우산은 민들레 공중정원에서 펼쳐 보렴. 그곳 바람은 아주 신나거든!']}]});
 /* 사공 대화를 끝까지 들은 뒤(onDone). 처음(arrive): 미션 카드 → 카드를 닫으면 카메라가 클로버 셋을 1.8초 비춤(어디인지 몰라 헤매지 않게) → 돌아온 뒤 사공 소개 카드.
    앞의 것이 끝나야 다음이 나온다(G.steps — 2026-11-02, 셋이 한꺼번에 떠서 카드를 보는 사이 카메라 연출이 지나갔다) */
 function afterBoatman(){const meet=()=>G.profile.meet('boatman',boatman.root);
@@ -438,7 +438,7 @@ function openSpot(cx,cz,{prefer=[1,0],d0=1,d1=1.5,r=.38,avoid=[]}={}){let best=n
   for(let i=0;i<48;i++){const a=pa+(i%2?1:-1)*Math.ceil(i/2)*PI/24;for(const d of [d0,(d0+d1)/2,d1]){const x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d;if(!free(x,z))continue;
       const sc=-Math.abs(Math.atan2(Math.sin(a-pa),Math.cos(a-pa)))-Math.abs(d-1.2)*.3;if(sc>bs){bs=sc;best=[x,z];}}}
   return best;}
-function startRide(){st.phase='riding';q('');boatman.wave(false);
+function startRide(){st.phase='riding';q('');boatman.wave(false);G.sound.sfx('pop');G.sound.sfx('whoosh',{minor:true}); // 탈 때 '퐁'(배에 올라탐) + 물 가르는 소리
   // 사공은 이슬배로 옮겨 타고 함께 간다
   bmG.visible=false;const bm2=fairy('boatman');bm2.root.position.set(0,hull.userData.floor(-.66),-.66*BL/2);bm2.root.scale.setScalar(.95);boat.add(bm2.root); // 사공은 배 뒤쪽 끝(노 젓는 자리), 원더룹은 앞쪽에 앉는다(ride fwd·pose)
   {const oar=bm2.root.userData.oar;bm2.arms[1].add(oar);oar.position.set(0,-.17,.03);}rower=bm2; // 배에서는 노를 왼손(+x, 마을 반대쪽 남쪽 강가)으로 — 카메라도 그쪽에서 봐서 마을 집·꽃지붕 속을 지나가지 않게
@@ -446,31 +446,32 @@ function startRide(){st.phase='riding';q('');boatman.wave(false);
    G.view.start({at:[c.x,.85,c.z],from:[c.x-sx*6.2+fx*2.6,2.6,c.z-sz*6.2+fz*2.6]});}
   // 물길 가운데를 따라 건너편 둑까지(끝점은 둑에 살짝 올라 원더룹이 땅에 내린다)
   G.ride.ride({vehicle:boat,seat:hull.userData.floor(.46)+.005,fwd:.46*BL/2,pose:'앉기',speed:1.15,path:[BOAT0,[3,-.06,cz(3)-.9],[-.5,-.06,cz(-.5)-.2],[-4.5,-.06,cz(-4.5)-.6],[-6.6,-.06,zN(-6.6)+1],[-6.8,-.06,zN(-6.8)-.3]],
-    onEnd:()=>{rode=true;st.phase='gift';boat.remove(bm2.root);rower=null;
+    onEnd:()=>{rode=true;st.phase='gift';boat.remove(bm2.root);rower=null;G.sound.sfx('land'); // 둑에 닿아 내림
       // 사공이 배 옆으로 한 걸음 나와(카메라에서 본 원더룹 옆쪽, 물가 땅) 원더룹을 보고 말한다 — 원더룹 뒤에 가려지지 않게
       {const cam=G.view.camera,f=new THREE.Vector3();cam.getWorldDirection(f);f.y=0;f.normalize();const W0=WL().position;
        // 원더룹 옆 1~1.5m 열린 땅(소품·그루터기·바위·물을 피해 — 예전엔 바위 속에 묻혀 머리만 보였다), 카메라에서 본 옆쪽을 먼저(둘 다 보이게)
        const sp=openSpot(W0.x,W0.z,{prefer:[-f.z,f.x],d0:1,d1:1.5,avoid:[[boat.position.x,boat.position.z,1.2]]})||[W0.x-f.z*1.05,W0.z+f.x*1.05];
        bmG.position.set(sp[0],0,sp[1]);small.visible=false;bmG.rotation.set(0,Math.atan2(W0.x-bmG.position.x,W0.z-bmG.position.z),0);bmG.visible=true;}
-      G.dialog.say('사공 요정','도착! 물길을 열어 줘서 정말 고마워.',2.6).then(ok=>ok&&G.dialog.say('사공 요정','이건 내 민들레 솜털 우산이야. 높은 데서 뛰어내릴 때 펼치면 사뿐히 내려올 수 있어!',4)).then(ok=>{
+      G.dialog.say('사공 요정','도착! 물길을 열어 줘서 정말 고마워.',2.6).then(ok=>ok&&G.dialog.say('사공 요정','이건 내 민들레 솜털 우산이야. 민들레 공중정원에 가면 바람을 타고 날 때 꼭 필요할 거야!',4)).then(ok=>{
         if(!ok)return; // 구역을 바꿔 혼잣말이 지워졌으면 받지 않는다
         st.phase='done';G.items.give('umbrella');syncUmbrella(); // 공통 아이템으로 저장(flags.umbrella) — 펼쳐 드는 모양도
         {const W=WL();if(W){cheer.burst(28,{x:W.position.x,y:W.position.y+.9,z:W.position.z});cheerT=1.6;}} // 큰 보상: 개미굴 '여왕개미의 보물'처럼 가운데 큰 카드 + 반짝임
-        G.ui.profileCard({kicker:'사공 요정의 선물',name:'민들레 솜털 우산을 받았어요!',intro:'높은 데서 뛰어내리거나 떨어질 때 저절로 펼쳐져서, 깃털처럼 사뿐히 내려와요.',img:icon('umbrella'),bg:'#F3EAD6',button:'배낭에 달기'});
-        q('바위에서 뛰어내려 우산을 펼쳐 봐요');});}});}
+        q('');
+        // 스테이지 끝(2026-11-03): 우산을 받는 것이 STAGE 01의 마지막 — 선물 카드를 닫으면 완료 배지 → 통과 결과창(우산은 다음 스테이지 민들레 공중정원에서 쓴다)
+        G.ui.profileCard({kicker:'사공 요정의 선물',name:'민들레 솜털 우산을 받았어요!',intro:'바람을 타고 날 때 펼치는 우산이에요. 다음 목적지 민들레 공중정원에서 써 볼 수 있어요.',img:icon('umbrella'),bg:'#F3EAD6',button:'배낭에 달기'}).then(()=>stageClear());});}});}
 /* ---------- 다시 열었을 때: 우산을 이미 받았으면 받은 뒤 모습으로(새로고침해도 우산은 flags.umbrella로 남는다) ----------
    클로버는 바로 놓였고, 이슬배는 건너편 둑에 닿아 있고, 사공은 그 옆 빈 땅에. 원더룹은 건너편(구역 정보 spawn)에서 시작 */
 const CLEAR='clear:fairy-dock';
 if(hasUmb()){st.phase='done';fixed=3;rode=true;CLOVERS.forEach(c=>{c.done=true;c.u=1;c.spin.rotation.set(0,0,0);});
   const a=[-6.6,zN(-6.6)+1],b=[-6.8,zN(-6.8)-.3];boat.position.set(a[0],-.06,a[1]);boat.rotation.y=Math.atan2(b[0]-a[0],b[1]-a[1]);
   const sp=openSpot(-6.6,-8.6,{prefer:[1,0],d0:1.1,d1:1.5,avoid:[[a[0],a[1],1.2]]})||[-5.4,-8.6];small.visible=false;bmG.position.set(sp[0],0,sp[1]);bmG.rotation.set(0,Math.atan2(-6.6-sp[0],-8.6-sp[1]),0);
-  q(G.state.flags[CLEAR]?'':'바위에서 뛰어내려 우산을 펼쳐 봐요');}
-/* ---------- 스테이지 완료 안내: 우산을 펼쳐 처음 땅에 내려앉으면 한 번(저장 flags['clear:fairy-dock']) — 짧은 효과음·반짝임, 3초 뒤 저절로. 보상·결과창 없음 ---------- */
+  q('');if(!G.state.flags[CLEAR])G.state.setFlag(CLEAR,true);} // 예전 저장(우산만 받고 활공 전)도 완료로
+/* ---------- 스테이지 완료: 우산 선물 카드를 닫으면 한 번(저장 flags['clear:fairy-dock']) — 반짝임 + 완료 배지 → 통과 결과창 ---------- */
 const cheer=G.fx.particles({parent:root,n:28,box:[.45,.1,.45],vel:[0,1.2,0],sway:.5,color:'#ffe6a6',size:.13,life:[.7,1.3],additive:true,rate:0,seed:73});cheer.points.visible=false;let cheerT=0;
 function stageClear(){G.state.setFlag(CLEAR,true);q('');const W=WL();if(W){cheer.burst(28,{x:W.position.x,y:W.position.y+.9,z:W.position.z});cheerT=1.6;}
   G.ui.stageBadge({...FAIRY_BADGE,stage:'이슬방울 선착장',next:'민들레 공중정원'});
   // 개미굴 '광장 통과!'처럼 결과창(배지 다음, 카드 자리 줄 서기): 한 줄 정리 + 발견한 비밀
-  G.ui.result({title:'이슬방울 선착장 통과!',text:'클로버 물길을 열고 흩어진 이슬방울을 모아, 이슬배로 강을 건넜어요. 사공 요정의 민들레 우산으로 처음 하늘을 날아 봤어요. 다음 목적지 민들레 공중정원은 곧 열려요.',
+  G.ui.result({title:'이슬방울 선착장 통과!',text:'마을 요정들과 인사하고 클로버 물길을 열어, 사공 요정의 이슬배로 강을 건넜어요. 선물받은 민들레 솜털 우산은 다음 목적지 민들레 공중정원에서 펼쳐 볼 수 있어요.',
     note:`✦ 발견한 비밀 ${secN()}/${SECRETS.length}`,buttons:[{label:'계속 둘러보기'}]});} // 스테이지 완료 배지(엔진 공통 ui.stageBadge — 2026-11-03 아이템 카드 모양 대신)
 /* ---------- 나침반 시작 연출: 요정의 숲에 처음 들어오면 한 번(사공과 이미 이야기했으면 없음) — 진행을 막지 않는다 ----------
    배낭의 나침반 키링이 톡 흔들리며 반짝이고 바늘이 사공(선착장) 쪽을 가리킨다(07 charmPoint), 혼잣말 한 줄, 발밑에 선착장 쪽 빛 알갱이 줄(fx.guide, 2.6초).
@@ -557,7 +558,6 @@ function update(dt,t){
   // 우산을 펴고 활공하기 시작하면 안내 문구와 아이템 카드를 치운다(할 일을 해냈으니까)
   if(hasUmb()&&!st.glided){const W=WL();if(W&&W.userData.vert.air&&W.userData.vert.vy<-.3&&W.userData.vert.glide>.05){st.glided=true;q('');G.ui.closeItemCard();}} // 우산이 펴지기 시작할 때(배에서 둑으로 내려설 때의 작은 낙하는 빼고) // 우산이 펴지기 직전(떨어지기 시작할 때) 치워 펴지는 순간에는 카드가 없다
   // 스테이지 완료: 우산을 펼쳐(활공) 처음 땅에 내려앉으면 한 번 — 짧은 안내, 저장(flags)
-  if(hasUmb()&&!G.state.flags[CLEAR]){const V=WL()&&WL().userData.vert;if(V){if(V.glide>.5)st.soared=true;else if(st.soared&&!V.air){st.soared=false;stageClear();}}}
   if(intro)intro.tick(dt);
   goalTick();secretTick(t);tickVillagers(dt,t);
   if(cheerT>0){cheerT-=dt;cheer.points.visible=cheerT>0;cheer.update(dt,null);}
@@ -594,7 +594,6 @@ function goalTick(){const W=WL();let g=null;
   // 빛 기둥·이름표는 미션 목적지에만(2026-11-03): 마을 주민과 이야기하기·클로버(살랑이는 반짝임이 대신)에는 넣지 않는다
   if(st.phase==='arrive'&&talkedN>=2)g={key:'boatman',at:()=>[bmG.position.x,bmG.position.z],label:'사공 요정',h:2.2};
   else if(st.phase==='boat')g={key:'boat',at:BOARD,y:DOCK.top,label:'이슬배 타기',h:2.4};
-  else if(st.phase==='done'&&!G.state.flags[CLEAR]&&!st.glided){const r=ROCKS[1];g={key:'rock',at:[r.c[0],r.c[1]],y:r.top,label:'높은 바위',h:2.4};}
   const k=g?g.key:'';if(k!==goalKey){goalKey=k;G.goal.set(g);}}
 let slow=0,fno=0,qLevel=0,splashT=0,dewPop=1; // splashT: 물보라가 남아 있는 동안만 그린다
 function quality(L){qLevel=L;pollen.points.visible=L<1;if(L>=1)flies.points.visible=false;forest.setLevel(L);} // 08 자동 화질 조절

@@ -187,8 +187,8 @@ function ladybug(){const root=new THREE.Group();root.name='fairy:ladybug';const 
   return {root,tick(dt,t){body.scale.y=1+Math.sin(t*1.6)*.03;}};}
 /* 아기 소금쟁이(숨겨진 비밀, 2026-11-03 — 받은 그림 그대로: 연하늘 달걀 몸·점 눈·볼터치·웃는 입, 청록 마디 다리 여섯·끝에 동그란 발, 발밑 물결).
    strider() → {root, tick(dt,t)} — 앞다리 하나를 들어 톡톡(인사), 몸이 살짝 위아래로, 발밑 물결이 퍼진다. 몸 폭 약 0.34m, 다리 끝까지 약 0.8m. 발 끝 y=0(물 면), 얼굴 앞 +z */
-function strider(){const root=new THREE.Group();root.name='fairy:strider';const body=new THREE.Group();root.add(body);body.position.y=.27;
-  const bm=mat('#cfe3ea'),lg=mat('#8fbab6'),ink=mat('#4a2a24','plain'),pink=mat(CHEEK,'plain');
+function strider(){const root=new THREE.Group();root.name='fairy:strider';const body=new THREE.Group();root.add(body);body.position.y=.17;
+  const bm=mat('#bcd9e4'),lg=mat('#8fbab6'),ink=mat('#4a2a24','plain'),pink=mat(CHEEK,'plain');
   const r=.17;const torso=mesh(new THREE.SphereGeometry(r,18,14),bm,body);torso.scale.set(1.05,.86,1);
   const onF=(x,y)=>{const z=Math.sqrt(Math.max(0,r*r-x*x-y*y));return new THREE.Vector3(x,y*.86,z);};
   const stick=(m,p,out=.004)=>{m.position.copy(p).add(p.clone().normalize().multiplyScalar(out));m.lookAt(m.position.clone().multiplyScalar(2));torso.add(m);m.castShadow=false;return m;};
@@ -200,10 +200,10 @@ function strider(){const root=new THREE.Group();root.name='fairy:strider';const 
   const legs=[];const L=[[.07,.55],[0,1.57],[-.07,2.55]]; // [몸 z, 옆으로 펼치는 각(앞→뒤)]
   L.forEach(([z,ay],i)=>[-1,1].forEach(sx=>{const piv=new THREE.Group();piv.position.set(sx*.13,-.02,z);body.add(piv);
     piv.rotation.y=sx>0?-(Math.PI/2-ay):(Math.PI/2-ay); // 바깥쪽으로 펼침
-    const up=mesh(new THREE.CapsuleGeometry(.014,.17,3,6).translate(0,.085,0),lg,piv);up.rotation.z=-sx*.95;
-    const knee=new THREE.Group();knee.position.set(sx*Math.sin(.95)*.17,Math.cos(.95)*.17,0);piv.add(knee);
-    const LO=.37,lo=mesh(new THREE.CapsuleGeometry(.012,LO,3,6).translate(0,-LO/2,0),lg,knee);lo.rotation.z=sx*.42; // 무릎(약 0.35m)에서 물 면까지
-    const foot=mesh(new THREE.SphereGeometry(.024,8,6),lg,knee,sx*Math.sin(.42)*LO,-Math.cos(.42)*LO-.01,0);
+    const UP=.09,up=mesh(new THREE.CapsuleGeometry(.016,UP,3,6).translate(0,UP/2,0),lg,piv);up.rotation.z=-sx*1.05; // 짧고 통통한 다리(2026-11-03 — 길어서 거미 같았다)
+    const knee=new THREE.Group();knee.position.set(sx*Math.sin(1.05)*UP,Math.cos(1.05)*UP,0);piv.add(knee);
+    const LO=.2,lo=mesh(new THREE.CapsuleGeometry(.015,LO,3,6).translate(0,-LO/2,0),lg,knee);lo.rotation.z=sx*.42; // 무릎(약 0.35m)에서 물 면까지
+    const foot=mesh(new THREE.SphereGeometry(.028,8,6),lg,knee,sx*Math.sin(.42)*LO,-Math.cos(.42)*LO-.01,0);
     legs.push({piv,knee,up,sx,i});}));
   // 발밑 물결: 얇은 고리 여섯(흰색, 반투명) — 천천히 퍼졌다 사라짐
   const ringMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.6,depthWrite:false});const rings=[];
@@ -211,8 +211,8 @@ function strider(){const root=new THREE.Group();root.name='fairy:strider';const 
     const g=new THREE.Mesh(new THREE.RingGeometry(.03,.04,18).rotateX(-PI/2),ringMat.clone());g.position.set(p.x,.01,p.z);g.userData.ph=j*.37;root.add(g);rings.push(g);});
   root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
   const wave=legs.find(l=>l.i===0&&l.sx<0); // 왼쪽 앞다리로 톡톡 인사
-  return {root,tick(dt,t){body.position.y=.27+Math.sin(t*2.4)*.008;
-    if(wave){const k=Math.max(0,Math.sin(t*3));wave.up.rotation.z=wave.sx*-.95-wave.sx*.6*k;wave.knee.rotation.z=-wave.sx*.4*k;}
+  return {root,tick(dt,t){body.position.y=.17+Math.sin(t*2.4)*.008;
+    if(wave){const k=Math.max(0,Math.sin(t*3));wave.up.rotation.z=wave.sx*-1.05-wave.sx*.6*k;wave.knee.rotation.z=-wave.sx*.4*k;}
     rings.forEach(g=>{const u=((t*.6+g.userData.ph)%1);g.scale.setScalar(1+u*2.2);g.material.opacity=.55*(1-u);});}};}
 function clearFairyCache(){for(const k in vmats){vmats[k].dispose();delete vmats[k];}if(vTex){vTex.dispose();vTex=null;}for(const k in mats){mats[k].dispose();delete mats[k];}if(capTex){capTex.dispose();capTex=null;}if(gillTex){gillTex.dispose();gillTex=null;}}
 export {bakeFairy,clearFairyCache,dandelionPuff,dewBoat,fairy,ladybug,leafBoat,strider,villager};
