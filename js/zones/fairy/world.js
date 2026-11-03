@@ -16,6 +16,7 @@ const asset=p=>`${p}?v=${window.WL_V||''}`;
 export const FAIRY_FRONT={ribbon:'원더룹의 대모험',logo:'요정의 숲 탐방',sub:'요정들의 첫별 축제에 놀러 가요',
   img:{ribbon:asset('assets/titles/fairy/title-ribbon.webp'),logo:asset('assets/titles/fairy/title-logo.webp'),w:1200,h:522,
     twinkle:[[.4625,.425,0],[.963,.544,1.4],[.428,.468,2.6],[.649,.808,3.3],[.373,.913,.8]]},
+  itemIcons:{umbrella:asset('assets/icons/fairy/umbrella.png')}, // 왼쪽 위 받은 물건 칩 아이콘(game/front) — 나침반은 기본 SVG
   help:[['탈것','가까이 가면 생기는 단추(E)로 타요 · 타는 동안에도 카메라는 돌릴 수 있어요'],['민들레 우산','받은 뒤에는 점프하거나 높은 데서 떨어질 때 저절로 펼쳐져 천천히 내려와요']],
   ending:{img:null}};
 export const FAIRY_BADGE={img:asset('assets/ui/fairy/stage-badge.webp'),box:[.128,.414,.868,.893],medal:[.4992,.2153,.13],ar:1400/416};

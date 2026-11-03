@@ -9,7 +9,7 @@
    아이템 획득 카드 = itemCard(itemget 소리, 2.8초), 안내 문구 = toast(위 가운데 칩, 2.8초), 결과창 = result(열 때 success 소리, 단추 click). */
 import {block,clock,cue} from './core.js';
 import {sfx,soundHooks} from './sound.js';
-import {injectFelt,mk,tape} from './felt.js';
+import {injectFelt} from './felt.js';
 const HINT_LAYER=5;
 const css=`
 .wlg{word-break:keep-all;overflow-wrap:break-word} /* 한글은 단어 중간에서 줄이 넘어가지 않게(대화창·카드·조작법·옷장 모두) */
@@ -50,10 +50,11 @@ const css=`
 #wlResult .b2{display:block;width:100%;text-align:center;margin-top:.6rem;border:2px solid var(--accent);border-radius:14px;font-size:1rem;padding:.7rem 1.2rem}
 #wlQuest,#wlPrompt{position:fixed;left:50%;transform:translateX(-50%);background:var(--panel);color:var(--ink);box-shadow:0 4px 14px rgba(30,14,36,.22);border-radius:999px;padding:.4rem 1rem;font-size:1rem;font-family:"Jua","Gowun Dodum",sans-serif;--fd:3px;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:15;white-space:nowrap}
-#wlQuest{top:calc(env(safe-area-inset-top,0px) + 92px);margin:0;padding:.45rem 1.5rem .5rem;font-size:1.05rem}
+#wlQuest{top:calc(env(safe-area-inset-top,0px) + 14px);margin:0;padding:.45rem .95rem;font-size:.98rem;background:rgba(46,28,44,.66);color:#fff4e4;box-shadow:none;border-radius:999px;line-height:1.35}
+@media (max-width:700px){#wlQuest{left:calc(env(safe-area-inset-left,0px) + 76px);right:calc(env(safe-area-inset-right,0px) + 14px);transform:none;white-space:normal;text-align:center;box-sizing:border-box}} /* 휴대폰: 왼쪽 위 톱니 옆부터 오른쪽 끝까지(개미굴처럼 줄바꿈) */
 #wlPrompt{bottom:calc(env(safe-area-inset-bottom,0px) + 112px)}
 #wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .8rem;
-  background:var(--tag);color:var(--tag-ink);font-size:1.05rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none;box-sizing:border-box} /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
+  background:#f2b63c;color:#3e2834;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none;box-sizing:border-box} /* 개미굴 #act: 노란 동그라미(글자가 길면 알약) */ /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
 #wlSecret{position:fixed;inset:0;display:none;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.25);z-index:31}
 #wlSecret .card{background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:4px solid #e3ad35;border-radius:22px;padding:1.4rem 1.5rem 1.2rem;width:min(21rem,100%);box-sizing:border-box;text-align:center;
   box-shadow:inset 0 0 0 3px #fff6d6,0 0 34px rgba(255,196,70,.65),0 18px 50px rgba(30,14,36,.5)}
@@ -111,7 +112,7 @@ root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
 <div id="wlBadge" role="status" aria-live="polite"><img class="bg" alt=""><span class="medal" aria-hidden="true"><img alt=""></span><div class="txt"><p class="t"></p><p class="s"></p></div></div>
-<p id="wlQuest" class="wl-hint"></p><p id="wlPrompt" class="wl-hint wl-felt"></p><button id="wlAct" class="wl-hint wl-glass act" type="button">말 걸기</button>`;
+<p id="wlQuest" class="wl-hint"></p><p id="wlPrompt" class="wl-hint wl-felt"></p><button id="wlAct" class="wl-hint" type="button">말 걸기</button>`;
 {const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
  if(!document.querySelector('link[data-wl-font]')){const l=document.createElement('link');l.rel='stylesheet';l.dataset.wlFont='1';l.href='https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap';document.head.appendChild(l);}
  document.body.appendChild(root);injectFelt();}
@@ -233,10 +234,13 @@ function chooseResult(i=0){if(!resultShown())return false;const b=rs.querySelect
 function clearCards(){CQ.splice(0).forEach(c=>c.r(-1));closeNotice();closeSecret();closeItemCard();closeProfile();if(cardOn&&closers[cardOn])closers[cardOn]();if(resultShown()){rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;cardOn=null;}}
 /* 할 일 문구·말 걸기 안내 */
 const quest=$('#wlQuest'),prompt=$('#wlPrompt'),act=$('#wlAct');
-const questTx=tape(quest); // 할 일 안내 = 분홍 마스킹테이프 띠(game/felt)
-function setQuest(t){questTx.textContent=t||'';quest.style.display=t?'block':'none';}
+/* 할 일 안내(개미굴 #chase와 같은 자리·모양 — 맨 위 가운데 어두운 반투명 칩, 휴대폰은 폭을 다 써서 줄바꿈). 휴대폰에서 화면 폭을 다 쓰면 그 높이를 --qh로 알려
+   오른쪽 위 메뉴·왼쪽 위 받은 물건이 그만큼 아래로 내려간다(game/front) */
+function setQuest(t){quest.textContent=t||'';quest.style.display=t?'block':'none';
+  requestAnimationFrame(()=>{const wide=innerWidth<=700&&!!t;root.style.setProperty('--qh',wide?(quest.offsetHeight+8)+'px':'0px');});}
+addEventListener('resize',()=>setQuest(quest.textContent));
 /* setPrompt(글자, 터치 단추 글자): 키보드 화면은 안내 문구, 터치 화면은 말 걸기 단추. 대화 중에는 문구 없이 터치 단추만("다음"·"닫기") */
-function setPrompt(t,touchOnly){prompt.textContent=t||'';prompt.style.display=t&&!coarse?'block':'none';const b=touchOnly||t;act.style.display=b&&coarse?'grid':'none';if(b)act.replaceChildren(mk(b.replace(/^E\s*/,'')));} // 개미굴 #act 자리(오른쪽, 점프 단추 위). 대화창은 터치 화면에서 그 위(206px)로 올라가 단추를 덮지 않는다
+function setPrompt(t,touchOnly){prompt.textContent=t||'';prompt.style.display=t&&!coarse?'block':'none';const b=touchOnly||t;act.style.display=b&&coarse?'grid':'none';if(b)act.textContent=b.replace(/^E\s*/,'');} // 개미굴 #act 자리(오른쪽, 점프 단추 위). 대화창은 터치 화면에서 그 위(206px)로 올라가 단추를 덮지 않는다
 /* 안내 표시 묶음 */
 const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}

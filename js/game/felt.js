@@ -40,6 +40,7 @@ button.wl-glass${S}:focus-visible{outline:3px solid #ffd46a;outline-offset:3px}
 const SVG={
   wardrobe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6.2a2 2 0 1 1 2.6 1.9c-.5.2-.6.6-.6 1.1v1.3"/><path d="M12 10.5 3.6 16.6c-.9.7-.4 1.9.6 1.9h15.6c1 0 1.5-1.2.6-1.9L12 10.5z"/></svg>',
   help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 8.5h9a4.5 4.5 0 0 1 4.5 4.5v1.2a3 3 0 0 1-5.5 1.7l-1-1.4h-5l-1 1.4a3 3 0 0 1-5.5-1.7V13a4.5 4.5 0 0 1 4.5-4.5z"/><path d="M8 11v3.4M6.3 12.7h3.4"/><circle cx="15.6" cy="11.8" r=".6" fill="currentColor"/><circle cx="17.4" cy="13.6" r=".6" fill="currentColor"/></svg>',
+  compass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 5V3M9.5 3h5"/><path d="m14.8 10.2-1.6 4-4 1.6 1.6-4z" fill="currentColor"/></svg>',
   question:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 9.2a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.8v.6"/><circle cx="12" cy="17.6" r=".9" fill="currentColor" stroke="none"/></svg>'};
 let custom={},done=false;
 function injectFelt(){if(done)return;done=true;const st=document.createElement('style');st.dataset.wlFelt='1';st.textContent=CSS;document.head.appendChild(st);

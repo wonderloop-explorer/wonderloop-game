@@ -11,10 +11,11 @@
    - 오른쪽 위 구석 단추: '옷 갈아입기'·'조작법'(controls 도움말 열고 닫기). 안내 표시(wl-hint)라 영상 캡처에는 안 나온다.
    톱니 메뉴의 옷·머리·표정 단추는 시험용으로 그대로 둔다(촬영 도구가 누른다) — 플레이어용은 이것 하나. */
 import {block,blocking} from './core.js';
-import {sfx} from './sound.js';
+import {setMuted,sfx,soundSettings} from './sound.js';
 import {cardShown,setHints,toast,transition} from './ui.js';
 import {helpShown,input,setHelpExtra,showHelp} from './controls.js';
-import {flags,resetAll} from './state.js';
+import {flags,onFlag,resetAll} from './state.js';
+import {ITEMS} from './items.js';
 import {logoEl} from './title.js';
 import {icon,mk,setIcons,setTheme,tape} from './felt.js';
 const Q=new URLSearchParams(location.search),SHOT=Q.has('shot'),NO=SHOT||Q.has('notitle');
@@ -73,32 +74,42 @@ const css=`
 #wlWard .opts button[aria-pressed="true"]{--fbg:var(--f-apri);--fst:var(--f-stitch-apri)}
 #wlWard .spin{display:flex;gap:.5rem;margin-top:.9rem}#wlWard .spin button{position:relative;flex:1;text-align:center;padding:.45rem;min-height:42px;box-sizing:border-box;font-size:1rem;--fr:999px;--fd:4px}
 #wlWard .done{position:relative;flex:none;display:block;width:100%;box-sizing:border-box;margin-top:.9rem;text-align:center;font-size:1.15rem;padding:.65rem 1rem;min-height:48px;--fr:999px} /* 휴대폰 아래 시트에서도 '다 골랐어요'는 늘 보이게 */
-/* 오른쪽 위 동그란 펠트 아이콘 단추(48px — 손가락 닿는 넓이 그대로). 이름은 마우스를 올리거나 길게 누르면 왼쪽에 작은 펠트 꼬리표로 */
-#wlCorner{position:fixed;right:calc(env(safe-area-inset-right,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 12px);z-index:41;display:none;flex-direction:column;align-items:flex-end;gap:.55rem}
-#wlCorner.on{display:flex}
-#wlCorner button{position:relative;width:52px;height:52px;box-sizing:border-box;display:grid;place-items:center;font-size:1.6rem;--fd:4px}
-#wlCorner .lb{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);white-space:nowrap;font-size:.92rem;padding:.2rem .65rem;--fr:999px;--fd:2px;opacity:0;pointer-events:none;transition:opacity .15s}
-@media (hover:hover){#wlCorner button:hover .lb{opacity:1}}#wlCorner button:focus-visible .lb,#wlCorner button.lbl .lb{opacity:1} /* 손가락 화면은 길게 누를 때만(누른 뒤 남는 hover 없이) */
-.wlg.prof-on #wlCorner{visibility:hidden} /* 소개 카드가 위에 떠 있는 동안 */
+/* 게임 중 화면 구석(개미굴 편과 같은 자리·모양 — 2026-11-03): 오른쪽 위 노란 '☰ 메뉴' 하나(누르면 소리·옷 갈아입기·조작법 칩이 아래로), 왼쪽 위 받은 물건(노란 칩 + 아이콘).
+   위 할 일 안내가 휴대폰에서 화면 폭을 다 쓰면 그 높이(--qh, ui.setQuest)만큼 아래로 내려간다. 왼쪽 위 시험용 톱니(52px) 아래에서 시작 */
+#wlHud:not(.on)>*{display:none!important}.wlg.prof-on #wlHud{visibility:hidden}
+#wlHud .wl-chip{display:inline-flex;align-items:center;gap:.35rem;min-height:40px;box-sizing:border-box;background:rgba(46,28,44,.66);color:#fff4e4;border-radius:999px;padding:.4rem .95rem;
+  font-family:"Jua","Gowun Dodum",sans-serif;font-size:.98rem;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+#wlHud .wl-chip.y{background:#f2b63c;color:#3e2834}#wlHud button.wl-chip{cursor:pointer}
+#wlItems .wl-ic img{filter:drop-shadow(0 0 .7px #7a5236) drop-shadow(0 0 .7px #7a5236)} /* 크림색 아이콘도 노란 칩 위에서 보이게 */
+#wlMenu{position:fixed;right:calc(env(safe-area-inset-right,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px));z-index:41;display:flex;flex-direction:column;align-items:flex-end;gap:.45rem}
+#wlMenu .ls{display:none;flex-direction:column;align-items:flex-end;gap:.45rem}#wlMenu.open .ls{display:flex}
+#wlItems{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)));z-index:16;display:flex;flex-direction:column;align-items:flex-start;gap:.45rem;pointer-events:none}
+#wlItems .wl-chip{min-height:36px;padding:.3rem .8rem .3rem .45rem;font-size:.9rem;color:#1e1418}#wlItems .wl-ic{width:24px;height:24px}
 body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
-let ctx=null,VIEW=null,el=null,ward=null,corner=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false;
+let ctx=null,VIEW=null,el=null,ward=null,corner=null,menu=null,items=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false;
 const look={outfit:null,hair:null};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
 /* 08 zoneLook이 세계 옷을 입힌 뒤 부른다: 플레이어가 고른 옷·머리(있으면). 탈은 그대로 */
 function applyLook(U){if(SHOT||!U)return;if(look.outfit&&U.setOutfit)U.setOutfit(look.outfit);if(look.hair!=null&&U.setHair)U.setHair(look.hair);}
 const hasProgress=()=>Object.keys(flags).some(k=>k!=='compass'&&flags[k]);
 function btn(cls,text,on,ic=null){const b=document.createElement('button');b.type='button';b.className=cls+' wl-felt wl-btn';if(ic)b.appendChild(icon(ic));b.append(mk(text));b.addEventListener('click',on);return b;}
-/* 동그란 아이콘 단추: 이름은 꼬리표(마우스 올림·길게 누름) — 길게 눌러 이름을 본 뒤 떼면 누른 것으로 치지 않는다 */
-function iconBtn(ic,name,on){const b=document.createElement('button');b.type='button';b.className='wl-glass';b.setAttribute('aria-label',name);b.appendChild(icon(ic));
-  const lb=document.createElement('span');lb.className='lb wl-felt';lb.textContent=name;b.appendChild(lb);let t=0,long=false;
-  b.addEventListener('pointerdown',()=>{long=false;clearTimeout(t);t=setTimeout(()=>{long=true;b.classList.add('lbl');},450);});
-  const up=()=>{clearTimeout(t);setTimeout(()=>b.classList.remove('lbl'),900);};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
-  b.addEventListener('click',e=>{if(long){long=false;e.preventDefault();return;}on();});b.addEventListener('contextmenu',e=>e.preventDefault());return b;}
 function build(){const root=document.querySelector('.wlg');if(!root||el)return;const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   el=document.createElement('div');el.id='wlFront';el.setAttribute('role','dialog');el.setAttribute('aria-label','게임 시작');root.appendChild(el);
   ward=document.createElement('div');ward.id='wlWard';ward.setAttribute('role','dialog');ward.setAttribute('aria-label','옷 갈아입기');root.appendChild(ward);
-  corner=document.createElement('div');corner.id='wlCorner';corner.className='wl-hint';root.appendChild(corner);
-  corner.append(iconBtn('wardrobe','옷 갈아입기',()=>toggleWardrobe()),iconBtn('help','조작법',()=>{sfx('click');showHelp(!helpShown());}));
-  const how=corner.lastChild;how.setAttribute('aria-expanded','false');setInterval(()=>{const on=helpShown();how.setAttribute('aria-expanded',on?'true':'false');how.classList.toggle('act',on);},250);} // 열려 있으면 살구 반투명
+  corner=document.createElement('div');corner.id='wlHud';corner.className='wl-hint';root.appendChild(corner);
+  // 오른쪽 위 메뉴(개미굴 #uiBtn): 노란 '☰ 메뉴' → 소리·옷 갈아입기·조작법 칩
+  menu=document.createElement('div');menu.id='wlMenu';const mb=document.createElement('button');mb.type='button';mb.className='wl-chip y';mb.setAttribute('aria-expanded','false');
+  const ls=document.createElement('div');ls.className='ls';const chip=(t,on)=>{const b=document.createElement('button');b.type='button';b.className='wl-chip';b.textContent=t;b.addEventListener('click',e=>{b.blur();on(e);});return b;};
+  const snd=chip('',()=>{setMuted(!soundSettings.muted);sfx('click');sndLabel();}),sndLabel=()=>{snd.textContent=soundSettings.muted?'소리 꺼짐':'소리 켜짐';};
+  ls.append(snd,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('click');setMenu(false);showHelp(!helpShown());}));
+  const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on)sndLabel();};
+  mb.addEventListener('click',()=>{sfx('click');mb.blur();setMenu(!menu.classList.contains('open'));});setMenu(false);menu.append(mb,ls);
+  // 왼쪽 위 받은 물건(개미굴 #compassChip·#honeyChip): 노란 칩 + 아이콘
+  items=document.createElement('div');items.id='wlItems';items.setAttribute('aria-label','받은 물건');corner.append(items,menu);renderItems();onFlag(()=>renderItems());}
+/* 받은 물건 칩: 아이템 목록(game/items) 가운데 가진 것. 아이콘은 세계 설정 front.itemIcons[id](그림 주소) → 없으면 기본 SVG(felt icon) */
+function renderItems(){if(!items)return;items.innerHTML='';const Z=zone(),ic=(Z&&Z.front&&Z.front.itemIcons)||{};
+  for(const id of Object.keys(ITEMS)){if(!flags[id])continue;const c=document.createElement('span');c.className='wl-chip y';
+    if(ic[id]){const s=document.createElement('span');s.className='wl-ic';const im=new Image();im.alt='';im.src=ic[id];s.appendChild(im);c.appendChild(s);}else c.appendChild(icon(id));
+    c.append(ITEMS[id].name);items.appendChild(c);}}
 /* ---------- 첫 화면 ---------- */
 function art(F){const box=document.createElement('div');box.className='art';
   if(F.img){const r=new Image(),l=new Image();r.className='rib';l.className='logo';r.alt='';l.alt=[F.ribbon,F.logo].filter(Boolean).join(' ');r.src=F.img.ribbon;l.src=F.img.logo;box.append(l,r);

@@ -25,9 +25,9 @@ let tool=null;
 const typing=t=>t&&(/INPUT|TEXTAREA|SELECT/.test(t.tagName)||t.isContentEditable);
 const css=`
 #wlJoy,#wlJump,#wlDash{position:fixed;display:none;touch-action:none;z-index:16}
-#wlJoy{left:calc(env(safe-area-inset-left,0px) + 22px);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);width:120px;height:120px;border-radius:50%;background:var(--chip);box-sizing:border-box}
-#wlKnob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:var(--chip-ink);--fd:4px;box-sizing:border-box}
-#wlJump,#wlDash{border-radius:50%;background:var(--chip);color:var(--chip-ink);place-items:center;box-sizing:border-box}
+#wlJoy{left:calc(env(safe-area-inset-left,0px) + 22px);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);width:120px;height:120px;border-radius:50%;background:rgba(46,28,44,.66)} /* 개미굴 조작 단추 그대로 */
+#wlKnob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:#fff4e4;opacity:.85}
+#wlJump,#wlDash{border-radius:50%;background:rgba(46,28,44,.66);color:#fff4e4;place-items:center;font-family:"Jua","Gowun Dodum",sans-serif}
 #wlJump{right:calc(env(safe-area-inset-right,0px) + 24px);bottom:calc(env(safe-area-inset-bottom,0px) + 34px);width:76px;height:76px;font-size:1.05rem}
 #wlDash{right:calc(env(safe-area-inset-right,0px) + 112px);bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:64px;height:64px;font-size:.9rem;transition:opacity .2s}
 #wlDash.cool{opacity:.45}
@@ -35,7 +35,7 @@ const css=`
 #wlTool{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 56px);display:none;z-index:16;
   background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:.45rem .9rem;font-size:.9rem;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.45);z-index:40}
-@media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 138px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
+@media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
 #wlHelp[hidden]{display:none}
 #wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow-y:auto;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
 #wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400;font-family:"Jua",sans-serif}
@@ -48,13 +48,13 @@ const css=`
    세계마다 새로 생긴 것(탈것·우산 활공 등)은 세계 front.help로 '이 세계에서' 칸에(setHelpExtra). 늘 크림색 바탕·진갈색 글자, 휴대폰 세로는 화면 위쪽에 */
 const KEYS_HELP=[['<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>','걷기 (카메라가 보는 쪽이 앞)'],['방향키 · 마우스 끌기','카메라 돌리기'],['휠 · <kbd>-</kbd><kbd>+</kbd>','카메라 확대·축소'],['<kbd>Space</kbd>','점프'],['<kbd>Shift</kbd>','대쉬 · 누른 채면 달리기'],
   ['<kbd>E</kbd>','말 걸기 · 손으로 하기 · 대화 넘기기'],['<kbd>F</kbd>','세계 도구 쓰기'],['<kbd>C</kbd>','옷 갈아입기'],['<kbd>M</kbd>','소리 끄고 켜기'],['<kbd>H</kbd>','조작법 열고 닫기'],['<kbd>Esc</kbd>','창 닫기']];
-const TOUCH_HELP=[['왼쪽 아래 동그라미','끌어서 걷기 (끝까지 밀면 달리기)'],['한 손가락 끌기','카메라 돌리기'],['두 손가락','벌리면 가까이 · 오므리면 멀리'],['점프 · 대쉬','오른쪽 아래 단추'],['말 걸기','가까이 가면 생기는 살구색 단추 (손으로 하기·타기도)'],['땅 누르기','그 자리로 걸어가기']];
+const TOUCH_HELP=[['왼쪽 아래 동그라미','끌어서 걷기 (끝까지 밀면 달리기)'],['한 손가락 끌기','카메라 돌리기'],['두 손가락','벌리면 가까이 · 오므리면 멀리'],['점프 · 대쉬','오른쪽 아래 단추'],['말 걸기','가까이 가면 생기는 노란 단추 (손으로 하기·타기도)'],['메뉴','오른쪽 위 노란 단추 — 소리·옷 갈아입기·조작법'],['땅 누르기','그 자리로 걸어가기']];
 let extra=null;
 let help=null,toolBtn=null,dashBtn=null;
 function build(){const root=document.querySelector('.wlg');if(!root)return;
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const box=document.createElement('div');
-  box.innerHTML=`<div id="wlJoy" class="wl-hint wl-glass" aria-hidden="true"><div id="wlKnob" class="wl-glass knob"></div></div><button id="wlJump" class="wl-hint wl-glass" type="button"><span class="wl-mk">점프</span></button><button id="wlDash" class="wl-hint wl-glass" type="button"><span class="wl-mk">대쉬</span></button>
+  box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
 <div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
