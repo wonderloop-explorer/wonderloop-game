@@ -35,7 +35,7 @@ const css=`
 #wlTool{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 56px);display:none;z-index:16;
   background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:.45rem .9rem;font-size:.9rem;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.45);z-index:40}
-@media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 92px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
+@media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 138px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
 #wlHelp[hidden]{display:none}
 #wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow-y:auto;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
 #wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400;font-family:"Jua",sans-serif}
@@ -48,7 +48,7 @@ const css=`
    세계마다 새로 생긴 것(탈것·우산 활공 등)은 세계 front.help로 '이 세계에서' 칸에(setHelpExtra). 늘 크림색 바탕·진갈색 글자, 휴대폰 세로는 화면 위쪽에 */
 const KEYS_HELP=[['<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>','걷기 (카메라가 보는 쪽이 앞)'],['방향키 · 마우스 끌기','카메라 돌리기'],['휠 · <kbd>-</kbd><kbd>+</kbd>','카메라 확대·축소'],['<kbd>Space</kbd>','점프'],['<kbd>Shift</kbd>','대쉬 · 누른 채면 달리기'],
   ['<kbd>E</kbd>','말 걸기 · 손으로 하기 · 대화 넘기기'],['<kbd>F</kbd>','세계 도구 쓰기'],['<kbd>C</kbd>','옷 갈아입기'],['<kbd>M</kbd>','소리 끄고 켜기'],['<kbd>H</kbd>','조작법 열고 닫기'],['<kbd>Esc</kbd>','창 닫기']];
-const TOUCH_HELP=[['왼쪽 아래 동그라미','끌어서 걷기 (끝까지 밀면 달리기)'],['한 손가락 끌기','카메라 돌리기'],['두 손가락','벌리면 가까이 · 오므리면 멀리'],['점프 · 대쉬','오른쪽 아래 단추'],['말 걸기','가까이 가면 생기는 노란 단추 (손으로 하기·타기도)'],['땅 누르기','그 자리로 걸어가기']];
+const TOUCH_HELP=[['왼쪽 아래 동그라미','끌어서 걷기 (끝까지 밀면 달리기)'],['한 손가락 끌기','카메라 돌리기'],['두 손가락','벌리면 가까이 · 오므리면 멀리'],['점프 · 대쉬','오른쪽 아래 단추'],['말 걸기','가까이 가면 생기는 살구색 단추 (손으로 하기·타기도)'],['땅 누르기','그 자리로 걸어가기']];
 let extra=null;
 let help=null,toolBtn=null,dashBtn=null;
 function build(){const root=document.querySelector('.wlg');if(!root)return;

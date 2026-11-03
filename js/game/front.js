@@ -58,9 +58,11 @@ const css=`
 @keyframes wlfFloat{0%{opacity:0;transform:translate(0,-12px) rotate(0)}18%{opacity:.95}82%{opacity:.85}100%{opacity:0;transform:translate(var(--dx),70px) rotate(200deg)}}
 @keyframes wlfFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){#wlFront *{animation:none!important}#wlFront .tw,#wlFront .fl{display:none}#wlFront .art img,#wlFront .sub,#wlFront .btns{opacity:1}}
-#wlWard{position:fixed;top:0;right:0;bottom:0;width:min(23rem,100vw);z-index:31;display:none;box-sizing:border-box;overflow-y:auto;
+#wlWard{position:fixed;top:0;right:0;bottom:0;width:min(23rem,100vw);z-index:31;display:none;flex-direction:column;box-sizing:border-box;
   padding:calc(env(safe-area-inset-top,0px) + 14px) calc(env(safe-area-inset-right,0px) + 14px) calc(env(safe-area-inset-bottom,0px) + 14px) 14px}
-#wlWard.on{display:block}
+#wlWard.on{display:flex}
+/* 창 안 내용(.body)만 스크롤, '다 골랐어요'는 창 맨 아래에 따로(내용과 겹치지 않게) */
+#wlWard .panel{display:flex;flex-direction:column;min-height:0;max-height:100%;box-sizing:border-box}#wlWard .body{flex:1;min-height:0;overflow-y:auto;margin:0 -.4rem;padding:0 .4rem .2rem}
 @media (max-width:760px){#wlWard{top:auto;left:0;width:100%;max-height:52vh;padding-left:calc(env(safe-area-inset-left,0px) + 14px)}}
 #wlWard .panel{position:relative;padding:1.1rem 1.2rem 1.1rem}
 #wlWard .k{position:relative;margin:0;display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .75rem;font-size:1rem;--fr:999px;--fd:2px}
@@ -70,7 +72,7 @@ const css=`
 #wlWard .opts button{position:relative;font-size:.98rem;padding:.4rem .85rem;min-height:42px;box-sizing:border-box;white-space:nowrap;--fr:999px;--fd:4px;border-width:3px}
 #wlWard .opts button[aria-pressed="true"]{--fbg:var(--f-apri);--fst:var(--f-stitch-apri)}
 #wlWard .spin{display:flex;gap:.5rem;margin-top:.9rem}#wlWard .spin button{position:relative;flex:1;text-align:center;padding:.45rem;min-height:42px;box-sizing:border-box;font-size:1rem;--fr:999px;--fd:4px}
-#wlWard .done{position:sticky;bottom:2px;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1rem;text-align:center;font-size:1.15rem;padding:.65rem 1rem;min-height:48px;--fr:999px} /* 휴대폰 아래 시트에서도 '다 골랐어요'는 늘 보이게 */
+#wlWard .done{position:relative;flex:none;display:block;width:100%;box-sizing:border-box;margin-top:.9rem;text-align:center;font-size:1.15rem;padding:.65rem 1rem;min-height:48px;--fr:999px} /* 휴대폰 아래 시트에서도 '다 골랐어요'는 늘 보이게 */
 /* 오른쪽 위 동그란 펠트 아이콘 단추(48px — 손가락 닿는 넓이 그대로). 이름은 마우스를 올리거나 길게 누르면 왼쪽에 작은 펠트 꼬리표로 */
 #wlCorner{position:fixed;right:calc(env(safe-area-inset-right,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 12px);z-index:41;display:none;flex-direction:column;align-items:flex-end;gap:.55rem}
 #wlCorner.on{display:flex}
@@ -78,7 +80,7 @@ const css=`
 #wlCorner .lb{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);white-space:nowrap;font-size:.92rem;padding:.2rem .65rem;--fr:999px;--fd:2px;opacity:0;pointer-events:none;transition:opacity .15s}
 @media (hover:hover){#wlCorner button:hover .lb{opacity:1}}#wlCorner button:focus-visible .lb,#wlCorner button.lbl .lb{opacity:1} /* 손가락 화면은 길게 누를 때만(누른 뒤 남는 hover 없이) */
 .wlg.prof-on #wlCorner{visibility:hidden} /* 소개 카드가 위에 떠 있는 동안 */
-body.wl-front-on .bar .hint:not(#stats){display:none}`;
+body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
 let ctx=null,VIEW=null,el=null,ward=null,corner=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false;
 const look={outfit:null,hair:null};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
 /* 08 zoneLook이 세계 옷을 입힌 뒤 부른다: 플레이어가 고른 옷·머리(있으면). 탈은 그대로 */
@@ -135,12 +137,13 @@ function lab(t){const p=document.createElement('p');p.className='lab';p.textCont
 function renderWard(){const U=ctx.WL.userData;ward.innerHTML='';const P=document.createElement('div');P.className='panel wl-felt';
   const k=document.createElement('p');k.className='k wl-felt apri';k.append(icon('wardrobe'),'옷 갈아입기');const note=document.createElement('p');note.className='note';
   note.textContent=(coarse?'화면을 끌면':'화면을 끌거나 아래 단추로')+' 원더룹을 돌려 볼 수 있어요. 고른 옷과 머리는 다음에 열어도 그대로예요.';
-  P.append(k,note,lab('옷'),opts(['평상복','탐험복'],U.outfit?1:0,i=>{look.outfit=i?'explorer':'casual';U.setOutfit(look.outfit);save();sfx('click');}),
+  const B=document.createElement('div');B.className='body';
+  B.append(k,note,lab('옷'),opts(['평상복','탐험복'],U.outfit?1:0,i=>{look.outfit=i?'explorer':'casual';U.setOutfit(look.outfit);save();sfx('click');}),
     lab('머리'),opts(U.hairNames||[],U.getHair?U.getHair():0,i=>{look.hair=i;U.setHair(i);save();sfx('click');}));
   const faces=U.exprNames||[];
-  P.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('blip');}));
+  B.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('blip');}));
   const spin=document.createElement('div');spin.className='spin';spin.append(btn('','↺ 돌리기',()=>{ctx.WL.rotation.y+=Math.PI/4;}),btn('','돌리기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;}));
-  P.append(spin,btn('done apri','다 골랐어요',()=>closeWardrobe()));ward.appendChild(P);}
+  B.appendChild(spin);P.append(B,btn('done apri','다 골랐어요',()=>closeWardrobe()));ward.appendChild(P);}
 function save(){store.set(LOOK_KEY,JSON.stringify(look));}
 function showcase(){const W=ctx.WL,cam=ctx.camera;const dx=cam.position.x-W.position.x,dz=cam.position.z-W.position.z,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L;
   W.rotation.y=Math.atan2(ux,uz)+.35; // 원더룹이 카메라 쪽을 살짝 비스듬히(3/4) 본다

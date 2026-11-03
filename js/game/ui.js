@@ -12,6 +12,7 @@ import {sfx,soundHooks} from './sound.js';
 import {injectFelt,mk,tape} from './felt.js';
 const HINT_LAYER=5;
 const css=`
+.wlg{word-break:keep-all;overflow-wrap:break-word} /* 한글은 단어 중간에서 줄이 넘어가지 않게(대화창·카드·조작법·옷장 모두) */
 .wlg{--panel:rgba(255,246,234,.95);--bubble:#fffaf2;--ink:#3e2834;--ink-soft:#75565e;--accent:#3f9fa0;--accent-ink:#fffaf2;--tag:#f2b63c;--tag-ink:#3e2834;--chip:rgba(46,28,44,.66);--chip-ink:#fff4e4;
   font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;color:var(--ink)}
 /* 기기 어두운 화면 설정과 상관없이 늘 크림색 바탕 + 진갈색 글자(2026-11-03 — 아이폰 다크 모드에서 대화창이 어두운 보라로 나왔다. 아이템 카드·소개 카드와 같은 색) */

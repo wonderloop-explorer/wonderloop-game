@@ -61,7 +61,7 @@ async function goZone(id,spawn){
 /* 세계의 옷·탈: 상상의 세계(구역 정보에 hood가 있는 곳)에 들어가면 탐험복 그대로 탈만 그 세계 것으로 바꿔 쓴다.
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
 function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥근 땅 세기는 구역 정보 bend(없으면 끔 — 실내·베이스캠프)
-  {const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';} // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
+  {const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';document.body.classList.toggle('wl-world',!!z.world);} // 세계 구역: 베이스캠프 머리말·아래 조작 안내 글자 숨김(조작법 창에 다 있음) // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);
   GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
