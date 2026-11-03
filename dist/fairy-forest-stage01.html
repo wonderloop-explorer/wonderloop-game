@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <!-- 원더룹 요정의 숲 — STAGE 01 이슬방울 선착장
-     한 파일 빌드: node tools/build-single.js fairy-dock (원본 저장소 wonderloop-game, 커밋 1902043, 버전 9e9c88d92c, 2026-11-03)
+     한 파일 빌드: node tools/build-single.js fairy-dock (원본 저장소 wonderloop-game, 커밋 11fabf7, 버전 29489aedca, 2026-11-03)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -126,8 +126,8 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="9e9c88d92c";
-window.WL_BUILD={"commit":"1902043","date":"2026-11-03","stage":"fairy-dock"};
+window.WL_V="29489aedca";
+window.WL_BUILD={"commit":"11fabf7","date":"2026-11-03","stage":"fairy-dock"};
 window.WL_START_ZONE="fairy-dock";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -1363,7 +1363,7 @@ function updateWL(dt,t){
     GY=V.y;}
   unstick(dt,H);
   V.px=X;V.pz=Z;
-  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*(SHOTM?11:16)*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
+  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*(SHOTM?11:16)*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('footstep',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*0.5;legs[1].rotation.x=-sw*0.5;
@@ -2236,14 +2236,16 @@ const css=`
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.45);z-index:40}
 @media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
 #wlHelp[hidden]{display:none}
+#wlHelp .hsc{flex:1;min-height:0;overflow-y:auto;margin:0 -.4rem;padding:0 .4rem} /* 내용만 스크롤 — 창 테두리 바느질 점선은 '알겠어요' 단추까지 늘 한 바퀴(2026-11-03: 스크롤하면 점선이 중간에서 끊겼다) */
 #wlHelp .snd{margin:0;padding-left:1.1rem;line-height:1.6;color:var(--f-soft);word-break:keep-all}#wlHelp .snd li{margin:.2rem 0}#wlHelp .snd b{color:var(--f-ink);font-weight:700}#wlHelp .play{margin:0;line-height:1.65;color:var(--f-soft);word-break:keep-all}
-#wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow-y:auto;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
+#wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow:hidden;display:flex;flex-direction:column;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
 #wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400;font-family:"Jua",sans-serif}
 #wlHelp h3{margin:1rem 0 .45rem;font-size:1rem;font-weight:400;color:var(--f-soft);font-family:"Jua",sans-serif}
 #wlHelp dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:.45rem .9rem;line-height:1.5}
 #wlHelp dt{white-space:nowrap;font-family:"Jua",sans-serif;color:var(--f-ink)}#wlHelp dd{margin:0;color:var(--f-soft)}
 #wlHelp kbd{font:inherit;font-size:.85rem;background:var(--f-cream);color:var(--f-ink);border:1.5px solid var(--f-edge);box-shadow:0 2px 0 var(--f-edge);border-radius:7px;padding:0 .4rem;margin-right:.2rem}
-#wlHelp button{position:sticky;bottom:0;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1.1rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.15rem;padding:.65rem 1.2rem;--fr:999px}`;
+#wlHelp button{position:relative;flex:none;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1.1rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.15rem;padding:.65rem 1.2rem;--fr:999px}
+@media (pointer:coarse) and (orientation:portrait){#wlHelp .hcard{max-height:min(60vh,calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 96px - env(safe-area-inset-bottom,0px)))}} /* 휴대폰 세로: 창 아래 끝('알겠어요')이 화면 안에, 아래쪽 원더룹은 보이게 — 위 기본 높이 규칙보다 뒤에 둔다 */`;
 /* 조작법 창(2026-11-03 개미굴 조작법과 같게): 컴퓨터는 키보드, 휴대폰은 터치 — 오른쪽 위 '조작법' 단추(game/front)·H 키로 열고 닫는다.
    세계마다 새로 생긴 것(탈것·우산 활공 등)은 세계 front.help로 '이 세계에서' 칸에(setHelpExtra). 늘 크림색 바탕·진갈색 글자, 휴대폰 세로는 화면 위쪽에 */
 const KEYS_HELP=[['<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>','걷기 (카메라가 보는 쪽이 앞)'],['방향키 · 마우스 끌기','카메라 돌리기'],['휠 · <kbd>-</kbd><kbd>+</kbd>','카메라 확대·축소'],['<kbd>Space</kbd>','점프'],['<kbd>Shift</kbd>','대쉬 · 누른 채면 달리기'],
@@ -2256,7 +2258,7 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   const box=document.createElement('div');
   box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
-<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><h3>소리가 안 들릴 때</h3><ul class="snd"><li>오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.</li><li>다른 앱에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.</li><li>아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.</li><li>그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.</li></ul><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
+<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><div class="hsc"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><h3>소리가 안 들릴 때</h3><ul class="snd"><li>오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.</li><li>다른 앱에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.</li><li>아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.</li><li>그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.</li></ul></div><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
   help=root.querySelector('#wlHelp');help.querySelector('button').addEventListener('click',()=>showHelp(false));
   help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});
@@ -3575,6 +3577,8 @@ const S={
   tremble:[1.02,(c,t,D)=>{for(let i=0;i<14;i++)tone(c,'sine',mf(96+(i%2?2:0)),t+.25+i*.055,.09,.022*(1-i/16),D);[84,88].forEach((m,i)=>bell(c,m,t+i*.1,1.1,.045,D));}],
   chime:[1.16,(c,t,D)=>[84,79,88].forEach((m,i)=>bell(c,m,t+i*.08,1,.05,D))],
   thunder:[3,(c,t,D)=>{rumbleBurst(c,t,3,D);noise(c,t,.5,.5,D,'lowpass',380,.7,90);tone(c,'sine',38,t,2.5,.3,D);}],
+  // 원더룹 전용(2026-11-03, 개미굴에 없던 소리): 걸음마다 부드러운 발소리 — 개미굴 step(아주 작은 사각 잡음)은 배경음에 묻혀 안 들렸다. 낮은 '통' + 풀 스치는 소리, 걸음마다 높낮이가 조금씩
+  footstep:[.12,(c,t,D)=>{const f=rr(105,135);tone(c,'sine',f,t,.08,.11,D,{slide:f*.6,a:.004});noise(c,t,.07,.09,D,'lowpass',rr(900,1300),.9,350);noise(c,t+.01,.05,.035,D,'bandpass',rr(2600,3400),1.4);}],
   pop:[.5,(c,t,D)=>{tone(c,'sine',480,t,.14,.16,D,{slide:1150});[76,79,84].forEach((m,i)=>tone(c,'triangle',mf(m),t+.12+i*.08,.22,.09,D));}],
 };
 const ANT={};for(const k in S){const [dur,fn]=S[k];ANT[k]={dur,play(c,out){fn(c,c.currentTime,out);}};}
@@ -5952,7 +5956,7 @@ function dandelionPuff({stem=1.75,reach=0,R=.44}={}){const g=new THREE.Group();g
    재질은 흰 천 결 그림 한 장에 색만 곱한 것(vmat)이라 bakeFairy(into: body)로 주민 하나가 그리기 1번(휴대폰 스테이지 예산).
    villager(kind, {petal, dress, hair, cap}) → {root, body, tick(dt, t, moving)} — 걸을 때 통통 튀고 팔을 흔든다. 키 약 0.75(원더룹보다 작게), 얼굴 앞 +z, 발바닥 y=0 */
 let vTex=null;const vmats={};
-function vmat(c){if(!vTex)vTex=pencil('#ffffff','suede',{rep:[2,2]});return vmats[c]||(vmats[c]=new THREE.MeshStandardMaterial({map:vTex,color:new THREE.Color(c),roughness:.95,metalness:0}));}
+function vmat(c){if(!vTex)vTex=pencil('#ffffff','suede',{rep:[2,2]});const two=c.endsWith('|2'),hex=two?c.slice(0,-2):c;return vmats[c]||(vmats[c]=new THREE.MeshStandardMaterial({map:vTex,color:new THREE.Color(hex),roughness:.95,metalness:0,side:two?THREE.DoubleSide:THREE.FrontSide}));} // '색|2' = 양면
 function vface(head,r){const ink=vmat(INK),pink=vmat(CHEEK);const onFace=(x,y,out=0)=>{const z=Math.sqrt(Math.max(0,r*r-x*x-y*y));return new THREE.Vector3(x,y,z).normalize().multiplyScalar(r+out);};
   const stick=(m,p)=>{m.position.copy(p);m.lookAt(p.clone().multiplyScalar(2));head.add(m);m.castShadow=false;return m;};
   [-1,1].forEach(s=>{const e=stick(new THREE.Mesh(new THREE.SphereGeometry(r*.12,10,8),ink),onFace(s*r*.34,r*.02,-r*.03));e.scale.set(.9,1.1,.55);});
@@ -5965,8 +5969,9 @@ function villager(kind,o={}){const root=new THREE.Group();root.name='villager:'+
   if(kind==='mushroom'){const cap=o.cap||'#e9824a';
     vm(lathe([[0,0],[.15,.01],[.21,.07],[.23,.17],[.21,.27],[.15,.33],[0,.35]].map(q=>new THREE.Vector2(q[0],q[1])),14),'#f2dfc0',body,0,.04,0);
     head=new THREE.Group();head.position.set(0,.24,0);body.add(head);r=.22;vface(head,r);
-    const c=vm(lathe([[0,.22],[.11,.2],[.21,.14],[.29,.06],[.31,0]].map(q=>new THREE.Vector2(q[0],q[1])),16),cap,body,0,.3,0);c.material=vmat(cap);
-    [[0,.47,.12],[.12,.44,.06],[-.1,.45,.08]].forEach(([x,y,z])=>{const d=vm(new THREE.SphereGeometry(.045,8,6),'#fbf1de',body,x,y,z);d.scale.y=.4;});
+    const c=vm(lathe([[0,.24],[.12,.22],[.22,.16],[.3,.07],[.33,.01],[.32,-.03],[.27,-.05]].map(q=>new THREE.Vector2(q[0],q[1])),16),cap,body,0,.3,0); // 갓: 두께가 있게 테두리를 안쪽으로 말아 넣고
+    {const m=vmat(cap+'|2');c.material=m;} // 갓 안쪽 면도 그려(양면) 아래에서 봐도 속이 비지 않게(2026-11-03)
+    [[0,.522,.12],[.12,.522,.06],[-.1,.527,.08]].forEach(([x,y,z])=>{const d=vm(new THREE.SphereGeometry(.045,8,6),'#fbf1de',body,x,y,z);d.scale.y=.4;});
     [-1,1].forEach(s=>{const a=lim(s*.2,.16,.05,.035,'#f2dfc0',limbs);a.rotation.z=s*.7;});[-1,1].forEach(s=>lim(s*.07,.08,.02,.035,'#f2dfc0',legs));}
   else{const dress=o.dress||(kind==='wind'?'#a9d8b0':'#f6dc84');
     vm(lathe([[0,0],[.16,0],[.16,.03],[.12,.18],[.09,.29],[.05,.31],[0,.31]].map(q=>new THREE.Vector2(q[0],q[1])),12),dress,body,0,.13,0);
