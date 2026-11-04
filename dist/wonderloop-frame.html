@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 5914712, 버전 c01ea32d91, 2026-11-04)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 4203a1f, 버전 467745cb3f, 2026-11-04)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -314,8 +314,8 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="c01ea32d91";
-window.WL_BUILD={"commit":"5914712","date":"2026-11-04","stage":"basecamp"};
+window.WL_V="467745cb3f";
+window.WL_BUILD={"commit":"4203a1f","date":"2026-11-04","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -2407,6 +2407,7 @@ export {clearCompanions,companion,initCompanions,tickCompanions};
    - 촬영·영상 캡처 모드(?shot)에서는 키·끌기·휠을 받지 않는다(기준 화면·대본 그대로). 조이스틱·단추는 안내 표시라 영상에서 숨는다.
    세계 도구(개미굴 랜턴 자리): setTool({label, use}) — F 또는 왼쪽 위 도구 단추로 use()(켜고 끄기·쓰기). setTool(null)로 뺀다. 구역을 떠나면 비워진다. */
 import {block} from './core.js';
+import {popBackdrop,popCss,popHooks,popShown} from './popup.js';
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 const coarse=matchMedia('(pointer:coarse)').matches;
 const MOVE=['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
@@ -2434,7 +2435,8 @@ const css=`
 /* 조작법 창: 개미굴 게임 #how 그대로(2026-11-04 시리즈 공통 틀) — 늘 밝은 크림색 카드(기기 어두운 화면 설정과 상관없이) */
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1rem;box-sizing:border-box;background:rgba(30,14,36,.5);z-index:40;font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;color-scheme:light}
 #wlHelp[hidden]{display:none}
-#wlHelp .hcard{width:min(36rem,100%);max-height:calc(100vh - 2rem);max-height:calc(100dvh - 2rem);overflow-y:auto;background:rgba(255,246,234,.95);color:#3e2834;border-radius:22px;padding:1.4rem;box-sizing:border-box;text-align:left}
+#wlHelp .hcard{width:min(36rem,100%);background:rgba(255,246,234,.95);color:#3e2834;border-radius:22px;padding:1.4rem;box-sizing:border-box;text-align:left} /* 높이·스크롤은 팝업 공통(game/popup) — 내용(.hsc)만 스크롤, '알겠어요'는 늘 아래 */
+#wlHelp .hsc{margin:0 -.4rem;padding:0 .4rem}
 #wlHelp h2{margin:0 0 .6rem;font-weight:400;font-size:1.5rem}
 #wlHelp h3{margin:.9rem 0 .45rem;font-weight:400;font-size:1rem;color:#75565e}
 #wlHelp .cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
@@ -2445,11 +2447,11 @@ const css=`
 #wlHelp p{line-height:1.65;color:#75565e;margin:0}
 #wlHelp .sndtips{margin:.3rem 0 0;padding-left:1.15rem;line-height:1.6}
 #wlHelp .sndtips li{margin:.2rem 0}
-#wlHelp .close{display:block;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;cursor:pointer;margin-top:1.1rem;width:100%}
+#wlHelp .close{display:block;flex:none;text-align:center;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;cursor:pointer;margin-top:1.1rem;width:100%}
 #wlHelp button:focus-visible{outline:3px solid #3f9fa0;outline-offset:3px}
-/* 게임 중 휴대폰 세로: 창을 위쪽에 — 아래쪽 원더룹을 가리지 않게(2026-11-03). 첫 화면에서는 개미굴처럼 가운데 */
-@media (pointer:coarse) and (orientation:portrait){body:not(.wl-front-on) #wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}
-  body:not(.wl-front-on) #wlHelp .hcard{max-height:min(60vh,calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 96px - env(safe-area-inset-bottom,0px)))}}`;
+/* 게임 중 휴대폰 세로: 창을 위쪽에 — 아래쪽 원더룹을 덜 가리게(2026-11-03). 높이는 화면 안(공통 규칙), 조이스틱·단추는 창이 열린 동안 숨김(game/popup) */
+@media (pointer:coarse) and (orientation:portrait){body:not(.wl-front-on) #wlHelp{place-items:start center;padding-top:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px)}
+  body:not(.wl-front-on) #wlHelp .hcard{max-height:calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 66px - env(safe-area-inset-bottom,0px) - 12px)}}`;
 /* 조작법 창(2026-11-04, 개미굴 게임 #how의 디자인·구성·키 설명 표 그대로 — 시리즈 공통 틀): 키보드·터치 두 칸 → 이렇게 놀아요 → 소리가 안 들릴 때 → 휴대폰이 따뜻해질 때 → 알겠어요.
    세계에만 해당하는 글(개미굴의 도감·랜턴·읽어주기·냄새 길 등)은 세계 설정 controlsNote로 — setHelpNote(note): keys(키보드 표 E 다음), talk(터치 '말 걸기' 설명),
    touch(터치 표 끝), play(이렇게 놀아요), heatBefore·heatAfter(따뜻해질 때 목록 앞·뒤). 없는 칸은 빠진다. 예전 세계(요정의 숲)는 setHelpExtra(list, play) — play와 '이 세계에서' 표 */
@@ -2465,20 +2467,21 @@ const ul=items=>`<ul class="sndtips">${items.map(t=>`<li>${t}</li>`).join('')}</
 let note=null;
 function helpHTML(){const N=note||{};
   const keysRows=[...KEYS_A,...(N.keys||[]),...KEYS_B],touchRows=[...TOUCH_A,['말 걸기',N.talk||'말 걸 상대 가까이에서 나타나요'],...(N.touch||[])];
-  return `<div class="hcard"><h2>조작법</h2><div class="cols"><div><h3>키보드</h3>${dl(keysRows)}</div><div><h3>터치</h3>${dl(touchRows)}</div></div>`+
+  const kb=`<div><h3>키보드</h3>${dl(keysRows)}</div>`,tc=`<div><h3>터치</h3>${dl(touchRows)}</div>`; // 터치 기기는 터치 표 먼저
+  return `<div class="hcard wl-pop-card"><div class="hsc wl-pop-body"><h2>조작법</h2><div class="cols">${coarse?tc+kb:kb+tc}</div>`+
     (N.play?`<h3>이렇게 놀아요</h3><p>${esc(N.play)}</p>`:'')+(N.extra&&N.extra.length?`<h3>이 세계에서</h3>${dl(N.extra)}`:'')+
     `<h3>소리가 안 들릴 때</h3>${ul(SND_TIPS)}<h3>휴대폰이 따뜻해질 때</h3>${ul([...(N.heatBefore||[]),...HEAT_TIPS,...(N.heatAfter||[])])}`+
-    `<button class="close" type="button">알겠어요</button></div>`;}
+    `</div><button class="close wl-pop-foot" type="button">알겠어요</button></div>`;}
 let help=null,toolBtn=null,dashBtn=null;
 function build(){const root=document.querySelector('.wlg');if(!root)return;
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const box=document.createElement('div');
   box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
-<div id="wlHelp" role="dialog" aria-modal="true" aria-label="조작법" hidden></div>`;
+<div id="wlHelp" class="wl-pop" role="dialog" aria-modal="true" aria-label="조작법" hidden></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
   help=root.querySelector('#wlHelp');renderHelp();
-  help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});
+  popCss();popBackdrop(help,()=>showHelp(false));popHooks.release=releaseAll; // 창 바깥 어두운 곳을 누르면 닫힘, 창이 열리면 조이스틱·키를 푼다
   toolBtn=root.querySelector('#wlTool');toolBtn.addEventListener('click',()=>useTool());
   dashBtn=root.querySelector('#wlDash');
   const joy=root.querySelector('#wlJoy'),knob=root.querySelector('#wlKnob');let joyId=null;
@@ -2491,7 +2494,7 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   input.releaseJoy=()=>{joyId=null;input.jx=input.jy=0;knob.style.transform='';};
   root.querySelector('#wlJump').addEventListener('pointerdown',e=>{e.preventDefault();input.jumpReq=true;});
   dashBtn.addEventListener('pointerdown',e=>{e.preventDefault();input.dashReq=true;});}
-function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);if(on){const c=help.querySelector('.hcard');if(c)c.scrollTop=0;help.querySelector('.close').focus({preventScroll:true});}} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
+function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);popShown('help',!!on);if(on){const c=help.querySelector('.hsc');if(c)c.scrollTop=0;help.querySelector('.close').focus({preventScroll:true});}} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
 function renderHelp(){if(!help)return;help.innerHTML=helpHTML();help.querySelector('.close').addEventListener('click',()=>showHelp(false));}
 /* 세계 설정 controlsNote(js/worlds — 형식은 antvillage.js 맨 위) */
 function setHelpNote(n){note=n||null;renderHelp();}
@@ -2797,6 +2800,7 @@ import {ITEMS} from './items.js';
 import {logoEl} from './title.js';
 import {icon,mk,setIcons,setTheme,tape} from './felt.js';
 import {backdropAt,render as renderTitle} from './titlescreen.js';
+import {popCss,popShown} from './popup.js';
 const Q=new URLSearchParams(location.search),SHOT=Q.has('shot'),NO=SHOT||Q.has('notitle');
 const coarse=matchMedia('(pointer:coarse)').matches;
 const LOOK_KEY='wl-look2',HELP_KEY='wl-help-seen';
@@ -2848,10 +2852,10 @@ const css=`
    내용(.body)만 스크롤, 아래 단추는 늘 보이게. 늘 크림색 바탕 + 진갈색 글자 */
 #wlWard .panel{display:flex;flex-direction:column;min-height:0;max-height:100%;box-sizing:border-box;background:#fff6ea;color:#3e2834;border-radius:22px;padding:1.2rem 1.2rem 1.1rem;box-shadow:0 18px 50px rgba(30,14,36,.45);font-family:"Gowun Dodum",sans-serif;word-break:keep-all;color-scheme:light}
 #wlWard .body{flex:1;min-height:0;overflow-y:auto;margin:0 -.4rem;padding:0 .4rem .2rem}
-@media (max-width:760px){#wlWard{top:auto;left:0;width:100%;max-height:56vh;padding-left:calc(env(safe-area-inset-left,0px) + 14px)}}
+@media (max-width:760px){#wlWard{top:auto;left:0;width:100%;max-height:min(56vh,calc(100dvh - env(safe-area-inset-top,0px) - 24px));padding-left:calc(env(safe-area-inset-left,0px) + 14px)}}
 #wlWard .k{margin:0;display:inline-block;background:#f2b63c;color:#3e2834;border-radius:999px;padding:.15rem .7rem;font-size:.85rem}
 #wlWard .namel{display:block;font-size:.85rem;color:#75565e;margin:.7rem 0 .25rem}
-#wlWard input{width:100%;box-sizing:border-box;font:inherit;font-size:1.25rem;padding:.5rem .7rem;border-radius:12px;border:2px solid #3f9fa0;background:transparent;color:#3e2834}
+#wlWard input{width:100%;box-sizing:border-box;font:inherit;font-size:max(16px,1.25rem);padding:.5rem .7rem;border-radius:12px;border:2px solid #3f9fa0;background:transparent;color:#3e2834}
 #wlWard .bio{margin:.7rem 0;line-height:1.6;color:#75565e;font-size:.95rem}
 #wlWard .goal{background:rgba(242,182,60,.18);border-radius:12px;padding:.6rem .75rem;line-height:1.5;font-size:.95rem}
 #wlWard .goal span{display:inline-block;background:#f2b63c;color:#3e2834;border-radius:999px;padding:.05rem .55rem;margin-right:.4rem;font-size:.8rem}
@@ -2908,7 +2912,7 @@ const css=`
 #wlItems{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)));z-index:16;display:flex;flex-direction:column;align-items:flex-start;gap:.45rem;pointer-events:none}
 #wlItems .wl-chip{min-height:40px;padding:.35rem .9rem .35rem .55rem;font-size:.95rem;color:#1e1418;pointer-events:auto;border:0;font:inherit;font-family:"Jua","Gowun Dodum",sans-serif}#wlItems .wl-ic,#wlItems .bagic{width:24px;height:24px}
 #wlItems .wl-chip.pulse{animation:wlBagPulse .9s ease 2}@keyframes wlBagPulse{50%{transform:scale(1.12)}}
-body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn,body.wl-front-on header,body.wl-ward-on header{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
+body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn,body.wl-front-on header,body.wl-ward-on header,body.wl-pop-on header{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
 let WORLD=null,tEl=null,ctx=null,VIEW=null,el=null,ward=null,corner=null,menu=null,items=null,story=null,bag=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false,storyOn=false,bagOn=false;
 const look={vest:0,scarf:0,name:'',deco:''};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
 /* 시간대(2026-11-03): 게임을 열 때마다 낮·해 질 녘·밤 가운데 하나를 무작위로(첫 화면 뒤 배경부터 같은 시간). ?time=0|1|2로 고정, 촬영 모드는 늘 그대로(구역 기본 — 낮) */
@@ -2937,7 +2941,7 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   el=document.createElement('div');el.id='wlFront';el.setAttribute('role','dialog');el.setAttribute('aria-label','게임 시작');root.appendChild(el);
   ward=document.createElement('div');ward.id='wlWard';ward.setAttribute('role','dialog');ward.setAttribute('aria-label','탐험가 소개');root.appendChild(ward);
   story=document.createElement('div');story.id='wlStory';story.setAttribute('role','dialog');story.setAttribute('aria-label','이야기');root.appendChild(story);
-  bag=document.createElement('div');bag.id='wlBag';bag.setAttribute('role','dialog');bag.setAttribute('aria-modal','true');bag.setAttribute('aria-label','탐험 가방');root.appendChild(bag);
+  popCss();bag=document.createElement('div');bag.id='wlBag';bag.className='wl-pop';bag.setAttribute('role','dialog');bag.setAttribute('aria-modal','true');bag.setAttribute('aria-label','탐험 가방');root.appendChild(bag);
   bag.addEventListener('pointerdown',e=>{if(e.target===bag)closeBag();});
   corner=document.createElement('div');corner.id='wlHud';corner.className='wl-hint';root.appendChild(corner);
   // 오른쪽 위 메뉴(개미굴 #uiBtn): 노란 '☰ 메뉴' → 소리·옷 갈아입기·조작법 칩
@@ -2960,18 +2964,18 @@ function card({got,secret,img,svg,title,text}){const c=document.createElement('d
   const ic=document.createElement('div');ic.className='ic';if(got&&img){const im=new Image();im.alt='';im.src=img;ic.appendChild(im);}else if(got&&svg)ic.appendChild(svg);else ic.innerHTML='<b>?</b>';
   const h=document.createElement('h3');h.textContent=got?title:'???';const p=document.createElement('p');p.textContent=text;c.append(ic,h,p);return c;}
 function renderBag(){const B=bagCfg()||{title:'탐험 가방',items:Object.keys(ITEMS).map(id=>({id,name:ITEMS[id].name,f:ITEMS[id].use,where:''})),friends:[],secrets:[]};
-  const Z=zone(),ic=(Z&&Z.front&&Z.front.itemIcons)||{},C=profCards();bag.innerHTML='';const H=document.createElement('div');H.className='hcard';
+  const Z=zone(),ic=(Z&&Z.front&&Z.front.itemIcons)||{},C=profCards();bag.innerHTML='';const H=document.createElement('div');H.className='hcard wl-pop-card';
   const nI=B.items.filter(i=>flags[i.id]).length,nF=(B.friends||[]).filter(seen).length;
-  H.innerHTML='<div class="dhead"><h2></h2><p class="cnt"></p></div><div class="grid"></div>';H.querySelector('h2').textContent=B.title;H.querySelector('.cnt').textContent=`받은 물건 ${nI}개 · 만난 친구 ${nF}명`;
+  H.innerHTML='<div class="dhead"><h2></h2><p class="cnt"></p></div><div class="grid wl-pop-body"></div>';H.querySelector('h2').textContent=B.title;H.querySelector('.cnt').textContent=`받은 물건 ${nI}개 · 만난 친구 ${nF}명`;
   const G=H.querySelector('.grid'),sec=(t,gold=false)=>{const h=document.createElement('p');h.className='sec'+(gold?' gold':'');h.textContent=t;G.appendChild(h);const d=document.createElement('div');d.className='cards';G.appendChild(d);return d;};
   const A=sec('받은 물건');B.items.forEach(i=>{const got=!!flags[i.id];A.appendChild(card({got,img:ic[i.id]||null,svg:ic[i.id]?null:icon(i.id),title:i.name,text:got?i.f:i.where+'에서 받을 수 있어요'}));});
   if((B.friends||[]).length){const F=sec('만난 친구');B.friends.forEach(id=>{const c=C[id]||{},got=seen(id);F.appendChild(card({got,img:pic(id),title:c.name,text:got?c.intro:'어딘가에서 만날 수 있어요'}));});}
   if((B.secrets||[]).length){const n=B.secrets.filter(q=>seen(q.id)).length,S=sec(`✦ 숨겨진 비밀 ${n}/${B.secrets.length}`,true);
     B.secrets.forEach(q=>{const c=C[q.id]||{},got=seen(q.id);S.appendChild(card({got,secret:true,img:pic(q.id),title:c.name,text:got?c.intro:q.where+' 어딘가에 숨어 있어요'}));});}
-  const x=pbtn('close','닫기',()=>closeBag());H.appendChild(x);bag.appendChild(H);}
+  const x=pbtn('close wl-pop-foot','닫기',()=>closeBag());H.appendChild(x);bag.appendChild(H);}
 function openBag(){build();if(bagOn||frontOn||wardOn||storyOn)return;if(blocking('talk')||cardShown()){toast('지금은 가방을 열 수 없어요');return;}
-  bagOn=true;sfx('dex');renderBag();bag.classList.add('on');document.body.classList.add('wl-bag-on');block('bag',true);if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();setTimeout(()=>{const b=bag.querySelector('.close');if(b&&!coarse)b.focus({preventScroll:true});},50);}
-function closeBag(){if(!bagOn)return;bagOn=false;sfx('click');bag.classList.remove('on');document.body.classList.remove('wl-bag-on');block('bag',false);}
+  bagOn=true;sfx('dex');renderBag();bag.classList.add('on');popShown('bag',true);document.body.classList.add('wl-bag-on');block('bag',true);if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();setTimeout(()=>{const b=bag.querySelector('.close');if(b&&!coarse)b.focus({preventScroll:true});},50);}
+function closeBag(){if(!bagOn)return;bagOn=false;popShown('bag',false);sfx('click');bag.classList.remove('on');document.body.classList.remove('wl-bag-on');block('bag',false);}
 /* ---------- 첫 화면 ---------- */
 function art(F){const box=document.createElement('div');box.className='art';
   if(F.img){const r=new Image(),l=new Image();r.className='rib';l.className='logo';r.alt='';l.alt=[F.ribbon,F.logo].filter(Boolean).join(' ');r.src=F.img.ribbon;l.src=F.img.logo;box.append(l,r);
@@ -3042,7 +3046,7 @@ function opts(list,cur,pick,dots=null){const box=document.createElement('div');b
     b.setAttribute('aria-pressed',i===cur?'true':'false');box.appendChild(b);});
   return box;}
 function lab(t){const p=document.createElement('p');p.className='lab';p.textContent=t;return p;}
-function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),E=X||F.explorer||{};ward.innerHTML='';const P=document.createElement('div');P.className='panel';const B=document.createElement('div');B.className='body';
+function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),E=X||F.explorer||{};ward.innerHTML='';const P=document.createElement('div');P.className='panel wl-pop-card';const B=document.createElement('div');B.className='body wl-pop-body'; // 팝업 공통(game/popup): 내용만 스크롤, 아래 단추는 늘 보이게
   const k=document.createElement('p');k.className='k';k.textContent='탐험가 소개';
   const nl=document.createElement('label');nl.className='namel';nl.htmlFor='wlNameIn';nl.textContent='이름';
   const ni=document.createElement('input');ni.id='wlNameIn';ni.maxLength=8;ni.autocomplete='off';ni.placeholder='원더룹';ni.value=look.name||'';ni.addEventListener('input',()=>{look.name=ni.value;save();});
@@ -3065,7 +3069,7 @@ function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),
   if(E.map){const cur=(zone().root&&zone().root.name||'').replace(/^zone:/,'');B.appendChild(lab('모험 지도'));const ol=document.createElement('ol');ol.className='map';
     E.map.forEach(([n,id])=>{const li=document.createElement('li');li.textContent=n;if(id)li.className='on';if(id===cur)li.setAttribute('aria-current','true');ol.appendChild(li);});B.appendChild(ol);}
   const spin=document.createElement('div');spin.className='spin';spin.append(pbtn('','↺ 돌려 보기',()=>{ctx.WL.rotation.y+=Math.PI/4;}),pbtn('','돌려 보기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;}));B.appendChild(spin);
-  P.append(B,pbtn('done',mode==='start'?'모험 떠나기':'다 골랐어요',()=>closeWardrobe(mode==='start')));ward.appendChild(P);}
+  P.append(B,pbtn('done wl-pop-foot',mode==='start'?'모험 떠나기':'다 골랐어요',()=>closeWardrobe(mode==='start')));ward.appendChild(P);}
 function save(){store.set(LOOK_KEY,JSON.stringify(look));}
 function showcase(){const W=ctx.WL,cam=ctx.camera;let dx=cam.position.x-W.position.x,dz=cam.position.z-W.position.z;
   // 방 카메라 구역(베이스캠프): 첫 화면 배경 카메라가 어디 있든 그 방의 열린 쪽(방 카메라 처음 각도)에서 — 앞 소품에 가리지 않게. 새로 시작·게임 중 같은 각도
@@ -3078,10 +3082,10 @@ function showcase(){const W=ctx.WL,cam=ctx.camera;let dx=cam.position.x-W.positi
 function canWear(){const U=ctx.WL.userData;return !(blocking('talk')||blocking('fade')||cardShown()==='result'||cardShown()==='cut'||U.riding||(U.vert&&U.vert.air));}
 function openWardrobe(mode='game'){build();if(wardOn||bagOn||storyOn)return;const fromFront=mode==='start'||frontOn;if(!fromFront&&!canWear()){toast('지금은 옷을 갈아입을 수 없어요');return;}
   if(frontOn&&mode!=='start')mode='front';
-  wardOn=true;wardFrom=mode;document.body.classList.add('wl-ward-on');sfx('pickup');if(frontOn){el.classList.remove('on');if(tEl)tEl.hidden=true;}else{block('ward',true);setHints(false);}
+  wardOn=true;wardFrom=mode;document.body.classList.add('wl-ward-on');popShown('ward',true);sfx('pickup');if(frontOn){el.classList.remove('on');if(tEl)tEl.hidden=true;}else{block('ward',true);setHints(false);}
   corner.classList.remove('on');if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();renderWard(mode);ward.classList.add('on');showcase();
   input.dragHook=dx=>{ctx.WL.rotation.y+=dx*.012;};}
-function closeWardrobe(go=false){if(!wardOn)return;wardOn=false;document.body.classList.remove('wl-ward-on');ward.classList.remove('on');input.dragHook=null;const U=ctx.WL.userData;if(U.setExpr)U.setExpr('기본');sfx('click');
+function closeWardrobe(go=false){if(!wardOn)return;wardOn=false;document.body.classList.remove('wl-ward-on');popShown('ward',false);ward.classList.remove('on');input.dragHook=null;const U=ctx.WL.userData;if(U.setExpr)U.setExpr('기본');sfx('click');
   if(wardFrom==='start'){if(go)openStory();else backToFront();}
   else if(wardFrom==='front')backToFront();else{block('ward',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}}
 function toggleWardrobe(){if(wardOn)closeWardrobe();else openWardrobe('game');}
@@ -3694,6 +3698,40 @@ const list=()=>LIST; // 시험용: 지금 흐려진 물체 보기
 export {add,clearOcclude,cut,cutPaused,hideFaded,prepass,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};
 
 </script>
+<script type="text/x-wl-module" data-path="js/game/popup.js">
+/* ===== 원본: js/game/popup.js ===== */
+/* 원더룹 — 팝업·패널 공통 (2026-11-04, 아이폰 사파리에서 조작법·탐험가 소개 창이 손가락으로 안 밀리던 것)
+   원인: index.html이 사파리 페이지 확대를 막으려고 모든 요소에 touch-action:none을 건다 → 창 안 글자·단추 위에서 시작한 끌기가 스크롤이 되지 않았다.
+   앞으로 만드는 모든 팝업(조작법·탐험가 소개·옷 갈아입기·가방·소개 카드·미션 창 …)은 이 모양을 쓴다:
+     <div class="wl-pop">                 화면 전체 덮개(뒤 게임 화면이 터치에 반응하지 않음) — popBackdrop(el, close)면 바깥 어두운 곳을 눌러 닫힘
+       <div class="wl-pop-card">          창: 세로로 쌓이고, 높이는 아이폰 주소창(dvh)·안전 영역을 뺀 화면 안
+         <div class="wl-pop-body">…</div> 내용만 이 안에서 스크롤(overflow-y:auto, touch-action:pan-y, overscroll-behavior:contain — 안쪽 요소까지)
+         <button class="wl-pop-foot">     닫기·'모험 떠나기' 같은 단추: 스크롤과 상관없이 늘 보이게 창 아래에 고정
+   덮개 없이 화면 한쪽에 붙는 패널(탐험가 소개 시트)은 .wl-pop-card·.wl-pop-body·.wl-pop-foot만 쓴다.
+   열고 닫을 때 popShown(이름, 켜짐) → 하나라도 열려 있으면 body.wl-pop-on: 조이스틱·점프·대쉬·말 걸기·메뉴·도구 단추를 숨기고 누르던 조이스틱·키를 푼다.
+   입력칸 글자는 16px 이상(아이폰이 입력할 때 화면을 확대하지 않게). */
+const css=`
+.wl-pop{position:fixed;inset:0;z-index:40;display:grid;place-items:center;box-sizing:border-box;touch-action:none;overscroll-behavior:contain;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) calc(env(safe-area-inset-right,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 12px) calc(env(safe-area-inset-left,0px) + 12px)}
+.wl-pop[hidden]{display:none}
+.wl-pop-card{display:flex;flex-direction:column;min-height:0;box-sizing:border-box;
+  max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);
+  max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px)}
+.wl-pop-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.wl-pop-body,.wl-pop-body *{touch-action:pan-y}
+.wl-pop-foot{flex:none}
+.wl-pop input,.wl-pop textarea,.wl-pop select,.wl-pop-card input,.wl-pop-card textarea,.wl-pop-card select{font-size:max(16px,1em)}
+body.wl-pop-on #wlJoy,body.wl-pop-on #wlJump,body.wl-pop-on #wlDash,body.wl-pop-on #wlAct,body.wl-pop-on #wlTool,body.wl-pop-on #wlHud{visibility:hidden!important;pointer-events:none!important}`;
+let done=false;const open=new Set();const hooks={release:null};
+function popCss(){if(done)return;done=true;const st=document.createElement('style');st.dataset.wl='popup';st.textContent=css;document.head.appendChild(st);}
+function popShown(key,on){popCss();if(on)open.add(key);else open.delete(key);document.body.classList.toggle('wl-pop-on',open.size>0);
+  if(on&&hooks.release)try{hooks.release();}catch(e){}}
+/* 덮개 바깥(어두운 곳)을 누르면 close() — 창 안에서 시작해 밖에서 뗀 끌기는 닫지 않는다 */
+function popBackdrop(el,close){let down=false;el.addEventListener('pointerdown',e=>{down=e.target===el;});el.addEventListener('click',e=>{if(down&&e.target===el)close();down=false;});}
+const popOpen=()=>open.size>0;
+export {hooks as popHooks,popBackdrop,popCss,popOpen,popShown};
+
+</script>
 <script type="text/x-wl-module" data-path="js/game/profile.js">
 /* ===== 원본: js/game/profile.js ===== */
 /* 원더룹 — 캐릭터 소개 카드 (도감을 넣지 않는 세계에서 도감 대신 — 요정의 숲부터)
@@ -4291,6 +4329,7 @@ export {RIBBON,backdropAt,render};
 import {block,clock,cue} from './core.js';
 import {sfx,soundHooks} from './sound.js';
 import {injectFelt} from './felt.js';
+import {popShown} from './popup.js';
 const HINT_LAYER=5;
 const css=`
 .wlg{word-break:keep-all;overflow-wrap:break-word} /* 한글은 단어 중간에서 줄이 넘어가지 않게(대화창·카드·조작법·옷장 모두) */
@@ -4399,7 +4438,7 @@ const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"><span class="who wl-tape mint wl-mk"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" class="wl-felt" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
-<div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
+<div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard wl-pop-body"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><i class="tw" style="--x:8%;--y:6%;--d:0s"></i><i class="tw" style="--x:93%;--y:14%;--d:.7s"></i><i class="tw" style="--x:5%;--y:62%;--d:1.3s"></i><i class="tw" style="--x:95%;--y:78%;--d:.35s"></i><i class="tw" style="--x:50%;--y:2%;--d:1.8s"></i><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
@@ -4502,9 +4541,9 @@ const pf=$('#wlProf');let pfDone=null,pfCue=null,pfEnd=0;
 function profileCard({name='',intro='',likes='',quote='',img=null,bg=null,kicker='새 친구',count='',button='반가워요!',sec=12}){return enqueue('profile',r=>{pfDone=r;pf.querySelector('.k').textContent=kicker;pf.querySelector('.t').textContent=name;pf.querySelector('.s').textContent=intro;
   {const l=pf.querySelector('.l');l.textContent='';if(likes){const b=document.createElement('b');b.textContent='좋아하는 것';const sp=document.createElement('span');sp.textContent=likes;l.append(b,sp);}}
   pf.querySelector('.q').textContent=quote?quote.replace(/^["“]|["”]$/g,''):'';pf.querySelector('.ic').style.setProperty('--pbg',bg||'#f3ead6');pf.querySelector('.n').textContent=count;pf.querySelector('button').textContent=button;
-  const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=SHOT_UI?clock.t+sec:Infinity;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');block('profile',true);sfx('dex');
+  const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=SHOT_UI?clock.t+sec:Infinity;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');popShown('prof',true);block('profile',true);sfx('dex');
   setTimeout(()=>{if(cardOn==='profile'&&!coarse)pf.querySelector('button').focus({preventScroll:true});},50);});}
-function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');root.classList.remove('prof-on');block('profile',false);endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
+function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');popShown('prof',false);root.classList.remove('prof-on');block('profile',false);endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
 const profileShown=()=>cardOn==='profile';
 cardCloser('profile',closeProfile);
 pf.querySelector('button').addEventListener('click',()=>{sfx('click');closeProfile();});
