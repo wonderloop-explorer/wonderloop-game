@@ -323,6 +323,11 @@ function updateWL(dt,t){
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
    if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
+   /* 들고 다니는 물건(2026-11-04 — 버섯 랜턴): setHeld 물건에 userData.carry={ax,az,ex}가 있으면 서 있거나 걸을 때 오른팔을 그 각도로(앞으로 내밀어 듦, 걸으면 살짝 흔들림),
+      userData.hang이면 물건이 팔 각도와 상관없이 늘 똑바로(손잡이에 매달린 채) — 다른 동작 중에는 그 동작 팔 그대로 */
+   {const H=U.heldObj,c=H&&H.userData.carry;if(c&&(A==='서기'||moving)&&!WL.userData.riding){U.carryW=Math.min(1,(U.carryW||0)+dt*4);}else U.carryW=Math.max(0,(U.carryW||0)-dt*4);
+    if(c&&U.carryW>0){const w=U.carryW,sw=moving?Math.sin(wlPhase)*.12:0,e=arms[0].userData.elbow;arms[0].rotation.x+=(c.ax+sw-arms[0].rotation.x)*w;arms[0].rotation.z+=(c.az-arms[0].rotation.z)*w;e.rotation.x+=(c.ex-e.rotation.x)*w;}
+    if(H&&H.userData.hang){H.parent.getWorldQuaternion(_hq).invert();WL.getWorldQuaternion(_hq2);H.quaternion.copy(_hq).multiply(_hq2);}}
    if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass; // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
    (U.charms||[]).forEach(C=>{if(C.flag)C.g.visible=!!flags[C.flag];}); // 받은 아이템 키링은 받은 뒤에만 (game/items, 06 addCharm)
    (U.badges||[]).forEach(B=>B.g.visible=!!flags[B.flag]); // 꾸미기(배지)도 받은 뒤에만 (06 addBadge)
@@ -345,7 +350,7 @@ function updateWL(dt,t){
 /* 경계 미끄러짐(2026-11-04, 시리즈 공통 — 경계에 닿아도 툭 멈추거나 떨지 않고 벽·기둥을 따라 비켜 간다, 안내 글 없음):
    가려는 쪽이 막히면 15°씩 꺾어(최대 75°) 열린 쪽으로, 빠르기는 꺾은 만큼 줄여(cos) 벽을 따라 미끄러지듯. 꺾는 쪽은 처음 막힌 곳의 기울기(덜 파고드는 쪽)로 정하고
    닿아 있는 동안 기억해 좌우로 번갈아 떨지 않게. 직접 조작(조이스틱·WASD)은 이것만, 눌러서 걷기(walkTo)는 예전 축 미끄러짐 뒤에 이것(기준 촬영 그대로) */
-const SL={side:0,t:0};
+const SL={side:0,t:0},_hq=new THREE.Quaternion(),_hq2=new THREE.Quaternion();
 function slideGo(mx,mz,st,fy,only=false){const x=WL.position.x,z=WL.position.z;
   if(!only&&canGo(x+mx*st,z+mz*st,fy)){WL.position.x=x+mx*st;WL.position.z=z+mz*st;SL.t=0;return true;}
   if(SL.t<=0||!SL.side){const e=.06,tx=x+mx*st*3,tz=z+mz*st*3,gx=overlap(tx+e,tz,fy)-overlap(tx-e,tz,fy),gz=overlap(tx,tz+e,fy)-overlap(tx,tz-e,fy); // 막힌 곳의 기울기 → 덜 파고드는 쪽

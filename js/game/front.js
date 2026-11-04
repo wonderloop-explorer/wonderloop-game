@@ -251,7 +251,11 @@ function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!
   startTime();renderFront();el.classList.add('on');orbit();setTimeout(()=>{const b=el.querySelector('.go');if(b&&!coarse)b.focus({preventScroll:true});},50);return true;}
 function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
 async function begin(fr){if(busy)return;busy=true;sfx('click');const W=curWorld();
-  await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();if(W)playWorldMusic(W);}closeFront();},{out:.45,hold:.25,in:.75});busy=false;fresh=false; // 처음부터: 구역을 다시 만들어도 세계 배경음은 끊기지 않게(같은 곡이면 이어짐)
+  if(W&&!fr){ // 시리즈 공통 틀(개미굴 beginGame 그대로, 2026-11-04): 화면을 까맣게 덮지 않고 — 원더룹이 카메라를 등지고 서면 카메라가 이야기 소개 자리에서 원더룹 등 뒤로 휙 내려온다(따라가기 카메라가 지금 자리에서 이어 받아 약 0.5초)
+    const P=ctx.WL.position,c=ctx.camera.position;const ry=Math.atan2(P.x-c.x,P.z-c.z);ctx.WL.rotation.y=ry;closeFront();
+    VIEW.start({from:[P.x-Math.sin(ry)*7,P.y+.85+1.9,P.z-Math.cos(ry)*7]});}
+  else await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();if(W)playWorldMusic(W);}closeFront();},{out:.45,hold:.25,in:.75});
+  busy=false;fresh=false; // 처음부터: 구역을 다시 만들어도 세계 배경음은 끊기지 않게(같은 곡이면 이어짐)
   if(!store.get(HELP_KEY)){store.set(HELP_KEY,'1');showHelp(true);}
   if(W&&W.firstMission){const go=()=>{if(helpShown()){requestAnimationFrame(go);return;}startMission(W);};go();}} // 첫 미션(game/mission) — 처음 조작법 창이 열려 있으면 닫힌 뒤 // 처음 시작할 때 한 번 조작법(닫으면 나침반 연출·버섯 요정 순서로 이어진다)
 /* ---------- 이야기 소개(모험 떠나기 → 탐방하는 곳 소개 몇 장 → 게임) ---------- */

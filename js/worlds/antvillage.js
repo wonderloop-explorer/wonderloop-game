@@ -30,7 +30,7 @@
                      cam: {at:[x,y,z] 보는 점, r: 반지름(rz: 앞뒤 반지름), h: 카메라 높이, a:[시작 각도, 끝 각도](라디안, 0 = +z쪽), speed: 초당 라디안(개미굴 0.07), bob:[흔들림, 빠르기]}
      firstMission    첫 미션 = 그 세계에서 꼭 필요한 물건 하나 얻기 (시간 제한·실패·점수 없음)
                      { item: {id, name, at:[x,z] 놓인 자리, y: 떠 있는 높이, pickR: 줍는 거리, icon: ()=>그림 주소, model: (THREE,{held})=>Group(원점 = 밑, held면 손에 쥘 크기 — userData.setOn(켜짐)이 있으면 도구 단추로 켜고 끔),
-                              tool: {on, off} 도구 단추 글(없으면 단추 없음)},
+                              tool: {on, off} 도구 단추 글(없으면 단추 없음), light: true면 쥐고 켠 동안 원더룹 둘레를 비추는 빛(개미굴 heroLight — game/mission)},
                        quest: 할 일 안내, popup: {kicker, title, text} 미션 카드, narration: {vo, text} 미션 나레이션,
                        goal: {at:[x,z], label} 민트 빛기둥·동그라미 길이 이어지는 목적지(없으면 item.at), got: {title, text:{key, touch}, vo} 얻었을 때 카드·나레이션, next: 다음 할 일 안내 }
      옷 조합(윗옷·바지 색 + 목도리 색)은 원더룹 자신의 옷이라 세계 설정이 아니라 06 outfitCombos 한 목록·한 저장값(세계가 바뀌어도 그대로)
@@ -38,21 +38,28 @@
                    { keys: [[키, 설명]…] (키보드 표의 E 다음에 들어감), talk: 터치 '말 걸기' 설명, touch: [[이름, 설명]…] (터치 표 끝),
                      play: '이렇게 놀아요' 한 단락, heatBefore·heatAfter: '휴대폰이 따뜻해질 때' 목록의 앞·뒤 항목(HTML) }
    ───────────────────────────────────────────────────────────────────────── */
-/* 버섯 랜턴(개미굴 makeLantern 그대로 — 줄기·빛나는 민트 갓·손잡이·빛무리). 떠 있을 때 1.8배, 손에 쥘 때 0.85배(개미굴 값) */
+/* 버섯 랜턴(개미굴 makeLantern 모양 — 줄기·갓·손잡이·빛무리). 2026-11-04 사용자 요청: 민트 갓이 원더룹 옷(민트·노랑·파랑·분홍 조합)과 섞여 안 보여서
+   빨간 버섯 갓 + 흰 점 + 갓 아래 따뜻한 노란 불빛 + 진갈색 손잡이로. 떠 있을 때는 밑이 원점, 손에 쥘 때(held)는 손잡이 꼭대기가 원점이라 손 아래에 똑바로 매달린다(07 carry·hang) */
 let ICON=null;
 function ICON_LAMP(){if(ICON)return ICON;const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d');
-  g.fillStyle='#f2e2cc';g.fillRect(41,48,14,34);g.fillStyle='#bdf7ee';g.beginPath();g.ellipse(48,50,34,26,0,Math.PI,0);g.fill();
-  g.fillStyle='#4fd8c8';g.beginPath();g.ellipse(48,50,34,7,0,0,Math.PI);g.fill();g.fillStyle='#ffffff';[[36,36,5],[56,30,4],[62,42,3]].forEach(q=>{g.beginPath();g.arc(q[0],q[1],q[2],0,7);g.fill();});
+  g.strokeStyle='#5a3826';g.lineWidth=5;g.beginPath();g.arc(48,24,12,Math.PI,0);g.stroke();
+  g.fillStyle='#ffe9a0';g.beginPath();g.ellipse(48,58,16,13,0,0,Math.PI*2);g.fill();g.fillStyle='#f2e2cc';g.fillRect(42,58,12,26);
+  g.fillStyle='#e05a4a';g.beginPath();g.ellipse(48,50,34,26,0,Math.PI,0);g.fill();g.fillStyle='#a8382e';g.beginPath();g.ellipse(48,50,34,6,0,0,Math.PI);g.fill();
+  g.fillStyle='#fff6e6';[[34,38,5],[52,30,4.5],[64,42,3.5],[44,46,3]].forEach(q=>{g.beginPath();g.arc(q[0],q[1],q[2],0,7);g.fill();});
   return ICON=c.toDataURL();}
-function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.85*.62:1.8*.62;g.scale.setScalar(S); // 개미굴 원더룹 키 대비 크기를 이 원더룹 키(약 0.62배)에 맞춤
-  const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.32,8),new THREE.MeshLambertMaterial({color:'#f2e2cc'}));st.position.y=.16;g.add(st);
-  const capMat=new THREE.MeshStandardMaterial({color:'#8ff0e2',emissive:'#3fd8c8',emissiveIntensity:1,roughness:.8});
-  const cap=new THREE.Mesh(new THREE.SphereGeometry(.22,14,8,0,Math.PI*2,0,Math.PI/2),capMat);cap.scale.y=.75;cap.position.y=.3;g.add(cap);
-  const hd=new THREE.Mesh(new THREE.TorusGeometry(.12,.02,6,14,Math.PI),new THREE.MeshLambertMaterial({color:'#7a4a32'}));hd.position.y=.44;g.add(hd);
-  const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(111,240,224,.9)');gr.addColorStop(1,'rgba(111,240,224,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);
+function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.8:1.8*.62,b=new THREE.Group();g.scale.setScalar(S);g.add(b);if(held)b.position.y=-.5; // 손잡이 꼭대기(0.5)가 손에
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.32,8),new THREE.MeshLambertMaterial({color:'#f2e2cc'}));st.position.y=.16;b.add(st);
+  const bulbMat=new THREE.MeshStandardMaterial({color:'#ffe9a0',emissive:'#ffc94a',emissiveIntensity:1.1,roughness:.8});
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),bulbMat);bulb.scale.y=.8;bulb.position.y=.27;b.add(bulb);
+  const capMat=new THREE.MeshStandardMaterial({color:'#e05a4a',emissive:'#7a1e14',emissiveIntensity:.35,roughness:.85});
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.22,14,8,0,Math.PI*2,0,Math.PI/2),capMat);cap.scale.y=.75;cap.position.y=.3;b.add(cap);
+  const dotM=new THREE.MeshLambertMaterial({color:'#fff6e6'});[[.1,.1,.35],[-.12,.06,.4],[.02,-.14,.38],[-.04,.14,.44],[.15,-.05,.4]].forEach(([x,z,y])=>{const d=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),dotM);d.position.set(x,y,z);d.scale.y=.5;b.add(d);});
+  const hd=new THREE.Mesh(new THREE.TorusGeometry(.1,.022,6,14,Math.PI),new THREE.MeshLambertMaterial({color:'#5a3826'}));hd.position.y=.4;b.add(hd);
+  const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,214,110,.85)');gr.addColorStop(1,'rgba(255,214,110,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);
   const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
-  const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.9}));h.scale.set(1.7,1.7,1);h.position.y=.3;g.add(h);
-  g.userData.setOn=on=>{capMat.emissiveIntensity=on?1:.05;h.visible=on;};return g;}
+  const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.75}));h.scale.set(1.3,1.3,1);h.position.y=.27;b.add(h);
+  if(held){g.userData.carry={ax:-1.15,az:-.18,ex:-.5};g.userData.hang=true;}
+  g.userData.setOn=on=>{bulbMat.emissiveIntensity=on?1.1:.05;capMat.emissiveIntensity=on?.35:0;h.visible=on;};return g;}
 const ANT_SVG='<svg viewBox="0 0 40 22"><g fill="currentColor"><ellipse cx="9" cy="13" rx="6.5" ry="4.8"/><circle cx="19" cy="12.5" r="3.2"/><circle cx="28.5" cy="11.5" r="4.6"/></g><g stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M30 7.5q2-6 7-5.5M27.5 7.5q0-6 4-7"/><path d="M15.5 15l-3 6M19 15.5v6M22.5 15l3 6"/></g></svg>';
 export default {
   id:'antvillage',
@@ -91,7 +98,7 @@ export default {
     {text:'목표는 개미굴 가장 깊은 곳, 여왕개미의 방. 하지만 깊은 굴은 아주 어둡고, 어디선가 자꾸 바스락 소리가 난대요…',vo:'assets/audio/antvillage/pro3.mp3',cam:{at:[0,1.2,-.2],r:20,h:14,a:[1.0,1.4],speed:.07,bob:[1.2,.3]}}],
   /* 첫 미션 — 개미굴 광장 '버섯 랜턴을 찾아요' 그대로(카드 문구·나레이션 m_lamp·g_lamp·민트 빛기둥·냄새 길). 자리는 베이스캠프 방 안(광장 이식 때 바꿈) */
   firstMission:{
-    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
+    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,light:true,tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
     quest:'광장 어딘가에 떨어진 버섯 랜턴을 찾아요',
     popup:{kicker:'미션',title:'버섯 랜턴을 찾아요',text:'깊은 개미굴은 아주 어두워요. 광장 어딘가에 떨어진 버섯 랜턴을 먼저 찾아보세요. 청록 빛기둥이 솟은 바위 위에 있어요.'},
     narration:{vo:'assets/audio/antvillage/m_lamp.mp3'},

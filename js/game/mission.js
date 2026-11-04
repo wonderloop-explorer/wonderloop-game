@@ -13,15 +13,25 @@ import {preload,register,sfx,voice} from './sound.js';
 import {setTool} from './controls.js';
 import {flags,setFlag} from './state.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
-let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0;
+let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0,light=null,pool=null,lampOn=false,lampK=0;
+const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 const haveKey=(W,it)=>'have:'+W.id+':'+it.id;
-function initMission(c){ctx=c;}
+/* 손에 든 랜턴 빛(2026-11-04 — 개미굴 heroLight 그대로: 진짜 점광원 세기 1.3·반경 9m·감쇠 1.5, 원더룹 오른쪽 앞 (-0.4, 0.9, 0.4)) + 발밑 따뜻한 빛 웅덩이(반지름 2.4m, 더하기 섞기).
+   빛 개수가 바뀌면 셰이더를 모두 다시 만들어 멈추므로 처음부터 세기 0으로 달아 두고 세기만 바꾼다(촬영 모드는 달지 않음 — 기준 화면 그대로). 색은 물건 userData.light(없으면 따뜻한 노랑) */
+function initMission(c){ctx=c;if(SHOT||!c.WL)return;
+  light=new THREE.PointLight(0xffd27a,0,9,1.5);light.position.set(-.4,.9,.4);c.WL.add(light);
+  const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d'),gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,214,120,.55)');gr.addColorStop(.55,'rgba(255,200,100,.22)');gr.addColorStop(1,'rgba(255,190,90,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
+  const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
+  pool=new THREE.Mesh(new THREE.CircleGeometry(2.4,40),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0,fog:false,polygonOffset:true,polygonOffsetFactor:-1}));
+  pool.rotation.x=-Math.PI/2;pool.renderOrder=3;pool.visible=false;c.scene.add(pool);}
+function tickLamp(dt){if(!light)return;const want=lampOn&&!!(ctx.WL.userData.heldObj)?1:0;lampK+=(want-lampK)*Math.min(1,dt*6);
+  light.intensity=1.3*Math.PI*lampK;pool.visible=lampK>.01;if(pool.visible){const P=ctx.WL.position,x=P.x-.25,z=P.z+.15;pool.position.set(x,(ctx.ground?ctx.ground(x,z):0)+.03,z);pool.material.opacity=lampK;}}
 /* 나레이션 한 줄: 세계 설정의 vo(파일 주소)를 등록해 읽은 뒤 튼다. 앞 줄은 멈춘다. 파일이 없으면 글자 수만큼(읽어 주기가 켜졌으면 읽어 줌) */
 function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,kind:'narration'});return tok;}
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
-function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});U.setHeld(h);
-  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use});};setTool({label:lab(),use});}}
+function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});U.setHeld(h);lampOn=!!it.light;
+  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use});};setTool({label:lab(),use});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
   M={W,F,it,got:false,at:F.goal&&F.goal.at||it.at};t=0;
@@ -32,7 +42,7 @@ function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;cons
   notice({kicker:P.kicker||'미션',title:P.title||'',text:P.text||'',icon:it.icon?it.icon():null}).then(()=>{if(M&&!M.got)stopVO();});
   if(F.narration)sayVO('mission:'+W.id,F.narration.vo,F.narration.text||((P.title||'')+' '+(P.text||'')));
   return true;}
-function tickMission(dt){if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
+function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
   if(obj){obj.rotation.y+=dt*1.3;obj.position.y=obj.userData.y0+Math.sin(t*2)*.15;if(obj.userData.tick)obj.userData.tick(t);}
   const P=ctx.WL.position,r=it.pickR||1.5;if(Math.hypot(P.x-it.at[0],P.z-it.at[1])<r)pick();}
 function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispose(obj);obj=null;}
@@ -42,7 +52,7 @@ function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispo
   if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title);
   setQuest(F.next||'');}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
-function clearMission(){if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}
+function clearMission(){lampOn=false;if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}
 const hero=()=>ctx&&ctx.WL; // 시험 도구용(tools/intro-mission-test.py — 원더룹을 걸려 보냄)
 const missionState=()=>M?{item:M.it.id,got:M.got,at:M.at}:null;
 export {hero,clearMission,initMission,missionState,startMission,stopVO as stopMissionVO,tickMission};
