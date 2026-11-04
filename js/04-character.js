@@ -60,7 +60,7 @@ const head=new THREE.Bone();head.name='head';head.position.y=.38;neck.add(head);
     const br=new THREE.Mesh(new THREE.BoxGeometry(.078,.02,.014),hairA);br.position.set(s*.12,.048,.35);br.rotation.z=s*.15;head.add(br);(WL.userData.brows=WL.userData.brows||[]).push(br);});
   const nose=new THREE.Mesh(new THREE.SphereGeometry(.019,8,6),SM('#f2a27e'));nose.position.set(0,-.115,.36);head.add(nose);
   const mouth=new THREE.Mesh(new THREE.SphereGeometry(.026,8,6),BM('#a8505a'));mouth.scale.set(1.5,.5,.35);mouth.position.set(0,-.188,.329);head.add(mouth);WL.userData.mouth=mouth;
-  const hoodM=SM('#a8603f'),hoodD=SM('#7e4229');hoodM.side=THREE.DoubleSide;
+  const hoodM=SM('#a8603f'),hoodD=SM('#7e4229');hoodM.side=THREE.DoubleSide;WL.userData.hoodMats=[hoodM,hoodD]; // 개미탈 색 바꾸기(06 setTint 'hood' — 세계 설정 explorer.hoods)
   const hoodG=new THREE.SphereGeometry(.5,80,60);
   // 얼굴 구멍을 실제로 뚫고(얼굴과 탈이 서로 파고들지 않게), 구멍 테두리는 둥근 테로 깔끔하게 마감
   {const p=hoodG.attributes.position,ix=hoodG.index.array,keep=[];

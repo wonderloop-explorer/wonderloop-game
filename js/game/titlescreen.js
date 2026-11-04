@@ -12,6 +12,7 @@ const css=`
 #wlTitle{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;overflow-y:auto;
   font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
   background:radial-gradient(ellipse 60% 45% at 50% 48%,rgba(30,14,36,.42) 0%,rgba(30,14,36,.18) 60%,rgba(30,14,36,0) 100%),radial-gradient(ellipse at 50% 55%,rgba(30,14,36,0) 35%,rgba(30,14,36,.55) 100%)}
+#wlTitle[hidden]{display:none}
 #wlTitle .titlebox{text-align:center;color:#fff6e6;animation:wtRise .9s cubic-bezier(.2,1.3,.4,1) both}
 #wlTitle .ribbon{display:inline-block;position:relative;margin:0 0 .3rem;animation:wtDrop .6s cubic-bezier(.2,1.5,.4,1) both}
 #wlTitle .ribbon span{display:inline-block;background:#ffb86b;color:#3e2834;font-size:.95rem;padding:.38rem 1.6rem;clip-path:polygon(0 0,100% 0,94% 50%,100% 100%,0 100%,6% 50%);box-shadow:0 3px 0 #a8603f}

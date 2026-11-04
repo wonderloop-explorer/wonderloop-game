@@ -15,6 +15,10 @@
      backdrop      배경 루프 — { zone: 시작 공간 구역 이름(js/zones), at: 보는 점 [x,y,z], r: 반지름(rz: 앞뒤 반지름), h: 카메라 높이,
                    bob: [높이 흔들림, 빠르기], speed: 각속도(라디안/초), a0: 시작 각도, sweep: [a,b](벽 있는 방이면 그 사이를 오감 — 없으면 한 바퀴씩),
                    lookUp: [올려다보는 높이, 빠르기, 위상](선택) }
+     explorer      탐험가 소개(탐험 준비) 창 — 새로 시작할 때와 게임 중 '옷 갈아입기'가 함께 쓰는 한 목록·한 저장값(localStorage 'wl-look2'의 w[id])
+                   { bio, goal, wear: {outfit, hood}(이 세계에서 입는 옷·탈),
+                     hoods: {label, list:[[이름, 겉 색, 테두리 색]…]} 탈 색 · outfits: {label, list:[{name, vest?:[겉,안], scarf?:색}…]} 옷 조합 ·
+                     decos: {label, list:[{name, id?, flag?}…], lock: 잠김 안내, open: 열림 안내} 장식(flag가 켜져야 고름) · map: [[곳 이름, 열림?]…] }
      controlsNote  조작법 창(공통 틀) 안의 세계 전용 글 — 없으면 그 칸이 빠진다
                    { keys: [[키, 설명]…] (키보드 표의 E 다음에 들어감), talk: 터치 '말 걸기' 설명, touch: [[이름, 설명]…] (터치 표 끝),
                      play: '이렇게 놀아요' 한 단락, heatBefore·heatAfter: '휴대폰이 따뜻해질 때' 목록의 앞·뒤 항목(HTML) }
@@ -36,6 +40,16 @@ export default {
   /* 개미굴 원본 광장 카메라: 반지름 22·높이 8(±1.5)·초당 0.07라디안, 보는 점 (0,6,-4)에서 가끔 위로 14.
      광장은 아직 이 저장소에 없어(로드맵 7 이식) 그 전까지는 베이스캠프 방을 열린 쪽에서 천천히 오가며 본다 */
   backdrop:{zone:'basecamp',at:[0,1.2,-.2],r:21,h:15,bob:[1.2,.3],speed:.07,sweep:[.25,1.3]},
+  /* 탐험가 소개(탐험 준비) 창 — 새로 시작할 때('모험 떠나기')와 게임 중 메뉴 '옷 갈아입기'('다 골랐어요')가 이 한 목록·한 저장값을 함께 쓴다(개미굴 #show 그대로) */
+  explorer:{
+    bio:'개미 마을이 너무 궁금해서 개미탈을 쓰고 몰래 들어온 탐험가 원더룹이에요. 겁은 조금 많지만 발은 누구보다 빨라요.',
+    goal:'개미굴 가장 깊은 곳, 여왕개미의 방까지 가 보기',
+    wear:{outfit:'explorer',hood:'ant'},
+    hoods:{label:'개미탈',list:[['갈색 개미','#a8603f','#7e4229'],['검은 개미','#3e3446','#241d2a'],['황금 개미','#e0a63a','#a8701e'],['풀잎 개미','#6fa65a','#4a7a3c']]},
+    outfits:{label:'목도리',list:[{name:'청록',scarf:'#36aaa0'},{name:'노랑',scarf:'#f2c14e'},{name:'분홍',scarf:'#ef8fae'},{name:'보라',scarf:'#8f7fd8'}]},
+    decos:{label:'장식',list:[{name:'없음'},{name:'반짝 왕관',id:'crown',flag:'ant:dexDone'},{name:'별 핀',id:'star',flag:'ant:dexDone'}],
+      lock:'자연 도감 11장을 모두 모으면 열려요',open:'도감을 완성해서 받은 선물이에요!'},
+    map:[['중앙 광장',1],['식량 저장고',1],['보육실',1],['깊은 통로',1],['여왕의 방',1]]},
   controlsNote:{
     keys:[['B','자연 도감 열기'],['V','대사 읽어주기 켜고 끄기'],['F','랜턴 켜고 끄기'],['U','메뉴 버튼과 단축키 안내 보이기, 숨기기']],
     talk:'개미나 돋보기 가까이에서 나타나요',

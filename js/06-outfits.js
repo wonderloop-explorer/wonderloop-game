@@ -172,7 +172,13 @@ function wlMerge(list){
    WL.userData.vestColors=VEST.map(v=>v[0]);WL.userData.scarfColors=SCARF.map(v=>v[0]);WL.userData.vestHex=VEST.map(v=>v[1]);WL.userData.scarfHex=SCARF.map(v=>v[1]); // 색 이름·점 색(탐험가 소개 창)
    WL.userData.setVest=i=>{const v=VEST[i]||VEST[0];swap([[vestM,pick(vestM,VEST[0][1],v[1])],[vestD,pick(vestD,VEST[0][2],v[2])]]);WL.userData.vestIdx=VEST.indexOf(v);};
    WL.userData.setScarf=i=>{const v=SCARF[i]||SCARF[0];swap([[nkM,pick(nkM,SCARF[0][1],v[1])],[bandM,pick(bandM,SCARF[0][1],v[1])]]);WL.userData.scarfIdx=SCARF.indexOf(v);};
-   WL.userData.vestIdx=0;WL.userData.scarfIdx=0;}
+   WL.userData.vestIdx=0;WL.userData.scarfIdx=0;
+   /* 색을 16진수로 바로(세계 설정 explorer — 탐험가 소개 창, 2026-11-04): setTint('hood',[겉,테두리]) 개미탈 · ('vest',[겉,안]) 조끼 · ('scarf',색) 목수건. null이면 기본 색.
+      같은 방식(기본 재질에 색 배율만 곱한 재질로 바꿔 끼움) — 기준 촬영은 부르지 않으니 그대로 */
+   const [hM,hD]=WL.userData.hoodMats||[];
+   const BASE={hood:[[hM,'#a8603f'],[hD,'#7e4229']],vest:[[vestM,VEST[0][1]],[vestD,VEST[0][2]]],scarf:[[nkM,SCARF[0][1]],[bandM,SCARF[0][1]]]};
+   WL.userData.setTint=(part,c)=>{const B=BASE[part];if(!B||!B[0][0])return;const L=c==null?B.map(b=>b[1]):Array.isArray(c)?c:[c,c];
+     swap(B.map(([m,from],i)=>[m,pick(m,from,L[Math.min(i,L.length-1)]||from)]));};}
   // 이름으로 옷 입기 (구역 정보 outfit): setOutfit('explorer'|'casual')
   WL.userData.setOutfit=key=>{outfit=key==='explorer'?1:0;applyOutfit();showOutfit();};
 }
