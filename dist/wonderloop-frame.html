@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 7122dfb, 버전 dbfa00da9f, 2026-11-04)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 5826436, 버전 d58fc74327, 2026-11-04)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -319,8 +319,8 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="dbfa00da9f";
-window.WL_BUILD={"commit":"7122dfb","date":"2026-11-04","stage":"basecamp"};
+window.WL_V="d58fc74327";
+window.WL_BUILD={"commit":"5826436","date":"2026-11-04","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -1663,6 +1663,11 @@ function updateWL(dt,t){
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
    if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
+   /* 들고 다니는 물건(2026-11-04 — 버섯 랜턴): setHeld 물건에 userData.carry={ax,az,ex}가 있으면 서 있거나 걸을 때 오른팔을 그 각도로(앞으로 내밀어 듦, 걸으면 살짝 흔들림),
+      userData.hang이면 물건이 팔 각도와 상관없이 늘 똑바로(손잡이에 매달린 채) — 다른 동작 중에는 그 동작 팔 그대로 */
+   {const H=U.heldObj,c=H&&H.userData.carry;if(c&&(A==='서기'||moving)&&!WL.userData.riding){U.carryW=Math.min(1,(U.carryW||0)+dt*4);}else U.carryW=Math.max(0,(U.carryW||0)-dt*4);
+    if(c&&U.carryW>0){const w=U.carryW,sw=moving?Math.sin(wlPhase)*.12:0,e=arms[0].userData.elbow;arms[0].rotation.x+=(c.ax+sw-arms[0].rotation.x)*w;arms[0].rotation.z+=(c.az-arms[0].rotation.z)*w;e.rotation.x+=(c.ex-e.rotation.x)*w;}
+    if(H&&H.userData.hang){H.parent.getWorldQuaternion(_hq).invert();WL.getWorldQuaternion(_hq2);H.quaternion.copy(_hq).multiply(_hq2);}}
    if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass; // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
    (U.charms||[]).forEach(C=>{if(C.flag)C.g.visible=!!flags[C.flag];}); // 받은 아이템 키링은 받은 뒤에만 (game/items, 06 addCharm)
    (U.badges||[]).forEach(B=>B.g.visible=!!flags[B.flag]); // 꾸미기(배지)도 받은 뒤에만 (06 addBadge)
@@ -1685,7 +1690,7 @@ function updateWL(dt,t){
 /* 경계 미끄러짐(2026-11-04, 시리즈 공통 — 경계에 닿아도 툭 멈추거나 떨지 않고 벽·기둥을 따라 비켜 간다, 안내 글 없음):
    가려는 쪽이 막히면 15°씩 꺾어(최대 75°) 열린 쪽으로, 빠르기는 꺾은 만큼 줄여(cos) 벽을 따라 미끄러지듯. 꺾는 쪽은 처음 막힌 곳의 기울기(덜 파고드는 쪽)로 정하고
    닿아 있는 동안 기억해 좌우로 번갈아 떨지 않게. 직접 조작(조이스틱·WASD)은 이것만, 눌러서 걷기(walkTo)는 예전 축 미끄러짐 뒤에 이것(기준 촬영 그대로) */
-const SL={side:0,t:0};
+const SL={side:0,t:0},_hq=new THREE.Quaternion(),_hq2=new THREE.Quaternion();
 function slideGo(mx,mz,st,fy,only=false){const x=WL.position.x,z=WL.position.z;
   if(!only&&canGo(x+mx*st,z+mz*st,fy)){WL.position.x=x+mx*st;WL.position.z=z+mz*st;SL.t=0;return true;}
   if(SL.t<=0||!SL.side){const e=.06,tx=x+mx*st*3,tz=z+mz*st*3,gx=overlap(tx+e,tz,fy)-overlap(tx-e,tz,fy),gz=overlap(tx,tz+e,fy)-overlap(tx,tz-e,fy); // 막힌 곳의 기울기 → 덜 파고드는 쪽
@@ -3197,7 +3202,11 @@ function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!
   startTime();renderFront();el.classList.add('on');orbit();setTimeout(()=>{const b=el.querySelector('.go');if(b&&!coarse)b.focus({preventScroll:true});},50);return true;}
 function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
 async function begin(fr){if(busy)return;busy=true;sfx('click');const W=curWorld();
-  await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();if(W)playWorldMusic(W);}closeFront();},{out:.45,hold:.25,in:.75});busy=false;fresh=false; // 처음부터: 구역을 다시 만들어도 세계 배경음은 끊기지 않게(같은 곡이면 이어짐)
+  if(W&&!fr){ // 시리즈 공통 틀(개미굴 beginGame 그대로, 2026-11-04): 화면을 까맣게 덮지 않고 — 원더룹이 카메라를 등지고 서면 카메라가 이야기 소개 자리에서 원더룹 등 뒤로 휙 내려온다(따라가기 카메라가 지금 자리에서 이어 받아 약 0.5초)
+    const P=ctx.WL.position,c=ctx.camera.position;const ry=Math.atan2(P.x-c.x,P.z-c.z);ctx.WL.rotation.y=ry;closeFront();
+    VIEW.start({from:[P.x-Math.sin(ry)*7,P.y+.85+1.9,P.z-Math.cos(ry)*7]});}
+  else await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();if(W)playWorldMusic(W);}closeFront();},{out:.45,hold:.25,in:.75});
+  busy=false;fresh=false; // 처음부터: 구역을 다시 만들어도 세계 배경음은 끊기지 않게(같은 곡이면 이어짐)
   if(!store.get(HELP_KEY)){store.set(HELP_KEY,'1');showHelp(true);}
   if(W&&W.firstMission){const go=()=>{if(helpShown()){requestAnimationFrame(go);return;}startMission(W);};go();}} // 첫 미션(game/mission) — 처음 조작법 창이 열려 있으면 닫힌 뒤 // 처음 시작할 때 한 번 조작법(닫으면 나침반 연출·버섯 요정 순서로 이어진다)
 /* ---------- 이야기 소개(모험 떠나기 → 탐방하는 곳 소개 몇 장 → 게임) ---------- */
@@ -3726,15 +3735,25 @@ import {preload,register,sfx,voice} from './sound.js';
 import {setTool} from './controls.js';
 import {flags,setFlag} from './state.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
-let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0;
+let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0,light=null,pool=null,lampOn=false,lampK=0;
+const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 const haveKey=(W,it)=>'have:'+W.id+':'+it.id;
-function initMission(c){ctx=c;}
+/* 손에 든 랜턴 빛(2026-11-04 — 개미굴 heroLight 그대로: 진짜 점광원 세기 1.3·반경 9m·감쇠 1.5, 원더룹 오른쪽 앞 (-0.4, 0.9, 0.4)) + 발밑 따뜻한 빛 웅덩이(반지름 2.4m, 더하기 섞기).
+   빛 개수가 바뀌면 셰이더를 모두 다시 만들어 멈추므로 처음부터 세기 0으로 달아 두고 세기만 바꾼다(촬영 모드는 달지 않음 — 기준 화면 그대로). 색은 물건 userData.light(없으면 따뜻한 노랑) */
+function initMission(c){ctx=c;if(SHOT||!c.WL)return;
+  light=new THREE.PointLight(0xffd27a,0,9,1.5);light.position.set(-.4,.9,.4);c.WL.add(light);
+  const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d'),gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,214,120,.55)');gr.addColorStop(.55,'rgba(255,200,100,.22)');gr.addColorStop(1,'rgba(255,190,90,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
+  const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
+  pool=new THREE.Mesh(new THREE.CircleGeometry(2.4,40),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0,fog:false,polygonOffset:true,polygonOffsetFactor:-1}));
+  pool.rotation.x=-Math.PI/2;pool.renderOrder=3;pool.visible=false;c.scene.add(pool);}
+function tickLamp(dt){if(!light)return;const want=lampOn&&!!(ctx.WL.userData.heldObj)?1:0;lampK+=(want-lampK)*Math.min(1,dt*6);
+  light.intensity=1.3*Math.PI*lampK;pool.visible=lampK>.01;if(pool.visible){const P=ctx.WL.position,x=P.x-.25,z=P.z+.15;pool.position.set(x,(ctx.ground?ctx.ground(x,z):0)+.03,z);pool.material.opacity=lampK;}}
 /* 나레이션 한 줄: 세계 설정의 vo(파일 주소)를 등록해 읽은 뒤 튼다. 앞 줄은 멈춘다. 파일이 없으면 글자 수만큼(읽어 주기가 켜졌으면 읽어 줌) */
 function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,kind:'narration'});return tok;}
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
-function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});U.setHeld(h);
-  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use});};setTool({label:lab(),use});}}
+function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});U.setHeld(h);lampOn=!!it.light;
+  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use});};setTool({label:lab(),use});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
   M={W,F,it,got:false,at:F.goal&&F.goal.at||it.at};t=0;
@@ -3745,7 +3764,7 @@ function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;cons
   notice({kicker:P.kicker||'미션',title:P.title||'',text:P.text||'',icon:it.icon?it.icon():null}).then(()=>{if(M&&!M.got)stopVO();});
   if(F.narration)sayVO('mission:'+W.id,F.narration.vo,F.narration.text||((P.title||'')+' '+(P.text||'')));
   return true;}
-function tickMission(dt){if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
+function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
   if(obj){obj.rotation.y+=dt*1.3;obj.position.y=obj.userData.y0+Math.sin(t*2)*.15;if(obj.userData.tick)obj.userData.tick(t);}
   const P=ctx.WL.position,r=it.pickR||1.5;if(Math.hypot(P.x-it.at[0],P.z-it.at[1])<r)pick();}
 function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispose(obj);obj=null;}
@@ -3755,7 +3774,7 @@ function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispo
   if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title);
   setQuest(F.next||'');}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
-function clearMission(){if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}
+function clearMission(){lampOn=false;if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}
 const hero=()=>ctx&&ctx.WL; // 시험 도구용(tools/intro-mission-test.py — 원더룹을 걸려 보냄)
 const missionState=()=>M?{item:M.it.id,got:M.got,at:M.at}:null;
 export {hero,clearMission,initMission,missionState,startMission,stopVO as stopMissionVO,tickMission};
@@ -5062,7 +5081,7 @@ export const CROWN_BLOOM={build:o=>build(o,true),animate,tick};
                      cam: {at:[x,y,z] 보는 점, r: 반지름(rz: 앞뒤 반지름), h: 카메라 높이, a:[시작 각도, 끝 각도](라디안, 0 = +z쪽), speed: 초당 라디안(개미굴 0.07), bob:[흔들림, 빠르기]}
      firstMission    첫 미션 = 그 세계에서 꼭 필요한 물건 하나 얻기 (시간 제한·실패·점수 없음)
                      { item: {id, name, at:[x,z] 놓인 자리, y: 떠 있는 높이, pickR: 줍는 거리, icon: ()=>그림 주소, model: (THREE,{held})=>Group(원점 = 밑, held면 손에 쥘 크기 — userData.setOn(켜짐)이 있으면 도구 단추로 켜고 끔),
-                              tool: {on, off} 도구 단추 글(없으면 단추 없음)},
+                              tool: {on, off} 도구 단추 글(없으면 단추 없음), light: true면 쥐고 켠 동안 원더룹 둘레를 비추는 빛(개미굴 heroLight — game/mission)},
                        quest: 할 일 안내, popup: {kicker, title, text} 미션 카드, narration: {vo, text} 미션 나레이션,
                        goal: {at:[x,z], label} 민트 빛기둥·동그라미 길이 이어지는 목적지(없으면 item.at), got: {title, text:{key, touch}, vo} 얻었을 때 카드·나레이션, next: 다음 할 일 안내 }
      옷 조합(윗옷·바지 색 + 목도리 색)은 원더룹 자신의 옷이라 세계 설정이 아니라 06 outfitCombos 한 목록·한 저장값(세계가 바뀌어도 그대로)
@@ -5070,21 +5089,28 @@ export const CROWN_BLOOM={build:o=>build(o,true),animate,tick};
                    { keys: [[키, 설명]…] (키보드 표의 E 다음에 들어감), talk: 터치 '말 걸기' 설명, touch: [[이름, 설명]…] (터치 표 끝),
                      play: '이렇게 놀아요' 한 단락, heatBefore·heatAfter: '휴대폰이 따뜻해질 때' 목록의 앞·뒤 항목(HTML) }
    ───────────────────────────────────────────────────────────────────────── */
-/* 버섯 랜턴(개미굴 makeLantern 그대로 — 줄기·빛나는 민트 갓·손잡이·빛무리). 떠 있을 때 1.8배, 손에 쥘 때 0.85배(개미굴 값) */
+/* 버섯 랜턴(개미굴 makeLantern 모양 — 줄기·갓·손잡이·빛무리). 2026-11-04 사용자 요청: 민트 갓이 원더룹 옷(민트·노랑·파랑·분홍 조합)과 섞여 안 보여서
+   빨간 버섯 갓 + 흰 점 + 갓 아래 따뜻한 노란 불빛 + 진갈색 손잡이로. 떠 있을 때는 밑이 원점, 손에 쥘 때(held)는 손잡이 꼭대기가 원점이라 손 아래에 똑바로 매달린다(07 carry·hang) */
 let ICON=null;
 function ICON_LAMP(){if(ICON)return ICON;const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d');
-  g.fillStyle='#f2e2cc';g.fillRect(41,48,14,34);g.fillStyle='#bdf7ee';g.beginPath();g.ellipse(48,50,34,26,0,Math.PI,0);g.fill();
-  g.fillStyle='#4fd8c8';g.beginPath();g.ellipse(48,50,34,7,0,0,Math.PI);g.fill();g.fillStyle='#ffffff';[[36,36,5],[56,30,4],[62,42,3]].forEach(q=>{g.beginPath();g.arc(q[0],q[1],q[2],0,7);g.fill();});
+  g.strokeStyle='#5a3826';g.lineWidth=5;g.beginPath();g.arc(48,24,12,Math.PI,0);g.stroke();
+  g.fillStyle='#ffe9a0';g.beginPath();g.ellipse(48,58,16,13,0,0,Math.PI*2);g.fill();g.fillStyle='#f2e2cc';g.fillRect(42,58,12,26);
+  g.fillStyle='#e05a4a';g.beginPath();g.ellipse(48,50,34,26,0,Math.PI,0);g.fill();g.fillStyle='#a8382e';g.beginPath();g.ellipse(48,50,34,6,0,0,Math.PI);g.fill();
+  g.fillStyle='#fff6e6';[[34,38,5],[52,30,4.5],[64,42,3.5],[44,46,3]].forEach(q=>{g.beginPath();g.arc(q[0],q[1],q[2],0,7);g.fill();});
   return ICON=c.toDataURL();}
-function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.85*.62:1.8*.62;g.scale.setScalar(S); // 개미굴 원더룹 키 대비 크기를 이 원더룹 키(약 0.62배)에 맞춤
-  const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.32,8),new THREE.MeshLambertMaterial({color:'#f2e2cc'}));st.position.y=.16;g.add(st);
-  const capMat=new THREE.MeshStandardMaterial({color:'#8ff0e2',emissive:'#3fd8c8',emissiveIntensity:1,roughness:.8});
-  const cap=new THREE.Mesh(new THREE.SphereGeometry(.22,14,8,0,Math.PI*2,0,Math.PI/2),capMat);cap.scale.y=.75;cap.position.y=.3;g.add(cap);
-  const hd=new THREE.Mesh(new THREE.TorusGeometry(.12,.02,6,14,Math.PI),new THREE.MeshLambertMaterial({color:'#7a4a32'}));hd.position.y=.44;g.add(hd);
-  const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(111,240,224,.9)');gr.addColorStop(1,'rgba(111,240,224,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);
+function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.8:1.8*.62,b=new THREE.Group();g.scale.setScalar(S);g.add(b);if(held)b.position.y=-.5; // 손잡이 꼭대기(0.5)가 손에
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.32,8),new THREE.MeshLambertMaterial({color:'#f2e2cc'}));st.position.y=.16;b.add(st);
+  const bulbMat=new THREE.MeshStandardMaterial({color:'#ffe9a0',emissive:'#ffc94a',emissiveIntensity:1.1,roughness:.8});
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),bulbMat);bulb.scale.y=.8;bulb.position.y=.27;b.add(bulb);
+  const capMat=new THREE.MeshStandardMaterial({color:'#e05a4a',emissive:'#7a1e14',emissiveIntensity:.35,roughness:.85});
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.22,14,8,0,Math.PI*2,0,Math.PI/2),capMat);cap.scale.y=.75;cap.position.y=.3;b.add(cap);
+  const dotM=new THREE.MeshLambertMaterial({color:'#fff6e6'});[[.1,.1,.35],[-.12,.06,.4],[.02,-.14,.38],[-.04,.14,.44],[.15,-.05,.4]].forEach(([x,z,y])=>{const d=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),dotM);d.position.set(x,y,z);d.scale.y=.5;b.add(d);});
+  const hd=new THREE.Mesh(new THREE.TorusGeometry(.1,.022,6,14,Math.PI),new THREE.MeshLambertMaterial({color:'#5a3826'}));hd.position.y=.4;b.add(hd);
+  const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,214,110,.85)');gr.addColorStop(1,'rgba(255,214,110,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);
   const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
-  const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.9}));h.scale.set(1.7,1.7,1);h.position.y=.3;g.add(h);
-  g.userData.setOn=on=>{capMat.emissiveIntensity=on?1:.05;h.visible=on;};return g;}
+  const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.75}));h.scale.set(1.3,1.3,1);h.position.y=.27;b.add(h);
+  if(held){g.userData.carry={ax:-1.15,az:-.18,ex:-.5};g.userData.hang=true;}
+  g.userData.setOn=on=>{bulbMat.emissiveIntensity=on?1.1:.05;capMat.emissiveIntensity=on?.35:0;h.visible=on;};return g;}
 const ANT_SVG='<svg viewBox="0 0 40 22"><g fill="currentColor"><ellipse cx="9" cy="13" rx="6.5" ry="4.8"/><circle cx="19" cy="12.5" r="3.2"/><circle cx="28.5" cy="11.5" r="4.6"/></g><g stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M30 7.5q2-6 7-5.5M27.5 7.5q0-6 4-7"/><path d="M15.5 15l-3 6M19 15.5v6M22.5 15l3 6"/></g></svg>';
 export default {
   id:'antvillage',
@@ -5123,7 +5149,7 @@ export default {
     {text:'목표는 개미굴 가장 깊은 곳, 여왕개미의 방. 하지만 깊은 굴은 아주 어둡고, 어디선가 자꾸 바스락 소리가 난대요…',vo:'assets/audio/antvillage/pro3.mp3',cam:{at:[0,1.2,-.2],r:20,h:14,a:[1.0,1.4],speed:.07,bob:[1.2,.3]}}],
   /* 첫 미션 — 개미굴 광장 '버섯 랜턴을 찾아요' 그대로(카드 문구·나레이션 m_lamp·g_lamp·민트 빛기둥·냄새 길). 자리는 베이스캠프 방 안(광장 이식 때 바꿈) */
   firstMission:{
-    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
+    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,light:true,tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
     quest:'광장 어딘가에 떨어진 버섯 랜턴을 찾아요',
     popup:{kicker:'미션',title:'버섯 랜턴을 찾아요',text:'깊은 개미굴은 아주 어두워요. 광장 어딘가에 떨어진 버섯 랜턴을 먼저 찾아보세요. 청록 빛기둥이 솟은 바위 위에 있어요.'},
     narration:{vo:'assets/audio/antvillage/m_lamp.mp3'},
