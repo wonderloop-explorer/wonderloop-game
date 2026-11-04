@@ -6,10 +6,11 @@ import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,se
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
-import {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
+import {DRV,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
 import {CURRENT as WORLD} from './worlds/index.js'; // 지금 세계 설정(시리즈 공통 틀 — 타이틀 화면)
 import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
+import {clearDevcheck,initDevcheck,toggleBounds,toggleMeasure,toggleSize} from './game/devcheck.js'; // 톱니 메뉴: 경계 보기·걷는 시간 재기·크기 확인
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
@@ -50,7 +51,7 @@ GAME.controls.controlHooks.onWardrobe=()=>GAME.front.toggleWardrobe(); // C: 옷
    goZone(이름, 자리): 새 구역을 만들고 → 지금 구역을 비우고 → 원더룹을 자리에 세우고 → 해·카메라·병합을 맞춘다.
    문(doors)을 밟으면 저절로 부른다. 들어온 문 위에 서 있는 동안은 다시 넘어가지 않는다. 탈 교체 영역(아틀라스)은 새로 채운다 */
 let zoneBusy=false,doorLock=true;
-async function goZone(id,spawn){
+async function goZone(id,spawn){clearDevcheck();
   if(zoneBusy||!ZONES[id])return false;zoneBusy=true;
   try{const nz=await loadZone(id),old=zone.cur;unloadZone(old);zone.cur=nz;
     const sp=spawn||nz.spawn;stopWalk();WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;
@@ -90,6 +91,10 @@ const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: redu
 function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const I=bendInfo();b.textContent=I.on?`둥근 땅: ${I.label}`:'둥근 땅: 이 구역 없음';b.disabled=!I.on;}
 {const b=document.getElementById('bendBtn');if(b)b.addEventListener('click',()=>{const I=bendInfo();if(!I.on)return;setLevel((I.level+1)%4);bendBtn();});}
 /* 진행 초기화(시험용, 톱니 메뉴): 저장된 진행(flags — 우산·완료·소개 카드)·도감을 지우고 다시 연다. 실수로 눌리지 않게 3초 안에 한 번 더 눌러야 */
+/* 세계 만들기 도구(시험용, 톱니 메뉴 — game/devcheck): 경계 보기 · 걷는 시간 재기(바닥 두 곳) · 크기 확인(주민·생물 키 / 원더룹 키) */
+initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),walk:()=>[+DRV.walk.toFixed(2),+DRV.run.toFixed(2)],zone:()=>zone.cur});
+[['boundsBtn',()=>toggleBounds(),on=>`경계 보기: ${on?'켜짐':'끔'}`],['measBtn',()=>toggleMeasure(),on=>`걷는 시간 재기: ${on?'켜짐':'끔'}`],['sizeBtn',()=>!!toggleSize(),on=>`크기 확인: ${on?'켜짐':'끔'}`]]
+  .forEach(([id,f,lab])=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>{b.textContent=lab(f());});});
 {const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
    if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
 
@@ -100,6 +105,10 @@ const FOG_OFF=1e4;scene.fog=new THREE.Fog(0xffffff,FOG_OFF,FOG_OFF*2);
 /* 휴대폰 세로 화면 따라가기(2026-11-03 — 아이폰 세로에서 길가 풀이 풍경보다 크게 보이던 구간): 거리 배율 상한 2.1 → 2(원더룹이 너무 작아지지 않게),
    처음 각도 0.42 라디안 위에서(풀 너머로), 보는 점을 0.6m 올려 원더룹을 화면 조금 아래에 두고 가는 쪽이 더 보이게. 가로 화면·컴퓨터는 그대로 */
 const PORTRAIT={far:2,pitch:.42,lift:.6};
+/* 카메라 범위(2026-11-04, 시리즈 공통 경계 규칙 — CLAUDE.md·docs/series-rules.md): 카메라는 경계 안에서만. 구역 정보로 고른다
+   camRoom:{c:[x,z], r} 동그란 방(팔이 밖으로 나가면 방 안까지만 당김 — 아래) · camBox:{x:[작은,큰], z:[..], y:[..]} 카메라 자리를 그 상자 안으로(따라가기·방 카메라 모두, 연출 중 빼고)
+   땅 밑: 따라가기는 늘 땅 0.7 위(아래), 위아래 각도 -0.55~1.15. 방 카메라는 방마다 polar·azimuth·maxDist(03) */
+function clampBox(v,B){if(B.x)v.x=Math.min(B.x[1],Math.max(B.x[0],v.x));if(B.z)v.z=Math.min(B.z[1],Math.max(B.z[0],v.z));if(B.y)v.y=Math.min(B.y[1],Math.max(B.y[0],v.y));}
 const _fv=new THREE.Vector3();const CAM_MIN=4; // 따라가기 카메라 가장 가까운 거리(m) — 원더룹 전신이 다 보이게(세로 시야 30°에서 키 1.1m + 여백)
 const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector3();
 /* 촬영 모드(?shot): 고정 시간 간격(기본 1/60초, 영상 캡처 중에는 wlShot.dt=1/72)으로 한 프레임씩 진행 — 기준 스크린샷·영상 캡처용 */
@@ -208,6 +217,7 @@ function tickBody(){
        else V.req=null;if(at){C.fAt=at;C.fFrom=from;}}
      C.fw=(C.fw||0)+(want-(C.fw||0))*Math.min(1,dt/.45*2.2);if(C.fw<.002)C.fw=0;
      if(C.fw>0&&C.fAt){const w=C.fw*C.fw*(3-2*C.fw);_ct.lerp(_fv.set(...C.fAt),w);_cw.lerp(_fv.set(...C.fFrom),w);}}
+    if(Z.camBox&&(C.fw||0)<.5)clampBox(_cw,Z.camBox); // 카메라 상자(구역 정보 camBox): 경계 너머 빈 곳·세계 끝이 보이지 않게 카메라 자리를 상자 안으로(연출 중에는 빼고)
     _cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
     camera.position.lerp(_cw,Math.min(1,dt*7));camera.position.y=Math.max(camera.position.y,groundY(camera.position.x,camera.position.z)+.6); // 따라오는 길에도 땅 속으로 들어가지 않게
     controls.target.lerp(_ct,Math.min(1,dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
@@ -215,7 +225,7 @@ function tickBody(){
     camera.position.lerp(_fv.set(...C.hv.from),k);controls.target.lerp(_fv.set(...C.hv.at),k);camera.lookAt(controls.target);}
   else{C.ready=false;C.hv=null;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
-  if(!rig&&!C.hv)controls.update();GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
+  if(!rig&&!C.hv){controls.update();if(Z.camBox&&!GAME.view.req)clampBox(camera.position,Z.camBox);}GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}${window.WL_BUILD?' · 커밋 '+window.WL_BUILD.commit:''}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':

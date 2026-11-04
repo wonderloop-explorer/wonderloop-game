@@ -302,75 +302,80 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
   <button id="emphBtn" type="button">캐릭터 강조: 자동</button>
   <button id="outfitBtn" type="button">옷: 평상복</button>
   <button id="bendBtn" type="button">둥근 땅: 중</button>
+  <button id="boundsBtn" type="button">경계 보기: 끔</button>
+  <button id="measBtn" type="button">걷는 시간 재기: 끔</button>
+  <button id="sizeBtn" type="button">크기 확인: 끔</button>
   <button id="resetBtn" type="button">진행 초기화</button>
   <div class="hint" id="stats" aria-live="polite"></div>
   <div class="hint">끌어서 돌려 보고, 휠이나 두 손가락으로 확대해요. 바닥을 누르면 원더룹이 걸어가고, 원더룹을 누르면 인사해요. 버섯 랜턴은 눌러서 켜고 꺼요.</div>
 </div>
 
 <script id="wl-vercheck">fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.v&&j.v!==window.WL_V){const u=new URL(location.href);if(u.searchParams.get('_v')!==j.v){u.searchParams.set('_v',j.v);location.replace(u);}}}).catch(()=>{});</script>
-<script>window.WL_V='87b35d8646';</script>
+<script>window.WL_V='19e9bbb95f';</script>
 <script type="importmap">
 {
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./js/01-textures.js": "./js/01-textures.js?v=87b35d8646",
-    "./js/02-zone.js": "./js/02-zone.js?v=87b35d8646",
-    "./js/03-scene.js": "./js/03-scene.js?v=87b35d8646",
-    "./js/04-character.js": "./js/04-character.js?v=87b35d8646",
-    "./js/05-hair-headwear.js": "./js/05-hair-headwear.js?v=87b35d8646",
-    "./js/06-outfits.js": "./js/06-outfits.js?v=87b35d8646",
-    "./js/07-actions.js": "./js/07-actions.js?v=87b35d8646",
-    "./js/08-main.js": "./js/08-main.js?v=87b35d8646",
-    "./js/09-capture.js": "./js/09-capture.js?v=87b35d8646",
-    "./js/game/bend.js": "./js/game/bend.js?v=87b35d8646",
-    "./js/game/codex.js": "./js/game/codex.js?v=87b35d8646",
-    "./js/game/companion.js": "./js/game/companion.js?v=87b35d8646",
-    "./js/game/controls.js": "./js/game/controls.js?v=87b35d8646",
-    "./js/game/core.js": "./js/game/core.js?v=87b35d8646",
-    "./js/game/course.js": "./js/game/course.js?v=87b35d8646",
-    "./js/game/dialog.js": "./js/game/dialog.js?v=87b35d8646",
-    "./js/game/events.js": "./js/game/events.js?v=87b35d8646",
-    "./js/game/felt.js": "./js/game/felt.js?v=87b35d8646",
-    "./js/game/front.js": "./js/game/front.js?v=87b35d8646",
-    "./js/game/fx.js": "./js/game/fx.js?v=87b35d8646",
-    "./js/game/goal.js": "./js/game/goal.js?v=87b35d8646",
-    "./js/game/hud.js": "./js/game/hud.js?v=87b35d8646",
-    "./js/game/index.js": "./js/game/index.js?v=87b35d8646",
-    "./js/game/interact.js": "./js/game/interact.js?v=87b35d8646",
-    "./js/game/items.js": "./js/game/items.js?v=87b35d8646",
-    "./js/game/lamps.js": "./js/game/lamps.js?v=87b35d8646",
-    "./js/game/music.js": "./js/game/music.js?v=87b35d8646",
-    "./js/game/occlude.js": "./js/game/occlude.js?v=87b35d8646",
-    "./js/game/popup.js": "./js/game/popup.js?v=87b35d8646",
-    "./js/game/profile.js": "./js/game/profile.js?v=87b35d8646",
-    "./js/game/ride.js": "./js/game/ride.js?v=87b35d8646",
-    "./js/game/sfx-ant.js": "./js/game/sfx-ant.js?v=87b35d8646",
-    "./js/game/sky.js": "./js/game/sky.js?v=87b35d8646",
-    "./js/game/sound.js": "./js/game/sound.js?v=87b35d8646",
-    "./js/game/state.js": "./js/game/state.js?v=87b35d8646",
-    "./js/game/synth.js": "./js/game/synth.js?v=87b35d8646",
-    "./js/game/title.js": "./js/game/title.js?v=87b35d8646",
-    "./js/game/titlescreen.js": "./js/game/titlescreen.js?v=87b35d8646",
-    "./js/game/ui.js": "./js/game/ui.js?v=87b35d8646",
-    "./js/hoods/crown.js": "./js/hoods/crown.js?v=87b35d8646",
-    "./js/worlds/antvillage.js": "./js/worlds/antvillage.js?v=87b35d8646",
-    "./js/worlds/index.js": "./js/worlds/index.js?v=87b35d8646",
-    "./js/zones/basecamp.js": "./js/zones/basecamp.js?v=87b35d8646",
-    "./js/zones/fairy/dock.js": "./js/zones/fairy/dock.js?v=87b35d8646",
-    "./js/zones/fairy/fairies.js": "./js/zones/fairy/fairies.js?v=87b35d8646",
-    "./js/zones/fairy/forest.js": "./js/zones/fairy/forest.js?v=87b35d8646",
-    "./js/zones/fairy/music.js": "./js/zones/fairy/music.js?v=87b35d8646",
-    "./js/zones/fairy/paint.js": "./js/zones/fairy/paint.js?v=87b35d8646",
-    "./js/zones/fairy/world.js": "./js/zones/fairy/world.js?v=87b35d8646",
-    "./js/zones/sample-fx.js": "./js/zones/sample-fx.js?v=87b35d8646",
-    "./js/zones/sample-indoor.js": "./js/zones/sample-indoor.js?v=87b35d8646",
-    "./js/zones/sample-outdoor.js": "./js/zones/sample-outdoor.js?v=87b35d8646"
+    "./js/01-textures.js": "./js/01-textures.js?v=19e9bbb95f",
+    "./js/02-zone.js": "./js/02-zone.js?v=19e9bbb95f",
+    "./js/03-scene.js": "./js/03-scene.js?v=19e9bbb95f",
+    "./js/04-character.js": "./js/04-character.js?v=19e9bbb95f",
+    "./js/05-hair-headwear.js": "./js/05-hair-headwear.js?v=19e9bbb95f",
+    "./js/06-outfits.js": "./js/06-outfits.js?v=19e9bbb95f",
+    "./js/07-actions.js": "./js/07-actions.js?v=19e9bbb95f",
+    "./js/08-main.js": "./js/08-main.js?v=19e9bbb95f",
+    "./js/09-capture.js": "./js/09-capture.js?v=19e9bbb95f",
+    "./js/game/bend.js": "./js/game/bend.js?v=19e9bbb95f",
+    "./js/game/codex.js": "./js/game/codex.js?v=19e9bbb95f",
+    "./js/game/companion.js": "./js/game/companion.js?v=19e9bbb95f",
+    "./js/game/controls.js": "./js/game/controls.js?v=19e9bbb95f",
+    "./js/game/core.js": "./js/game/core.js?v=19e9bbb95f",
+    "./js/game/course.js": "./js/game/course.js?v=19e9bbb95f",
+    "./js/game/devcheck.js": "./js/game/devcheck.js?v=19e9bbb95f",
+    "./js/game/dialog.js": "./js/game/dialog.js?v=19e9bbb95f",
+    "./js/game/events.js": "./js/game/events.js?v=19e9bbb95f",
+    "./js/game/felt.js": "./js/game/felt.js?v=19e9bbb95f",
+    "./js/game/front.js": "./js/game/front.js?v=19e9bbb95f",
+    "./js/game/fx.js": "./js/game/fx.js?v=19e9bbb95f",
+    "./js/game/goal.js": "./js/game/goal.js?v=19e9bbb95f",
+    "./js/game/hud.js": "./js/game/hud.js?v=19e9bbb95f",
+    "./js/game/index.js": "./js/game/index.js?v=19e9bbb95f",
+    "./js/game/interact.js": "./js/game/interact.js?v=19e9bbb95f",
+    "./js/game/items.js": "./js/game/items.js?v=19e9bbb95f",
+    "./js/game/lamps.js": "./js/game/lamps.js?v=19e9bbb95f",
+    "./js/game/mission.js": "./js/game/mission.js?v=19e9bbb95f",
+    "./js/game/music.js": "./js/game/music.js?v=19e9bbb95f",
+    "./js/game/occlude.js": "./js/game/occlude.js?v=19e9bbb95f",
+    "./js/game/popup.js": "./js/game/popup.js?v=19e9bbb95f",
+    "./js/game/profile.js": "./js/game/profile.js?v=19e9bbb95f",
+    "./js/game/ride.js": "./js/game/ride.js?v=19e9bbb95f",
+    "./js/game/sfx-ant.js": "./js/game/sfx-ant.js?v=19e9bbb95f",
+    "./js/game/sky.js": "./js/game/sky.js?v=19e9bbb95f",
+    "./js/game/sound.js": "./js/game/sound.js?v=19e9bbb95f",
+    "./js/game/state.js": "./js/game/state.js?v=19e9bbb95f",
+    "./js/game/synth.js": "./js/game/synth.js?v=19e9bbb95f",
+    "./js/game/title.js": "./js/game/title.js?v=19e9bbb95f",
+    "./js/game/titlescreen.js": "./js/game/titlescreen.js?v=19e9bbb95f",
+    "./js/game/ui.js": "./js/game/ui.js?v=19e9bbb95f",
+    "./js/hoods/crown.js": "./js/hoods/crown.js?v=19e9bbb95f",
+    "./js/worlds/antvillage.js": "./js/worlds/antvillage.js?v=19e9bbb95f",
+    "./js/worlds/index.js": "./js/worlds/index.js?v=19e9bbb95f",
+    "./js/zones/basecamp.js": "./js/zones/basecamp.js?v=19e9bbb95f",
+    "./js/zones/fairy/dock.js": "./js/zones/fairy/dock.js?v=19e9bbb95f",
+    "./js/zones/fairy/fairies.js": "./js/zones/fairy/fairies.js?v=19e9bbb95f",
+    "./js/zones/fairy/forest.js": "./js/zones/fairy/forest.js?v=19e9bbb95f",
+    "./js/zones/fairy/music.js": "./js/zones/fairy/music.js?v=19e9bbb95f",
+    "./js/zones/fairy/paint.js": "./js/zones/fairy/paint.js?v=19e9bbb95f",
+    "./js/zones/fairy/world.js": "./js/zones/fairy/world.js?v=19e9bbb95f",
+    "./js/zones/sample-fx.js": "./js/zones/sample-fx.js?v=19e9bbb95f",
+    "./js/zones/sample-indoor.js": "./js/zones/sample-indoor.js?v=19e9bbb95f",
+    "./js/zones/sample-outdoor.js": "./js/zones/sample-outdoor.js?v=19e9bbb95f"
   }
 }
 </script>
 <!-- 08-main.js가 01~07을 번호 순서대로 import한다. 버전(?v=)과 위 importmap의 js 줄은 tools/stamp.py가 쓴다 -->
-<script type="module" src="js/08-main.js?v=87b35d8646"></script>
+<script type="module" src="js/08-main.js?v=19e9bbb95f"></script>
 
 </body>
 </html>

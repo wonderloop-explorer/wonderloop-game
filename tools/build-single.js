@@ -27,7 +27,7 @@ const STAGES = {
   'basecamp': {
     out: 'dist/wonderloop-frame.html',
     title: '원더룹 — 시리즈 공통 틀 (개미굴 설정)',
-    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json'],
+    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/audio/antvillage/*'], // 개미굴 나레이션(모험 시작 연출·첫 미션)
   },
   'fairy-dock': {
     out: 'dist/fairy-forest-stage01.html',

@@ -24,11 +24,35 @@
                    받았는지 = 저장 기록 flags[item:<세계 id>:<id>] (items.give) — 받은 것만 고를 수 있고 못 받은 것은 물음표 칸. 처음엔 '없음'만
      map           모험 지도 = 스테이지 4칸 [{name, zone: 그 스테이지 첫 구역(아직 없으면 null)}…] (시리즈 규칙: 한 세계 스테이지 4개, 20~30분)
      music         첫 화면·탐험 준비부터 나오는 배경음 {id, song: 곡(game/music.js 형식)}
+     ── 모험 시작 연출·첫 미션 (2026-11-04, 공통 틀 4단계 — game/front openIntro·game/mission) ──
+     introNarration  '모험 떠나기' 뒤 이야기 소개 세 단계 [{text, vo, cam}…] — ① 이 세계 소개 ② 원더룹이 왜 왔는지 ③ 게임의 목표
+                     text: 화면 아래 카드 글(초당 28자로 써짐), vo: 나레이션 파일 주소(없으면 글자 수만큼 쉼 — 읽어 주기가 켜졌으면 읽어 줌)
+                     cam: {at:[x,y,z] 보는 점, r: 반지름(rz: 앞뒤 반지름), h: 카메라 높이, a:[시작 각도, 끝 각도](라디안, 0 = +z쪽), speed: 초당 라디안(개미굴 0.07), bob:[흔들림, 빠르기]}
+     firstMission    첫 미션 = 그 세계에서 꼭 필요한 물건 하나 얻기 (시간 제한·실패·점수 없음)
+                     { item: {id, name, at:[x,z] 놓인 자리, y: 떠 있는 높이, pickR: 줍는 거리, icon: ()=>그림 주소, model: (THREE,{held})=>Group(원점 = 밑, held면 손에 쥘 크기 — userData.setOn(켜짐)이 있으면 도구 단추로 켜고 끔),
+                              tool: {on, off} 도구 단추 글(없으면 단추 없음)},
+                       quest: 할 일 안내, popup: {kicker, title, text} 미션 카드, narration: {vo, text} 미션 나레이션,
+                       goal: {at:[x,z], label} 민트 빛기둥·동그라미 길이 이어지는 목적지(없으면 item.at), got: {title, text:{key, touch}, vo} 얻었을 때 카드·나레이션, next: 다음 할 일 안내 }
      옷 조합(윗옷·바지 색 + 목도리 색)은 원더룹 자신의 옷이라 세계 설정이 아니라 06 outfitCombos 한 목록·한 저장값(세계가 바뀌어도 그대로)
      controlsNote  조작법 창(공통 틀) 안의 세계 전용 글 — 없으면 그 칸이 빠진다
                    { keys: [[키, 설명]…] (키보드 표의 E 다음에 들어감), talk: 터치 '말 걸기' 설명, touch: [[이름, 설명]…] (터치 표 끝),
                      play: '이렇게 놀아요' 한 단락, heatBefore·heatAfter: '휴대폰이 따뜻해질 때' 목록의 앞·뒤 항목(HTML) }
    ───────────────────────────────────────────────────────────────────────── */
+/* 버섯 랜턴(개미굴 makeLantern 그대로 — 줄기·빛나는 민트 갓·손잡이·빛무리). 떠 있을 때 1.8배, 손에 쥘 때 0.85배(개미굴 값) */
+let ICON=null;
+function ICON_LAMP(){if(ICON)return ICON;const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d');
+  g.fillStyle='#f2e2cc';g.fillRect(41,48,14,34);g.fillStyle='#bdf7ee';g.beginPath();g.ellipse(48,50,34,26,0,Math.PI,0);g.fill();
+  g.fillStyle='#4fd8c8';g.beginPath();g.ellipse(48,50,34,7,0,0,Math.PI);g.fill();g.fillStyle='#ffffff';[[36,36,5],[56,30,4],[62,42,3]].forEach(q=>{g.beginPath();g.arc(q[0],q[1],q[2],0,7);g.fill();});
+  return ICON=c.toDataURL();}
+function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.85*.62:1.8*.62;g.scale.setScalar(S); // 개미굴 원더룹 키 대비 크기를 이 원더룹 키(약 0.62배)에 맞춤
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.32,8),new THREE.MeshLambertMaterial({color:'#f2e2cc'}));st.position.y=.16;g.add(st);
+  const capMat=new THREE.MeshStandardMaterial({color:'#8ff0e2',emissive:'#3fd8c8',emissiveIntensity:1,roughness:.8});
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.22,14,8,0,Math.PI*2,0,Math.PI/2),capMat);cap.scale.y=.75;cap.position.y=.3;g.add(cap);
+  const hd=new THREE.Mesh(new THREE.TorusGeometry(.12,.02,6,14,Math.PI),new THREE.MeshLambertMaterial({color:'#7a4a32'}));hd.position.y=.44;g.add(hd);
+  const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(111,240,224,.9)');gr.addColorStop(1,'rgba(111,240,224,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);
+  const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
+  const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.9}));h.scale.set(1.7,1.7,1);h.position.y=.3;g.add(h);
+  g.userData.setOn=on=>{capMat.emissiveIntensity=on?1:.05;h.visible=on;};return g;}
 const ANT_SVG='<svg viewBox="0 0 40 22"><g fill="currentColor"><ellipse cx="9" cy="13" rx="6.5" ry="4.8"/><circle cx="19" cy="12.5" r="3.2"/><circle cx="28.5" cy="11.5" r="4.6"/></g><g stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M30 7.5q2-6 7-5.5M27.5 7.5q0-6 4-7"/><path d="M15.5 15l-3 6M19 15.5v6M22.5 15l3 6"/></g></svg>';
 export default {
   id:'antvillage',
@@ -60,6 +84,20 @@ export default {
     mel:[[72,null,77,null,79,null,81,null],[79,null,76,null,72,null,null,74],[74,null,77,null,81,79,77,76],[74,null,null,72,74,null,null,null],
          [72,77,79,81,84,null,81,79],[79,null,76,77,79,null,null,null],[77,null,74,null,77,79,81,null],[79,null,77,null,77,null,null,null]],
     parts:{mel:{v:.12},pad:{v:.016},bass:{v:.15,pat:[0,null,null,7,0,null,12,null]},thump:{v:.26,at:[0]},sparkle:{p:.02,v:.04}}}},
+  /* 모험 시작 연출 — 개미굴 STORY 세 줄·나레이션 pro1~3 그대로. 카메라는 개미굴 광장 둘레 돌기(초당 0.07라디안)를 베이스캠프 방 열린 쪽에서(광장 이식 때 바꿈) */
+  introNarration:[
+    {text:'흙냄새 나는 언덕 아래에는 개미들이 사는 커다란 마을, 앤트빌리지가 있대요.',vo:'assets/audio/antvillage/pro1.mp3',cam:{at:[0,1.2,-.2],r:21,h:15,a:[.2,.6],speed:.07,bob:[1.2,.3]}},
+    {text:'원더룹은 개미탈을 쓰고 몰래 마을에 들어왔어요. 개미들 눈엔 조금 이상한 아기 개미로 보이겠지만요.',vo:'assets/audio/antvillage/pro2.mp3',cam:{at:[0,1.2,-.2],r:19,h:12,a:[.6,1.0],speed:.07,bob:[1.2,.3]}},
+    {text:'목표는 개미굴 가장 깊은 곳, 여왕개미의 방. 하지만 깊은 굴은 아주 어둡고, 어디선가 자꾸 바스락 소리가 난대요…',vo:'assets/audio/antvillage/pro3.mp3',cam:{at:[0,1.2,-.2],r:20,h:14,a:[1.0,1.4],speed:.07,bob:[1.2,.3]}}],
+  /* 첫 미션 — 개미굴 광장 '버섯 랜턴을 찾아요' 그대로(카드 문구·나레이션 m_lamp·g_lamp·민트 빛기둥·냄새 길). 자리는 베이스캠프 방 안(광장 이식 때 바꿈) */
+  firstMission:{
+    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
+    quest:'광장 어딘가에 떨어진 버섯 랜턴을 찾아요',
+    popup:{kicker:'미션',title:'버섯 랜턴을 찾아요',text:'깊은 개미굴은 아주 어두워요. 광장 어딘가에 떨어진 버섯 랜턴을 먼저 찾아보세요. 청록 빛기둥이 솟은 바위 위에 있어요.'},
+    narration:{vo:'assets/audio/antvillage/m_lamp.mp3'},
+    goal:{label:'버섯 랜턴'},
+    got:{title:'버섯 랜턴을 얻었어요!',text:{key:'F 키로 켜고 꺼요',touch:'왼쪽 위 버튼으로 켜고 꺼요'},vo:'assets/audio/antvillage/g_lamp.mp3'},
+    next:''}, // 개미굴은 다음이 '광장 개미들과 이야기해요 (0/2)' — 스테이지 내용이라 이식 때
   controlsNote:{
     keys:[['B','자연 도감 열기'],['V','대사 읽어주기 켜고 끄기'],['F','랜턴 켜고 끄기'],['U','메뉴 버튼과 단축키 안내 보이기, 숨기기']],
     talk:'개미나 돋보기 가까이에서 나타나요',

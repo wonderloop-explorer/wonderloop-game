@@ -238,7 +238,7 @@ const rigSync=(()=>{
 function updateWL(dt,t){
   shirtU.uInv.value.copy(wlBody.matrixWorld).invert();
   let moving=false;const H=hasHeights();
-  {const U=WL.userData,dv=U.riding?null:U.drive,ml=dv?Math.hypot(dv.x,dv.z):0;if(D.cd>0)D.cd-=dt; // 직접 조작 (위 "직접 조작")
+  {const U=WL.userData,dv=U.riding?null:U.drive,ml=dv?Math.hypot(dv.x,dv.z):0;if(D.cd>0)D.cd-=dt;if(SL.t>0)SL.t-=dt; // 직접 조작 (위 "직접 조작")
    let mx=Math.sin(WL.rotation.y),mz=Math.cos(WL.rotation.y);if(ml>.08){mx=dv.x/ml;mz=dv.z/ml;wlTarget=null;markerA=0;}
    if(U.dashReq){U.dashReq=false;if(D.cd<=0&&!U.riding&&!V.jump){sfx('dash');D.dashT=DRV.dashT;D.cd=DRV.dashCd;D.dx=mx;D.dz=mz;WL.rotation.y=Math.atan2(mx,mz);wlTarget=null;}}
    if(U.jumpReq){U.jumpReq=false;if(!V.air&&!V.jump&&!U.riding){V.vy=DRV.jumpVy;V.air=true;V.jumpT=0;sfx('jump');}}
@@ -246,7 +246,7 @@ function updateWL(dt,t){
      if(ml>.08){let diff=Math.atan2(mx,mz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);}
      if(D.dashT>0){D.dashT-=dt;mx=D.dx;mz=D.dz;D.spd=DRV.dash;if(D.dashT<=0)D.spd=ml>.08?DRV.run:DRV.walk*.4;}
      if(D.spd>.05&&!V.jump){const st=D.spd*dt,nx=WL.position.x+mx*st,nz=WL.position.z+mz*st,fy=H?V.y:undefined;
-       if(canGo(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}else if(canGo(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}else if(canGo(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}}}
+       if(slideGo(mx,mz,st,fy))moving=true;}}
    else D.spd=0;}
   if(V.jump){WL.position.x+=V.jump.vx*dt;WL.position.z+=V.jump.vz*dt;} // 튀어 날아가는 중: 걷기 대신
   else if(wlTarget&&!WL.userData.riding){const dx=wlTarget.x-WL.position.x,dz=wlTarget.z-WL.position.z,d=Math.hypot(dx,dz);
@@ -256,6 +256,7 @@ function updateWL(dt,t){
       if(canGo(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}
       else if(canGo(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}
       else if(canGo(WL.position.x,nz,fy)){WL.position.z=nz;moving=true;}
+      else if(slideGo(dx/d,dz/d,st,fy,true))moving=true;
       else wlTarget=null;}}
   let GY;const X=WL.position.x,Z=WL.position.z;
   if(WL.userData.riding){GY=WL.userData.riding.y;V.y=GY;V.vy=0;V.air=false;V.jump=null;V.glide=0;V.swX=0;WL.rotation.z=0;wlTarget=null;} // 탈것(game/ride)이 자리를 정하는 동안: 걷기·높이 계산 쉼
@@ -341,6 +342,18 @@ function updateWL(dt,t){
 /* 갇힘 안전장치(2026-11-02): 장애물 속에 들어가 있으면 덜 파고드는 쪽으로는 걸을 수 있다(canGo).
    그래도 3초 넘게 움직이려는데(조이스틱·키) 제자리면 가까운 열린 곳으로 부드럽게 밀어내고, 가까이 없으면 마지막으로 서 있던 안전한 자리로 옮긴다.
    안전한 자리 = 땅(또는 발판) 위에 서 있고, 장애물에 닿지 않고, 사방 0.35m도 열려 있는 곳(0.5초마다 기억) */
+/* 경계 미끄러짐(2026-11-04, 시리즈 공통 — 경계에 닿아도 툭 멈추거나 떨지 않고 벽·기둥을 따라 비켜 간다, 안내 글 없음):
+   가려는 쪽이 막히면 15°씩 꺾어(최대 75°) 열린 쪽으로, 빠르기는 꺾은 만큼 줄여(cos) 벽을 따라 미끄러지듯. 꺾는 쪽은 처음 막힌 곳의 기울기(덜 파고드는 쪽)로 정하고
+   닿아 있는 동안 기억해 좌우로 번갈아 떨지 않게. 직접 조작(조이스틱·WASD)은 이것만, 눌러서 걷기(walkTo)는 예전 축 미끄러짐 뒤에 이것(기준 촬영 그대로) */
+const SL={side:0,t:0};
+function slideGo(mx,mz,st,fy,only=false){const x=WL.position.x,z=WL.position.z;
+  if(!only&&canGo(x+mx*st,z+mz*st,fy)){WL.position.x=x+mx*st;WL.position.z=z+mz*st;SL.t=0;return true;}
+  if(SL.t<=0||!SL.side){const e=.06,tx=x+mx*st*3,tz=z+mz*st*3,gx=overlap(tx+e,tz,fy)-overlap(tx-e,tz,fy),gz=overlap(tx,tz+e,fy)-overlap(tx,tz-e,fy); // 막힌 곳의 기울기 → 덜 파고드는 쪽
+    SL.side=(mx*gz-mz*gx)>=0?1:-1;}
+  SL.t=.35;
+  for(let i=1;i<=5;i++)for(const sd of [SL.side,-SL.side]){const a=i*.2618*sd,c=Math.cos(a),sn=Math.sin(a),vx=mx*c-mz*sn,vz=mx*sn+mz*c,k=st*c,nx=x+vx*k,nz=z+vz*k;
+    if(canGo(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;SL.side=sd;return true;}}
+  return false;}
 function canGo(nx,nz,fy){if(!blocked(nx,nz,fy))return true;const c=overlap(WL.position.x,WL.position.z,fy);return c>0&&overlap(nx,nz,fy)<c-1e-4;}
 const ST={t:0,ax:0,az:0,safe:null,safeT:0,push:null};
 const openAt=(x,z,y)=>!blocked(x,z,y)&&[[.35,0],[-.35,0],[0,.35],[0,-.35]].every(([a,b])=>!blocked(x+a,z+b,y));
@@ -354,4 +367,4 @@ function unstick(dt,H){const U=WL.userData,X=WL.position.x,Z=WL.position.z,fy=H?
   if(best)ST.push=best;else if(ST.safe){WL.position.x=ST.safe.x;WL.position.z=ST.safe.z;}}
 const _gp=new THREE.Vector3();
 const walking=()=>!!wlTarget; // 영상 캡처: 걸어가서 도착했는지
-export {hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};
+export {DRV,hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};

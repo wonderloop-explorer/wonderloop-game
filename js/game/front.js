@@ -13,7 +13,8 @@
    2026-11-03 개미굴 흐름으로: 첫 화면(로고·소개 두 줄·새로 시작|조작법·소리 안내) → 탐험가 소개 패널(옷 갈아입기 창이 이것 — 이름·소개·목표·색·화관·표정·모험 지도) → 이야기 소개(front.story) → 게임.
    왼쪽 위는 받은 물건 칩 대신 '가방' 단추 하나 → 탐험 가방 창(front.bag — 받은 물건·만난 친구·숨겨진 비밀). 시간대는 열 때마다 무작위(startTime). */
 import {block,blocking} from './core.js';
-import {bed,setMuted,sfx,songs,soundSettings} from './sound.js';
+import {bed,preload,register,setMuted,sfx,songs,soundSettings,voice} from './sound.js';
+import {startMission} from './mission.js';
 import {cardShown,setHints,toast,transition} from './ui.js';
 import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './controls.js';
 import {cards as profCards,pic,seen} from './profile.js';
@@ -95,6 +96,10 @@ const css=`
 #wlWard .map li::before{content:counter(z) ". "}#wlWard .map li.on{background:rgba(63,159,160,.18);color:#3e2834}#wlWard .map li:not(.on)::after{content:" · 준비 중";font-size:.75rem}
 #wlWard .spin{display:flex;gap:.5rem;margin-top:.9rem}#wlWard .spin button{flex:1;border:2px solid #3f9fa0;background:transparent;color:#3e2834;border-radius:12px;font:inherit;font-size:.92rem;padding:.4rem;min-height:40px;cursor:pointer}
 #wlWard .done{flex:none;display:block;width:100%;text-align:center;box-sizing:border-box;margin-top:1rem;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;min-height:48px;cursor:pointer}
+/* 시리즈 공통 틀(body.wl-antui): 미션 카드·아이템 카드를 개미굴 #mission·#getCard 그대로 — 크림 판·그림자, 제목도 고운돋움, 아이콘은 동그라미 없이 */
+body.wl-antui #wlNotice .t,body.wl-antui #wlGet .t{font-family:"Gowun Dodum",sans-serif}
+body.wl-antui #wlGet{border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;background:var(--panel);box-shadow:0 14px 40px rgba(30,14,36,.45)}
+body.wl-antui #wlGet .ic{width:auto;height:auto;background:none;border:0;border-radius:0}body.wl-antui #wlGet img{width:58px;height:58px;filter:none}
 /* 모험 떠나기 전 이야기 소개(개미굴 #story): 화면 아래 가운데 카드, 건너뛰기·다음, 점 */
 #wlStory{position:fixed;inset:0;z-index:31;display:none;place-items:end center;padding:1rem 1rem calc(env(safe-area-inset-bottom,0px) + 3.5rem);box-sizing:border-box;background:linear-gradient(180deg,rgba(30,14,36,0) 35%,rgba(30,14,36,.6))}
 #wlStory.on{display:grid}
@@ -245,11 +250,37 @@ const backToFront=()=>{if(tEl){tEl.hidden=false;titleCam(WORLD);}else{el.classLi
 function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!zone().front)return false;build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');
   startTime();renderFront();el.classList.add('on');orbit();setTimeout(()=>{const b=el.querySelector('.go');if(b&&!coarse)b.focus({preventScroll:true});},50);return true;}
 function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
-async function begin(fr){if(busy)return;busy=true;sfx('click');
-  await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();}closeFront();},{out:.45,hold:.25,in:.75});busy=false;fresh=false;
-  if(!store.get(HELP_KEY)){store.set(HELP_KEY,'1');showHelp(true);}} // 처음 시작할 때 한 번 조작법(닫으면 나침반 연출·버섯 요정 순서로 이어진다)
+async function begin(fr){if(busy)return;busy=true;sfx('click');const W=curWorld();
+  await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();if(W)playWorldMusic(W);}closeFront();},{out:.45,hold:.25,in:.75});busy=false;fresh=false; // 처음부터: 구역을 다시 만들어도 세계 배경음은 끊기지 않게(같은 곡이면 이어짐)
+  if(!store.get(HELP_KEY)){store.set(HELP_KEY,'1');showHelp(true);}
+  if(W&&W.firstMission){const go=()=>{if(helpShown()){requestAnimationFrame(go);return;}startMission(W);};go();}} // 첫 미션(game/mission) — 처음 조작법 창이 열려 있으면 닫힌 뒤 // 처음 시작할 때 한 번 조작법(닫으면 나침반 연출·버섯 요정 순서로 이어진다)
 /* ---------- 이야기 소개(모험 떠나기 → 탐방하는 곳 소개 몇 장 → 게임) ---------- */
-function openStory(){const L=(zone().front&&zone().front.story)||[];if(!L.length){begin(fresh);return;}
+/* 시리즈 공통 모험 시작 연출(2026-11-04 — 개미굴 #story 그대로): 세계 설정 introNarration [{text, vo, cam:{at, r, h, a:[시작 각도, 끝 각도], speed, bob}}…] 세 단계
+   ① 이 세계 소개 ② 원더룹이 왜 왔는지 ③ 게임의 목표. 화면 아래 카드에 글자가 초당 28자씩 써지고(다음을 누르면 먼저 다 보임) 그 단계 나레이션이 나온다.
+   카메라는 단계마다 at 둘레 반지름 r·높이 h에서 a[0] → a[1]로 초당 speed라디안(개미굴 0.07) 돌고, 단계가 바뀌면 지금 자리에서 부드럽게 이어 간다.
+   배경음은 탐험 준비 때 곡이 그대로 이어진다. 건너뛰기·다음·마지막 '모험 시작', 점(지금 단계) — 개미굴 단추·카드 그대로. */
+function openIntro(W){const L=W.introNarration;storyOn=true;let i=0,full='',shown=0,typing=false,vo=null,tok=0,st=0,last=performance.now();el.classList.remove('on');
+  const red=matchMedia('(prefers-reduced-motion: reduce)').matches,cam=ctx.camera;
+  const path=(S,tt)=>{const d=Math.sign(S.a[1]-S.a[0]),a=S.a[0]+d*Math.min(Math.abs(S.a[1]-S.a[0]),tt*(S.speed||.07)),at=S.at,bob=S.bob?S.bob[0]*Math.sin(tt*S.bob[1]):0;
+    return {from:[at[0]+Math.sin(a)*S.r,S.h+bob,at[2]+Math.cos(a)*(S.rz||S.r)],at:[...at]};};
+  const c={from:cam.position.toArray(),at:[...L[0].cam.at]};
+  VIEW.hold(()=>{const now=performance.now(),dt=Math.min(.1,(now-last)/1000);last=now;st+=dt*(red?.4:1);const T=path(L[i].cam,st),k=1-Math.exp(-dt*1.6);
+    for(let j=0;j<3;j++){c.from[j]+=(T.from[j]-c.from[j])*k;c.at[j]+=(T.at[j]-c.at[j])*k;}
+    if(typing){shown=Math.min(full.length,shown+dt*28);const tx=story.querySelector('.stext');if(tx)tx.textContent=full.slice(0,Math.floor(shown));if(shown>=full.length)typing=false;}
+    return {from:[...c.from],at:[...c.at]};});
+  const stopVO=()=>{tok++;if(vo){vo.stop();vo=null;}};
+  const say=()=>{stopVO();const S=L[i],t=tok,id='intro:'+W.id+':'+i;if(S.vo){register({[id]:S.vo});preload([id]).then(()=>{if(t===tok&&storyOn)vo=voice({id,text:S.text,kind:'narration'});});}else vo=voice({text:S.text,kind:'narration'});};
+  const draw=()=>{story.innerHTML='';const cd=document.createElement('div');cd.className='scard';const tx=document.createElement('p');tx.className='stext';
+    const bs=document.createElement('div');bs.className='sbtns';const lastS=i===L.length-1;
+    bs.append(pbtn('skip','건너뛰기',()=>end()),pbtn('next',lastS?'모험 시작':'다음',()=>{if(typing){typing=false;tx.textContent=full;return;}if(lastS)end();else{i++;st=0;show();}}));
+    const d=document.createElement('div');d.className='dots';L.forEach((_,j)=>{const e=document.createElement('i');if(j===i)e.className='on';d.appendChild(e);});
+    cd.append(tx,bs,d);story.appendChild(cd);setTimeout(()=>{const b=story.querySelector('.next');if(b&&!coarse)b.focus({preventScroll:true});},30);};
+  const show=()=>{full=L[i].text;shown=0;typing=true;draw();sfx('blip');say();};
+  const end=()=>{if(!storyOn)return;storyOn=false;stopVO();story.classList.remove('on');begin(fresh);};
+  story._key=e=>{if(!storyOn)return;if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();end();}};
+  show();story.classList.add('on');}
+function openStory(){{const W=worldX();if(W&&W.introNarration&&W.introNarration.length)return openIntro(W);}
+  const L=(zone().front&&zone().front.story)||[];if(!L.length){begin(fresh);return;}
   storyOn=true;let i=0;el.classList.remove('on');
   // 카메라: 구역 정보 storyView:[{from,at}…](장마다 한 자리)가 있으면 개미굴처럼 하늘에서 마을로 천천히 내려오며 장마다 그 자리로, 없으면 첫 화면처럼 돌아보기
   const SV=zone().storyView;if(SV&&SV.length){const c={from:[...SV[0].from],at:[...SV[0].at]};let last=performance.now();
@@ -334,6 +365,7 @@ function initFront(o){ctx=o.ctx;VIEW=o.view;zone=o.zone;restart=o.restart;WORLD=
     if(bagOn&&(e.code==='Escape'||e.code==='KeyB')){e.preventDefault();e.stopImmediatePropagation();closeBag();return;}
     if(!wardOn)return;if(e.target&&e.target.tagName==='INPUT')return;if(e.code==='Escape'||(e.code==='KeyC'&&wardFrom==='game')){e.preventDefault();e.stopImmediatePropagation();closeWardrobe();}},true);
   controlHooks.onBag=()=>{if(bagOn)closeBag();else openBag();};
+  if(titleWorld()){document.body.classList.add('wl-antui');['wlNotice','wlGet'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('wl-felt');});} // 시리즈 공통 틀: 미션 카드·아이템 카드도 개미굴 #mission·#getCard 모양(펠트 없음)
   const Z=zone(),F=Z&&Z.front;if(titleWorld())setHelpNote(WORLD.controlsNote||null);else setHelpExtra(F&&F.help,F&&F.play);if(F&&F.theme)setTheme(F.theme); // 세계 색(펠트 한 벌은 game/felt)
   if(NO||!openFront()){startTime();corner.classList.add('on');}}
 const frontShown=()=>frontOn,wardrobeShown=()=>wardOn,bagShown=()=>bagOn;
