@@ -31,7 +31,7 @@ function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:sr
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
 function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
-  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use});};setTool({label:lab(),use});}}
+  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use,on});};setTool({label:lab(),use,on});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
   M={W,F,it,got:false,at:F.goal&&F.goal.at||it.at};t=0;

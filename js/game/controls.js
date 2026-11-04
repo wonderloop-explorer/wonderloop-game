@@ -13,6 +13,7 @@ import {block} from './core.js';
 import {popBackdrop,popCss,popHooks,popShown} from './popup.js';
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 const coarse=matchMedia('(pointer:coarse)').matches;
+const touchDev=()=>matchMedia('(pointer:coarse)').matches||matchMedia('(any-pointer:coarse)').matches||navigator.maxTouchPoints>0; // 조작법 창 터치 표 먼저 — 열 때마다 다시 봄(아이폰에서 키보드 표가 먼저 나왔다는 보고, 2026-11-04)
 const MOVE=['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
 const CAM={yawPx:.006,pitchPx:.004,pitchMin:-.55,pitchMax:1.15,distMin:4,distMax:13,wheel:.01,keyZoom:6};
 const keys={};
@@ -71,7 +72,7 @@ let note=null;
 function helpHTML(){const N=note||{};
   const keysRows=[...KEYS_A,...(N.keys||[]),...KEYS_B],touchRows=[...TOUCH_A,['말 걸기',N.talk||'말 걸 상대 가까이에서 나타나요'],...(N.touch||[])];
   const kb=`<div><h3>키보드</h3>${dl(keysRows)}</div>`,tc=`<div><h3>터치</h3>${dl(touchRows)}</div>`; // 터치 기기는 터치 표 먼저
-  return `<div class="hcard wl-pop-card"><div class="hsc wl-pop-body"><h2>조작법</h2><div class="cols">${coarse?tc+kb:kb+tc}</div>`+
+  return `<div class="hcard wl-pop-card"><div class="hsc wl-pop-body"><h2>조작법</h2><div class="cols">${touchDev()?tc+kb:kb+tc}</div>`+
     (N.play?`<h3>이렇게 놀아요</h3><p>${esc(N.play)}</p>`:'')+(N.extra&&N.extra.length?`<h3>이 세계에서</h3>${dl(N.extra)}`:'')+
     `<h3>소리가 안 들릴 때</h3>${ul(SND_TIPS)}<h3>휴대폰이 따뜻해질 때</h3>${ul([...(N.heatBefore||[]),...HEAT_TIPS,...(N.heatAfter||[])])}`+
     `</div><button class="close wl-pop-foot" type="button">알겠어요</button></div>`;}
@@ -97,14 +98,15 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   input.releaseJoy=()=>{joyId=null;input.jx=input.jy=0;knob.style.transform='';};
   root.querySelector('#wlJump').addEventListener('pointerdown',e=>{e.preventDefault();input.jumpReq=true;});
   dashBtn.addEventListener('pointerdown',e=>{e.preventDefault();input.dashReq=true;});}
-function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);popShown('help',!!on);if(on){const c=help.querySelector('.hsc');if(c)c.scrollTop=0;help.querySelector('.close').focus({preventScroll:true});}} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
+function showHelp(on){if(!help)return;if(on&&help.hidden)renderHelp(); // 열 때마다 다시 그림(터치 기기 판단을 그때 다시)
+  help.hidden=!on;block('help',!!on);popShown('help',!!on);if(on){const c=help.querySelector('.hsc');if(c)c.scrollTop=0;help.querySelector('.close').focus({preventScroll:true});}} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
 function renderHelp(){if(!help)return;help.innerHTML=helpHTML();help.querySelector('.close').addEventListener('click',()=>showHelp(false));}
 /* 세계 설정 controlsNote(js/worlds — 형식은 antvillage.js 맨 위) */
 function setHelpNote(n){note=n||null;renderHelp();}
 /* 예전 세계 front(요정의 숲): help [[이름, 설명]…] → '이 세계에서' 표, play → '이렇게 놀아요' */
 function setHelpExtra(list,play=null){note={play,extra:list||null};renderHelp();}
 const helpShown=()=>!!help&&!help.hidden;
-function setTool(t){tool=t||null;if(!toolBtn)return;toolBtn.style.display=tool?'block':'none';if(tool)toolBtn.textContent=tool.label||'도구';}
+function setTool(t){tool=t||null;if(!toolBtn)return;toolBtn.style.display=tool?'block':'none';if(tool){toolBtn.textContent=tool.label||'도구';toolBtn.classList.toggle('on',tool.on!==false);toolBtn.setAttribute('aria-pressed',tool.on===false?'false':'true');}} // on: 켜짐(노란 칩 — 개미굴 #lamp.on), false면 어두운 칩
 function useTool(){if(!tool||!tool.use)return false;try{tool.use();}catch(e){console.error(e);}if(toolBtn&&tool)toolBtn.textContent=tool.label||'도구';return true;}
 function releaseAll(){for(const k in keys)keys[k]=false;if(input.releaseJoy)input.releaseJoy();}
 function initControls(ctx){build();if(SHOT)return;

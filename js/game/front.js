@@ -18,7 +18,7 @@ import {startMission} from './mission.js';
 import {cardShown,setHints,toast,transition} from './ui.js';
 import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './controls.js';
 import {cards as profCards,pic,seen} from './profile.js';
-import {flags,onFlag,resetAll} from './state.js';
+import {flags,gotAt,onFlag,resetAll} from './state.js';
 import {ITEMS} from './items.js';
 import {logoEl} from './title.js';
 import {icon,mk,setIcons,setTheme,tape} from './felt.js';
@@ -140,7 +140,14 @@ body.wl-antui #wlGet .ic{width:auto;height:auto;background:none;border:0;border-
 #wlMenu .ls{display:none;flex-direction:column;align-items:flex-end;gap:.45rem}#wlMenu.open .ls{display:flex}
 #wlItems{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)));z-index:16;display:flex;flex-direction:column;align-items:flex-start;gap:.45rem;pointer-events:none}
 #wlItems .wl-chip{min-height:40px;padding:.35rem .9rem .35rem .55rem;font-size:.95rem;color:#1e1418;pointer-events:auto;border:0;font:inherit;font-family:"Jua","Gowun Dodum",sans-serif}#wlItems .wl-ic,#wlItems .bagic{width:24px;height:24px}
-#wlItems .wl-chip.pulse{animation:wlBagPulse .9s ease 2}@keyframes wlBagPulse{50%{transform:scale(1.12)}}
+#wlItems .bagbtn{position:relative}#wlItems .bagbtn.pulse{animation:wlBagPulse .5s ease 3;box-shadow:0 0 0 3px rgba(255,236,160,.9),0 0 18px rgba(255,214,90,.9)}
+@keyframes wlBagPulse{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-6px) scale(1.12)}70%{transform:translateY(0) scale(.96)}}
+#wlItems .spk{position:absolute;left:var(--x);top:var(--y);font-style:normal;font-size:15px;color:#ffd84a;text-shadow:0 0 6px #fff3b0;pointer-events:none;animation:wlSpk 1.1s ease var(--d) both}
+@keyframes wlSpk{0%{opacity:0;transform:scale(.2) rotate(0)}30%{opacity:1;transform:scale(1.25) rotate(25deg)}100%{opacity:0;transform:scale(.6) translateY(-8px) rotate(60deg)}}
+@media (prefers-reduced-motion: reduce){#wlItems .bagbtn.pulse{animation:none}#wlItems .spk{animation:none;opacity:.9}}
+#wlItems #wlTool{position:static;pointer-events:auto;min-height:40px;box-sizing:border-box;border:0;border-radius:999px;padding:.4rem .95rem;background:rgba(46,28,44,.66);color:#fff4e4;
+  font-family:"Jua","Gowun Dodum",sans-serif;font-size:.95rem;white-space:nowrap;cursor:pointer;backdrop-filter:none;-webkit-backdrop-filter:none;-webkit-tap-highlight-color:transparent}
+#wlItems #wlTool.on{background:#f2b63c;color:#3e2834} /* 개미굴 #lamp: 꺼짐 어두운 칩 · 켜짐 노란 칩 */
 body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn,body.wl-front-on header,body.wl-ward-on header,body.wl-pop-on header{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
 let WORLD=null,tEl=null,ctx=null,VIEW=null,el=null,ward=null,corner=null,menu=null,items=null,story=null,bag=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false,storyOn=false,bagOn=false;
 const look={vest:0,scarf:0,name:'',deco:''};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
@@ -178,22 +185,34 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   menu=document.createElement('div');menu.id='wlMenu';const mb=document.createElement('button');mb.type='button';mb.className='wl-chip y';mb.setAttribute('aria-expanded','false');
   const ls=document.createElement('div');ls.className='ls';const chip=(t,on)=>{const b=document.createElement('button');b.type='button';b.className='wl-chip';b.textContent=t;b.addEventListener('click',e=>{b.blur();on(e);});return b;};
   const snd=chip('',()=>{setMuted(!soundSettings.muted);sfx('click');sndLabel();}),sndLabel=()=>{snd.textContent=soundSettings.muted?'소리 꺼짐':'소리 켜짐';};
-  ls.append(snd,chip('탐험 가방',()=>{setMenu(false);openBag();}),chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('click');setMenu(false);showHelp(!helpShown());}));
+  ls.append(snd,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('click');setMenu(false);showHelp(!helpShown());}));
   const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on)sndLabel();};
   mb.addEventListener('click',()=>{sfx('click');mb.blur();setMenu(!menu.classList.contains('open'));});setMenu(false);menu.append(mb,ls);
   // 왼쪽 위 가방 단추(개미굴 '도감 0/11' 노란 칩 자리): 받은 물건을 줄줄이 늘어놓지 않고 한 단추 → 탐험 가방 창
   items=document.createElement('div');items.id='wlItems';corner.append(items,menu);renderItems();
-  let last=-1;onFlag(()=>{const n=bagCount();if(last>=0&&n>last){const b=items.querySelector('.wl-chip');if(b){b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse');}}last=n;renderItems();});last=bagCount();}
+  {const tb=document.getElementById('wlTool');if(tb)items.appendChild(tb);} // 세계 도구 단추(랜턴 켜고 끄기 — 개미굴 #leftCol처럼 가방 단추 바로 아래, 겹치지 않게)
+  let last=-1;onFlag(()=>{const n=bagCount();renderItems();if(last>=0&&n>last)bagPop();last=n;});last=bagCount();}
+/* 새 물건이 가방에 들어가면 가방 단추가 통통 튀며 반짝(별 셋이 튀어 나옴, 움직임 줄이기면 반짝임만) */
+function bagPop(){const b=items&&items.querySelector('.bagbtn');if(!b)return;b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse');
+  b.querySelectorAll('.spk').forEach(e=>e.remove());[[-14,-12,0],[54,-14,.12],[22,-20,.24]].forEach(([x,y,d])=>{const e=document.createElement('i');e.className='spk';e.textContent='✦';e.style.cssText=`--x:${x}px;--y:${y}px;--d:${d}s`;b.appendChild(e);});
+  clearTimeout(bagPop.t);bagPop.t=setTimeout(()=>{b.classList.remove('pulse');b.querySelectorAll('.spk').forEach(e=>e.remove());},1800);}
 /* ---------- 탐험 가방 ---------- */
 const bagCfg=()=>{const Z=zone();return Z&&Z.front&&Z.front.bag;};
-function bagCount(){const B=bagCfg();if(!B)return Object.keys(ITEMS).filter(id=>flags[id]).length;
+/* 시리즈 공통 세계(js/worlds — 구역에 front.bag이 없을 때, 2026-11-04): 그 세계에서 얻는 물건 = 첫 미션 물건(flags have:<세계>:<id>) + 장식(items — flags item:<세계>:<id>).
+   얻은 것은 얻은 순서대로(state gotAt), 못 얻은 것은 그 뒤에 ??? 칸. 앞 세계에서 가져온 아이템(나침반 등)은 이 세계 가방에 넣지 않는다 */
+function worldBag(){const W=curWorld();if(!W||bagCfg())return null;const L=[];
+  const F=W.firstMission&&W.firstMission.item;if(F)L.push({key:'have:'+W.id+':'+F.id,name:F.name,f:F.desc||'',where:F.where||'첫 미션',img:F.icon?F.icon():null});
+  (W.items||[]).forEach(i=>L.push({key:'item:'+W.id+':'+i.id,name:i.name,f:i.desc||'탐험 준비에서 달 수 있는 장식이에요.',where:i.where||('STAGE 0'+i.stage),img:i.icon?i.icon():null,st:i.stage||9}));
+  L.forEach(i=>i.got=!!flags[i.key]);const got=L.filter(i=>i.got).sort((a,b)=>gotAt(a.key)-gotAt(b.key));return [...got,...L.filter(i=>!i.got).sort((a,b)=>(a.st||0)-(b.st||0))];}
+function bagCount(){const WB=worldBag();if(WB)return WB.filter(i=>i.got).length;const B=bagCfg();if(!B)return Object.keys(ITEMS).filter(id=>flags[id]).length;
   return B.items.filter(i=>flags[i.id]).length+(B.friends||[]).filter(id=>seen(id)).length+(B.secrets||[]).filter(q=>seen(q.id)).length;}
-function renderItems(){if(!items)return;items.innerHTML='';const b=document.createElement('button');b.type='button';b.className='wl-chip y';b.setAttribute('aria-label','탐험 가방 열기');
-  b.innerHTML=BAG_SVG;b.append('가방 '+bagCount());b.addEventListener('click',()=>{b.blur();openBag();});items.appendChild(b);}
+function renderItems(){if(!items)return;let b=items.querySelector('.bagbtn');
+  if(!b){b=document.createElement('button');b.type='button';b.className='wl-chip y bagbtn';b.setAttribute('aria-label','탐험 가방 열기');b.innerHTML=BAG_SVG+'<span class="n"></span>';b.addEventListener('click',()=>{b.blur();openBag();});items.prepend(b);}
+  b.querySelector('.n').textContent='가방 '+bagCount();}
 function card({got,secret,img,svg,title,text}){const c=document.createElement('div');c.className='dx'+(got?' got':'')+(secret?' secret':'');
   const ic=document.createElement('div');ic.className='ic';if(got&&img){const im=new Image();im.alt='';im.src=img;ic.appendChild(im);}else if(got&&svg)ic.appendChild(svg);else ic.innerHTML='<b>?</b>';
   const h=document.createElement('h3');h.textContent=got?title:'???';const p=document.createElement('p');p.textContent=text;c.append(ic,h,p);return c;}
-function renderBag(){const B=bagCfg()||{title:'탐험 가방',items:Object.keys(ITEMS).map(id=>({id,name:ITEMS[id].name,f:ITEMS[id].use,where:''})),friends:[],secrets:[]};
+function renderBag(){const WB=worldBag();if(WB){renderWorldBag(WB);return;}const B=bagCfg()||{title:'탐험 가방',items:Object.keys(ITEMS).map(id=>({id,name:ITEMS[id].name,f:ITEMS[id].use,where:''})),friends:[],secrets:[]};
   const Z=zone(),ic=(Z&&Z.front&&Z.front.itemIcons)||{},C=profCards();bag.innerHTML='';const H=document.createElement('div');H.className='hcard wl-pop-card';
   const nI=B.items.filter(i=>flags[i.id]).length,nF=(B.friends||[]).filter(seen).length;
   H.innerHTML='<div class="dhead"><h2></h2><p class="cnt"></p></div><div class="grid wl-pop-body"></div>';H.querySelector('h2').textContent=B.title;H.querySelector('.cnt').textContent=`받은 물건 ${nI}개 · 만난 친구 ${nF}명`;
@@ -203,6 +222,11 @@ function renderBag(){const B=bagCfg()||{title:'탐험 가방',items:Object.keys(
   if((B.secrets||[]).length){const n=B.secrets.filter(q=>seen(q.id)).length,S=sec(`✦ 숨겨진 비밀 ${n}/${B.secrets.length}`,true);
     B.secrets.forEach(q=>{const c=C[q.id]||{},got=seen(q.id);S.appendChild(card({got,secret:true,img:pic(q.id),title:c.name,text:got?c.intro:q.where+' 어딘가에 숨어 있어요'}));});}
   const x=pbtn('close wl-pop-foot','닫기',()=>closeBag());H.appendChild(x);bag.appendChild(H);}
+function renderWorldBag(L){const W=curWorld();bag.innerHTML='';const H=document.createElement('div');H.className='hcard wl-pop-card';const n=L.filter(i=>i.got).length;
+  H.innerHTML='<div class="dhead"><h2>탐험 가방</h2><p class="cnt"></p></div><div class="grid wl-pop-body"></div>';H.querySelector('.cnt').textContent=`받은 물건 ${n}개`;
+  const G=H.querySelector('.grid'),h=document.createElement('p');h.className='sec';h.textContent='받은 물건';const d=document.createElement('div');d.className='cards';G.append(h,d);
+  L.forEach(i=>d.appendChild(card({got:i.got,img:i.img,title:i.name,text:i.got?i.f:i.where+'에서 받을 수 있어요'})));
+  H.appendChild(pbtn('close wl-pop-foot','닫기',()=>closeBag()));bag.appendChild(H);}
 function openBag(){build();if(bagOn||frontOn||wardOn||storyOn)return;if(blocking('talk')||cardShown()){toast('지금은 가방을 열 수 없어요');return;}
   bagOn=true;sfx('dex');renderBag();bag.classList.add('on');popShown('bag',true);document.body.classList.add('wl-bag-on');block('bag',true);if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();setTimeout(()=>{const b=bag.querySelector('.close');if(b&&!coarse)b.focus({preventScroll:true});},50);}
 function closeBag(){if(!bagOn)return;bagOn=false;popShown('bag',false);sfx('click');bag.classList.remove('on');document.body.classList.remove('wl-bag-on');block('bag',false);}

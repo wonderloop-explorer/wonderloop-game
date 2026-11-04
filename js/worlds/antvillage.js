@@ -98,7 +98,7 @@ export default {
     {text:'목표는 개미굴 가장 깊은 곳, 여왕개미의 방. 하지만 깊은 굴은 아주 어둡고, 어디선가 자꾸 바스락 소리가 난대요…',vo:'assets/audio/antvillage/pro3.mp3',cam:{at:[0,1.2,-.2],r:20,h:14,a:[1.0,1.4],speed:.07,bob:[1.2,.3]}}],
   /* 첫 미션 — 개미굴 광장 '버섯 랜턴을 찾아요' 그대로(카드 문구·나레이션 m_lamp·g_lamp·민트 빛기둥·냄새 길). 자리는 베이스캠프 방 안(광장 이식 때 바꿈) */
   firstMission:{
-    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,light:true,tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
+    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,light:true,desc:'어두운 굴을 환하게 비춰 주는 버섯 랜턴. 켜고 끌 수 있어요.',where:'첫 미션',tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
     quest:'광장 어딘가에 떨어진 버섯 랜턴을 찾아요',
     popup:{kicker:'미션',title:'버섯 랜턴을 찾아요',text:'깊은 개미굴은 아주 어두워요. 광장 어딘가에 떨어진 버섯 랜턴을 먼저 찾아보세요. 청록 빛기둥이 솟은 바위 위에 있어요.'},
     narration:{vo:'assets/audio/antvillage/m_lamp.mp3'},

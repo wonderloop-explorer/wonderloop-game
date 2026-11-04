@@ -6,13 +6,15 @@
 const KEY='wl-state',SHOT=new URLSearchParams(location.search).has('shot');
 let saved={};if(!SHOT)try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}
 const flags=Object.assign({compass:false,umbrella:false},saved.flags);
+const order=Array.isArray(saved.order)?saved.order:[]; // 켜진 순서(탐험 가방이 얻은 순서대로 늘어놓는다, 2026-11-04)
 const listeners=new Set();
-function save(){if(SHOT)return;try{localStorage.setItem(KEY,JSON.stringify({flags}));}catch(e){}}
-function setFlag(k,v=true){if(flags[k]===v)return;flags[k]=v;save();listeners.forEach(f=>{try{f(k,v);}catch(e){console.error(e);}});}
+function save(){if(SHOT)return;try{localStorage.setItem(KEY,JSON.stringify({flags,order}));}catch(e){}}
+function setFlag(k,v=true){if(flags[k]===v)return;flags[k]=v;if(v===true&&!order.includes(k))order.push(k);save();listeners.forEach(f=>{try{f(k,v);}catch(e){console.error(e);}});}
 function onFlag(f){listeners.add(f);return()=>listeners.delete(f);}
 function applyStart(start){if(start)for(const k in start)setFlag(k,start[k]);}
 /* 진행 초기화(톱니 메뉴 '진행 초기화'): 저장된 진행·도감을 지운다 — 08이 지운 뒤 페이지를 다시 연다 */
 function resetProgress(){try{localStorage.removeItem(KEY);localStorage.removeItem('wl-codex');}catch(e){}}
 /* 첫 화면 '처음부터'(game/front): 저장도 지우고 지금 값도 처음으로 — 페이지를 다시 열지 않고 첫 구역을 다시 만든다 */
-function resetAll(){resetProgress();for(const k of Object.keys(flags))delete flags[k];Object.assign(flags,{compass:false,umbrella:false});}
-export {applyStart,flags,onFlag,resetAll,resetProgress,setFlag};
+function resetAll(){resetProgress();for(const k of Object.keys(flags))delete flags[k];order.length=0;Object.assign(flags,{compass:false,umbrella:false});}
+const gotAt=k=>{const i=order.indexOf(k);return i<0?1e9:i;}; // 얻은 순서(없으면 맨 뒤)
+export {applyStart,flags,gotAt,onFlag,resetAll,resetProgress,setFlag};
