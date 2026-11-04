@@ -70,7 +70,7 @@ GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5)});window.w
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.startFront({ctx:{scene,camera,renderer,WL},zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
-{const b=document.getElementById('wlBoot');if(b){if(new URLSearchParams(location.search).has('shot'))b.remove();else{let done=false;const go=()=>{if(done)return;done=true;b.classList.add('gone');setTimeout(()=>b.remove(),600);};requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(go,1500);}}} // 화면이 가려져 그리기가 멈춰 있어도 1.5초 뒤엔 치운다 // 첫 로딩 화면: 첫 구역을 그린 뒤 서서히
+{let done=false;const go=()=>{if(done)return;done=true;if(window.wlBootDone)window.wlBootDone();};requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(go,1500);} // 공통 로딩 화면(index.html #wlBoot): 첫 구역을 그린 뒤 치운다 — 최소 1초·0.4초 사라짐·루프 멈춤은 로딩 화면 쪽. 화면이 가려져 그리기가 멈춰 있어도 1.5초 뒤엔 치운다(촬영 모드는 로딩 화면이 스스로 바로 지움)
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES),blocked,overlap}; // blocked·overlap: 끼임 자동 시험(tools/stuck-test.js)
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
 if(new URLSearchParams(location.search).has('zonetest')){const b=document.createElement('button');b.id='zoneBtn';b.textContent='구역: '+zone.cur.name;

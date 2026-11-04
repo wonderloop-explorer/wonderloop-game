@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"> <!-- 그리기를 막지 않게(로딩 화면이 바로 뜨도록) -->
 <style>
 :root{
   --bg:#efe2c9; --bg2:#e6d3b2; --ink:#4b3a2b; --soft:#7a6450;
@@ -87,12 +87,199 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
   body.debug .bar{top:calc(56px + env(safe-area-inset-top,0px));bottom:auto;align-content:flex-start;max-height:62vh;overflow-y:auto}
 }
 </style>
+<!-- 공통 로딩 화면 #wlBoot (시리즈 공통 틀, 2026-11-04 — 모든 세계가 같은 화면·같은 문구). 글꼴은 그리기를 막지 않게 늦게 붙이고(그동안 기본 글꼴로 글자가 먼저 보임),
+     ui.js는 data-wl-font가 있으면 다시 붙이지 않는다. 행성 그림은 바로 받기 시작한다(한 파일 HTML은 WL_BOOT_IMG data URI). -->
+<link rel="stylesheet" data-wl-font="1" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" media="print" onload="this.media='all'">
+<link rel="preload" as="image" href="assets/common/loading-planet.webp" data-wl-boot>
+<style>
+#wlBoot{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#F7F0E3;color:#6B5446;
+  box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);transition:opacity .4s ease;
+  font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-user-select:none;user-select:none}
+#wlBoot::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .45  0 0 0 0 .35  0 0 0 .18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+#wlBoot .wbw{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 24px;margin-top:-6vh}
+#wlBoot canvas{width:min(78vw,360px);aspect-ratio:1/1;height:auto;display:block}
+#wlBoot h1{font-family:"Jua","Apple SD Gothic Neo",sans-serif;font-weight:400;font-size:clamp(24px,6.4vw,34px);letter-spacing:-.01em;line-height:1.25;margin:6px 0 10px;word-break:keep-all;color:#6B5446;text-shadow:none}
+#wlBoot p{font-size:clamp(15px,4vw,19px);color:#A08A7A;margin:0;word-break:keep-all;line-height:normal}
+#wlBoot.gone{opacity:0;pointer-events:none}
+</style>
 </head>
 <body>
-<!-- 첫 로딩 화면(개미굴 #boot와 같은 모양, 2026-11-03): 첫 구역을 그린 뒤 08이 서서히 치운다. 촬영 모드는 바로 치움 -->
-<div id="wlBoot" style="position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:#2a1a2e;color:#fbe9d8;font-family:'Jua','Gowun Dodum','Apple SD Gothic Neo',sans-serif;transition:opacity .5s">
-<div style="text-align:center"><div class="bootf" aria-hidden="true" style="font-size:1.6rem;letter-spacing:.4rem;margin-bottom:.8rem">🌼🍄🌼</div><p style="margin:0;font-size:1.3rem">요정의 숲으로 들어가는 중…</p><p style="margin:.5rem 0 0;font-size:.85rem;opacity:.7">처음에는 몇 초 걸릴 수 있어요</p></div></div>
-<style>#wlBoot .bootf{animation:wlBootWalk 1.4s ease-in-out infinite}@keyframes wlBootWalk{0%,100%{transform:translateX(-14px)}50%{transform:translateX(14px)}}#wlBoot.gone{opacity:0;pointer-events:none}@media (prefers-reduced-motion:reduce){#wlBoot .bootf{animation:none}}</style>
+<!-- 공통 로딩 화면 (시안 wonderloop-loading.html 그대로 — 2D canvas만, three·세계 파일을 기다리지 않음).
+     08이 첫 구역을 그린 뒤 wlBootDone()을 부르면: 연 지 1초가 안 됐으면 1초까지 기다렸다 0.4초에 걸쳐 사라지고, 루프를 멈추고 요소를 지운다.
+     그리기는 워커(OffscreenCanvas 2D — 게임 준비로 주 스레드가 바빠도 돎, 안 되면 주 스레드), 30프레임, 화면이 안 보이면 멈춤, 픽셀 비율 최대 2, 움직임 줄이기면 0.25배 빠르기. 촬영 모드(?shot)는 바로 지움. 상태는 window.wlBootStat -->
+<div id="wlBoot" role="status" aria-live="polite"><div class="wbw">
+  <canvas id="wlBootCv" aria-label="원더룹 행성"></canvas>
+  <h1>원더룹의 탐험지로 이동 중...</h1>
+  <p>처음에는 몇 초 걸릴 수 있어요</p>
+</div></div>
+<script>
+(function(){
+  var el = document.getElementById('wlBoot'), st = window.wlBootStat = {shown: performance.now(), mode: '', frames: 0, first: 0, planet: 0, done: 0, removed: 0, running: true};
+  window.wlBootDone = function(){};
+  if(!el) return;
+  if(/[?&]shot(=|&|$)/.test(location.search)){ el.remove(); st.running = false; return; }
+
+  // ── 그리기 (시안 그대로). 2048 x 2048 기준 좌표. 행성은 포토샵에서 다듬은 그림 한 장(assets/common/loading-planet.webp, 1024 투명).
+  //    워커에서도 같은 코드를 쓰려고 함수 하나로 감쌌다(toString으로 워커에 넘김 — 바깥 변수를 쓰지 않는다).
+  function painter(ctx){
+    var U = 2048;
+    var ORBIT = {cx:1064, cy:1192, a:817, b:494, rot:-25.8*Math.PI/180};   // 발자국 고리 (행성 뒤로 도는 부분은 행성 그림 아래에 그려서 가려짐)
+    var STEPS = 16, SPEED = 0.42, FOOT = 600;
+    var PINK = '#E58E98', GOLD = '#F2B935';
+    function solePath(c){
+      // 발끝이 위(-y)를 향하는 신발 바닥 + 뒤꿈치
+      c.beginPath();
+      c.moveTo(0,0.02);
+      c.bezierCurveTo(0.05,0.02, 0.062,-0.04, 0.062,-0.085);
+      c.bezierCurveTo(0.062,-0.135, 0.035,-0.165, 0.002,-0.165);
+      c.bezierCurveTo(-0.04,-0.165,-0.062,-0.125,-0.056,-0.075);
+      c.bezierCurveTo(-0.05,-0.03,-0.042,0.02, 0,0.02);
+      c.closePath();
+      c.moveTo(0.045,0.075);
+      c.ellipse(0.003,0.075,0.042,0.046,0,0,Math.PI*2);
+    }
+    var cr = Math.cos(ORBIT.rot), sr = Math.sin(ORBIT.rot);
+    function orbitPoint(th){
+      var lx = ORBIT.a*Math.cos(th), ly = ORBIT.b*Math.sin(th);
+      return [ORBIT.cx + lx*cr - ly*sr, ORBIT.cy + lx*sr + ly*cr];
+    }
+    function drawSteps(t, front){
+      for(var i=0;i<STEPS;i++){
+        var th = i/STEPS*Math.PI*2 + t*SPEED;
+        var s = Math.sin(th);
+        if((s>0) !== front) continue;
+        var p = orbitPoint(th), p2 = orbitPoint(th+0.01), x = p[0], y = p[1];
+        var ang = Math.atan2(p2[1]-y, p2[0]-x) + Math.PI/2;
+        var depth = 0.86 + 0.2*(s+1)/2;          // 앞쪽은 조금 크게, 뒤쪽은 작게
+        var left = i%2===0;                       // 왼발·오른발 번갈아
+        ctx.save();
+        ctx.translate(x,y); ctx.rotate(ang);
+        ctx.translate(left?-8:8, 0);
+        ctx.scale((left?-1:1)*FOOT*depth, FOOT*depth);
+        solePath(ctx);
+        ctx.fillStyle = PINK; ctx.fill();
+        ctx.restore();
+      }
+    }
+    var STARS = [[100,500,95,0],[1935,1505,58,1.7],[1745,380,30,3.1]];
+    function drawStar(x,y,r,rot,alpha){
+      ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      for(var i=0;i<8;i++){
+        var rr = i%2 ? r*0.28 : r, a = i/8*Math.PI*2 - Math.PI/2;
+        i ? ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr) : ctx.moveTo(Math.cos(a)*rr, Math.sin(a)*rr);
+      }
+      ctx.closePath(); ctx.fillStyle = GOLD; ctx.fill(); ctx.restore();
+    }
+    return function draw(t, planet){
+      var cv = ctx.canvas, k = cv.width/U;
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.setTransform(k,0,0,k,0,0);
+      drawSteps(t, false);                                     // 행성 뒤
+      if(planet) ctx.drawImage(planet, 0, Math.sin(t*1.2)*11, U, U);   // 위아래로 살짝 둥실
+      drawSteps(t, true);                                      // 행성 앞
+      STARS.forEach(function(q){                               // 노란 반짝이 셋이 번갈아
+        var s = 0.55+0.45*Math.sin(t*4.8+q[3]);
+        drawStar(q[0], q[1], q[2]*(0.7+0.4*s), Math.sin(t*2+q[3])*0.15, 0.45+0.55*s);
+      });
+    };
+  }
+
+  // ── 워커 쪽: 게임이 첫 구역을 만드는 동안 주 스레드가 몇 초씩 바빠도 고리가 30프레임으로 돈다(주 스레드에서 그리면 멈춘 듯 보였다).
+  function workerMain(painter){
+    var draw, cv, planet = null, hidden = false, speed = 1, t = 0, last = 0, n = 0, timer = 0;
+    function tick(){
+      timer = setTimeout(tick, 1000/30);                       // 30프레임
+      if(hidden){ last = 0; return; }                          // 화면이 안 보이면 멈춤
+      var now = performance.now(), dt = last ? Math.min((now-last)/1000, 0.1) : 0; last = now; t += dt*speed;
+      draw(t, planet); postMessage({f: ++n});
+    }
+    onmessage = function(e){
+      var d = e.data;
+      if(d.canvas){
+        cv = d.canvas; speed = d.speed; cv.width = cv.height = d.size; draw = painter(cv.getContext('2d'));
+        fetch(d.src).then(function(r){ return r.blob(); }).then(createImageBitmap)
+          .then(function(b){ planet = b; postMessage({planet: 1}); })
+          .catch(function(){ postMessage({needImg: 1}); });     // 워커에서 못 받으면 주 스레드가 그림을 넘겨줌
+        tick();
+      }
+      if(d.img) planet = d.img;
+      if(d.size){ cv.width = cv.height = d.size; draw(t, planet); }
+      if('hidden' in d) hidden = d.hidden;
+    };
+  }
+
+  var canvas = document.getElementById('wlBootCv');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var speed = reduce ? 0.25 : 1;                               // 움직임 줄이기: 천천히
+  var src = window.WL_BOOT_IMG || 'assets/common/loading-planet.webp';
+  function px(){ return Math.max(1, Math.round((canvas.clientWidth || Math.min(innerWidth*0.78, 360)) * Math.min(window.devicePixelRatio||1, 2))); } // 픽셀 비율 최대 2
+  var planet = new Image(), worker = null, raf = 0, onRes, onVis;
+  function sendImg(){                                         // 워커가 그림을 못 받았을 때
+    planet.onload = function(){ st.planet = performance.now();
+      if(window.createImageBitmap) createImageBitmap(planet).then(function(b){ worker && worker.postMessage({img: b}, [b]); }); };
+    planet.src = src;
+  }
+
+  function mainLoop(cv){                                       // 워커를 못 쓰는 브라우저: 시안처럼 주 스레드에서
+    st.mode = 'main';
+    var draw = painter(cv.getContext('2d')), last = 0, t = 0;
+    if(!planet.src){ planet.onload = function(){ st.planet = performance.now(); }; planet.src = src; }
+    onRes = function(){ cv.width = cv.height = px(); }; onRes();
+    function frame(){ draw(t, planet.complete && planet.naturalWidth ? planet : null); st.frames++; if(!st.first) st.first = performance.now(); }
+    function loop(now){
+      if(!st.running) return;
+      raf = requestAnimationFrame(loop);
+      if(document.hidden) return;
+      if(now-last < 1000/30 - 1) return;
+      var dt = last ? Math.min((now-last)/1000, 0.1) : 0; last = now; t += dt*speed;
+      frame();
+    }
+    frame(); raf = requestAnimationFrame(loop);
+  }
+
+  function fallback(){                                         // 캔버스를 이미 워커에 넘겼으면 새 캔버스로 바꿔 끼운다
+    if(worker){ worker.terminate(); worker = null; }
+    var fresh = document.createElement('canvas'); fresh.id = 'wlBootCv'; fresh.setAttribute('aria-label', '원더룹 행성');
+    canvas.replaceWith(fresh); canvas = fresh; mainLoop(fresh);
+  }
+
+  try{
+    if(!canvas.transferControlToOffscreen || !window.Worker || !window.createImageBitmap) throw 0;
+    var url = URL.createObjectURL(new Blob(['(' + workerMain + ')(' + painter + ');'], {type: 'text/javascript'}));
+    worker = new Worker(url);
+    st.mode = 'worker';
+    worker.onmessage = function(e){
+      var d = e.data;
+      if(d.f){ st.frames = d.f; if(!st.first) st.first = performance.now(); }
+      if(d.planet) st.planet = performance.now();
+      if(d.needImg) sendImg();
+    };
+    worker.onerror = function(e){ e.preventDefault && e.preventDefault(); if(st.running && st.mode === 'worker') fallback(); };
+    var off = canvas.transferControlToOffscreen();
+    worker.postMessage({canvas: off, size: px(), speed: speed, src: new URL(src, location.href).href}, [off]);
+    onRes = function(){ worker && worker.postMessage({size: px()}); };
+    onVis = function(){ worker && worker.postMessage({hidden: document.hidden}); };
+    document.addEventListener('visibilitychange', onVis);
+  }catch(e){ if(worker){ fallback(); } else mainLoop(canvas); }
+  window.addEventListener('resize', function(){ onRes && onRes(); });
+
+  window.wlBootDone = function(){
+    if(st.done) return; st.done = performance.now();
+    setTimeout(function(){                                     // 너무 빨리 끝나 깜빡이지 않게 최소 1초
+      el.classList.add('gone');                                // 0.4초에 걸쳐 사라짐
+      setTimeout(function(){                                   // 사라진 뒤: 루프·워커를 멈추고 요소를 지운다(휴대폰 발열)
+        st.running = false; cancelAnimationFrame(raf);
+        if(worker){ worker.terminate(); worker = null; }
+        if(onVis) document.removeEventListener('visibilitychange', onVis);
+        onRes = null; planet.onload = null; el.remove(); st.removed = performance.now();
+      }, 420);
+    }, Math.max(0, 1000 - (st.done - st.shown)));
+  };
+})();
+</script>
 <div id="stage"></div>
 <div class="grain"></div>
 <header>
@@ -118,65 +305,65 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
 </div>
 
 <script id="wl-vercheck">fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.v&&j.v!==window.WL_V){const u=new URL(location.href);if(u.searchParams.get('_v')!==j.v){u.searchParams.set('_v',j.v);location.replace(u);}}}).catch(()=>{});</script>
-<script>window.WL_V='3cbb836f7b';</script>
+<script>window.WL_V='853f66ec64';</script>
 <script type="importmap">
 {
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./js/01-textures.js": "./js/01-textures.js?v=3cbb836f7b",
-    "./js/02-zone.js": "./js/02-zone.js?v=3cbb836f7b",
-    "./js/03-scene.js": "./js/03-scene.js?v=3cbb836f7b",
-    "./js/04-character.js": "./js/04-character.js?v=3cbb836f7b",
-    "./js/05-hair-headwear.js": "./js/05-hair-headwear.js?v=3cbb836f7b",
-    "./js/06-outfits.js": "./js/06-outfits.js?v=3cbb836f7b",
-    "./js/07-actions.js": "./js/07-actions.js?v=3cbb836f7b",
-    "./js/08-main.js": "./js/08-main.js?v=3cbb836f7b",
-    "./js/09-capture.js": "./js/09-capture.js?v=3cbb836f7b",
-    "./js/game/bend.js": "./js/game/bend.js?v=3cbb836f7b",
-    "./js/game/codex.js": "./js/game/codex.js?v=3cbb836f7b",
-    "./js/game/companion.js": "./js/game/companion.js?v=3cbb836f7b",
-    "./js/game/controls.js": "./js/game/controls.js?v=3cbb836f7b",
-    "./js/game/core.js": "./js/game/core.js?v=3cbb836f7b",
-    "./js/game/course.js": "./js/game/course.js?v=3cbb836f7b",
-    "./js/game/dialog.js": "./js/game/dialog.js?v=3cbb836f7b",
-    "./js/game/events.js": "./js/game/events.js?v=3cbb836f7b",
-    "./js/game/felt.js": "./js/game/felt.js?v=3cbb836f7b",
-    "./js/game/front.js": "./js/game/front.js?v=3cbb836f7b",
-    "./js/game/fx.js": "./js/game/fx.js?v=3cbb836f7b",
-    "./js/game/goal.js": "./js/game/goal.js?v=3cbb836f7b",
-    "./js/game/hud.js": "./js/game/hud.js?v=3cbb836f7b",
-    "./js/game/index.js": "./js/game/index.js?v=3cbb836f7b",
-    "./js/game/interact.js": "./js/game/interact.js?v=3cbb836f7b",
-    "./js/game/items.js": "./js/game/items.js?v=3cbb836f7b",
-    "./js/game/lamps.js": "./js/game/lamps.js?v=3cbb836f7b",
-    "./js/game/music.js": "./js/game/music.js?v=3cbb836f7b",
-    "./js/game/occlude.js": "./js/game/occlude.js?v=3cbb836f7b",
-    "./js/game/profile.js": "./js/game/profile.js?v=3cbb836f7b",
-    "./js/game/ride.js": "./js/game/ride.js?v=3cbb836f7b",
-    "./js/game/sfx-ant.js": "./js/game/sfx-ant.js?v=3cbb836f7b",
-    "./js/game/sky.js": "./js/game/sky.js?v=3cbb836f7b",
-    "./js/game/sound.js": "./js/game/sound.js?v=3cbb836f7b",
-    "./js/game/state.js": "./js/game/state.js?v=3cbb836f7b",
-    "./js/game/synth.js": "./js/game/synth.js?v=3cbb836f7b",
-    "./js/game/title.js": "./js/game/title.js?v=3cbb836f7b",
-    "./js/game/ui.js": "./js/game/ui.js?v=3cbb836f7b",
-    "./js/hoods/crown.js": "./js/hoods/crown.js?v=3cbb836f7b",
-    "./js/zones/basecamp.js": "./js/zones/basecamp.js?v=3cbb836f7b",
-    "./js/zones/fairy/dock.js": "./js/zones/fairy/dock.js?v=3cbb836f7b",
-    "./js/zones/fairy/fairies.js": "./js/zones/fairy/fairies.js?v=3cbb836f7b",
-    "./js/zones/fairy/forest.js": "./js/zones/fairy/forest.js?v=3cbb836f7b",
-    "./js/zones/fairy/music.js": "./js/zones/fairy/music.js?v=3cbb836f7b",
-    "./js/zones/fairy/paint.js": "./js/zones/fairy/paint.js?v=3cbb836f7b",
-    "./js/zones/fairy/world.js": "./js/zones/fairy/world.js?v=3cbb836f7b",
-    "./js/zones/sample-fx.js": "./js/zones/sample-fx.js?v=3cbb836f7b",
-    "./js/zones/sample-indoor.js": "./js/zones/sample-indoor.js?v=3cbb836f7b",
-    "./js/zones/sample-outdoor.js": "./js/zones/sample-outdoor.js?v=3cbb836f7b"
+    "./js/01-textures.js": "./js/01-textures.js?v=853f66ec64",
+    "./js/02-zone.js": "./js/02-zone.js?v=853f66ec64",
+    "./js/03-scene.js": "./js/03-scene.js?v=853f66ec64",
+    "./js/04-character.js": "./js/04-character.js?v=853f66ec64",
+    "./js/05-hair-headwear.js": "./js/05-hair-headwear.js?v=853f66ec64",
+    "./js/06-outfits.js": "./js/06-outfits.js?v=853f66ec64",
+    "./js/07-actions.js": "./js/07-actions.js?v=853f66ec64",
+    "./js/08-main.js": "./js/08-main.js?v=853f66ec64",
+    "./js/09-capture.js": "./js/09-capture.js?v=853f66ec64",
+    "./js/game/bend.js": "./js/game/bend.js?v=853f66ec64",
+    "./js/game/codex.js": "./js/game/codex.js?v=853f66ec64",
+    "./js/game/companion.js": "./js/game/companion.js?v=853f66ec64",
+    "./js/game/controls.js": "./js/game/controls.js?v=853f66ec64",
+    "./js/game/core.js": "./js/game/core.js?v=853f66ec64",
+    "./js/game/course.js": "./js/game/course.js?v=853f66ec64",
+    "./js/game/dialog.js": "./js/game/dialog.js?v=853f66ec64",
+    "./js/game/events.js": "./js/game/events.js?v=853f66ec64",
+    "./js/game/felt.js": "./js/game/felt.js?v=853f66ec64",
+    "./js/game/front.js": "./js/game/front.js?v=853f66ec64",
+    "./js/game/fx.js": "./js/game/fx.js?v=853f66ec64",
+    "./js/game/goal.js": "./js/game/goal.js?v=853f66ec64",
+    "./js/game/hud.js": "./js/game/hud.js?v=853f66ec64",
+    "./js/game/index.js": "./js/game/index.js?v=853f66ec64",
+    "./js/game/interact.js": "./js/game/interact.js?v=853f66ec64",
+    "./js/game/items.js": "./js/game/items.js?v=853f66ec64",
+    "./js/game/lamps.js": "./js/game/lamps.js?v=853f66ec64",
+    "./js/game/music.js": "./js/game/music.js?v=853f66ec64",
+    "./js/game/occlude.js": "./js/game/occlude.js?v=853f66ec64",
+    "./js/game/profile.js": "./js/game/profile.js?v=853f66ec64",
+    "./js/game/ride.js": "./js/game/ride.js?v=853f66ec64",
+    "./js/game/sfx-ant.js": "./js/game/sfx-ant.js?v=853f66ec64",
+    "./js/game/sky.js": "./js/game/sky.js?v=853f66ec64",
+    "./js/game/sound.js": "./js/game/sound.js?v=853f66ec64",
+    "./js/game/state.js": "./js/game/state.js?v=853f66ec64",
+    "./js/game/synth.js": "./js/game/synth.js?v=853f66ec64",
+    "./js/game/title.js": "./js/game/title.js?v=853f66ec64",
+    "./js/game/ui.js": "./js/game/ui.js?v=853f66ec64",
+    "./js/hoods/crown.js": "./js/hoods/crown.js?v=853f66ec64",
+    "./js/zones/basecamp.js": "./js/zones/basecamp.js?v=853f66ec64",
+    "./js/zones/fairy/dock.js": "./js/zones/fairy/dock.js?v=853f66ec64",
+    "./js/zones/fairy/fairies.js": "./js/zones/fairy/fairies.js?v=853f66ec64",
+    "./js/zones/fairy/forest.js": "./js/zones/fairy/forest.js?v=853f66ec64",
+    "./js/zones/fairy/music.js": "./js/zones/fairy/music.js?v=853f66ec64",
+    "./js/zones/fairy/paint.js": "./js/zones/fairy/paint.js?v=853f66ec64",
+    "./js/zones/fairy/world.js": "./js/zones/fairy/world.js?v=853f66ec64",
+    "./js/zones/sample-fx.js": "./js/zones/sample-fx.js?v=853f66ec64",
+    "./js/zones/sample-indoor.js": "./js/zones/sample-indoor.js?v=853f66ec64",
+    "./js/zones/sample-outdoor.js": "./js/zones/sample-outdoor.js?v=853f66ec64"
   }
 }
 </script>
 <!-- 08-main.js가 01~07을 번호 순서대로 import한다. 버전(?v=)과 위 importmap의 js 줄은 tools/stamp.py가 쓴다 -->
-<script type="module" src="js/08-main.js?v=3cbb836f7b"></script>
+<script type="module" src="js/08-main.js?v=853f66ec64"></script>
 
 </body>
 </html>

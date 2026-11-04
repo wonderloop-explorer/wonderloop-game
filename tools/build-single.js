@@ -137,6 +137,11 @@ async function main() {
   cut(/<script type="importmap">[\s\S]*?<\/script>\n?/, 'importmap');
   cut(/<!-- 08-main\.js가[^\n]*-->\n?/, '모듈 주석');
   cut(/<script type="module" src="js\/08-main\.js[^"]*"><\/script>\n?/, '모듈 시작');
+  // 공통 로딩 화면(#wlBoot): 행성 그림을 data URI로 머리에 넣는다(로딩 화면은 모듈·WL_FILES보다 먼저 돈다). 미리 받기 줄은 뺀다.
+  cut(/<link rel="preload" as="image" href="assets\/common\/loading-planet\.webp"[^>]*>\n?/, '로딩 화면 미리 받기');
+  const bootImg = 'data:image/webp;base64,' + fs.readFileSync(path.join(ROOT, 'assets/common/loading-planet.webp')).toString('base64');
+  h = h.replace('<style>\n#wlBoot{', () => `<script>window.WL_BOOT_IMG=${JSON.stringify(bootImg)};</script>\n<style>\n#wlBoot{`);
+  if (!h.includes('window.WL_BOOT_IMG=')) throw new Error('index.html에서 못 찾음: 로딩 화면 CSS');
   h = h.replace(/<title>[^<]*<\/title>/, () => `<title>${S.title}</title>`); // 바꿀 글은 늘 함수로($' 같은 특수 문자가 코드에 있다)
   const esc = s => s.replace(/<\/(script)/gi, '<\\/$1').replace(/<!--/g, '<\\!--');
   const note = `<!-- ${S.title}
@@ -161,6 +166,7 @@ window.WL_START_ZONE=${JSON.stringify(name)};
     for (const p of Object.keys(mods)) { if (p.startsWith('three/')) continue;
       const src = mods[p].replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
       for (const m of src.matchAll(/'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\]|\\.)*)`/g)) for (const c of (m[1] ?? m[2] ?? m[3] ?? '')) if (/[\uac00-\ud7a3\u3131-\u318e]/.test(c)) chars.add(c); }
+    for (const c of (h.match(/<div id="wlBoot"[\s\S]*?<\/div><\/div>/) || [''])[0]) if (/[\uac00-\ud7a3]/.test(c)) chars.add(c); // 로딩 화면 제목
     const UA = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36' };
     const css = await (await fetch('https://fonts.googleapis.com/css2?family=Jua&text=' + encodeURIComponent([...chars].sort().join('')), { headers: UA })).text();
     const urls = [...css.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]);if (!urls.length) throw new Error('글꼴 주소 없음');
