@@ -15,7 +15,7 @@ import base64, hashlib, json, os, re, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 INDEX = os.path.join(ROOT, 'index.html')
-EXT = ('.js', '.json', '.webp', '.png', '.glb', '.jpg')
+EXT = ('.js', '.json', '.webp', '.png', '.glb', '.jpg', '.jpeg', '.gif', '.svg', '.css', '.mp3', '.m4a', '.ogg', '.wav', '.woff2', '.ttf')  # 소리·글꼴·CSS도 바뀌면 버전이 바뀐다(2026-11-04)
 
 
 def files():
@@ -35,6 +35,17 @@ def version():
     return h.hexdigest()[:10]
 
 
+# 안전망(2026-11-04 — 아이폰 사파리가 옛 파일을 기억): 코드가 버전(?v=)을 깜빡하고 assets/·js/ 파일을 불러도
+# fetch·<img>·<audio>·new Audio·CSS 배경(element.style) 주소에 ?v=버전을 저절로 붙인다. 이미 v=가 있거나 다른 사이트·data:·blob: 주소는 그대로.
+# 한 파일 HTML은 모든 파일이 안에 들어 있어 이 줄을 뺀다(tools/build-single.js).
+VGUARD = """<script id="wl-vguard">(()=>{const V=window.WL_V,re=/^(?:\\.\\/|\\/)?(?:[^:?#]*\\/)?(?:assets|js)\\//,base=location.origin+location.pathname.replace(/[^/]*$/,'');
+const fix=u=>{if(typeof u!=='string'||!V||/[?&]v=/.test(u)||/^(data|blob):/.test(u))return u;let r=u;if(u.startsWith(location.origin))r=u.slice(location.origin.length);else if(/^[a-z]+:/i.test(u))return u;
+  if(!re.test(r)&&!(u.startsWith(base)&&re.test(u.slice(base.length))))return u;const i=u.indexOf('#'),h=i<0?'':u.slice(i),b=i<0?u:u.slice(0,i);return b+(b.includes('?')?'&':'?')+'v='+V+h;};
+window.wlVer=fix;const f0=window.fetch;window.fetch=(u,o)=>f0.call(window,typeof u==='string'?fix(u):(u instanceof URL?fix(u.href):u),o);
+for(const C of [HTMLImageElement,HTMLAudioElement,HTMLSourceElement,HTMLVideoElement]){const d=Object.getOwnPropertyDescriptor(C.prototype,'src')||Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,'src');if(d&&d.set)Object.defineProperty(C.prototype,'src',{configurable:true,get:d.get,set(x){d.set.call(this,fix(String(x)));}});}
+})();</script>"""
+
+
 def stamp(html, v):
     m = re.search(r'(<script type="importmap">)(.*?)(</script>)', html, re.S)
     im = json.loads(m.group(2))
@@ -46,7 +57,8 @@ def stamp(html, v):
     im['imports'] = imports
     html = html[:m.start(2)] + '\n' + json.dumps(im, indent=2, ensure_ascii=False) + '\n' + html[m.end(2):]
     html = re.sub(r'<script>window\.WL_V=.*?</script>\n', '', html)
-    html = html.replace('<script type="importmap">', f"<script>window.WL_V='{v}';</script>\n<script type=\"importmap\">", 1)
+    html = re.sub(r'<script id="wl-vguard">.*?</script>\n', '', html, flags=re.S)
+    html = html.replace('<script type="importmap">', f"<script>window.WL_V='{v}';</script>\n{VGUARD}\n<script type=\"importmap\">", 1)
     if 'wl-vercheck' not in html:  # 사파리가 옛 index.html을 기억해도 새 버전으로 다시 연다(맨 위 설명)
         html = html.replace('<script type="importmap">', "<script id=\"wl-vercheck\">fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.v&&j.v!==window.WL_V){const u=new URL(location.href);if(u.searchParams.get('_v')!==j.v){u.searchParams.set('_v',j.v);location.replace(u);}}}).catch(()=>{});</script>\n<script type=\"importmap\">", 1)
     html = re.sub(r'src="js/08-main\.js(\?v=[0-9a-f]*)?"', f'src="js/08-main.js?v={v}"', html)

@@ -26,6 +26,7 @@ const STAGES = {
   // 시리즈 공통 틀(2026-11-04): 지금 세계 설정(js/worlds CURRENT — 개미굴)의 타이틀 화면 + 시작 공간(backdrop.zone — 이식 전까지 베이스캠프)
   'basecamp': {
     out: 'dist/wonderloop-frame.html',
+    copy: 'wonderloop-frame.html', // 게임 폴더(저장소 맨 위)에도 한 부 — 컴퓨터에서 더블클릭해 바로 열기(.gitignore, 2026-11-04)
     title: '원더룹 — 시리즈 공통 틀 (개미굴 설정)',
     assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/audio/antvillage/*'], // 개미굴 나레이션(모험 시작 연출·첫 미션)
   },
@@ -140,6 +141,7 @@ async function main() {
   const cut = (re, what) => { const n = h.length; h = h.replace(re, ''); if (h.length === n) throw new Error('index.html에서 못 찾음: ' + what); };
   cut(/<script id="wl-vercheck">[\s\S]*?<\/script>\n?/, 'wl-vercheck');
   cut(/<script>window\.WL_V=[^<]*<\/script>\n?/, 'WL_V');
+  cut(/<script id="wl-vguard">[\s\S]*?<\/script>\n?/, 'wl-vguard'); // 버전 붙이기 안전망 — 한 파일은 모든 파일이 안에 있어 필요 없다
   cut(/<script type="importmap">[\s\S]*?<\/script>\n?/, 'importmap');
   cut(/<!-- 08-main\.js가[^\n]*-->\n?/, '모듈 주석');
   cut(/<script type="module" src="js\/08-main\.js[^"]*"><\/script>\n?/, '모듈 시작');
@@ -176,9 +178,15 @@ window.WL_START_ZONE=${JSON.stringify(name)};
     h = h.replace('</head>', () => `<style>/* Jua 서브셋 ${chars.size}자 (tools/build-single.js — 게임 코드의 글자만, SIL OFL 1.1) */\n${faces.join('\n')}\n</style>\n</head>`);
   } catch (e) { console.warn('Jua 서브셋을 넣지 못했어요(Google Fonts 연결로 불러옴):', e.message); }
 
+  // 새 버전 확인(2026-11-04 — 사파리가 옛 한 파일 HTML을 기억): 파일 내용 해시를 넣고, Pages에서 열면 옆 dist/build.json을 캐시 없이 읽어
+  // 이 파일의 해시가 다르면 주소에 ?_b=새해시를 붙여 다시 연다(주소가 달라 사파리도 새 파일을 받는다). 더블클릭(file://)이면 읽기에 실패해 그냥 연다.
+  const bh = require('crypto').createHash('sha1').update(h).digest('hex').slice(0, 10), base = path.basename(S.out);
+  h = h.replace('<head>\n', () => `<head>\n<script id="wl-buildcheck">window.WL_SINGLE=${JSON.stringify(bh)};if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j[${JSON.stringify(base)}];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>\n`);
   const out = path.join(ROOT, S.out);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, h);
+  { const bj = path.join(path.dirname(out), 'build.json'); let J = {}; try { J = JSON.parse(fs.readFileSync(bj, 'utf8')); } catch (e) {} J[base] = bh; fs.writeFileSync(bj, JSON.stringify(J, null, 1) + '\n'); }
+  if (S.copy) { const cp = path.join(ROOT, S.copy); fs.copyFileSync(out, cp); console.log('게임 폴더에도:', S.copy, '(컴퓨터에서 더블클릭 — 저장소에는 안 올림)'); }
   const size = fs.statSync(out).size, mb = x => (x / 1024 / 1024).toFixed(2) + 'MB';
   if (juaSize) console.log(`Jua 서브셋 ${(juaSize / 1024).toFixed(0)}KB(woff2) 넣음`);
   const codeSize = Object.values(mods).reduce((a, s) => a + Buffer.byteLength(s), 0), fileSize = Object.values(files).reduce((a, s) => a + s.length, 0);

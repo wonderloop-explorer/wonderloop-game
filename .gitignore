@@ -10,3 +10,5 @@ captures/
 *.srt
 *.vtt
 .cache/
+# 한 파일 HTML 복사본(게임 폴더에서 더블클릭용 — 원본은 dist/, tools/build-single.js copy)
+/wonderloop-frame.html
