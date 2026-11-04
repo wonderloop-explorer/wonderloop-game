@@ -13,7 +13,7 @@
    2026-11-03 개미굴 흐름으로: 첫 화면(로고·소개 두 줄·새로 시작|조작법·소리 안내) → 탐험가 소개 패널(옷 갈아입기 창이 이것 — 이름·소개·목표·색·화관·표정·모험 지도) → 이야기 소개(front.story) → 게임.
    왼쪽 위는 받은 물건 칩 대신 '가방' 단추 하나 → 탐험 가방 창(front.bag — 받은 물건·만난 친구·숨겨진 비밀). 시간대는 열 때마다 무작위(startTime). */
 import {block,blocking} from './core.js';
-import {setMuted,sfx,soundSettings} from './sound.js';
+import {bed,setMuted,sfx,songs,soundSettings} from './sound.js';
 import {cardShown,setHints,toast,transition} from './ui.js';
 import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './controls.js';
 import {cards as profCards,pic,seen} from './profile.js';
@@ -86,6 +86,8 @@ const css=`
 #wlWard .opts button{border:2px solid transparent;background:rgba(127,90,96,.12);color:#3e2834;font:inherit;font-size:.92rem;padding:.4rem .75rem;min-height:40px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:.35rem;white-space:nowrap}
 #wlWard .opts button[aria-pressed="true"]{border-color:#3f9fa0;background:rgba(63,159,160,.16)}
 #wlWard .opts button:disabled{opacity:.55;cursor:default}
+#wlWard .opts button.q{min-width:44px;justify-content:center;border:2px dashed rgba(117,86,94,.45);background:rgba(127,90,96,.06);color:#9a8a8e;font-family:"Jua",sans-serif;font-size:1.05rem;opacity:1} /* 아직 못 받은 장식 — 물음표 칸 */
+#wlWard .dot+.dot{margin-left:-.2rem}
 #wlWard .dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(62,40,52,.18)}
 #wlWard .acclock{margin:.35rem 0 0;font-size:.8rem;color:#75565e}
 #wlWard .map{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.3rem;counter-reset:z}
@@ -145,14 +147,15 @@ function applyLook(U){if(SHOT||!U)return;const X=worldX();if(X){applyWorldLook(U
   const D=decoList();if(look.deco&&U.setHood){const d=D.find(x=>x.hood===look.deco);if(d&&(!d.flag||flags[d.flag]))U.setHood(d.hood);}}
 /* 세계 설정 explorer(js/worlds — 2026-11-04): 탐험가 소개 창(새로 시작)과 게임 중 '옷 갈아입기'가 같은 목록·같은 저장값 look.w[세계 id] = {hood, outfit, deco} */
 const curWorld=()=>WORLD&&WORLD.backdrop&&(WORLD.zones||[WORLD.backdrop.zone]).includes(zoneId(zone()))?WORLD:null;
-const worldX=()=>{const W=curWorld();return W&&W.explorer||null;};
-const wsave=()=>{const W=curWorld();look.w=look.w||{};return look.w[W.id]=look.w[W.id]||{hood:0,outfit:0,deco:0};};
-const decoOpen=d=>!d.flag||!!flags[d.flag];
-function applyWorldLook(U,X){const S=wsave();
-  if(X.wear){if(X.wear.outfit&&U.setOutfit)U.setOutfit(X.wear.outfit);if(X.wear.hood&&U.setHood)U.setHood(X.wear.hood);}
-  if(U.setTint){const h=X.hoods&&X.hoods.list[S.hood|0];U.setTint('hood',h?[h[1],h[2]]:null);
-    const o=X.outfits&&X.outfits.list[S.outfit|0]||{};U.setTint('vest',o.vest||null);U.setTint('scarf',o.scarf||null);}
-  const d=X.decos&&X.decos.list[S.deco|0];U.wlDeco=d&&decoOpen(d)?d.id||null:null;} // 장식 모양은 그 세계 구역이 U.wlDeco를 보고 단다(개미굴 이식 때)
+const worldX=()=>{const W=curWorld();return W&&W.talColors?W:null;}; // 탐험 준비 창을 쓰는 세계(talColors가 있는 세계 설정)
+const wsave=()=>{const W=curWorld();look.w=look.w||{};return look.w[W.id]=look.w[W.id]||{tal:0,deco:0};}; // 탈 색·장식은 세계마다, 옷 조합(look.combo)·이름은 하나
+const itemFlag=(W,it)=>'item:'+W.id+':'+it.id,itemGot=(W,it)=>!!flags[itemFlag(W,it)];
+const decoList2=W=>[{name:'없음'},...(W.items||[])];
+function applyWorldLook(U,W){const S=wsave();
+  if(U.setOutfit)U.setOutfit('ant');if(W.talModel&&U.setHood)U.setHood(W.talModel); // 시리즈 공통 원더룹(앤트빌리지 차림) + 그 세계 탈
+  if(U.setTint){const h=W.talColors[S.tal|0]||W.talColors[0];U.setTint('hood',[h[1],h[2]]);}
+  if(U.setCombo)U.setCombo(look.combo|0);
+  const L=decoList2(W),d=L[S.deco|0];U.wlDeco=d&&d.id&&itemGot(W,d)?d.id:null;} // 장식 모양(items[].shape)은 그 세계를 옮길 때 단다
 const decoList=()=>{const Z=zone(),E=Z&&Z.front&&Z.front.explorer;return (E&&E.deco&&E.deco.list)||[];};
 const playerName=()=>(look.name||'').trim()||'원더룹';
 const hasProgress=()=>Object.keys(flags).some(k=>k!=='compass'&&flags[k]);
@@ -230,11 +233,13 @@ function orbit(){const Z=zone(),T=Z.titleView||{};const sp=Z.spawn||{x:0,z:0},sp
 const zoneId=Z=>(Z&&Z.root&&Z.root.name||'').replace(/^zone:/,'');
 const titleWorld=()=>WORLD&&WORLD.backdrop&&zoneId(zone())===WORLD.backdrop.zone?WORLD:null;
 function openTitle(W){build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');startTime();
-  const go=fr=>{if(worldX()||(zone().front&&zone().front.explorer)){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
-  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('click');go(false);},onContinue:()=>begin(false),onFresh:()=>{sfx('click');go(true);},onHow:()=>{sfx('click');showHelp(true);},onClick:()=>sfx('click')});
+  const go=fr=>{playWorldMusic(W);if(worldX()||(zone().front&&zone().front.explorer)){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
+  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('click');go(false);},onContinue:()=>{playWorldMusic(W);begin(false);},onFresh:()=>{sfx('click');go(true);},onHow:()=>{sfx('click');showHelp(true);},onClick:()=>sfx('click')});
   document.querySelector('.wlg').appendChild(tEl);if(tEl._place)tEl._place();
   titleCam(W);
   return true;} // 개미굴처럼 단추에 미리 초점을 주지 않는다(Tab으로 옮겨 가면 초점 테두리가 보임)
+/* 세계 배경음(world.music): 시작을 누를 때부터(개미굴처럼 — 소리는 첫 누르기에 깨어난다) */
+function playWorldMusic(W){if(!W||!W.music)return;try{songs({[W.music.id]:W.music.song});bed(W.music.id);}catch(e){console.warn(e);}}
 function titleCam(W){const B=W.backdrop,t0=performance.now();VIEW.hold(()=>backdropAt(B,(performance.now()-t0)/1000));}
 const backToFront=()=>{if(tEl){tEl.hidden=false;titleCam(WORLD);}else{el.classList.add('on');orbit();}}; // 탐험가 소개를 닫고 첫 화면으로
 function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!zone().front)return false;build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');
@@ -262,13 +267,14 @@ function openStory(){const L=(zone().front&&zone().front.story)||[];if(!L.length
 /* ---------- 탐험가 소개(개미굴 #show) — 새로 시작할 때('start': 아래 단추 '모험 떠나기' → 이야기 소개)와 게임 중 옷 갈아입기('game': '다 골랐어요') ---------- */
 function opts(list,cur,pick,dots=null){const box=document.createElement('div');box.className='opts';
   list.forEach((it,i)=>{const o=typeof it==='string'?{name:it}:it;const b=document.createElement('button');b.type='button';
-    if(dots&&dots[i]){const d=document.createElement('span');d.className='dot';d.style.background=dots[i];b.appendChild(d);}
-    b.append((o.lock?'🔒 ':'')+o.name);if(o.lock)b.disabled=true;
+    if(dots&&dots[i])[].concat(dots[i]).forEach(c=>{const d=document.createElement('span');d.className='dot';d.style.background=c;b.appendChild(d);}); // 옷 조합은 동그라미 둘(옷·목도리)
+    if(o.q){b.className='q';b.disabled=true;b.setAttribute('aria-label',o.label||'잠김');b.title=o.label||'';b.textContent='?';}
+    else{b.append((o.lock?'🔒 ':'')+o.name);if(o.lock)b.disabled=true;}
     b.addEventListener('click',()=>{box.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');pick(i);});
     b.setAttribute('aria-pressed',i===cur?'true':'false');box.appendChild(b);});
   return box;}
 function lab(t){const p=document.createElement('p');p.className='lab';p.textContent=t;return p;}
-function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),E=X||F.explorer||{};ward.innerHTML='';const P=document.createElement('div');P.className='panel wl-pop-card';const B=document.createElement('div');B.className='body wl-pop-body'; // 팝업 공통(game/popup): 내용만 스크롤, 아래 단추는 늘 보이게
+function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),E=X?{bio:X.guide&&X.guide.text,goal:X.guide&&X.guide.goal,map:(X.map||[]).map(m=>[m.name,1])}:F.explorer||{};ward.innerHTML='';const P=document.createElement('div');P.className='panel wl-pop-card';const B=document.createElement('div');B.className='body wl-pop-body'; // 팝업 공통(game/popup): 내용만 스크롤, 아래 단추는 늘 보이게
   const k=document.createElement('p');k.className='k';k.textContent='탐험가 소개';
   const nl=document.createElement('label');nl.className='namel';nl.htmlFor='wlNameIn';nl.textContent='이름';
   const ni=document.createElement('input');ni.id='wlNameIn';ni.maxLength=8;ni.autocomplete='off';ni.placeholder='원더룹';ni.value=look.name||'';ni.addEventListener('input',()=>{look.name=ni.value;save();});
@@ -276,11 +282,12 @@ function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),
   B.append(k,nl,ni);
   if(E.bio){const b=document.createElement('p');b.className='bio';b.textContent=E.bio;B.appendChild(b);}
   if(E.goal){const g=document.createElement('div');g.className='goal';const sp=document.createElement('span');sp.textContent='목표';g.append(sp,E.goal);B.appendChild(g);}
-  if(X){const S=wsave(),pickW=(k,i,snd='click')=>{S[k]=i;save();applyWorldLook(U,X);sfx(snd);}; // 세계 설정: 탈 색 → 옷 조합 → 장식 (개미굴 #show 순서)
-    if(X.hoods)B.append(lab(X.hoods.label||'탈'),opts(X.hoods.list.map(h=>h[0]),S.hood|0,i=>pickW('hood',i),X.hoods.list.map(h=>h[1])));
-    if(X.outfits)B.append(lab(X.outfits.label||'옷'),opts(X.outfits.list.map(o=>o.name),S.outfit|0,i=>pickW('outfit',i),X.outfits.list.map(o=>o.scarf||(o.vest&&o.vest[0])||null)));
-    if(X.decos){const L=X.decos.list,open=L.every(decoOpen);B.append(lab(X.decos.label||'장식'),opts(L.map(d=>({name:d.name,lock:!decoOpen(d)})),decoOpen(L[S.deco|0]||L[0])?S.deco|0:0,i=>pickW('deco',i,'pickup')));
-      const msg=open?X.decos.open:X.decos.lock;if(msg){const n=document.createElement('p');n.className='acclock';n.textContent=msg;B.appendChild(n);}}}
+  if(X){const S=wsave(),pickW=(k,i,snd='click')=>{S[k]=i;save();applyWorldLook(U,X);sfx(snd);}; // 탐험 준비: 탈 색 → 옷 조합 → 장식 (개미굴 #show 순서)
+    B.append(lab(X.talLabel||'탈 색'),opts(X.talColors.map(h=>h[0]),S.tal|0,i=>pickW('tal',i),X.talColors.map(h=>h[1])));
+    const C=U.outfitCombos||[];B.append(lab('옷 조합'),opts(C.map(c=>c.name),look.combo|0,i=>{look.combo=i;save();U.setCombo(i);sfx('click');},C.map(c=>[c.top,c.scarf])));
+    const L=decoList2(X),got=L.map(d=>!d.id||itemGot(X,d)),cur=got[S.deco|0]?S.deco|0:0;
+    B.append(lab('장식'),opts(L.map((d,i)=>got[i]?{name:d.name}:{name:'?',q:true,label:`잠김 — ${d.stage?d.stage+'번째 스테이지':'스테이지'}에서 받으면 열려요`}),cur,i=>pickW('deco',i,'pickup')));
+    if(got.some(g=>!g)){const n=document.createElement('p');n.className='acclock';n.textContent='? 칸은 스테이지에서 받은 물건이에요. 받으면 달아 볼 수 있어요';B.appendChild(n);}}
   else{
   B.append(lab('조끼 색'),opts(U.vestColors||[],U.vestIdx|0,i=>{look.vest=i;U.setVest(i);save();sfx('click');},U.vestHex),
     lab('목수건 색'),opts(U.scarfColors||[],U.scarfIdx|0,i=>{look.scarf=i;U.setScarf(i);save();sfx('click');},U.scarfHex));
@@ -290,23 +297,28 @@ function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),
   const faces=U.exprNames||[];B.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('blip');}));
   if(E.map){const cur=(zone().root&&zone().root.name||'').replace(/^zone:/,'');B.appendChild(lab('모험 지도'));const ol=document.createElement('ol');ol.className='map';
     E.map.forEach(([n,id])=>{const li=document.createElement('li');li.textContent=n;if(id)li.className='on';if(id===cur)li.setAttribute('aria-current','true');ol.appendChild(li);});B.appendChild(ol);}
-  const spin=document.createElement('div');spin.className='spin';spin.append(pbtn('','↺ 돌려 보기',()=>{ctx.WL.rotation.y+=Math.PI/4;}),pbtn('','돌려 보기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;}));B.appendChild(spin);
+  const spin=document.createElement('div');spin.className='spin';spin.append(pbtn('','↺ 돌려 보기',()=>{ctx.WL.rotation.y+=Math.PI/4;spinHold=performance.now();}),pbtn('','돌려 보기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;spinHold=performance.now();}));B.appendChild(spin);
   P.append(B,pbtn('done wl-pop-foot',mode==='start'?'모험 떠나기':'다 골랐어요',()=>closeWardrobe(mode==='start')));ward.appendChild(P);}
 function save(){store.set(LOOK_KEY,JSON.stringify(look));}
 function showcase(){const W=ctx.WL,cam=ctx.camera;let dx=cam.position.x-W.position.x,dz=cam.position.z-W.position.z;
   // 방 카메라 구역(베이스캠프): 첫 화면 배경 카메라가 어디 있든 그 방의 열린 쪽(방 카메라 처음 각도)에서 — 앞 소품에 가리지 않게. 새로 시작·게임 중 같은 각도
   {const Z=zone(),A=Z&&Z.areas&&Object.values(Z.areas).find(a=>a.camera&&a.camera.start);if(A&&!Z.camRoom){const az=A.camera.start[0];dx=Math.sin(az);dz=Math.cos(az);}}
+  {const S=wardFrom==='start'&&curWorld()&&curWorld().backdrop.show;if(S){W.position.x=S.at[0];W.position.z=S.at[1];dx=Math.sin(S.az);dz=Math.cos(S.az);}} // 새로 시작: 세계 설정의 보여 주는 자리로(개미굴처럼)
   const L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L;
-  W.rotation.y=Math.atan2(ux,uz)+.35; // 원더룹이 카메라 쪽을 살짝 비스듬히(3/4) 본다
-  const narrow=innerWidth<=760,p=W.position,d=narrow?7:5,rx=uz,rz=-ux; // 카메라 오른쪽 — 전신이 다 보이게
-  const at=narrow?[p.x,p.y-.2,p.z]:[p.x+rx*1.1,p.y+.55,p.z+rz*1.1]; // 패널을 피해: 컴퓨터는 원더룹을 왼쪽에, 휴대폰은 아래 시트 위쪽 칸에
-  const from=[p.x+ux*d,p.y+(narrow?1.3:1.0),p.z+uz*d];VIEW.hold(()=>({at,from}));}
+  W.rotation.y=Math.atan2(ux,uz); // 원더룹이 카메라 쪽을 살짝 비스듬히(3/4) 본다
+  // 개미굴 #show 카메라 그대로: 원더룹에서 3.6m·1.25m 높이(시야 55°) → 이 카메라 시야 30°에 같은 구도가 되는 7m. 컴퓨터는 원더룹을 왼쪽(보는 점을 오른쪽 0.95m·0.9m 높이), 휴대폰은 가운데 0.3m 높이(아래 시트 위)
+  const narrow=innerWidth<=760,p=W.position,k=Math.tan(27.5*Math.PI/180)/Math.tan(15*Math.PI/180),rx=uz,rz=-ux;
+  const at=narrow?[p.x,p.y+.3,p.z]:[p.x+rx*.95,p.y+.9,p.z+rz*.95],up=(narrow?1.25-.3:1.25-.9)*k,d=3.6*k;
+  const from=[at[0]+ux*d,at[1]+up,at[2]+uz*d];VIEW.hold(()=>({at,from}));}
 function canWear(){const U=ctx.WL.userData;return !(blocking('talk')||blocking('fade')||cardShown()==='result'||cardShown()==='cut'||U.riding||(U.vert&&U.vert.air));}
 function openWardrobe(mode='game'){build();if(wardOn||bagOn||storyOn)return;const fromFront=mode==='start'||frontOn;if(!fromFront&&!canWear()){toast('지금은 옷을 갈아입을 수 없어요');return;}
   if(frontOn&&mode!=='start')mode='front';
   wardOn=true;wardFrom=mode;document.body.classList.add('wl-ward-on');popShown('ward',true);sfx('pickup');if(frontOn){el.classList.remove('on');if(tEl)tEl.hidden=true;}else{block('ward',true);setHints(false);}
   corner.classList.remove('on');if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();renderWard(mode);ward.classList.add('on');showcase();
-  input.dragHook=dx=>{ctx.WL.rotation.y+=dx*.012;};}
+  input.dragHook=dx=>{ctx.WL.rotation.y+=dx*.012;spinHold=performance.now();};spin();}
+/* 탐험 준비 창이 열려 있는 동안 원더룹이 제자리에서 천천히 돈다(개미굴 showAng — 초당 0.35라디안). 끌거나 돌려 보기 단추를 누르면 2.5초 쉬었다 다시 */
+let spinHold=0,spinRaf=0;function spin(){cancelAnimationFrame(spinRaf);let last=performance.now();const red=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const f=now=>{if(!wardOn)return;spinRaf=requestAnimationFrame(f);const dt=Math.min(.1,(now-last)/1000);last=now;if(!red&&now-spinHold>2500)ctx.WL.rotation.y+=dt*.35;};spinRaf=requestAnimationFrame(f);}
 function closeWardrobe(go=false){if(!wardOn)return;wardOn=false;document.body.classList.remove('wl-ward-on');popShown('ward',false);ward.classList.remove('on');input.dragHook=null;const U=ctx.WL.userData;if(U.setExpr)U.setExpr('기본');sfx('click');
   if(wardFrom==='start'){if(go)openStory();else backToFront();}
   else if(wardFrom==='front')backToFront();else{block('ward',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}}

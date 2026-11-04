@@ -23,6 +23,7 @@ function shirtMat(){const m=new THREE.MeshStandardMaterial({map:pencil('#8cc07a'
     sh.vertexShader='uniform mat4 uInv;\nvarying vec3 vBP;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvBP=(uInv*modelMatrix*vec4(transformed,1.0)).xyz;');
     sh.fragmentShader='varying vec3 vBP;\n'+sh.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nfloat fa=fract(atan(vBP.x,vBP.z)*7.0/6.2831853+.5);float st=smoothstep(0.0,0.025,fa)-smoothstep(0.225,0.25,fa);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(3.42,1.5,2.15),st);');};
   return m;}
+const ribM=TM('#d9cdb3','jersey',{rep:[6,1]}),soleV2=TM('#f3ead6','rubber',{grain:.3});
 const skin=SM('#ffc9a0'),hairA=SM('#4e2e22'),scarfM=SM('#36aaa0'),tunic=TM('#f3ead6','jersey',{rep:[3,3]}),shorts=TM('#4a68b0','denim',{rep:[2,3],grain:.35}),
       bootM=TM('#7a4a32','suede',{rep:[2,2],grain:.4}),soleM=SM('#4e2e22'),beltM=SM('#7a4a32'),buckM=SM('#f2b63c');
 const eyeM=BM('#2a1a24'),whiteM=BM('#ffffff');
@@ -33,12 +34,12 @@ const legs=[],arms=[],eyes=[],antennae=[],hoodParts=[],hairParts=[];
   kn.add(wm(new THREE.SphereGeometry(.061,14,10),skin));kn.add(wm(new THREE.CylinderGeometry(.061,.064,.13,14).translate(0,-.065,0),skin));
   const boot=new THREE.Bone();boot.name='foot.'+side(s);boot.position.set(0,-.075,.02);kn.add(boot);pv.userData.boot=boot;
   const up=wm(new THREE.SphereGeometry(.08,22,14),bootM);up.scale.set(1,.55,1.5);up.position.set(0,-.052,.03);boot.add(up);
-  const sole=wm(new THREE.SphereGeometry(.08,22,14),TM('#f3ead6','rubber',{grain:.3}));sole.scale.set(1.08,.32,1.56);sole.position.set(0,-.08,.03);boot.add(sole);
+  const sole=wm(new THREE.SphereGeometry(.08,22,14),soleV2);sole.scale.set(1.08,.32,1.56);sole.position.set(0,-.08,.03);boot.add(sole);
   legs.push(pv);});
 {const body=wlBody;
   const sh=wm(new THREE.SphereGeometry(.11,18,12),shorts);sh.scale.set(1.25,.7,.85);sh.position.y=.3;body.add(sh);
   const torso=wm(lathe([[0,.31],[.2,.31],[.205,.36],[.207,.45],[.2,.52],[.186,.565],[.155,.605],[.11,.632],[0,.64]].map(q=>new THREE.Vector2(q[0],q[1])),30),tunic);torso.scale.set(1.1,1,1.1);body.add(torso);
-  const neck=wm(new THREE.TorusGeometry(.112,.022,10,28),TM('#d9cdb3','jersey',{rep:[6,1]}));neck.rotation.x=PI/2;neck.position.set(0,.628,0);body.add(neck);
+  const neck=wm(new THREE.TorusGeometry(.112,.022,10,28),ribM);neck.rotation.x=PI/2;neck.position.set(0,.628,0);body.add(neck);
   [-1,1].forEach(s=>{const ap=new THREE.Bone();ap.name='upperarm.'+side(s);ap.position.set(s*.2,.555,0);ap.rotation.z=s*.32;body.add(ap);
     ap.add(wm(new THREE.SphereGeometry(.082,18,14),tunic));
     ap.add(wm(new THREE.CylinderGeometry(.08,.074,.12,16).translate(0,-.06,0),tunic));
@@ -60,14 +61,19 @@ const head=new THREE.Bone();head.name='head';head.position.y=.38;neck.add(head);
     const br=new THREE.Mesh(new THREE.BoxGeometry(.078,.02,.014),hairA);br.position.set(s*.12,.048,.35);br.rotation.z=s*.15;head.add(br);(WL.userData.brows=WL.userData.brows||[]).push(br);});
   const nose=new THREE.Mesh(new THREE.SphereGeometry(.019,8,6),SM('#f2a27e'));nose.position.set(0,-.115,.36);head.add(nose);
   const mouth=new THREE.Mesh(new THREE.SphereGeometry(.026,8,6),BM('#a8505a'));mouth.scale.set(1.5,.5,.35);mouth.position.set(0,-.188,.329);head.add(mouth);WL.userData.mouth=mouth;
-  const hoodM=SM('#a8603f'),hoodD=SM('#7e4229');hoodM.side=THREE.DoubleSide;WL.userData.hoodMats=[hoodM,hoodD]; // 개미탈 색 바꾸기(06 setTint 'hood' — 세계 설정 explorer.hoods)
+  const hoodM=SM('#a8603f'),hoodD=SM('#7e4229');hoodM.side=THREE.DoubleSide;WL.userData.hoodMats=[hoodM,hoodD];WL.userData.v2Mats={rib:ribM,boot:bootM,sole:soleV2}; // 앤트빌리지 차림(06)이 숨길 v2 옷 부품을 재질로 찾는다 // 개미탈 색 바꾸기(06 setTint 'hood' — 세계 설정 explorer.hoods)
   const hoodG=new THREE.SphereGeometry(.5,80,60);
   // 얼굴 구멍을 실제로 뚫고(얼굴과 탈이 서로 파고들지 않게), 구멍 테두리는 둥근 테로 깔끔하게 마감
   {const p=hoodG.attributes.position,ix=hoodG.index.array,keep=[];
     const inHole=i=>{const x=p.getX(i)*2,y=p.getY(i)*2,z=p.getZ(i)*2;return z>0&&(x/.74)*(x/.74)+((y+.22)/.68)*((y+.22)/.68)<1;};
     for(let t=0;t<ix.length;t+=3){const a=ix[t],b=ix[t+1],c=ix[t+2];if(inHole(a)&&inHole(b)&&inHole(c))continue;keep.push(a,b,c);}
+    // 남은 삼각형 중 꼭짓점이 구멍 안에 있는 것은 그 꼭짓점을 구멍 테두리 타원 위로 옮긴다 → 경계가 삼각형 톱니가 아니라 매끈한 곡선(2026-11-04, 아래 테가 빈틈없이 덮음)
+    {const used=new Set(keep);for(const i of used){if(!inHole(i))continue;const x=p.getX(i)*2,y=p.getY(i)*2,ex=x/.74,ey=(y+.22)/.68,d=Math.hypot(ex,ey)||1e-6;
+      const nx=.74*ex/d,ny=-.22+.68*ey/d,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny));p.setXYZ(i,nx*.5,ny*.5,nz*.5);}}
     hoodG.setIndex(keep);hoodG.computeVertexNormals();}
   const hood=wm(hoodG,hoodM);hood.scale.set(1.12,1.0,.96);hood.position.set(0,.04,-.1);head.add(hood);hoodParts.push(hood);
+  /* 얼굴 구멍(탈 공통 약속 — 05 앞머리가 이 값으로 탈 가장자리 바로 아래에 붙는다): 탈 구 반지름 .5 단위 구 위 타원 (x/ax)²+((y−cy)/ay)²<1, 탈 크기·자리 */
+  WL.userData.faceHole={ax:.74,ay:.68,cy:-.22,r:.5,scale:[1.12,1.0,.96],pos:[0,.04,-.1],hw:1};
   {const pts=[];for(let i=0;i<72;i++){const th=i/72*PI*2;const x=.74*Math.cos(th),y=-.22+.68*Math.sin(th),z=Math.sqrt(Math.max(0,1-x*x-y*y));pts.push(new THREE.Vector3(x,y,z).multiplyScalar(.5*.985));}
    hood.add(wm(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),180,.032,12,true),hoodD));}
   function decal(dir,ex,ey,ox,oy,r,mat){const T=new THREE.Vector3(0,1,0).cross(dir).normalize(),B=dir.clone().cross(T).normalize();
@@ -111,7 +117,7 @@ head.children.forEach(c=>{if(c.position.z>.2&&c.position.y<.1){const m=WL_CHIN(c
  function setExpr(n){const e=E[n];U.exprName=n;
    eyes.forEach(eg=>{const m=eg.children[0];m.visible=!e.arc;const s=e.eye||[1,1];m.scale.set(.74*s[0],1.15*s[1],.28);});
    arcs.forEach(a=>a.visible=!!e.arc);spark.forEach(x=>x.visible=!!e.spark);
-   brows.forEach((b,i)=>{const sd=i?1:-1;const p=e.browEach?e.browEach[i]:(e.brow||[0,.15]);b.position.y=base[i].y+p[0];b.rotation.z=sd*p[1];});
+   brows.forEach((b,i)=>{const sd=i?1:-1;const p=e.browEach?e.browEach[i]:(e.brow||[0,U.browRest??.15]);b.position.y=base[i].y+p[0];b.rotation.z=sd*p[1];});
    mouth.visible=!e.mouth;Object.entries(M).forEach(([k,m])=>m.visible=e.mouth===k);
    sweat.visible=!!e.sweat;blush.forEach((b,i)=>b.scale.copy(blushBase[i]).multiplyScalar(e.blush||1));U.headTilt=e.tilt||0;}
  U.setExpr=setExpr;U.exprNames=NAMES;setExpr('기본');

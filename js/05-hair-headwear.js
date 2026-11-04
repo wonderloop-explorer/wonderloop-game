@@ -64,16 +64,23 @@ import {WL,hairParts,head,hoodParts,wm} from './04-character.js';
     [[-.9,.25,.35],.12,.1],[[.9,.25,.35],.12,.1],[[-.97,.1,-.1],.11,.07],[[.97,.1,-.1],.11,.07],
     [[-.6,.6,.3],.15,.12],[[.6,.6,.3],.15,.12],[[-.7,.45,-.5],.15,.1],[[.7,.45,-.5],.15,.1],
     [[-.5,-.35,-.78],.15,.06],[[-.15,-.45,-.88],.15,.06],[[.2,-.45,-.88],.15,.06],[[.52,-.35,-.78],.15,.06]].forEach(l=>lock(l[0],l[1],l[2]));}
-  // 개미탈용 앞머리: 탈 구멍 윗부분 밑으로만 깔끔하게 빼꼼 나오는 지그재그 앞머리 (나머지 머리는 탈 안에)
+  // 탈 아래 앞머리(2026-11-04 — 모든 얼굴 구멍 탈 공통): 탈 얼굴 구멍(04 WL.userData.faceHole) 윗가장자리 바로 아래에서 이마로 내려오는 한 덩어리.
+  // 아래 끝은 뾰족한 끝 5개 지그재그, 결 무늬 없이 단색 갈색(색연필 바탕 질감만). 윗변은 탈 안쪽으로 4cm 들어가 탈과 앞머리 사이에 틈이 없다(대머리처럼 안 보이게).
+  // 머리뼈 겉면(반지름 .41, 1.04·.98·.9배)에서 1.4cm 떠서 깔리고, 양면 재질 한 장.
   const hoodBangs=[];
-  {const ramp=(a,v)=>{const az=Math.abs(a);return az<.85?v:Math.min(.95,.33+(az-.85)*6);};
-   const zig=a=>{const w=Math.pow(tri(a/(PI*2/14)+.5),.85);return .16+.17*w;};
-   const LB=[[-1.02,-.7,.16,.75],[-.7,.12,.2,1.6],[.12,.7,.24,1.25],[.7,1.02,.16,1.3]];
-   const bob=a=>{for(const L of LB){if(a>=L[0]&&a<=L[1]){const u=Math.pow((a-L[0])/(L[1]-L[0]),L[3]);const d=Math.pow(1-Math.pow(Math.abs(2*u-1),.9),.75);return .5-(.5-L[2])*d;}}return .5;};
-   [zig,bob].forEach(fn=>{const hb=wm(shell(.43,96,a=>ramp(a,fn(a)),.975,.96,0,0),hairTexM);hb.scale.set(1.03,1.0,.93);head.add(hb);hb.visible=false;hoodBangs.push(hb);});}
+  {const H=WL.userData.faceHole,bangM=new THREE.MeshStandardMaterial({map:pencil('#7e4c33','plain',{hatch:.4}),roughness:.85,metalness:0,side:THREE.DoubleSide});
+   const RX=.41*1.04+.014,RY=.41*.98+.014,RZ=.41*.9+.014;
+   const AX=H.ax*H.r*H.scale[0],XW=AX*.78,edgeY=x=>{const u=Math.min(1,Math.abs(x)/(H.ax*H.r*H.scale[0]));return H.pos[1]+H.r*H.scale[1]*(H.cy+H.ay*Math.sqrt(1-u*u));};
+   const TEETH=5,NX=TEETH*8,NY=7,pos=[],uv=[],idx=[];
+   for(let i=0;i<=NX;i++){const u=i/NX,x=(u*2-1)*XW,f=(u*TEETH)%1,tip=1-Math.abs(f*2-1);  // tip: 1 = 뾰족한 끝, 0 = 끝 사이 홈
+     const side=Math.pow(Math.abs(u*2-1),2.2),top=edgeY(x)+.04,len=(.055+.06*tip)*(1-.45*side),bot=Math.max(.07,edgeY(x)-len);
+     for(let j=0;j<=NY;j++){const y=top+(bot-top)*j/NY,q=1-(x/RX)**2-(y/RY)**2,z=Math.sqrt(Math.max(.0001,q))*RZ;pos.push(x,y,z);uv.push(u,1-j/NY);}}
+   for(let i=0;i<NX;i++)for(let j=0;j<NY;j++){const a=i*(NY+1)+j,b=a+NY+1;idx.push(a,a+1,b,a+1,b+1,b);}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
+   const hb=wm(g,bangM);head.add(hb);hb.visible=false;hoodBangs.push(hb);}
   let hoodOn=false;const hoodBtn=document.getElementById('hoodBtn');
   const hairStyles=[hairParts.slice(),hairB,hairD];WL.userData.hairMeshes=hairParts.concat(hairB,hairD).filter(o=>o.isMesh);WL.userData.noMerge=hoodBangs.slice();hairC.forEach(o=>o.parent&&o.parent.remove(o));hairC.forEach(o=>o.visible=false);let hairIdx=2;
-  function applyLook(){const hw=WL.userData.hw||0;hoodParts.forEach(o=>o.visible=(o.userData.hw??1)===hw);/* 개미탈 부품은 번호 없음 = 1, 다른 탈은 06이 붙인 번호 */hairStyles.forEach((arr,i)=>arr.forEach(o=>o.visible=hw!==1&&i===hairIdx));hoodBangs.forEach((b,i)=>b.visible=hw===1&&i===[0,1,0][hairIdx]);}
+  function applyLook(){const hw=WL.userData.hw||0;hoodParts.forEach(o=>o.visible=(o.userData.hw??1)===hw);/* 개미탈 부품은 번호 없음 = 1, 다른 탈은 06이 붙인 번호 */hairStyles.forEach((arr,i)=>arr.forEach(o=>o.visible=hw!==1&&i===hairIdx));hoodBangs.forEach(b=>b.visible=hw===(WL.userData.faceHole?WL.userData.faceHole.hw:1));}
   WL.userData.applyLook=applyLook;applyLook();
   const HNAMES=['지그재그 앞머리','둥근 단발','지그재그 단발'];const hairBtn=document.getElementById('hairBtn');
   hairBtn.addEventListener('click',()=>{hairIdx=(hairIdx+1)%hairStyles.length;applyLook();hairBtn.textContent='머리: '+HNAMES[hairIdx];});

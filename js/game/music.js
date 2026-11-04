@@ -1,7 +1,7 @@
 /* 원더룹 — 코드로 연주하는 배경음 (음악 파일 없이 Web Audio로 직접 — 개미굴 편 SONGS·playStep·seqTick 방식을 엔진 공통으로)
    쓰는 법: 세계마다 곡 묶음을 만들어 songs({id:곡,…})로 등록 → 구역 정보 music:'id' (또는 sound.bed('id')).
      sound.js의 배경음 자리를 그대로 쓰므로 구역을 옮길 때 크로스페이드, 대사·나레이션 때 줄이기, M으로 끄고 켜기가 저절로 된다.
-   곡 {bpm, bars:[{bass:미디, pad:[미디…], arp:[미디…]}], mel:[[8칸 미디|null]…], lead:'celesta'|'musicbox'|'marimba', parts:{…}, swing}
+   곡 {bpm, noVary(악보 그대로 — 변주·옥타브 바꿈 없음), bars:[{bass:미디, pad:[미디…], arp:[미디…]}], mel:[[8칸 미디|null]…], lead:'celesta'|'musicbox'|'marimba', parts:{…}, swing}
      한 마디 = 8분음표 8칸. 마디 목록을 끝까지 돌면 처음으로(끊김 없이 이어서 예약).
      parts(켜고 끄기·세기): pad 따뜻한 패드 · bass 피치카토 베이스(bassPat: 8칸 중 근음 0·5도 7 위치) · chords 뜯는 화음(offbeat) ·
        arp 느린 아르페지오(arpRate 칸마다) · sparkle 가끔 반짝이는 종 · drops 물방울 · wind 바람 스침 · wood 나무 톡톡 · shaker 셰이커 · counter 낮은 현 대선율 · thump 부드러운 북
@@ -25,6 +25,7 @@ function hiss(c,D,t,dur,vol,type,freq,q,to){const s=c.createBufferSource();s.buf
 const INST={
   celesta(c,D,m,t,v){osc(c,D,'sine',mf(m),t,1.3,v);osc(c,D,'sine',mf(m)*2,t,.55,v*.22);osc(c,D,'sine',mf(m)*4.01,t,.22,v*.14);},
   musicbox(c,D,m,t,v){osc(c,D,'sine',mf(m),t,1,v);osc(c,D,'sine',mf(m)*3,t,.3,v*.12);osc(c,D,'triangle',mf(m)*6,t,.05,v*.05);},
+  pluck(c,D,m,t,v){osc(c,D,'triangle',mf(m),t,.55,v,{lp:4200});osc(c,D,'sine',mf(m)*2,t,.32,v*.35);}, // 개미굴 pluckBell
   marimba(c,D,m,t,v){osc(c,D,'sine',mf(m),t,.42,v);osc(c,D,'sine',mf(m)*4,t,.06,v*.3);},
   pizz(c,D,m,t,v){osc(c,D,'triangle',mf(m),t,.32,v,{lp:1300,a:.004});osc(c,D,'sine',mf(m),t,.18,v*.5);},
   bell(c,D,m,t,v){osc(c,D,'sine',mf(m),t,1.6,v,{a:.003});osc(c,D,'sine',mf(m)*2.76,t,.6,v*.25,{a:.002});osc(c,D,'sine',mf(m)*5.4,t,.25,v*.08,{a:.002});},
@@ -48,10 +49,10 @@ function playStep(c,D,S,st,t,lvl){const bars=S.bars.length,bar=Math.floor(st/8)%
   // 선율 + 변주
   if(on('mel',S.build?.2:0)){let m=S.mel[bar][i];
     if(m!=null){let inst=S.lead||'celesta',v=(P.mel&&P.mel.v)||.11;
-      if(loop%2===1&&bar>=bars/2&&!S.noOct){m+=12;inst='musicbox';v*=.8;} // 두 번째 바퀴 뒤 절반은 한 옥타브 위 오르골
-      if(loop>0&&R()<.18){const ct=(B.arp||B.pad).map(x=>{let y=x;while(y<m-6)y+=12;while(y>m+6)y-=12;return y;}).filter(y=>y!==m);if(ct.length)m=pick(ct);} // 이웃 화음음
+      if(loop%2===1&&bar>=bars/2&&!S.noOct&&!S.noVary){m+=12;inst='musicbox';v*=.8;} // 두 번째 바퀴 뒤 절반은 한 옥타브 위 오르골
+      if(loop>0&&!S.noVary&&R()<.18){const ct=(B.arp||B.pad).map(x=>{let y=x;while(y<m-6)y+=12;while(y>m+6)y-=12;return y;}).filter(y=>y!==m);if(ct.length)m=pick(ct);} // 이웃 화음음
       INST[inst](c,D,m,t+(S.swing&&i%2?spb*S.swing:0),v);
-      if(loop>0&&R()<.1&&S.mel[bar][(i+1)%8]==null)INST[inst](c,D,m+pick([2,-1,4]),t+spb*.5,v*.55);}} // 꾸밈음
+      if(loop>0&&!S.noVary&&R()<.1&&S.mel[bar][(i+1)%8]==null)INST[inst](c,D,m+pick([2,-1,4]),t+spb*.5,v*.55);}} // 꾸밈음
   if(on('counter',S.build?.65:0)&&i===0)INST.counter(c,D,B.pad[0]-12+(bar%2?7:0),t,spb*8,P.counter.v||.012);
   if(on('sparkle',S.build?.1:0)&&R()<(P.sparkle.p||.06))INST.bell(c,D,pick(B.arp||B.pad)+24,t,P.sparkle.v||.035);
   if(on('drops')&&R()<(P.drops.p||.12))INST.drop(c,D,t+R()*spb*.5,P.drops.v||.03);

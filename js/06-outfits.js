@@ -1,7 +1,7 @@
 /* 원더룹 베이스캠프 — 바지·관절·캐릭터 병합·평상복/탐험복·탐험 모자·배낭과 키링(두 옷 모두)·탈 카테고리 */
 import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
-import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
+import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,skin,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
 import {CROWN,CROWN_BLOOM} from './hoods/crown.js';
 /* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래)
    새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}을 만들어 import하고 HOODS 끝에 {key,name,mod}로 더한다.
@@ -137,9 +137,40 @@ function wlMerge(list){
      없으면 몸짓(두 팔 들기·흔들림)만 하고 천천히 내려온다. */
   {const g=new THREE.Bone();g.name='glide_prop';g.position.set(0,1.95,.02);g.visible=false;wlBody.add(g);WL.userData.glideProp=g;
    WL.userData.setGlideProp=obj=>{g.clear();if(obj)g.add(obj);};}
-  let outfit=0;
-  function applyOutfit(){const e=outfit===1;shirtMs.forEach(o=>o.material=e?E.shirt:tunic);pantsMs.forEach(o=>o.material=e?E.pants:shorts);
-    rf.forEach((o,i)=>o.material=e?(i%2?E.fold:E.roll):rfBase[i]);exp.forEach(o=>o.visible=e);pack.forEach(o=>o.visible=true);WL.userData.outfit=e;}
+  /* 앤트빌리지 차림(옷 번호 2, 2026-11-04 — 시리즈 공통 원더룹): antvillage 게임의 원더룹 옷을 그 모양·자리 그대로 — 파랑 긴팔 윗옷(원통) · 남색 반바지 · 갈색 벨트와 금빛 버클 ·
+     청록 목도리 고리와 매듭·꼬리 · 동그란 갈색 장화와 발목 테(뒤꿈치까지 감싸 걷기·달리기·점프·돌기 어느 각도에서도 살이 안 보임). 배낭은 같은 배낭을 2cm 앞으로(원통 윗옷 등에 붙게).
+     이 옷일 때 v2 옷 부품(저지 윗옷·데님 바지·접은 단·목 립·스웨이드 신발·조끼 등)은 숨기고, 눈은 개미굴처럼 짙은 색, 눈썹은 개미굴 크기·기울기.
+     옷 조합(setCombo)은 윗옷·바지(파란 부분) 색 + 목도리 색 — 기본 재질에 색 배율만 곱해 끼운다(setTint 'top'·'pants'·'antScarf'). 평상복·탐험복(기준 촬영)은 그대로 */
+  const ant=[];const addA=(m,parent)=>{parent.add(m);ant.push(m);return m;};
+  const aTop=TM('#4a7cc8','jersey',{rep:[3,3]}),aPants=TM('#2e3c6a','twill',{rep:[2,2],grain:.35}),aBoot=TM('#7a4a32','suede',{rep:[2,2],grain:.4}),aCuff=SM('#4e2e22'),
+        aBelt=TM('#7a4a32','leather2',{rep:[6,1]}),aBuck=SM('#f2b63c'),aScarf=TM('#36aaa0','plain',{hatch:.45});
+  WL.userData.antMats={top:aTop,pants:aPants,scarf:aScarf};
+  addA(wm(new THREE.CylinderGeometry(.16,.22,.32,20),aTop),wlBody).position.y=.47;
+  addA(wm(new THREE.CylinderGeometry(.225,.225,.05,20),aBelt),wlBody).position.y=.37;
+  addA(wm(new THREE.BoxGeometry(.08,.06,.02),aBuck),wlBody).position.set(0,.37,.225);
+  addA(wm(new THREE.CylinderGeometry(.2,.22,.1,20),aPants),wlBase).position.y=.31;
+  {const sc=addA(wm(new THREE.TorusGeometry(.2,.062,12,32),aScarf),wlBody);sc.rotation.x=PI/2;sc.scale.set(1.08,1,1);sc.position.set(0,.6,-.02);
+   const kn=addA(wm(new THREE.SphereGeometry(.06,12,10),aScarf),wlBody);kn.scale.set(1.1,.9,.8);kn.position.set(.1,.57,.18);
+   const tl=addA(wm(roundBox(.045,.09,.02,.5),aScarf),wlBody);tl.position.set(.13,.48,.19);tl.rotation.set(-.15,0,.25);}
+  WL.traverse(o=>{if(!o.isBone)return;const n=o.name;
+    if(n.startsWith('upperarm.'))addA(wm(new THREE.CylinderGeometry(.058,.054,.125,12).translate(0,-.0625,0),aTop),o);           // 긴팔: 어깨~팔꿈치
+    if(n.startsWith('forearm.'))addA(wm(new THREE.CylinderGeometry(.055,.05,.12,12).translate(0,-.055,0),aTop),o);               //      팔꿈치~손목
+    if(n.startsWith('foot.')){const bb=addA(wm(new THREE.SphereGeometry(.105,18,12),aBoot),o);bb.scale.set(1,.78,1.3);bb.position.z=.03;   // 개미굴 장화
+      const cf=addA(wm(new THREE.CylinderGeometry(.08,.076,.07,14),aCuff),o);cf.position.y=.05;                                     // 발목 테(개미굴보다 2cm 높게 — 발목 뒤 살이 안 보이게)
+      const hl=addA(wm(new THREE.SphereGeometry(.078,14,10),aBoot),o);hl.scale.set(1,1.05,.95);hl.position.set(0,.02,-.035);}     // 뒤꿈치 감싸기
+    // 정강이: v2 정강이는 발목 아래로 5.5cm 더 내려가 발이 꺾이면 장화 바닥으로 살이 비쳤다 → 이 옷에서는 무릎~발목 1.5cm 아래까지만(장화 안)
+    if(n.startsWith('shin.')){addA(wm(new THREE.SphereGeometry(.061,14,10),skin),o);addA(wm(new THREE.CylinderGeometry(.061,.064,.09,14).translate(0,-.045,0),skin),o);}});
+  const shinV2=[];WL.traverse(o=>{if(o.isMesh&&o.parent&&o.parent.isBone&&o.parent.name.startsWith('shin.')&&o.material===skin&&!ant.includes(o))shinV2.push(o);});
+  let outfit=0,v2Hide=null;const V2=WL.userData.v2Mats||{};
+  const eyeMs=[];WL.traverse(o=>{if(o.isBone&&o.name.startsWith('eye.')&&o.children[0])eyeMs.push(o.children[0]);});const eyeV2=eyeMs.map(m=>m.material),eyeAnt=new THREE.MeshStandardMaterial({color:lin('#2a1a24'),roughness:.75,metalness:0});
+  function applyOutfit(){const e=outfit===1,a=outfit===2;shirtMs.forEach(o=>{o.material=e?E.shirt:tunic;o.visible=!a;});pantsMs.forEach(o=>{o.material=e?E.pants:shorts;o.visible=!a;});
+    rf.forEach((o,i)=>{o.material=e?(i%2?E.fold:E.roll):rfBase[i];o.visible=!a;});exp.forEach(o=>o.visible=e);pack.forEach(o=>o.visible=true);ant.forEach(o=>o.visible=a);
+    if(!v2Hide){v2Hide=[];WL.traverse(o=>{if(o.isMesh&&[V2.rib,V2.boot,V2.sole].includes(o.userData.wlBaseMat||o.material))v2Hide.push(o);});}v2Hide.forEach(o=>o.visible=!a);shinV2.forEach(o=>o.visible=!a);
+    // 배낭·키링: 앤트빌리지 차림이면 2cm 앞으로(원통 윗옷 등에 붙게)
+    [...pack,...(WL.userData.charms||[]).map(c=>c.g),...(WL.userData.badges||[]).filter(b=>b.at==='pack').map(b=>b.g)].forEach(o=>{if(o.userData.z0==null)o.userData.z0=o.position.z;o.position.z=o.userData.z0+(a?.02:0);});
+    eyeMs.forEach((m,i)=>m.material=a?eyeAnt:eyeV2[i]);
+    (WL.userData.brows||[]).forEach(b=>b.scale.set(a?.06/.078:1,a?.014/.02:1,1));WL.userData.browRest=a?-.08:.15;if(WL.userData.setExpr)WL.userData.setExpr(WL.userData.exprName||'기본');
+    WL.userData.outfit=e;WL.userData.outfitKey=a?'ant':e?'explorer':'casual';}
   applyOutfit();
   {const r=wlMerge(exp.filter(o=>o.isMesh));for(let i=exp.length-1;i>=0;i--)if(r.removed.has(exp[i]))exp.splice(i,1);r.made.forEach(m=>exp.push(m));
    {const r2=wlMerge(pack.filter(o=>o.isMesh));for(let i=pack.length-1;i>=0;i--)if(r2.removed.has(pack[i]))pack.splice(i,1);r2.made.forEach(m=>pack.push(m));}
@@ -162,7 +193,7 @@ function wlMerge(list){
        else{if(!switched){switched=true;scale(from,1);WL.userData.hw=to;applyHW();if(onSwitch)try{onSwitch();}catch(e){console.error(e);}}
          const u=(k-.4)/.6,L=hoodObjs(to);scale(L,.93+.07*easeBack(u)+.06*Math.sin(Math.PI*u));const m=HOODS[to].mod;if(m&&m.animate&&HOODS[to].press)m.animate(HOODS[to].press.g,u);}
        if(k>=1){scale(hoodObjs(to),1);WL.userData.hoodMorph=null;if(onEnd)try{onEnd();}catch(e){console.error(e);}}}};};}
-  const ob=document.getElementById('outfitBtn');const showOutfit=()=>ob.textContent=outfit?'옷: 탐험복':'옷: 평상복';ob.addEventListener('click',()=>{outfit=1-outfit;applyOutfit();showOutfit();});
+  const ob=document.getElementById('outfitBtn');const showOutfit=()=>ob.textContent=outfit===2?'옷: 앤트빌리지':outfit?'옷: 탐험복':'옷: 평상복';ob.addEventListener('click',()=>{outfit=outfit===2?0:1-outfit;applyOutfit();showOutfit();});
   /* 탐험복 조끼·목수건 색(옷 갈아입기 창, 2026-11-03): 0 기본 · 1 · 2. 같은 천 결 그림에 색 배율만 곱한 재질로 바꿔 끼운다(아틀라스 색은 소수라 1을 넘어도 되고, 새 그림 층이 필요 없다 —
      부품 재질이 바뀌면 07이 그 부품 정점만 다시 적는다). 기준 촬영·영상 대본은 늘 기본 색 */
   {const VEST=[['기본','#c99d5c','#a87e43'],['풀잎','#8fae6a','#6e8f4c'],['하늘','#8db3d2','#6a8fb0']],SCARF=[['기본','#ec8b7d'],['민트','#7ccbb0'],['해바라기','#f2c14e']];
@@ -176,9 +207,15 @@ function wlMerge(list){
    /* 색을 16진수로 바로(세계 설정 explorer — 탐험가 소개 창, 2026-11-04): setTint('hood',[겉,테두리]) 개미탈 · ('vest',[겉,안]) 조끼 · ('scarf',색) 목수건. null이면 기본 색.
       같은 방식(기본 재질에 색 배율만 곱한 재질로 바꿔 끼움) — 기준 촬영은 부르지 않으니 그대로 */
    const [hM,hD]=WL.userData.hoodMats||[];
-   const BASE={hood:[[hM,'#a8603f'],[hD,'#7e4229']],vest:[[vestM,VEST[0][1]],[vestD,VEST[0][2]]],scarf:[[nkM,SCARF[0][1]],[bandM,SCARF[0][1]]]};
+   const AM=WL.userData.antMats||{};
+   const BASE={top:[[AM.top,'#4a7cc8']],pants:[[AM.pants,'#2e3c6a']],antScarf:[[AM.scarf,'#36aaa0']],hood:[[hM,'#a8603f'],[hD,'#7e4229']],vest:[[vestM,VEST[0][1]],[vestD,VEST[0][2]]],scarf:[[nkM,SCARF[0][1]],[bandM,SCARF[0][1]]]};
    WL.userData.setTint=(part,c)=>{const B=BASE[part];if(!B||!B[0][0])return;const L=c==null?B.map(b=>b[1]):Array.isArray(c)?c:[c,c];
-     swap(B.map(([m,from],i)=>[m,pick(m,from,L[Math.min(i,L.length-1)]||from)]));};}
+     swap(B.map(([m,from],i)=>[m,pick(m,from,L[Math.min(i,L.length-1)]||from)]));};
+   /* 옷 조합(앤트빌리지 차림): 윗옷·바지의 파란 부분 색 + 목도리 색 — 원더룹 자신의 옷이라 세계와 상관없이 하나(game/front가 저장). 옷 색과 목도리 색이 같은 조합은 두지 않는다 */
+   const COMBOS=[{name:'파랑 옷 · 노랑 목도리',top:'#4a7cc8',pants:'#2e3c6a',scarf:'#f2c14e'},{name:'분홍 옷 · 민트 목도리',top:'#ef8fae',pants:'#a8506f',scarf:'#6fcfb4'},
+     {name:'노랑 옷 · 파랑 목도리',top:'#f2c14e',pants:'#a87a1c',scarf:'#4a7cc8'},{name:'민트 옷 · 분홍 목도리',top:'#6fcfb4',pants:'#2f8a72',scarf:'#ef8fae'}];
+   WL.userData.outfitCombos=COMBOS;WL.userData.comboIdx=0;
+   WL.userData.setCombo=i=>{const c=COMBOS[i]||COMBOS[0];WL.userData.setTint('top',c.top);WL.userData.setTint('pants',c.pants);WL.userData.setTint('antScarf',c.scarf);WL.userData.comboIdx=COMBOS.indexOf(c);};}
   // 이름으로 옷 입기 (구역 정보 outfit): setOutfit('explorer'|'casual')
-  WL.userData.setOutfit=key=>{outfit=key==='explorer'?1:0;applyOutfit();showOutfit();};
+  WL.userData.setOutfit=key=>{outfit=key==='explorer'?1:key==='ant'?2:0;applyOutfit();showOutfit();};
 }

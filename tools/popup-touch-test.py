@@ -81,14 +81,14 @@ def run():
         # ③ 탐험가 소개 (새로 시작)
         tap('#wlTitle .go'); pg.wait_for_selector('#wlWard.on', timeout=5000); pg.wait_for_timeout(800)
         fs = pg.eval_on_selector('#wlWard input', "e=>parseFloat(getComputedStyle(e).fontSize)")
-        seen = {t: False for t in ('개미탈', '목도리', '장식', '모험 지도')}
+        seen = {t: False for t in ('개미탈', '옷 조합', '장식', '모험 지도')}
         def watch():  # 밀어 내리는 동안 한 번이라도 보이는 칸 안에 들어왔는지
             for t in seen: seen[t] = seen[t] or visible_in('#wlWard .body', t)
         ok3, st3 = scroll_to_end('#wlWard .body', watch=watch); watch(); pg.screenshot(path=os.path.join(OUT, '③-explorer-start.png'))
         labs = pg.evaluate("""()=>{const B=document.querySelector('#wlWard .body');return [...B.querySelectorAll('.lab')].map(e=>e.textContent)}""")
         done_vis = on_screen('#wlWard .done'); joy_hidden = pg.evaluate("getComputedStyle(document.getElementById('wlJoy')).visibility==='hidden'||getComputedStyle(document.getElementById('wlJoy')).display==='none'")
         tap('#wlWard .done')
-        R['③ 탐험가 소개'] = dict(ok=ok3 and done_vis and all(seen.values()) and all(t in labs for t in ('개미탈', '목도리', '장식', '모험 지도')) and fs >= 16,
+        R['③ 탐험가 소개'] = dict(ok=ok3 and done_vis and all(seen.values()) and all(t in labs for t in ('개미탈', '옷 조합', '장식', '모험 지도')) and fs >= 16,
                                 끝까지=ok3, 스크롤=st3, 밀며보임=seen, 항목=labs, 단추보임=done_vis, 이름칸글자=fs)
         # ② 게임 중 조작법 (처음 시작하면 저절로)
         pg.wait_for_selector('#wlHelp:not([hidden])', timeout=8000); pg.wait_for_timeout(400)
