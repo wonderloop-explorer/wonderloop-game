@@ -10,6 +10,7 @@
 import {block,clock,cue} from './core.js';
 import {sfx,soundHooks} from './sound.js';
 import {injectFelt} from './felt.js';
+import {popShown} from './popup.js';
 const HINT_LAYER=5;
 const css=`
 .wlg{word-break:keep-all;overflow-wrap:break-word} /* 한글은 단어 중간에서 줄이 넘어가지 않게(대화창·카드·조작법·옷장 모두) */
@@ -118,7 +119,7 @@ const root=document.createElement('div');root.className='wlg';
 root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"><span class="who wl-tape mint wl-mk"></span><p class="line"></p><p class="more"></p></div>
 <div id="wlNotice" class="wl-felt" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
-<div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
+<div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard wl-pop-body"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
 <div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><i class="tw" style="--x:8%;--y:6%;--d:0s"></i><i class="tw" style="--x:93%;--y:14%;--d:.7s"></i><i class="tw" style="--x:5%;--y:62%;--d:1.3s"></i><i class="tw" style="--x:95%;--y:78%;--d:.35s"></i><i class="tw" style="--x:50%;--y:2%;--d:1.8s"></i><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
@@ -221,9 +222,9 @@ const pf=$('#wlProf');let pfDone=null,pfCue=null,pfEnd=0;
 function profileCard({name='',intro='',likes='',quote='',img=null,bg=null,kicker='새 친구',count='',button='반가워요!',sec=12}){return enqueue('profile',r=>{pfDone=r;pf.querySelector('.k').textContent=kicker;pf.querySelector('.t').textContent=name;pf.querySelector('.s').textContent=intro;
   {const l=pf.querySelector('.l');l.textContent='';if(likes){const b=document.createElement('b');b.textContent='좋아하는 것';const sp=document.createElement('span');sp.textContent=likes;l.append(b,sp);}}
   pf.querySelector('.q').textContent=quote?quote.replace(/^["“]|["”]$/g,''):'';pf.querySelector('.ic').style.setProperty('--pbg',bg||'#f3ead6');pf.querySelector('.n').textContent=count;pf.querySelector('button').textContent=button;
-  const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=SHOT_UI?clock.t+sec:Infinity;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');block('profile',true);sfx('dex');
+  const im=pf.querySelector('img');if(img)im.src=img;else im.removeAttribute('src');im.alt=name?name+' 초상':'';pfEnd=SHOT_UI?clock.t+sec:Infinity;pfCue=cue({kind:'card',who:'소개',text:name,sub:intro,dur:0});pf.classList.add('on');root.classList.add('prof-on');popShown('prof',true);block('profile',true);sfx('dex');
   setTimeout(()=>{if(cardOn==='profile'&&!coarse)pf.querySelector('button').focus({preventScroll:true});},50);});}
-function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');root.classList.remove('prof-on');block('profile',false);endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
+function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');popShown('prof',false);root.classList.remove('prof-on');block('profile',false);endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
 const profileShown=()=>cardOn==='profile';
 cardCloser('profile',closeProfile);
 pf.querySelector('button').addEventListener('click',()=>{sfx('click');closeProfile();});

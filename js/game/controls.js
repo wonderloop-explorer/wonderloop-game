@@ -10,6 +10,7 @@
    - 촬영·영상 캡처 모드(?shot)에서는 키·끌기·휠을 받지 않는다(기준 화면·대본 그대로). 조이스틱·단추는 안내 표시라 영상에서 숨는다.
    세계 도구(개미굴 랜턴 자리): setTool({label, use}) — F 또는 왼쪽 위 도구 단추로 use()(켜고 끄기·쓰기). setTool(null)로 뺀다. 구역을 떠나면 비워진다. */
 import {block} from './core.js';
+import {popBackdrop,popCss,popHooks,popShown} from './popup.js';
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 const coarse=matchMedia('(pointer:coarse)').matches;
 const MOVE=['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
@@ -37,7 +38,8 @@ const css=`
 /* 조작법 창: 개미굴 게임 #how 그대로(2026-11-04 시리즈 공통 틀) — 늘 밝은 크림색 카드(기기 어두운 화면 설정과 상관없이) */
 #wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1rem;box-sizing:border-box;background:rgba(30,14,36,.5);z-index:40;font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;color-scheme:light}
 #wlHelp[hidden]{display:none}
-#wlHelp .hcard{width:min(36rem,100%);max-height:calc(100vh - 2rem);max-height:calc(100dvh - 2rem);overflow-y:auto;background:rgba(255,246,234,.95);color:#3e2834;border-radius:22px;padding:1.4rem;box-sizing:border-box;text-align:left}
+#wlHelp .hcard{width:min(36rem,100%);background:rgba(255,246,234,.95);color:#3e2834;border-radius:22px;padding:1.4rem;box-sizing:border-box;text-align:left} /* 높이·스크롤은 팝업 공통(game/popup) — 내용(.hsc)만 스크롤, '알겠어요'는 늘 아래 */
+#wlHelp .hsc{margin:0 -.4rem;padding:0 .4rem}
 #wlHelp h2{margin:0 0 .6rem;font-weight:400;font-size:1.5rem}
 #wlHelp h3{margin:.9rem 0 .45rem;font-weight:400;font-size:1rem;color:#75565e}
 #wlHelp .cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
@@ -48,11 +50,11 @@ const css=`
 #wlHelp p{line-height:1.65;color:#75565e;margin:0}
 #wlHelp .sndtips{margin:.3rem 0 0;padding-left:1.15rem;line-height:1.6}
 #wlHelp .sndtips li{margin:.2rem 0}
-#wlHelp .close{display:block;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;cursor:pointer;margin-top:1.1rem;width:100%}
+#wlHelp .close{display:block;flex:none;text-align:center;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;cursor:pointer;margin-top:1.1rem;width:100%}
 #wlHelp button:focus-visible{outline:3px solid #3f9fa0;outline-offset:3px}
-/* 게임 중 휴대폰 세로: 창을 위쪽에 — 아래쪽 원더룹을 가리지 않게(2026-11-03). 첫 화면에서는 개미굴처럼 가운데 */
-@media (pointer:coarse) and (orientation:portrait){body:not(.wl-front-on) #wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}
-  body:not(.wl-front-on) #wlHelp .hcard{max-height:min(60vh,calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 96px - env(safe-area-inset-bottom,0px)))}}`;
+/* 게임 중 휴대폰 세로: 창을 위쪽에 — 아래쪽 원더룹을 덜 가리게(2026-11-03). 높이는 화면 안(공통 규칙), 조이스틱·단추는 창이 열린 동안 숨김(game/popup) */
+@media (pointer:coarse) and (orientation:portrait){body:not(.wl-front-on) #wlHelp{place-items:start center;padding-top:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px)}
+  body:not(.wl-front-on) #wlHelp .hcard{max-height:calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 66px - env(safe-area-inset-bottom,0px) - 12px)}}`;
 /* 조작법 창(2026-11-04, 개미굴 게임 #how의 디자인·구성·키 설명 표 그대로 — 시리즈 공통 틀): 키보드·터치 두 칸 → 이렇게 놀아요 → 소리가 안 들릴 때 → 휴대폰이 따뜻해질 때 → 알겠어요.
    세계에만 해당하는 글(개미굴의 도감·랜턴·읽어주기·냄새 길 등)은 세계 설정 controlsNote로 — setHelpNote(note): keys(키보드 표 E 다음), talk(터치 '말 걸기' 설명),
    touch(터치 표 끝), play(이렇게 놀아요), heatBefore·heatAfter(따뜻해질 때 목록 앞·뒤). 없는 칸은 빠진다. 예전 세계(요정의 숲)는 setHelpExtra(list, play) — play와 '이 세계에서' 표 */
@@ -68,20 +70,21 @@ const ul=items=>`<ul class="sndtips">${items.map(t=>`<li>${t}</li>`).join('')}</
 let note=null;
 function helpHTML(){const N=note||{};
   const keysRows=[...KEYS_A,...(N.keys||[]),...KEYS_B],touchRows=[...TOUCH_A,['말 걸기',N.talk||'말 걸 상대 가까이에서 나타나요'],...(N.touch||[])];
-  return `<div class="hcard"><h2>조작법</h2><div class="cols"><div><h3>키보드</h3>${dl(keysRows)}</div><div><h3>터치</h3>${dl(touchRows)}</div></div>`+
+  const kb=`<div><h3>키보드</h3>${dl(keysRows)}</div>`,tc=`<div><h3>터치</h3>${dl(touchRows)}</div>`; // 터치 기기는 터치 표 먼저
+  return `<div class="hcard wl-pop-card"><div class="hsc wl-pop-body"><h2>조작법</h2><div class="cols">${coarse?tc+kb:kb+tc}</div>`+
     (N.play?`<h3>이렇게 놀아요</h3><p>${esc(N.play)}</p>`:'')+(N.extra&&N.extra.length?`<h3>이 세계에서</h3>${dl(N.extra)}`:'')+
     `<h3>소리가 안 들릴 때</h3>${ul(SND_TIPS)}<h3>휴대폰이 따뜻해질 때</h3>${ul([...(N.heatBefore||[]),...HEAT_TIPS,...(N.heatAfter||[])])}`+
-    `<button class="close" type="button">알겠어요</button></div>`;}
+    `</div><button class="close wl-pop-foot" type="button">알겠어요</button></div>`;}
 let help=null,toolBtn=null,dashBtn=null;
 function build(){const root=document.querySelector('.wlg');if(!root)return;
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const box=document.createElement('div');
   box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
-<div id="wlHelp" role="dialog" aria-modal="true" aria-label="조작법" hidden></div>`;
+<div id="wlHelp" class="wl-pop" role="dialog" aria-modal="true" aria-label="조작법" hidden></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
   help=root.querySelector('#wlHelp');renderHelp();
-  help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});
+  popCss();popBackdrop(help,()=>showHelp(false));popHooks.release=releaseAll; // 창 바깥 어두운 곳을 누르면 닫힘, 창이 열리면 조이스틱·키를 푼다
   toolBtn=root.querySelector('#wlTool');toolBtn.addEventListener('click',()=>useTool());
   dashBtn=root.querySelector('#wlDash');
   const joy=root.querySelector('#wlJoy'),knob=root.querySelector('#wlKnob');let joyId=null;
@@ -94,7 +97,7 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   input.releaseJoy=()=>{joyId=null;input.jx=input.jy=0;knob.style.transform='';};
   root.querySelector('#wlJump').addEventListener('pointerdown',e=>{e.preventDefault();input.jumpReq=true;});
   dashBtn.addEventListener('pointerdown',e=>{e.preventDefault();input.dashReq=true;});}
-function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);if(on){const c=help.querySelector('.hcard');if(c)c.scrollTop=0;help.querySelector('.close').focus({preventScroll:true});}} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
+function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);popShown('help',!!on);if(on){const c=help.querySelector('.hsc');if(c)c.scrollTop=0;help.querySelector('.close').focus({preventScroll:true});}} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
 function renderHelp(){if(!help)return;help.innerHTML=helpHTML();help.querySelector('.close').addEventListener('click',()=>showHelp(false));}
 /* 세계 설정 controlsNote(js/worlds — 형식은 antvillage.js 맨 위) */
 function setHelpNote(n){note=n||null;renderHelp();}

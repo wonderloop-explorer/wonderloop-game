@@ -6,6 +6,7 @@
  - rules: 규칙 시험(tools/game-tests.js, 견본 실내) · phone: 휴대폰 확인(tools/phone-check.js, 390×844, 요정의 숲 선착장)
  - occlude: 가림 시험(tools/occlude-test.js, 컴퓨터·휴대폰 단계 → docs/occlude/pc·mobile) · stuck: 끼임 시험(tools/stuck-test.js, 선착장)
  - cam: 카메라 걷기 시험(tools/cam-walk-test.js, 보통 주소·휴대폰 세로)
+ - touch: 팝업·패널 손가락 스크롤(tools/popup-touch-test.py — 조작법·탐험가 소개·옷 갈아입기를 진짜 터치로 끝까지 밀고 닫기)
  결과는 화면에 요약하고 docs/compare/<이름>-checks.json에 모두 남긴다. 시험 브라우저는 소리를 끄고(--mute-audio) 끝나면 닫는다."""
 import json, os, sys, filecmp
 from playwright.sync_api import sync_playwright
@@ -14,7 +15,7 @@ U = 'http://localhost:8000/'
 args = sys.argv[1:]
 name = args[0] if args and not args[0].startswith('--') else 'now'
 prev = args[args.index('--prev') + 1] if '--prev' in args else None
-only = set(args[args.index('--only') + 1].split(',')) if '--only' in args else {'base', 'rig', 'rules', 'phone', 'occlude', 'stuck', 'cam'}
+only = set(args[args.index('--only') + 1].split(',')) if '--only' in args else {'base', 'rig', 'rules', 'phone', 'occlude', 'stuck', 'cam', 'touch'}
 OUT, R = {}, {}
 SOFT = ['--mute-audio', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
 GPU = ['--mute-audio', '--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist']
@@ -70,6 +71,13 @@ with sync_playwright() as p:
         r = pg.evaluate("(async()=>{const r=await (await import('/tools/cam-walk-test.js')).run();delete r.그림;return r})()")
         R['cam'] = {'paths': [{'이름': x['이름'], '바뀜': x['바뀜']} for x in r['길']], 'errors': errs}; print('카메라 걷기', R['cam']['paths'], flush=True); ctx.close()
     b.close()
+if 'touch' in only:  # 팝업·패널 손가락 스크롤(tools/popup-touch-test.py — 휴대폰 크기·진짜 터치 끌기, 끝까지 내린 화면은 docs/compare/<이름>-touch/)
+    import subprocess
+    pr = subprocess.run([sys.executable, os.path.join(ROOT, 'tools/popup-touch-test.py'), U, '--out', f'docs/compare/{name}-touch'], capture_output=True, text=True, cwd=ROOT)
+    out = pr.stdout; j = out[:out.rfind('실패:')] if '실패:' in out else out
+    try: R['touch'] = json.loads(j)
+    except Exception: R['touch'] = {'raw': out[-2000:], 'stderr': pr.stderr[-2000:]}
+    print('팝업 터치', out.strip().splitlines()[-1] if out.strip() else pr.stderr[-300:], flush=True)
 os.makedirs(os.path.join(ROOT, 'docs/compare'), exist_ok=True)
 json.dump(R, open(os.path.join(ROOT, 'docs/compare', f'{name}-checks.json'), 'w'), ensure_ascii=False, indent=1)
 print('저장', f'docs/compare/{name}-checks.json')
