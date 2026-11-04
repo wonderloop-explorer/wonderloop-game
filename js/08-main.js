@@ -8,6 +8,7 @@ import './05-hair-headwear.js';
 import './06-outfits.js';
 import {hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
+import {CURRENT as WORLD} from './worlds/index.js'; // 지금 세계 설정(시리즈 공통 틀 — 타이틀 화면)
 import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
@@ -69,7 +70,7 @@ zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5)});window.wlGame=GAME; // 콘솔·시험 도구용
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
-GAME.startFront({ctx:{scene,camera,renderer,WL},zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
+GAME.startFront({ctx:{scene,camera,renderer,WL},world:WORLD,zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
 {let done=false;const go=()=>{if(done)return;done=true;if(window.wlBootDone)window.wlBootDone();};requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(go,1500);} // 공통 로딩 화면(index.html #wlBoot): 첫 구역을 그린 뒤 치운다 — 최소 1초·0.4초 사라짐·루프 멈춤은 로딩 화면 쪽. 화면이 가려져 그리기가 멈춰 있어도 1.5초 뒤엔 치운다(촬영 모드는 로딩 화면이 스스로 바로 지움)
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES),blocked,overlap}; // blocked·overlap: 끼임 자동 시험(tools/stuck-test.js)
 // 주소에 ?zonetest 를 붙이면 구역을 차례로 바꾸는 단추가 나온다 (견본 구역 시험용)
@@ -210,9 +211,11 @@ function tickBody(){
     _cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
     camera.position.lerp(_cw,Math.min(1,dt*7));camera.position.y=Math.max(camera.position.y,groundY(camera.position.x,camera.position.z)+.6); // 따라오는 길에도 땅 속으로 들어가지 않게
     controls.target.lerp(_ct,Math.min(1,dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
-  else{C.ready=false;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
+  else if(GAME.view.req&&GAME.view.req.fn&&(C.hv=GAME.view.req.fn())){C.ready=false;const k=Math.min(1,dt*1.5); // 방 카메라 구역에서도 view.hold(첫 화면 배경 루프 — 베이스캠프): 개미굴 타이틀처럼 그 자리로 부드럽게
+    camera.position.lerp(_fv.set(...C.hv.from),k);controls.target.lerp(_fv.set(...C.hv.at),k);camera.lookAt(controls.target);}
+  else{C.ready=false;C.hv=null;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
-  if(!rig)controls.update();GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
+  if(!rig&&!C.hv)controls.update();GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}${window.WL_BUILD?' · 커밋 '+window.WL_BUILD.commit:''}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':

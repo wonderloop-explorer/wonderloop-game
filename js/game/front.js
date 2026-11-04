@@ -15,12 +15,13 @@
 import {block,blocking} from './core.js';
 import {setMuted,sfx,soundSettings} from './sound.js';
 import {cardShown,setHints,toast,transition} from './ui.js';
-import {controlHooks,helpShown,input,setHelpExtra,showHelp} from './controls.js';
+import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './controls.js';
 import {cards as profCards,pic,seen} from './profile.js';
 import {flags,onFlag,resetAll} from './state.js';
 import {ITEMS} from './items.js';
 import {logoEl} from './title.js';
 import {icon,mk,setIcons,setTheme,tape} from './felt.js';
+import {backdropAt,render as renderTitle} from './titlescreen.js';
 const Q=new URLSearchParams(location.search),SHOT=Q.has('shot'),NO=SHOT||Q.has('notitle');
 const coarse=matchMedia('(pointer:coarse)').matches;
 const LOOK_KEY='wl-look2',HELP_KEY='wl-help-seen';
@@ -132,8 +133,8 @@ const css=`
 #wlItems{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)));z-index:16;display:flex;flex-direction:column;align-items:flex-start;gap:.45rem;pointer-events:none}
 #wlItems .wl-chip{min-height:40px;padding:.35rem .9rem .35rem .55rem;font-size:.95rem;color:#1e1418;pointer-events:auto;border:0;font:inherit;font-family:"Jua","Gowun Dodum",sans-serif}#wlItems .wl-ic,#wlItems .bagic{width:24px;height:24px}
 #wlItems .wl-chip.pulse{animation:wlBagPulse .9s ease 2}@keyframes wlBagPulse{50%{transform:scale(1.12)}}
-body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
-let ctx=null,VIEW=null,el=null,ward=null,corner=null,menu=null,items=null,story=null,bag=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false,storyOn=false,bagOn=false;
+body.wl-front-on .bar .hint:not(#stats),body.wl-front-on #dbgBtn,body.wl-front-on header{display:none} /* 첫 화면: 아래 안내 글자·시험용 톱니 숨김 */`;
+let WORLD=null,tEl=null,ctx=null,VIEW=null,el=null,ward=null,corner=null,menu=null,items=null,story=null,bag=null,zone=()=>null,restart=null,frontOn=false,wardOn=false,wardFrom=null,busy=false,storyOn=false,bagOn=false;
 const look={vest:0,scarf:0,name:'',deco:''};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
 /* 시간대(2026-11-03): 게임을 열 때마다 낮·해 질 녘·밤 가운데 하나를 무작위로(첫 화면 뒤 배경부터 같은 시간). ?time=0|1|2로 고정, 촬영 모드는 늘 그대로(구역 기본 — 낮) */
 const T0=(()=>{const q=Q.get('time');if(q!==null&&q!=='')return Math.max(0,Math.min(2,+q|0));return Math.floor(Math.random()*3);})();
@@ -214,9 +215,18 @@ function orbit(){const Z=zone(),T=Z.titleView||{};const sp=Z.spawn||{x:0,z:0},sp
   VIEW.hold(()=>{const now=performance.now();a+=Math.min(.1,(now-last)/1000)*sp2;last=now;
     if(T.from)return {from:T.from,at:[T.from[0]+Math.cos(a)*(T.r||9),T.y??.6,T.from[2]+Math.sin(a)*(T.r||9)]};
     const at=T.at||[sp.x,.6,sp.z],r=T.r||13;return {at,from:[at[0]+Math.cos(a)*r,T.h||7,at[2]+Math.sin(a)*r]};});}
-function openFront(){if(!zone()||!zone().front)return false;build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');
+/* 시리즈 공통 타이틀(game/titlescreen, 2026-11-04): 지금 세계 설정(js/worlds CURRENT)의 시작 공간(backdrop.zone)이면 그 틀로 — 아니면(요정의 숲 선착장 등) 아래 예전 첫 화면 */
+const zoneId=Z=>(Z&&Z.root&&Z.root.name||'').replace(/^zone:/,'');
+const titleWorld=()=>WORLD&&WORLD.backdrop&&zoneId(zone())===WORLD.backdrop.zone?WORLD:null;
+function openTitle(W){build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');startTime();
+  const go=fr=>{if(zone().front&&zone().front.explorer){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
+  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('click');go(false);},onContinue:()=>begin(false),onFresh:()=>{sfx('click');go(true);},onHow:()=>{sfx('click');showHelp(true);},onClick:()=>sfx('click')});
+  document.querySelector('.wlg').appendChild(tEl);if(tEl._place)tEl._place();
+  const B=W.backdrop,t0=performance.now();VIEW.hold(()=>backdropAt(B,(performance.now()-t0)/1000));
+  return true;} // 개미굴처럼 단추에 미리 초점을 주지 않는다(Tab으로 옮겨 가면 초점 테두리가 보임)
+function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!zone().front)return false;build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');
   startTime();renderFront();el.classList.add('on');orbit();setTimeout(()=>{const b=el.querySelector('.go');if(b&&!coarse)b.focus({preventScroll:true});},50);return true;}
-function closeFront(){frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
+function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
 async function begin(fr){if(busy)return;busy=true;sfx('click');
   await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();}closeFront();},{out:.45,hold:.25,in:.75});busy=false;fresh=false;
   if(!store.get(HELP_KEY)){store.set(HELP_KEY,'1');showHelp(true);}} // 처음 시작할 때 한 번 조작법(닫으면 나침반 연출·버섯 요정 순서로 이어진다)
@@ -281,12 +291,12 @@ function closeWardrobe(go=false){if(!wardOn)return;wardOn=false;ward.classList.r
 function toggleWardrobe(){if(wardOn)closeWardrobe();else openWardrobe('game');}
 /* ---------- 시작 ---------- */
 /* 08이 게임을 준비한 뒤: initFront({ctx, view, zone:()=>지금 구역, restart:()=>첫 구역 다시 만들기}) → 첫 화면을 열거나(세계 front가 있을 때) 구석 단추만 */
-function initFront(o){ctx=o.ctx;VIEW=o.view;zone=o.zone;restart=o.restart;if(SHOT)return;{const F0=zone()&&zone().front;if(F0&&F0.icons)setIcons(F0.icons);}build(); // 아이콘은 단추를 만들기 전에
+function initFront(o){ctx=o.ctx;VIEW=o.view;zone=o.zone;restart=o.restart;WORLD=o.world||null;if(SHOT)return;{const F0=zone()&&zone().front;if(F0&&F0.icons)setIcons(F0.icons);}build(); // 아이콘은 단추를 만들기 전에
   window.addEventListener('keydown',e=>{if(story&&story._key)story._key(e);
     if(bagOn&&(e.code==='Escape'||e.code==='KeyB')){e.preventDefault();e.stopImmediatePropagation();closeBag();return;}
     if(!wardOn)return;if(e.target&&e.target.tagName==='INPUT')return;if(e.code==='Escape'||(e.code==='KeyC'&&wardFrom==='game')){e.preventDefault();e.stopImmediatePropagation();closeWardrobe();}},true);
   controlHooks.onBag=()=>{if(bagOn)closeBag();else openBag();};
-  const Z=zone(),F=Z&&Z.front;setHelpExtra(F&&F.help,F&&F.play);if(F&&F.theme)setTheme(F.theme); // 세계 색(펠트 한 벌은 game/felt)
+  const Z=zone(),F=Z&&Z.front;if(titleWorld())setHelpNote(WORLD.controlsNote||null);else setHelpExtra(F&&F.help,F&&F.play);if(F&&F.theme)setTheme(F.theme); // 세계 색(펠트 한 벌은 game/felt)
   if(NO||!openFront()){startTime();corner.classList.add('on');}}
 const frontShown=()=>frontOn,wardrobeShown=()=>wardOn,bagShown=()=>bagOn;
 export {applyLook,bagShown,closeBag,closeFront,closeWardrobe,frontShown,initFront,openBag,openFront,openWardrobe,playerName,toggleWardrobe,wardrobeShown};

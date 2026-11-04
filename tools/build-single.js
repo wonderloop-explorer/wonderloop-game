@@ -23,6 +23,12 @@ const THREE_FILES = ['build/three.module.js', 'build/three.core.js', 'examples/j
 const LIMIT = 15 * 1024 * 1024;
 
 const STAGES = {
+  // 시리즈 공통 틀(2026-11-04): 지금 세계 설정(js/worlds CURRENT — 개미굴)의 타이틀 화면 + 시작 공간(backdrop.zone — 이식 전까지 베이스캠프)
+  'basecamp': {
+    out: 'dist/wonderloop-frame.html',
+    title: '원더룹 — 시리즈 공통 틀 (개미굴 설정)',
+    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json'],
+  },
   'fairy-dock': {
     out: 'dist/fairy-forest-stage01.html',
     title: '원더룹 요정의 숲 — STAGE 01 이슬방울 선착장',

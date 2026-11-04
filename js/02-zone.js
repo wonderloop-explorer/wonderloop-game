@@ -31,6 +31,7 @@ import * as THREE from 'three';
 import {BUILD,loadBaked,scene} from './01-textures.js';
 import {clearZoneGame,sound} from './game/index.js';
 import {applyStart} from './game/state.js';
+import {CURRENT as WORLD} from './worlds/index.js';
 // 구역 목록 — 새 구역은 여기에 한 줄 더한다
 const ZONES={
   basecamp:()=>import('./zones/basecamp.js'),
@@ -89,9 +90,9 @@ function overlap(x,z,y){if(!areaAt(x,z))return 9;let d=0;
   return d;}
 const groundY=(x,z)=>zone.cur.groundY?zone.cur.groundY(x,z):0;
 const doorAt=(x,z)=>zone.cur.doors.find(d=>inRect(d.rect,x,z))||null;
-// 처음 구역: 주소에 ?zone=이름 을 붙이면 그 구역에서 시작. 없으면 START_ZONE — 요정의 숲을 만드는 동안(world/fairy-forest 브랜치)은 선착장(2026-11-02).
+// 처음 구역: 주소에 ?zone=이름 을 붙이면 그 구역에서 시작. 없으면 START_ZONE — 지금 세계(js/worlds CURRENT)의 시작 공간 backdrop.zone(2026-11-04 시리즈 공통 틀. 요정의 숲 선착장은 ?zone=fairy-dock).
 // 촬영 모드(?shot)는 늘 베이스캠프(기준 촬영·규칙 시험이 zone 없이 연다)
-const START_ZONE=window.WL_START_ZONE||'fairy-dock'; // 한 파일 빌드(tools/build-single.js)는 그 스테이지 구역을 WL_START_ZONE으로 정한다
+const START_ZONE=window.WL_START_ZONE||WORLD.backdrop.zone; // 한 파일 빌드(tools/build-single.js)는 그 스테이지 구역을 WL_START_ZONE으로 정한다
 {const q=new URLSearchParams(location.search),want=q.get('zone');zone.cur=await loadZone(ZONES[want]?want:!q.has('shot')&&ZONES[START_ZONE]?START_ZONE:'basecamp');}
 zone.area=areaAt(zone.cur.spawn.x,zone.cur.spawn.z)||Object.keys(zone.cur.areas)[0];
 export {STEP,WR,ZONES,ZONETEST,areaAt,blocked,bouncerAt,doorAt,floorAt,groundY,hasHeights,loadZone,overlap,unloadZone,windAt,zone};

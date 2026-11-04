@@ -38,7 +38,7 @@ function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEven
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickGoal(dt);}
 function clearZoneGame(){STEPS++;view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearGoal();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
-function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart});}
+function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)
 export {clickNPC,clearZoneGame,clock,cues,initGame,startFront,steps,updateGame,view};
 export * as core from './core.js';
 export * as sound from './sound.js';

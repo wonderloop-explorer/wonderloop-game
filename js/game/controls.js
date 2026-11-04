@@ -34,34 +34,53 @@ const css=`
 @media (pointer:coarse){#wlJoy{display:block}#wlJump,#wlDash{display:grid}}
 #wlTool{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 56px);display:none;z-index:16;
   background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:.45rem .9rem;font-size:.9rem;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.45);z-index:40}
-@media (pointer:coarse) and (orientation:portrait){#wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}#wlHelp .hcard{max-height:52vh}} /* 휴대폰 세로: 위쪽에 — 아래쪽 원더룹을 가리지 않게 */
+/* 조작법 창: 개미굴 게임 #how 그대로(2026-11-04 시리즈 공통 틀) — 늘 밝은 크림색 카드(기기 어두운 화면 설정과 상관없이) */
+#wlHelp{position:fixed;inset:0;display:grid;place-items:center;padding:1rem;box-sizing:border-box;background:rgba(30,14,36,.5);z-index:40;font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;color-scheme:light}
 #wlHelp[hidden]{display:none}
-#wlHelp .hsc{flex:1;min-height:0;overflow-y:auto;margin:0 -.4rem;padding:0 .4rem} /* 내용만 스크롤 — 창 테두리 바느질 점선은 '알겠어요' 단추까지 늘 한 바퀴(2026-11-03: 스크롤하면 점선이 중간에서 끊겼다) */
-#wlHelp .snd{margin:0;padding-left:1.1rem;line-height:1.6;color:var(--f-soft);word-break:keep-all}#wlHelp .snd li{margin:.2rem 0}#wlHelp .snd b{color:var(--f-ink);font-weight:700}#wlHelp .play{margin:0;line-height:1.65;color:var(--f-soft);word-break:keep-all}
-#wlHelp .hcard{position:relative;width:min(26rem,100%);max-height:calc(100dvh - 2.4rem);overflow:hidden;display:flex;flex-direction:column;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.4rem 1.4rem 1.2rem;box-sizing:border-box;box-shadow:0 18px 50px rgba(30,14,36,.5)}
-#wlHelp h2{margin:0 0 .7rem;font-size:1.4rem;font-weight:400;font-family:"Jua",sans-serif}
-#wlHelp h3{margin:1rem 0 .45rem;font-size:1rem;font-weight:400;color:var(--f-soft);font-family:"Jua",sans-serif}
-#wlHelp dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:.45rem .9rem;line-height:1.5}
-#wlHelp dt{white-space:nowrap;font-family:"Jua",sans-serif;color:var(--f-ink)}#wlHelp dd{margin:0;color:var(--f-soft)}
-#wlHelp kbd{font:inherit;font-size:.85rem;background:var(--f-cream);color:var(--f-ink);border:1.5px solid var(--f-edge);box-shadow:0 2px 0 var(--f-edge);border-radius:7px;padding:0 .4rem;margin-right:.2rem}
-#wlHelp button{position:relative;flex:none;z-index:2;display:block;width:100%;box-sizing:border-box;margin-top:1.1rem;text-align:center;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:1.15rem;padding:.65rem 1.2rem;--fr:999px}
-@media (pointer:coarse) and (orientation:portrait){#wlHelp .hcard{max-height:min(60vh,calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 96px - env(safe-area-inset-bottom,0px)))}} /* 휴대폰 세로: 창 아래 끝('알겠어요')이 화면 안에, 아래쪽 원더룹은 보이게 — 위 기본 높이 규칙보다 뒤에 둔다 */`;
-/* 조작법 창(2026-11-03 개미굴 조작법과 같게): 컴퓨터는 키보드, 휴대폰은 터치 — 오른쪽 위 '조작법' 단추(game/front)·H 키로 열고 닫는다.
-   세계마다 새로 생긴 것(탈것·우산 활공 등)은 세계 front.help로 '이 세계에서' 칸에(setHelpExtra). 늘 크림색 바탕·진갈색 글자, 휴대폰 세로는 화면 위쪽에 */
-const KEYS_HELP=[['<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>','걷기 (카메라가 보는 쪽이 앞)'],['방향키 · 마우스 끌기','카메라 돌리기'],['휠 · <kbd>-</kbd><kbd>+</kbd>','카메라 확대·축소'],['<kbd>Space</kbd>','점프'],['<kbd>Shift</kbd>','대쉬 · 누른 채면 달리기'],
-  ['<kbd>E</kbd>','말 걸기 · 손으로 하기 · 대화 넘기기'],['<kbd>F</kbd>','세계 도구 쓰기'],['<kbd>B</kbd>','탐험 가방 열기 (받은 물건·만난 친구·숨겨진 비밀)'],['<kbd>C</kbd>','탐험가 소개 · 옷 갈아입기'],['<kbd>M</kbd>','소리 끄고 켜기'],['<kbd>H</kbd>','조작법 열고 닫기'],['<kbd>Esc</kbd>','창 닫기']];
-const TOUCH_HELP=[['왼쪽 아래 동그라미','끌어서 걷기 (끝까지 밀면 달리기)'],['한 손가락 끌기','카메라 돌리기'],['두 손가락','벌리면 가까이 · 오므리면 멀리'],['점프 · 대쉬','오른쪽 아래 단추'],['말 걸기','가까이 가면 생기는 노란 단추 (손으로 하기·타기도)'],['가방','왼쪽 위 노란 단추 — 받은 물건·만난 친구·숨겨진 비밀'],['메뉴','오른쪽 위 노란 단추 — 소리·옷 갈아입기·조작법'],['땅 누르기','그 자리로 걸어가기']];
-let extra=null;
+#wlHelp .hcard{width:min(36rem,100%);max-height:calc(100vh - 2rem);max-height:calc(100dvh - 2rem);overflow-y:auto;background:rgba(255,246,234,.95);color:#3e2834;border-radius:22px;padding:1.4rem;box-sizing:border-box;text-align:left}
+#wlHelp h2{margin:0 0 .6rem;font-weight:400;font-size:1.5rem}
+#wlHelp h3{margin:.9rem 0 .45rem;font-weight:400;font-size:1rem;color:#75565e}
+#wlHelp .cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media (max-width:560px){#wlHelp .cols{grid-template-columns:1fr}}
+#wlHelp dl{display:grid;grid-template-columns:auto 1fr;gap:.35rem .7rem;margin:0}
+#wlHelp dt{background:rgba(127,90,96,.14);border-radius:8px;padding:.1rem .5rem;font-size:.85rem;text-align:center;white-space:nowrap}
+#wlHelp dd{margin:0;font-size:.92rem;align-self:center}
+#wlHelp p{line-height:1.65;color:#75565e;margin:0}
+#wlHelp .sndtips{margin:.3rem 0 0;padding-left:1.15rem;line-height:1.6}
+#wlHelp .sndtips li{margin:.2rem 0}
+#wlHelp .close{display:block;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;cursor:pointer;margin-top:1.1rem;width:100%}
+#wlHelp button:focus-visible{outline:3px solid #3f9fa0;outline-offset:3px}
+/* 게임 중 휴대폰 세로: 창을 위쪽에 — 아래쪽 원더룹을 가리지 않게(2026-11-03). 첫 화면에서는 개미굴처럼 가운데 */
+@media (pointer:coarse) and (orientation:portrait){body:not(.wl-front-on) #wlHelp{place-items:start center;padding:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px) + 52px) 12px 0;background:rgba(30,14,36,.16)}
+  body:not(.wl-front-on) #wlHelp .hcard{max-height:min(60vh,calc(100dvh - env(safe-area-inset-top,0px) - var(--qh,0px) - 96px - env(safe-area-inset-bottom,0px)))}}`;
+/* 조작법 창(2026-11-04, 개미굴 게임 #how의 디자인·구성·키 설명 표 그대로 — 시리즈 공통 틀): 키보드·터치 두 칸 → 이렇게 놀아요 → 소리가 안 들릴 때 → 휴대폰이 따뜻해질 때 → 알겠어요.
+   세계에만 해당하는 글(개미굴의 도감·랜턴·읽어주기·냄새 길 등)은 세계 설정 controlsNote로 — setHelpNote(note): keys(키보드 표 E 다음), talk(터치 '말 걸기' 설명),
+   touch(터치 표 끝), play(이렇게 놀아요), heatBefore·heatAfter(따뜻해질 때 목록 앞·뒤). 없는 칸은 빠진다. 예전 세계(요정의 숲)는 setHelpExtra(list, play) — play와 '이 세계에서' 표 */
+const KEYS_A=[['W A S D','걷기'],['Shift','대쉬, 누르고 있으면 달리기'],['스페이스','점프'],['방향키','시점 돌리기'],['+ −','카메라 거리'],['E','말 걸기, 살펴보기, 대화 넘기기']];
+const KEYS_B=[['M','소리 켜고 끄기'],['H','조작법 열고 닫기'],['C','옷 갈아입기']];
+const TOUCH_A=[['왼쪽 원','걷기, 끝까지 밀면 달리기'],['드래그','시점 돌리기'],['점프','뛰어오르기'],['대쉬','순간 돌진']];
+const SND_TIPS=['오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.','다른 앱이나 메시지에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.',
+  '아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.','그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.'];
+const HEAT_TIPS=['<b>충전하면서</b> 하면 더 뜨거워져요. 가능하면 충전기를 빼고 해 주세요.','화면 <b>밝기를 조금 낮추면</b> 발열이 줄어요.'];
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dl=rows=>`<dl>${rows.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
+const ul=items=>`<ul class="sndtips">${items.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+let note=null;
+function helpHTML(){const N=note||{};
+  const keysRows=[...KEYS_A,...(N.keys||[]),...KEYS_B],touchRows=[...TOUCH_A,['말 걸기',N.talk||'말 걸 상대 가까이에서 나타나요'],...(N.touch||[])];
+  return `<div class="hcard"><h2>조작법</h2><div class="cols"><div><h3>키보드</h3>${dl(keysRows)}</div><div><h3>터치</h3>${dl(touchRows)}</div></div>`+
+    (N.play?`<h3>이렇게 놀아요</h3><p>${esc(N.play)}</p>`:'')+(N.extra&&N.extra.length?`<h3>이 세계에서</h3>${dl(N.extra)}`:'')+
+    `<h3>소리가 안 들릴 때</h3>${ul(SND_TIPS)}<h3>휴대폰이 따뜻해질 때</h3>${ul([...(N.heatBefore||[]),...HEAT_TIPS,...(N.heatAfter||[])])}`+
+    `<button class="close" type="button">알겠어요</button></div>`;}
 let help=null,toolBtn=null,dashBtn=null;
 function build(){const root=document.querySelector('.wlg');if(!root)return;
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const box=document.createElement('div');
   box.innerHTML=`<div id="wlJoy" class="wl-hint" aria-hidden="true"><div id="wlKnob"></div></div><button id="wlJump" class="wl-hint" type="button">점프</button><button id="wlDash" class="wl-hint" type="button">대쉬</button>
 <button id="wlTool" class="wl-hint" type="button"></button>
-<div id="wlHelp" role="dialog" aria-label="조작법" hidden><div class="hcard wl-felt"><div class="hsc"><h2>조작법</h2><dl class="base">${(coarse?TOUCH_HELP:KEYS_HELP).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl><div class="extra"></div><h3>소리가 안 들릴 때</h3><ul class="snd"><li>오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.</li><li>다른 앱에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.</li><li>아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.</li><li>그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.</li></ul></div><button type="button" class="wl-felt apri wl-btn"><span class="wl-mk">알겠어요</span></button></div></div>`;
+<div id="wlHelp" role="dialog" aria-modal="true" aria-label="조작법" hidden></div>`;
   while(box.firstChild)root.appendChild(box.firstChild);
-  help=root.querySelector('#wlHelp');help.querySelector('button').addEventListener('click',()=>showHelp(false));
+  help=root.querySelector('#wlHelp');renderHelp();
   help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});
   toolBtn=root.querySelector('#wlTool');toolBtn.addEventListener('click',()=>useTool());
   dashBtn=root.querySelector('#wlDash');
@@ -75,13 +94,12 @@ function build(){const root=document.querySelector('.wlg');if(!root)return;
   input.releaseJoy=()=>{joyId=null;input.jx=input.jy=0;knob.style.transform='';};
   root.querySelector('#wlJump').addEventListener('pointerdown',e=>{e.preventDefault();input.jumpReq=true;});
   dashBtn.addEventListener('pointerdown',e=>{e.preventDefault();input.dashReq=true;});}
-function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);if(on)help.querySelector('button').focus({preventScroll:true});} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
-/* 세계마다 새로 생긴 조작(front.help: [[이름, 설명]…]) — '이 세계에서' 칸 */
-/* setHelpExtra(list, play): 세계마다 '이렇게 놀아요'(play — 한 단락, 개미굴 조작법과 같게)와 '이 세계에서'(list) */
-function setHelpExtra(list,play=null){extra=list||null;if(!help)return;const box=help.querySelector('.extra');box.innerHTML='';
-  if(play){const h=document.createElement('h3');h.textContent='이렇게 놀아요';const p=document.createElement('p');p.className='play';p.textContent=play;box.append(h,p);}
-  if(!extra||!extra.length)return;
-  const h=document.createElement('h3');h.textContent='이 세계에서';const dl=document.createElement('dl');extra.forEach(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.append(dt,dd);});box.append(h,dl);}
+function showHelp(on){if(!help)return;help.hidden=!on;block('help',!!on);if(on){const c=help.querySelector('.hcard');if(c)c.scrollTop=0;help.querySelector('.close').focus({preventScroll:true});}} // 열려 있는 동안 막힘 — 처음 시작할 때 조작법을 닫아야 나침반 연출이 이어진다
+function renderHelp(){if(!help)return;help.innerHTML=helpHTML();help.querySelector('.close').addEventListener('click',()=>showHelp(false));}
+/* 세계 설정 controlsNote(js/worlds — 형식은 antvillage.js 맨 위) */
+function setHelpNote(n){note=n||null;renderHelp();}
+/* 예전 세계 front(요정의 숲): help [[이름, 설명]…] → '이 세계에서' 표, play → '이렇게 놀아요' */
+function setHelpExtra(list,play=null){note={play,extra:list||null};renderHelp();}
 const helpShown=()=>!!help&&!help.hidden;
 function setTool(t){tool=t||null;if(!toolBtn)return;toolBtn.style.display=tool?'block':'none';if(tool)toolBtn.textContent=tool.label||'도구';}
 function useTool(){if(!tool||!tool.use)return false;try{tool.use();}catch(e){console.error(e);}if(toolBtn&&tool)toolBtn.textContent=tool.label||'도구';return true;}
@@ -131,4 +149,4 @@ function tickControls(dt,dashCool){if(SHOT)return;const c=input.cam;
     if(keys.Minus||keys.NumpadSubtract)c.dist=Math.min(CAM.distMax,c.dist+dt*CAM.keyZoom);if(keys.Equal||keys.NumpadAdd)c.dist=Math.max(c.minD||CAM.distMin,c.dist-dt*CAM.keyZoom);}
   if(dashBtn)dashBtn.classList.toggle('cool',!!dashCool);}
 function clearControls(){setTool(null);}
-export {CAM,clearControls,hooks as controlHooks,helpShown,initControls,input,setHelpExtra,setTool,showHelp,tickControls,useTool};
+export {CAM,clearControls,hooks as controlHooks,helpShown,initControls,input,setHelpExtra,setHelpNote,setTool,showHelp,tickControls,useTool};
