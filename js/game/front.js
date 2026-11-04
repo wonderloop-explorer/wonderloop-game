@@ -100,15 +100,15 @@ const css=`
 body.wl-antui #wlNotice .t,body.wl-antui #wlGet .t{font-family:"Gowun Dodum",sans-serif}
 body.wl-antui #wlGet{border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;background:var(--panel);box-shadow:0 14px 40px rgba(30,14,36,.45)}
 body.wl-antui #wlGet .ic{width:auto;height:auto;background:none;border:0;border-radius:0}body.wl-antui #wlGet img{width:58px;height:58px;filter:none}
-/* 모험 떠나기 전 이야기 소개(개미굴 #story): 화면 아래 가운데 카드, 건너뛰기·다음, 점 */
+/* 모험 떠나기 전 이야기 소개(개미굴 #story) — 2026-11-04 사용자 요청으로 개미굴 어두운 화면 값(판 rgba(44,30,42,.95)·글자 #fbe9d8·민트 #5cc4b9)으로 늘 어둡게: 화면 아래 가운데 카드, 건너뛰기·다음, 점 */
 #wlStory{position:fixed;inset:0;z-index:31;display:none;place-items:end center;padding:1rem 1rem calc(env(safe-area-inset-bottom,0px) + 3.5rem);box-sizing:border-box;background:linear-gradient(180deg,rgba(30,14,36,0) 35%,rgba(30,14,36,.6))}
 #wlStory.on{display:grid}
-#wlStory .scard{width:min(34rem,100%);background:#fff6ea;color:#3e2834;border-radius:22px;padding:1.4rem 1.4rem 1.1rem;box-shadow:0 18px 50px rgba(30,14,36,.5);box-sizing:border-box;font-family:"Gowun Dodum",sans-serif;color-scheme:light;animation:wlfFade .4s ease both}
+#wlStory .scard{width:min(34rem,100%);background:rgba(44,30,42,.95);color:#fbe9d8;border-radius:22px;padding:1.4rem 1.4rem 1.1rem;box-shadow:0 18px 50px rgba(30,14,36,.5);box-sizing:border-box;font-family:"Gowun Dodum",sans-serif;color-scheme:dark;animation:wlfFade .4s ease both}
 #wlStory .stext{margin:0 0 1rem;font-size:1.15rem;line-height:1.75;min-height:5.3em;word-break:keep-all}
 #wlStory .sbtns{display:flex;justify-content:flex-end;gap:.5rem}
 #wlStory button{text-align:center;border-radius:14px;font:inherit;font-size:1.02rem;padding:.75rem 1.4rem;cursor:pointer;min-height:48px}
-#wlStory .next{border:0;background:#3f9fa0;color:#fffaf2}#wlStory .skip{border:2px solid #3f9fa0;background:transparent;color:#3e2834}
-#wlStory .dots{display:flex;gap:.35rem;justify-content:center;margin-top:.8rem}#wlStory .dots i{width:7px;height:7px;border-radius:50%;background:rgba(127,90,96,.35)}#wlStory .dots i.on{background:#3f9fa0}
+#wlStory .next{border:0;background:#5cc4b9;color:#1f1418}#wlStory .skip{border:2px solid #5cc4b9;background:transparent;color:#fbe9d8}
+#wlStory .dots{display:flex;gap:.35rem;justify-content:center;margin-top:.8rem}#wlStory .dots i{width:7px;height:7px;border-radius:50%;background:rgba(127,90,96,.35)}#wlStory .dots i.on{background:#5cc4b9}
 /* 탐험 가방(개미굴 자연 도감 창 #dex와 같은 모양): 받은 물건·만난 친구·✦ 숨겨진 비밀을 카드로. 아직 없는 것은 ??? + 어디서 */
 #wlBag{position:fixed;inset:0;z-index:33;display:none;place-items:center;padding:1rem;box-sizing:border-box;background:rgba(30,14,36,.5)}
 #wlBag.on{display:grid}body.wl-bag-on #wlHud{visibility:hidden} /* 가방이 열린 동안 구석 단추(메뉴)가 창 위에 겹치지 않게 */
