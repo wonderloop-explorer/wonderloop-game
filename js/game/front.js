@@ -238,7 +238,9 @@ function orbit(){const Z=zone(),T=Z.titleView||{};const sp=Z.spawn||{x:0,z:0},sp
 const zoneId=Z=>(Z&&Z.root&&Z.root.name||'').replace(/^zone:/,'');
 const titleWorld=()=>WORLD&&WORLD.backdrop&&zoneId(zone())===WORLD.backdrop.zone?WORLD:null;
 function openTitle(W){build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');startTime();
-  const go=fr=>{playWorldMusic(W);if(worldX()||(zone().front&&zone().front.explorer)){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
+  const go=async fr=>{playWorldMusic(W);
+    if(fr){if(busy)return;busy=true;try{resetAll();if(restart)await restart();startTime();playWorldMusic(W);}finally{busy=false;}} // 처음부터 하기(2026-11-04): 기록을 지우고 구역을 같은 그림으로 다시 만드는 일을 여기서 — '모험 시작' 때 화면을 까맣게 덮지 않고 카메라만 내려오게(다시 만드는 짧은 멈춤은 타이틀 위에서)
+    if(worldX()||(zone().front&&zone().front.explorer)){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
   tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('click');go(false);},onContinue:()=>{playWorldMusic(W);begin(false);},onFresh:()=>{sfx('click');go(true);},onHow:()=>{sfx('click');showHelp(true);},onClick:()=>sfx('click')});
   document.querySelector('.wlg').appendChild(tEl);if(tEl._place)tEl._place();
   titleCam(W);
@@ -251,7 +253,7 @@ function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!
   startTime();renderFront();el.classList.add('on');orbit();setTimeout(()=>{const b=el.querySelector('.go');if(b&&!coarse)b.focus({preventScroll:true});},50);return true;}
 function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
 async function begin(fr){if(busy)return;busy=true;sfx('click');const W=curWorld();
-  if(W&&!fr){ // 시리즈 공통 틀(개미굴 beginGame 그대로, 2026-11-04): 화면을 까맣게 덮지 않고 — 원더룹이 카메라를 등지고 서면 카메라가 이야기 소개 자리에서 원더룹 등 뒤로 휙 내려온다(따라가기 카메라가 지금 자리에서 이어 받아 약 0.5초)
+  if(W){ // 처음부터 하기도 같은 연출(구역은 '처음부터 하기'를 누를 때 이미 다시 만들었다 — openTitle go) // 시리즈 공통 틀(개미굴 beginGame 그대로, 2026-11-04): 화면을 까맣게 덮지 않고 — 원더룹이 카메라를 등지고 서면 카메라가 이야기 소개 자리에서 원더룹 등 뒤로 휙 내려온다(따라가기 카메라가 지금 자리에서 이어 받아 약 0.5초)
     const P=ctx.WL.position,c=ctx.camera.position;const ry=Math.atan2(P.x-c.x,P.z-c.z);ctx.WL.rotation.y=ry;closeFront();
     VIEW.start({from:[P.x-Math.sin(ry)*7,P.y+.85+1.9,P.z-Math.cos(ry)*7]});}
   else await transition(async()=>{if(fr){resetAll();if(restart)await restart();startTime();if(W)playWorldMusic(W);}closeFront();},{out:.45,hold:.25,in:.75});

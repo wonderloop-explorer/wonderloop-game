@@ -30,7 +30,7 @@ function tickLamp(dt){if(!light)return;const want=lampOn&&!!(ctx.WL.userData.hel
 function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,kind:'narration'});return tok;}
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
-function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});U.setHeld(h);lampOn=!!it.light;
+function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
   if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use});};setTool({label:lab(),use});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
@@ -52,7 +52,8 @@ function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispo
   if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title);
   setQuest(F.next||'');}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
-function clearMission(){lampOn=false;if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}
+function clearMission(){lampOn=false;{const U=ctx&&ctx.WL&&ctx.WL.userData;if(U&&U.heldObj&&U.heldObj.userData.missionItem&&U.setHeld)U.setHeld(null);} // 처음부터 하기: 쥐고 있던 미션 물건도 내려놓음
+  if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}
 const hero=()=>ctx&&ctx.WL; // 시험 도구용(tools/intro-mission-test.py — 원더룹을 걸려 보냄)
 const missionState=()=>M?{item:M.it.id,got:M.got,at:M.at}:null;
 export {hero,clearMission,initMission,missionState,startMission,stopVO as stopMissionVO,tickMission};
