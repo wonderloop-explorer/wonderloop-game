@@ -7,7 +7,7 @@ import {flags} from './game/state.js';
 import {canGlide} from './game/items.js'; // 활공: 구역 정보 glide(true 늘·false 안 함), 없으면 활공 아이템(민들레 솜털 우산)을 가졌을 때
 import {hint} from './game/ui.js';
 import {sfx} from './game/sound.js'; // 걸음·뛰어오름·내려앉음 소리 (개미굴 step·jump·land)
-import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
+import {HIP,SM,WL,WLS,antennae,arms,eyes,hips,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
 /* 작은 부품은 그림자를 드리우지 않게 (그림자용으로 한 번 더 그리는 비용 절약) */
 WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.isMesh||!o.castShadow)return;o.geometry.computeBoundingSphere();o.getWorldScale(sc);if(o.geometry.boundingSphere.radius*Math.max(sc.x,sc.y,sc.z)<.1)o.castShadow=false;});}
 /* 어두운 곳 가독성: 캐릭터 재질에 테두리 빛(림 라이트)과 약한 자체 밝기를 더함 — 주변이 어두울수록 강해짐 */
@@ -44,9 +44,36 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
 /* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
-const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.9; // 2026-11-04 시리즈 기준: 개미굴 원본 걷기(초당 5 — 키 1.38의 3.6배)보다 22% 느리게 = 초당 3.9(키의 2.8배), 달리기·대쉬도 같은 비율. 기준·동작 촬영은 예전 1.5
-const DRV={walk:WALK,run:WALK*8/5,dash:WALK*17/5,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
-const LEG_A=SHOTM?.5:.75,STRIDE_W=2*.3*Math.sin(LEG_A),STRIDE_R=2*.3*Math.sin(.85)*1.5; // 걷기 다리 흔들기·한 걸음 길이(발걸음 계산, 아래 moving)
+const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:4.0; // 걷기 속도(설정값 — 아래 SPEED). 기본 = 개미굴 원본(초당 5 — 키 1.38의 3.6배)의 0.8배 = 4.0(키 2.9배). 기준·동작 촬영은 예전 1.5
+const DRV={walk:WALK,run:SHOTM?WALK*8/5:6.4,dash:SHOTM?WALK*17/5:6.4*17/8,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
+const LEG_A=SHOTM?.5:.75; // (기준·동작 촬영의 예전 걷기 — 다리를 엉덩이에서 흔들기만)
+/* 걷기·달리기 속도 설정값(2026-11-04): 개미굴 원본 걷기 5·달리기 8의 0.8배가 기본. 톱니 메뉴 막대로 바로 바꾸고(이 기기에 기억 'wl-speed'), 대쉬 = 달리기 × 17/8(개미굴 비율).
+   기준·동작 촬영(SHOTM)은 예전 1.5 그대로 */
+const SPEED={def:{walk:4.0,run:6.4},H:1.38,
+  set(w,r){if(SHOTM)return;if(w)DRV.walk=+w;if(r)DRV.run=+r;DRV.dash=DRV.run*17/8;try{localStorage.setItem('wl-speed',JSON.stringify({walk:DRV.walk,run:DRV.run}));}catch(e){}},
+  reset(){SPEED.set(SPEED.def.walk,SPEED.def.run);try{localStorage.removeItem('wl-speed');}catch(e){}}};
+if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed')||'null');if(o&&o.walk&&o.run){DRV.walk=+o.walk;DRV.run=+o.run;DRV.dash=DRV.run*17/8;}}catch(e){}
+/* 발을 디디는 걸음(2026-11-04 — 다리를 시계추처럼 흔들기만 해서 발이 미끄러지고 떠 보였다). 촬영 모드(SHOTM)는 예전 그대로.
+   다리: 엉덩이 관절(thigh, 원더룹 안 높이 0.3) → 무릎(shin, 0.125 아래) → 발목(foot, 0.075 아래) → 장화 바닥(0.082 아래). 서면 장화 바닥이 바닥에 닿는다(hips를 1.8cm 내림).
+   - 실제로 움직인 빠르기 v(위치 변화 — 직접 조작·눌러서 걷기·벽 따라 미끄러지기·대쉬 모두)로 계산한다.
+   - 한 발이 땅에 있는 동안 그 발은 몸 아래를 v로 뒤로 지나간다(= 바닥에 붙어 있음): 디딘 동안 지나가는 거리 Lc ≤ LC, 땅에 있는 비율 duty(걷기 .62 → 달리기 .36).
+     걸음 수 f(초당) = v·2·duty/LC(1.6~8.5) → 디딘 거리 Lc = v·2·duty/f. 더 빨라 LC를 넘으면 duty를 줄여 두 발이 다 뜨는 구간(달리기처럼 통통)이 생긴다 — 그래도 디딘 발은 미끄러지지 않는다.
+   - 뜬 발은 살짝 들려(걷기 4.5cm·달리기 9cm) 앞으로, 발바닥은 바닥과 나란히(뗄 때 발끝이 살짝 들림).
+   - 엉덩이 높이 = 디딘 발에 닿을 수 있는 높이(두 관절 다리 길이 0.2) → 걸음마다 저절로 들썩임. 두 발이 다 뜨면 살짝 위로.
+   - 팔은 같은 쪽 다리와 반대로, 달리면 팔꿈치를 굽히고 몸을 앞으로 숙인다. 서기·걷기·달리기는 v에 따라 이어진다(무게 w로 섞음). */
+const GT={ph:0,v:0,w:0,f:0,hip:.3,L1:.125,L2:Math.hypot(.075,.02),PHI:Math.atan2(.02,.075),SOLE:.1,R:.125+Math.hypot(.075,.02),DROP:.018}; // 발목 뼈는 무릎에서 (0, -0.075, +0.02) — 정강이가 살짝 앞으로 꺾여 있어 PHI만큼 보정
+if(!SHOTM)hips.position.y=HIP-GT.DROP; // 서 있을 때 장화 바닥이 바닥에 닿게(예전엔 1.8cm 떠 있었다)
+const _ssm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
+function legIK(lg,dz,fy,hip,toe){const D0=Math.hypot(dz,hip-fy),D=Math.min(D0,GT.R*.999),L1=GT.L1,L2=GT.L2;
+  const al=Math.atan2(dz,hip-fy),a1=Math.acos(Math.min(1,Math.max(-1,(L1*L1+D*D-L2*L2)/(2*L1*D)))),kn=Math.PI-Math.acos(Math.min(1,Math.max(-1,(L1*L1+L2*L2-D*D)/(2*L1*L2))));
+  return {th:-(al+a1),kn:kn+GT.PHI,bt:(al+a1)-kn-GT.PHI-toe};}
+function gait(dt,vRaw,on){const G=GT;G.v+=(vRaw-G.v)*Math.min(1,dt*12);const v=Math.max(0,G.v);G.w+=((on?1:0)-G.w)*Math.min(1,dt*(on?9:7));const w=G.w;if(w<.002){G.ph=0;G.f=0;return null;}
+  const runK=_ssm(DRV.walk*1.08,DRV.run*.92,v),LC=.27+.03*runK,duty=.62-.26*runK;
+  const f=Math.max(1.6,Math.min(8.5,v*2*duty/LC));G.f=f;const Lc=Math.min(LC,v*2*duty/f),dE=v>.02?Math.min(duty,Lc*f/(2*v)):duty;
+  G.ph=(G.ph+dt*f/2)%1;const lift=(.045+.045*runK)*Math.min(1,v/1.2);
+  const ft=[0,1].map(i=>{const u=(G.ph+i*.5)%1;if(u<dE)return {dz:Lc/2-u/dE*Lc,y:G.SOLE,c:true,s:0};const q=(u-dE)/(1-dE),e=q*q*(3-2*q);return {dz:-Lc/2+e*Lc,y:G.SOLE+Math.sin(Math.PI*q)*lift,c:false,s:q};});
+  let hip=G.SOLE+G.R*.985+(ft[0].c||ft[1].c?0:.022*runK);for(const F of ft)if(F.c)hip=Math.min(hip,G.SOLE+Math.sqrt(Math.max(0,G.R*G.R-F.dz*F.dz))*.985);
+  G.hip=hip;return {w,runK,ft,hip,f};}
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
 const PUFF_S=.6,puffTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.5,'rgba(255,255,255,.5)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
@@ -237,7 +264,7 @@ const rigSync=(()=>{
  if(c.skinnormal_vertex.includes(from))c.skinnormal_vertex=c.skinnormal_vertex.replace(from,'objectNormal = transpose( inverse( mat3( skinMatrix ) ) ) * objectNormal;');
  else console.warn('원더룹: 스키닝 법선 패치 실패');}
 function updateWL(dt,t){
-  shirtU.uInv.value.copy(wlBody.matrixWorld).invert();
+  shirtU.uInv.value.copy(wlBody.matrixWorld).invert();const PX0=WL.position.x,PZ0=WL.position.z;
   let moving=false;const H=hasHeights();
   {const U=WL.userData,dv=U.riding?null:U.drive,ml=dv?Math.hypot(dv.x,dv.z):0;if(D.cd>0)D.cd-=dt;if(SL.t>0)SL.t-=dt; // 직접 조작 (위 "직접 조작")
    let mx=Math.sin(WL.rotation.y),mz=Math.cos(WL.rotation.y);if(ml>.08){mx=dv.x/ml;mz=dv.z/ml;wlTarget=null;markerA=0;}
@@ -284,8 +311,8 @@ function updateWL(dt,t){
   if(moving){const s0=Math.floor(wlPhase/PI);
     // 발걸음(2026-11-04 — 발이 미끄러져 보이지 않게): 걷기는 다리를 ±0.75라디안 흔들어 한 걸음 2·0.3·sin(0.75)=0.41m, 위상 속도 = π·속도/한 걸음.
     // 달리기는 공중에 뜨는 구간이 있어 한 걸음 0.45×1.5. 기준·동작 촬영(SHOTM)은 예전 값(11, ±0.5) 그대로
-    const sp=D.spd>.05&&!wlTarget?D.spd:(WL.userData.action==='뛰기'?DRV.walk*1.9:DRV.walk),runK=!wlTarget&&D.spd>DRV.walk*1.2||WL.userData.action==='뛰기';
-    wlPhase+=dt*(SHOTM?11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1)):Math.min(40,PI*sp/(runK?STRIDE_R:STRIDE_W)));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
+    const sp=D.spd>.05&&!wlTarget?D.spd:(WL.userData.action==='뛰기'?DRV.walk*1.9:DRV.walk);
+    wlPhase+=dt*(SHOTM?11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1)):PI*Math.max(1.6,GT.f||sp/.27)); /* 촬영 모드가 아니면 걸음 수(gait) 그대로 — 걸음마다 발소리 */if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*LEG_A;legs[1].rotation.x=-sw*LEG_A;
@@ -313,7 +340,7 @@ function updateWL(dt,t){
   else{const f=floorAt(X,Z,V.y);wlBlob.position.set(X,f+0.046,Z);wlBlob.scale.setScalar((1-hopY*0.8-Math.min(.55,(V.y-f)*.18))*WLS*0.8);} // 발밑 그림자는 아래 바닥에, 높을수록 작게
   markerA=Math.max(0,markerA-dt*1.2);marker.material.opacity=markerA*0.9;marker.scale.setScalar(1+(1-markerA)*0.6);
   {const U=WL.userData,A=U.action||'서기';U.at=(U.at||0)+dt;const at=U.at;
-   let T=null;if(moving){if(A==='뛰기'||(!wlTarget&&D.spd>DRV.walk*1.2))T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at);
+   let T=null;if(moving){if(SHOTM&&(A==='뛰기'||(!wlTarget&&D.spd>DRV.walk*1.2)))T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at); /* 촬영 모드가 아니면 걷기·달리기는 아래 gait */
    U.aw=Math.max(0,Math.min(1,(U.aw||0)+(T?1:-1)*dt*6));
    const base={ex0:-.12,ex1:-.12,ez0:0,ez1:0,kx0:0,kx1:0,lx0:legs[0].rotation.x,lx1:legs[1].rotation.x,ly0:legs[0].position.y,ly1:legs[1].position.y,ax0:arms[0].rotation.x,ax1:arms[1].rotation.x,az0:arms[0].rotation.z,az1:arms[1].rotation.z,bx:0,bz:body.rotation.z,by:body.position.y,hx:0,hy:0,hz:neck.rotation.z,wy:WL.position.y/WLS};
    if(!U.pc)U.pc=Object.assign({},base);const tg=T?Object.assign({},base,T):base;for(const k in tg)U.pc[k]+=(tg[k]-U.pc[k])*Math.min(1,dt*10);
@@ -325,6 +352,13 @@ function updateWL(dt,t){
      neck.rotation.set(L('hx'),L('hy'),L('hz'));
      WL.position.y=GY+L('wy')*WLS;}
    else{U.pc=Object.assign({},base);body.rotation.x=0;body.position.z=0;neck.rotation.x=0;neck.rotation.y=0;legs.forEach(lg=>{lg.userData.knee.rotation.x=0;lg.userData.boot.rotation.x=-lg.rotation.x*.6;});arms.forEach(ap=>ap.userData.elbow.rotation.set(-.12,0,0));}
+   if(!SHOTM){const vr=dt>0?Math.hypot(WL.position.x-PX0,WL.position.z-PZ0)/dt:0,on=moving&&!V.air&&!WL.userData.riding&&!V.jump,g=gait(dt,on?Math.min(vr,30):0,on);
+     if(g){const w=g.w,mix=(a,b)=>a+(b-a)*w;
+       legs.forEach((lg,i)=>{const F=g.ft[i],k=legIK(lg,F.dz,F.y,g.hip,F.c?0:Math.sin(Math.PI*F.s)*.35);lg.position.y=mix(lg.position.y,g.hip);lg.rotation.x=mix(lg.rotation.x,k.th);lg.rotation.z=0;
+         lg.userData.knee.rotation.x=mix(lg.userData.knee.rotation.x,k.kn);lg.userData.boot.rotation.x=mix(lg.userData.boot.rotation.x,k.bt);});
+       const lean=.05+.13*g.runK;body.rotation.x=mix(body.rotation.x,lean);body.position.y=mix(body.position.y,g.hip-.3+.3-.3*Math.cos(lean));body.position.z=mix(body.position.z,-.3*Math.sin(lean));
+       arms.forEach((ap,i)=>{const th=legs[i].rotation.x;ap.rotation.x=mix(ap.rotation.x,-th*(1.05+.35*g.runK));ap.userData.elbow.rotation.x=mix(ap.userData.elbow.rotation.x,-.12-.95*g.runK);});
+       body.rotation.z=mix(body.rotation.z,(g.ft[0].dz-g.ft[1].dz)*.18);}}
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
    if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
@@ -379,4 +413,4 @@ function unstick(dt,H){const U=WL.userData,X=WL.position.x,Z=WL.position.z,fy=H?
   if(best)ST.push=best;else if(ST.safe){WL.position.x=ST.safe.x;WL.position.z=ST.safe.z;}}
 const _gp=new THREE.Vector3();
 const walking=()=>!!wlTarget; // 영상 캡처: 걸어가서 도착했는지
-export {DRV,hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};
+export {DRV,SPEED,GT as GAIT,hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};

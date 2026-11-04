@@ -6,7 +6,7 @@ import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,se
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
-import {DRV,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
+import {DRV,GAIT,SPEED,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
 import {CURRENT as WORLD} from './worlds/index.js'; // 지금 세계 설정(시리즈 공통 틀 — 타이틀 화면)
 import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
@@ -74,6 +74,10 @@ GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
 {const q=new URLSearchParams(location.search);if(!q.has('shot')||q.has('weather')){nightTarget=night=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}}
+window.wlGait={gait:GAIT,DRV,SPEED}; // 시험 도구(걸음 미끄러짐 재기 — tools/gait-test.py)
+{const w=document.getElementById('walkSpd'),r=document.getElementById('runSpd'),wo=document.getElementById('walkOut'),ro=document.getElementById('runOut'),H=SPEED.H; // 걷기·달리기 속도 막대(톱니 메뉴 — 움직이는 즉시, 이 기기에 기억). 1초에 원더룹 키 몇 배인지 같이
+ const show=()=>{w.value=DRV.walk;r.value=DRV.run;wo.textContent=`${DRV.walk.toFixed(1)}m/초 · 키 ${(DRV.walk/H).toFixed(2)}배 (원본의 ${(DRV.walk/5).toFixed(2)})`;ro.textContent=`${DRV.run.toFixed(1)}m/초 · 키 ${(DRV.run/H).toFixed(2)}배 (원본의 ${(DRV.run/8).toFixed(2)})`;};
+ w.addEventListener('input',()=>{SPEED.set(+w.value,null);show();});r.addEventListener('input',()=>{SPEED.set(null,+r.value);show();});document.getElementById('spdReset').addEventListener('click',()=>{SPEED.reset();show();});show();}
 {const wb=document.getElementById('weatherBtn'),lab=()=>{wb.textContent='날씨: '+GAME.weather.weatherName();};lab();wb.addEventListener('click',()=>{GAME.weather.nextWeather();if(!(zone.cur&&zone.cur.sky)){nightTarget=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}lab();});}
 GAME.startFront({ctx:{scene,camera,renderer,WL},world:WORLD,zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
 {let done=false;const go=()=>{if(done)return;done=true;if(window.wlBootDone)window.wlBootDone();};requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(go,1500);} // 공통 로딩 화면(index.html #wlBoot): 첫 구역을 그린 뒤 치운다 — 최소 1초·0.4초 사라짐·루프 멈춤은 로딩 화면 쪽. 화면이 가려져 그리기가 멈춰 있어도 1.5초 뒤엔 치운다(촬영 모드는 로딩 화면이 스스로 바로 지움)

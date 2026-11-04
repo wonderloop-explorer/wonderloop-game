@@ -97,7 +97,7 @@ export function deepForest({root,cx=0,cz=0,gaps=[]}){
   const _c=new THREE.Color(),ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
   return {group,
     update(camera,SK){if(camera)movers.forEach(o=>o.holder.position.set((camera.position.x-cx)*o.k,0,(camera.position.z-cz)*o.k));
-      const t=SK?SK.t:0,i=Math.min(1,Math.floor(t)),u=ss(0,1,t-i);_c.copy(SHAFT_C[i]).lerp(SHAFT_C[i+1],u);shaftMat.color.copy(_c);shaftMat.opacity=SHAFT_O[i]+(SHAFT_O[i+1]-SHAFT_O[i])*u;},
+      const t=SK?SK.t:0,i=Math.min(1,Math.floor(t)),u=ss(0,1,t-i);_c.copy(SHAFT_C[i]).lerp(SHAFT_C[i+1],u);shaftMat.color.copy(_c);shaftMat.opacity=(SHAFT_O[i]+(SHAFT_O[i+1]-SHAFT_O[i])*u)*(1-(SK&&SK.rain||0));if(shafts)shafts.visible=shaftMat.opacity>.003&&shafts.userData.lvOk!==false;}, /* 비 오는 날(game/weather)은 해가 안 보이니 빛줄기도 없음 */
     /* 자동 화질(08): 2단계부터 먼 두 겹(카메라를 따라오는 겹)·빛줄기를 끈다 */
-    setLevel(L){movers.forEach(o=>o.holder.visible=L<2);if(shafts)shafts.visible=L<2;},
+    setLevel(L){movers.forEach(o=>o.holder.visible=L<2);if(shafts){shafts.userData.lvOk=L<2;shafts.visible=L<2;}},
     dispose(){mats.forEach(m=>{if(m.map&&m.map!==CRAYON())m.map.dispose();});shaftMat.map.dispose();}};}

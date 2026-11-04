@@ -23,12 +23,14 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
   const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
   // 하늘 둥근 지붕: 지평선 → 위로 색이 바뀐다(땅 아래는 지평선 색). 카메라를 따라다닌다
-  const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0}};
+  const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0},cloud:{value:0},cloudK:{value:1}};
   const mat=new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     // 은하수(milky): 하늘을 비스듬히 가로지르는 옅은 띠 — 가운데가 밝고 잔물결처럼 얼룩진 푸른 흰빛(그리기는 하늘 지붕 그대로 1회)
-    fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
+    fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;uniform float cloud;uniform float cloudK;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
       'if(milky>0.){float b=dot(d,normalize(vec3(.55,.42,.72)));float m=exp(-b*b*28.)*smoothstep(.05,.35,h);float n=.6+.4*sin(d.x*23.+sin(d.z*17.)*2.)*sin(d.z*19.+d.y*11.);c+=vec3(.16,.19,.3)*m*n*milky;}'+
+      // 비구름(cloud, game/weather — 비 오는 날): 하늘 전체를 얼룩진 회색 구름으로 덮는다(해·달·별은 안 보임)
+      'if(cloud>0.){float n2=.5+.25*sin(d.x*7.+sin(d.z*5.+d.y*3.)*2.)*sin(d.z*6.-d.x*2.)+.25*sin(d.x*17.+d.z*13.);vec3 cc=mix(vec3(.47,.5,.55),vec3(.72,.74,.77),n2)*mix(.8,1.,k);c=mix(c,cc*cloudK,cloud*smoothstep(-.1,.12,h));}'+
       'gl_FragColor=vec4(c,1.);\n#include <colorspace_fragment>\n}'});
   const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,24,12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
   // 별: 위쪽 하늘에 고르게(지평선 근처는 드물게). 첫별은 따로 크게
@@ -61,7 +63,9 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
       if(L.fog){L.fog.color.copy(cur.fog);L.fog.near=num('fogNear');L.fog.far=num('fogFar');}
       if(sunDirOut){cur.dir.copy(a.dir).lerp(b.dir,u);if(R)cur.dir.lerp(RC.dir,R);sunDirOut.copy(cur.dir.normalize());}
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
-      smat.opacity=st*ss(1.75,2,S.t);uni.milky.value=num('milky')*ss(1.7,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
+      const clr=1-R; // 비: 달·별·첫별·은하수는 안 보임(맑은 밤에만), 하늘은 구름(밤이면 어둡게)
+      uni.cloud.value=R;uni.cloudK.value=1-.62*ss(.6,2,S.t);
+      smat.opacity=st*ss(1.75,2,S.t)*clr;uni.milky.value=num('milky')*ss(1.7,2,S.t)*clr;fmat.opacity=ss(1.55,1.8,S.t)*tw*clr;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
       if(camera){g.position.copy(camera.position);g.scale.setScalar(Math.min(1,camera.far*.9/radius));}},  // 08이 카메라 먼 거리를 안개 끝으로 당기면 하늘도 그 안으로
     dispose(){dot.dispose();}};
   return S;}
