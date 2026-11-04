@@ -51,7 +51,7 @@ async function loadZone(id){
   if(!ZONES[id])throw new Error('원더룹: 없는 구역 '+id);
   const [mod]=await Promise.all([ZONES[id](),loadBaked(id)]); // 구역 코드와 그 구역의 구운 텍스처
   const root=new THREE.Group();root.name='zone:'+id;scene.add(root);
-  clearZoneGame(); // 앞 구역의 NPC·트리거·이벤트 줄을 비우고 새 구역이 등록한다
+  clearZoneGame(id); // 앞 구역의 NPC·트리거·이벤트 줄을 비우고 새 구역이 등록한다
   BUILD.root=root;BUILD.zone=id;let z;try{z=mod.build({root,id});}finally{BUILD.root=null;BUILD.zone=null;}
   Object.assign(z,{id,root});z.lights=z.lights||[];z.keepOut=z.keepOut||[];
   z.doors=(z.doors||[]).filter(d=>ZONES[d.to]); // 목록에 없는 구역으로 가는 문은 없앤다

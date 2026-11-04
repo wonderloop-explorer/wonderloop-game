@@ -37,6 +37,19 @@ function portrait(root,{side=.42,lift=.12,w=512,h=512}={}){if(!ctx||!ctx.rendere
   finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();resumeBend();hid.forEach(o=>o.visible=true);op.forEach(([mt,o,d,t])=>{mt.opacity=o;mt.depthWrite=d;if(mt.transparent!==t){mt.transparent=t;mt.needsUpdate=true;}});rt.dispose();
     if(par)par.add(root);else stage.remove(root);root.position.copy(pos);root.quaternion.copy(quat);root.scale.copy(scl);root.updateMatrixWorld(true);}
   return url;}
+/* 도는 물건 그림(2026-11-04 — 아이템 획득 창이 아이콘 대신 그 물건이 천천히 도는 모습): 물건만 따로 비춰 n장(한 바퀴)을 투명 배경 PNG로 — 한 번만 찍고 창이 차례로 보여 준다 */
+function spinFrames(obj,{n=24,w=160,h=160,lift=.3}={}){if(!ctx||!ctx.renderer||!obj)return null;const {renderer}=ctx;const stage=new THREE.Scene(),pv=new THREE.Group();stage.add(pv);pv.add(obj);obj.traverse(o=>{if(o.isSprite)o.visible=false;});obj.updateMatrixWorld(true); // 빛무리(스프라이트)는 빼고 물건만
+  const box=new THREE.Box3();obj.traverse(o=>{if(o.isMesh)box.expandByObject(o);});const _b=0,c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3());obj.position.sub(c);
+  const fov=26,half=Math.max(sz.y,Math.hypot(sz.x,sz.z))/2*1.15,dist=half/Math.tan(fov*Math.PI/360)+Math.hypot(sz.x,sz.z)/2,cam=new THREE.PerspectiveCamera(fov,w/h,.02,dist*4);
+  cam.position.set(0,dist*Math.sin(lift),dist*Math.cos(lift));cam.lookAt(0,0,0);
+  stage.add(new THREE.HemisphereLight(0xfff6ea,0xd9c2aa,1.7));const key=new THREE.DirectionalLight(0xfff2e0,2.4);key.position.set(-dist*.5,dist*.8,dist);stage.add(key);
+  const rt=new THREE.WebGLRenderTarget(w,h,{samples:4});rt.texture.colorSpace=THREE.SRGBColorSpace;const prev=renderer.getRenderTarget(),cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();
+  const resume=cutPaused(true),resumeBend=bendPaused(),out=[];const px=new Uint8Array(w*h*4),cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),im=g.createImageData(w,h);
+  try{renderer.setClearColor(0x000000,0);for(let i=0;i<n;i++){pv.rotation.y=i/n*Math.PI*2;pv.updateMatrixWorld(true);renderer.setRenderTarget(rt);renderer.clear();renderer.render(stage,cam);renderer.readRenderTargetPixels(rt,0,0,w,h,px);
+    for(let r=0;r<h;r++)im.data.set(px.subarray((h-1-r)*w*4,(h-r)*w*4),r*w*4);g.putImageData(im,0,0);out.push(cv.toDataURL('image/png'));}}
+  catch(e){console.warn('원더룹: 도는 물건 그림 실패',e);}
+  finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();resumeBend();rt.dispose();pv.remove(obj);}
+  return out.length?out:null;}
 function meet(id,root){const c=CARDS[id];if(!c||seen(id))return Promise.resolve(false);setFlag('meet:'+W+':'+id,true);
   const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;
   const ids=Object.keys(CARDS).filter(k=>!CARDS[k].secret),n=ids.filter(seen).length; // 숨겨진 비밀 친구는 빼고(비밀이 몇인지 미리 알리지 않게) // 친구 수(개미굴 '자연 도감 8/11'처럼) — 탐험 가방의 '만난 친구'와 같은 수
@@ -46,4 +59,4 @@ function meet(id,root){const c=CARDS[id];if(!c||seen(id))return Promise.resolve(
 function found(id,root){const c=CARDS[id];if(!c)return null;setFlag('meet:'+W+':'+id,true);const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;return img;}
 const clearProfile=()=>{CARDS={};};
 const cards=()=>CARDS,pic=id=>PICS[id]||(CARDS[id]&&CARDS[id].img)||null;
-export {cards,clearProfile,found,initProfile,meet,pic,portrait,seen,setup};
+export {cards,clearProfile,found,initProfile,meet,pic,portrait,seen,setup,spinFrames};

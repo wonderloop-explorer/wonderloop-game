@@ -20,6 +20,7 @@ import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './
 import {cards as profCards,pic,seen} from './profile.js';
 import {flags,gotAt,onFlag,resetAll} from './state.js';
 import {ITEMS} from './items.js';
+import {applyZone as weatherZone} from './weather.js';
 import {logoEl} from './title.js';
 import {icon,mk,setIcons,setTheme,tape} from './felt.js';
 import {backdropAt,render as renderTitle} from './titlescreen.js';
@@ -153,7 +154,7 @@ let WORLD=null,tEl=null,ctx=null,VIEW=null,el=null,ward=null,corner=null,menu=nu
 const look={vest:0,scarf:0,name:'',deco:''};try{Object.assign(look,JSON.parse(store.get(LOOK_KEY)||'{}'));}catch(e){}
 /* 시간대(2026-11-03): 게임을 열 때마다 낮·해 질 녘·밤 가운데 하나를 무작위로(첫 화면 뒤 배경부터 같은 시간). ?time=0|1|2로 고정, 촬영 모드는 늘 그대로(구역 기본 — 낮) */
 const T0=(()=>{const q=Q.get('time');if(q!==null&&q!=='')return Math.max(0,Math.min(2,+q|0));return Math.floor(Math.random()*3);})();
-function startTime(){const Z=zone();if(!SHOT&&Z&&Z.sky)Z.sky.set(T0);}
+function startTime(){const Z=zone();if((!SHOT||Q.has('weather'))&&Z&&Z.sky)weatherZone(Z);} // 하늘 시간 = 그 판의 날씨(game/weather — 열 때 한 번 무작위, 2026-11-04)
 /* 08 zoneLook이 세계 옷을 입힌 뒤 부른다: 플레이어가 고른 조끼·목수건 색, 화관(열린 것만). 옷·머리는 세계 기본(탐험복·지그재그 단발) */
 function applyLook(U){if(SHOT||!U)return;const X=worldX();if(X){applyWorldLook(U,X);return;}if(U.setVest)U.setVest(look.vest|0);if(U.setScarf)U.setScarf(look.scarf|0);
   const D=decoList();if(look.deco&&U.setHood){const d=D.find(x=>x.hood===look.deco);if(d&&(!d.flag||flags[d.flag]))U.setHood(d.hood);}}

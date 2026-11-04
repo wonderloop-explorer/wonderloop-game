@@ -44,8 +44,9 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
 /* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
-const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.4;
+const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.9; // 2026-11-04 시리즈 기준: 개미굴 원본 걷기(초당 5 — 키 1.38의 3.6배)보다 22% 느리게 = 초당 3.9(키의 2.8배), 달리기·대쉬도 같은 비율. 기준·동작 촬영은 예전 1.5
 const DRV={walk:WALK,run:WALK*8/5,dash:WALK*17/5,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
+const LEG_A=SHOTM?.5:.75,STRIDE_W=2*.3*Math.sin(LEG_A),STRIDE_R=2*.3*Math.sin(.85)*1.5; // 걷기 다리 흔들기·한 걸음 길이(발걸음 계산, 아래 moving)
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
 const PUFF_S=.6,puffTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.5,'rgba(255,255,255,.5)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
@@ -280,10 +281,14 @@ function updateWL(dt,t){
     GY=V.y;}
   unstick(dt,H);
   V.px=X;V.pz=Z;
-  if(moving){const s0=Math.floor(wlPhase/PI);wlPhase+=dt*(SHOTM?11:16)*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
+  if(moving){const s0=Math.floor(wlPhase/PI);
+    // 발걸음(2026-11-04 — 발이 미끄러져 보이지 않게): 걷기는 다리를 ±0.75라디안 흔들어 한 걸음 2·0.3·sin(0.75)=0.41m, 위상 속도 = π·속도/한 걸음.
+    // 달리기는 공중에 뜨는 구간이 있어 한 걸음 0.45×1.5. 기준·동작 촬영(SHOTM)은 예전 값(11, ±0.5) 그대로
+    const sp=D.spd>.05&&!wlTarget?D.spd:(WL.userData.action==='뛰기'?DRV.walk*1.9:DRV.walk),runK=!wlTarget&&D.spd>DRV.walk*1.2||WL.userData.action==='뛰기';
+    wlPhase+=dt*(SHOTM?11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1)):Math.min(40,PI*sp/(runK?STRIDE_R:STRIDE_W)));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
-  legs[0].rotation.x=sw*0.5;legs[1].rotation.x=-sw*0.5;
+  legs[0].rotation.x=sw*LEG_A;legs[1].rotation.x=-sw*LEG_A;
   arms[0].rotation.x=-sw*0.6;arms[1].rotation.x=sw*0.6;
   body.rotation.z=sw*0.06;
   body.position.y=moving?Math.abs(Math.cos(wlPhase))*0.05:Math.sin(t*2.2)*0.012;
@@ -325,9 +330,11 @@ function updateWL(dt,t){
    if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
    /* 들고 다니는 물건(2026-11-04 — 버섯 랜턴): setHeld 물건에 userData.carry={ax,az,ex}가 있으면 서 있거나 걸을 때 오른팔을 그 각도로(앞으로 내밀어 듦, 걸으면 살짝 흔들림),
       userData.hang이면 물건이 팔 각도와 상관없이 늘 똑바로(손잡이에 매달린 채) — 다른 동작 중에는 그 동작 팔 그대로 */
-   {const H=U.heldObj,c=H&&H.userData.carry;if(c&&(A==='서기'||moving)&&!WL.userData.riding){U.carryW=Math.min(1,(U.carryW||0)+dt*4);}else U.carryW=Math.max(0,(U.carryW||0)-dt*4);
+   {const H=U.heldObj;if(U.showT>0)U.showT-=dt;const c=H&&(U.showT>0&&H.userData.show||H.userData.carry); // showT: 얻는 순간 번쩍 들어 보이기(game/mission — 물건 userData.show 자세)
+  if(c&&(A==='서기'||moving)&&!WL.userData.riding){U.carryW=Math.min(1,(U.carryW||0)+dt*4);}else U.carryW=Math.max(0,(U.carryW||0)-dt*4);
     if(c&&U.carryW>0){const w=U.carryW,sw=moving?Math.sin(wlPhase)*.12:0,e=arms[0].userData.elbow;arms[0].rotation.x+=(c.ax+sw-arms[0].rotation.x)*w;arms[0].rotation.z+=(c.az-arms[0].rotation.z)*w;e.rotation.x+=(c.ex-e.rotation.x)*w;}
-    if(H&&H.userData.hang){H.parent.getWorldQuaternion(_hq).invert();WL.getWorldQuaternion(_hq2);H.quaternion.copy(_hq).multiply(_hq2);}}
+    if(H&&H.userData.hang){H.parent.getWorldQuaternion(_hq).invert();WL.getWorldQuaternion(_hq2);H.quaternion.copy(_hq).multiply(_hq2);
+    const L=H.userData.showLift||0;U.liftW=(U.liftW||0)+((U.showT>0?1:0)-(U.liftW||0))*Math.min(1,dt*8);if(L){const v=_hv.set(0,L*U.liftW/(H.parent.getWorldScale(_hs).y||1),0).applyQuaternion(_hq);H.position.copy(v);}} /* 들어 보일 때는 손 위로 들어 올림(월드 위쪽으로 showLift) */}
    if(U.charm)U.charm.g.visible=!(U.holdW>.5)&&flags.compass; // 키링은 나침반을 받은 뒤에만(평상복·탐험복 모두 배낭에)
    (U.charms||[]).forEach(C=>{if(C.flag)C.g.visible=!!flags[C.flag];}); // 받은 아이템 키링은 받은 뒤에만 (game/items, 06 addCharm)
    (U.badges||[]).forEach(B=>B.g.visible=!!flags[B.flag]); // 꾸미기(배지)도 받은 뒤에만 (06 addBadge)
@@ -350,7 +357,7 @@ function updateWL(dt,t){
 /* 경계 미끄러짐(2026-11-04, 시리즈 공통 — 경계에 닿아도 툭 멈추거나 떨지 않고 벽·기둥을 따라 비켜 간다, 안내 글 없음):
    가려는 쪽이 막히면 15°씩 꺾어(최대 75°) 열린 쪽으로, 빠르기는 꺾은 만큼 줄여(cos) 벽을 따라 미끄러지듯. 꺾는 쪽은 처음 막힌 곳의 기울기(덜 파고드는 쪽)로 정하고
    닿아 있는 동안 기억해 좌우로 번갈아 떨지 않게. 직접 조작(조이스틱·WASD)은 이것만, 눌러서 걷기(walkTo)는 예전 축 미끄러짐 뒤에 이것(기준 촬영 그대로) */
-const SL={side:0,t:0},_hq=new THREE.Quaternion(),_hq2=new THREE.Quaternion();
+const SL={side:0,t:0},_hq=new THREE.Quaternion(),_hq2=new THREE.Quaternion(),_hs=new THREE.Vector3();
 function slideGo(mx,mz,st,fy,only=false){const x=WL.position.x,z=WL.position.z;
   if(!only&&canGo(x+mx*st,z+mz*st,fy)){WL.position.x=x+mx*st;WL.position.z=z+mz*st;SL.t=0;return true;}
   if(SL.t<=0||!SL.side){const e=.06,tx=x+mx*st*3,tz=z+mz*st*3,gx=overlap(tx+e,tz,fy)-overlap(tx-e,tz,fy),gz=overlap(tx,tz+e,fy)-overlap(tx,tz-e,fy); // 막힌 곳의 기울기 → 덜 파고드는 쪽

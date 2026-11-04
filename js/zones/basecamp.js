@@ -37,6 +37,7 @@ aoPlane(10,0.7,g=>{g.rotateZ(PI);g.rotateY(PI/2);},[-4.93,0.35,0],0.22);
 const WX=0.8,WY=3.0,WZ=-4.97;
 const skyDay=new THREE.MeshBasicMaterial({map:skyTex(false)});
 const skyNight=new THREE.MeshBasicMaterial({map:skyTex(true),transparent:true,opacity:0});
+const _rainSky=new THREE.Color(0x8e9aac);
 add(new THREE.CircleGeometry(0.9,24),skyDay,WX,WY,WZ,{cast:false,line:false});
 add(new THREE.CircleGeometry(0.9,24),skyNight,WX,WY,WZ+0.005,{cast:false,line:false});
 const frameMat=M('#b88457','wood');
@@ -339,13 +340,15 @@ return {
     obstacles:[{r:[-4.95,-3.2,-3.65,-0.35]},{r:[-0.55,2.15,-4.9,-3.6]},{r:[-4.65,-3.45,2.8,4.0]},{c:[0.7,-3.12,0.5]},{c:[3.05,-3.65,0.65]},{c:[4.2,-1.75,0.6]},{c:[3.6,0.6,0.42]},{c:[0.55,0.75,0.78]},{c:[-3.85,1.4,0.6]},{c:[2.7,2.9,0.4]},{c:[3.85,3.55,0.48]},{c:[-3.4,3.75,0.35]},{c:[-4.3,2.35,0.2]}],
     // 카메라: 방 전체를 볼 때 바라보는 점·거리, 돌려 볼 수 있는 각도(인형의 집처럼 벽 두 면이 열린 쪽에서만)
     camera:{target:[0,1.5,-0.2],dist:27,polar:[0.55,1.32],azimuth:[0.12,1.45],start:[0.98,0.8],minDist:3,maxDist:48}}},
+  indoor:true, // 실내(game/weather): 비는 내리지 않고 창문 하늘·들어오는 빛 색·먹먹한 소리로만 날씨를 보여 준다
   sun:{dir:sunDir,shadow:8,follow:false},  // 해 방향, 그림자 범위(반지름), 그림자가 원더룹을 따라갈지(야외)
   keepOut:[ML,minute],          // 정적 병합에서 뺄 것(움직이거나 클릭하는 것)
   lights:[lampLight,crateLight], // 08이 옛 조명 단위 → 물리 단위(π)로 바꿀 구역 조명
   click(ray){if(ray.intersectObjects(lampHit,false).length){lampOn=!lampOn;return true;}return false;},
   // 조명 단계(env: night 저녁 정도, cave 어두운 굴 정도, flick 깜빡임) — 08의 해·하늘빛 계산과 같은 프레임에 부른다
   light(env,dt){const n=env.night;lampLevel+=((lampOn?1:0)-lampLevel)*Math.min(1,dt*6);
-    poolMat.opacity=(0.08+0.32*n)*lampLevel;beamMat2.opacity=0.22*(1-n);dustMat.opacity=0.85*(1-n);skyNight.opacity=n;
+    const rn=env.rain||0;poolMat.opacity=(0.08+0.32*n)*lampLevel;beamMat2.opacity=0.22*(1-n)*(1-.85*rn);dustMat.opacity=0.85*(1-n)*(1-.8*rn);skyNight.opacity=n; // 날씨(game/weather): 비면 창문 하늘을 흐린 회청색으로, 햇살 줄기·먼지는 거의 안 보이게
+    if(rn>.001||skyDay.userData.rn){skyDay.color.setRGB(1,1,1).lerp(_rainSky,.75*rn);skyDay.userData.rn=rn>.001;}
     lampLight.intensity=(0.55+0.95*n)*lampLevel*env.flick;
     glowMat.emissiveIntensity=0.15+(0.55+0.6*n)*lampLevel;capMat.emissiveIntensity=0.05+0.3*n*lampLevel;
     crateLight.intensity=(0.25+0.6*n)*env.flick;

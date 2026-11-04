@@ -20,6 +20,7 @@
      talLabel      창의 탈 칸 이름 ('개미탈')
      talColors     탈 색 목록 [[이름, 겉 색, 테두리 색]…] — 세계마다 따로 저장(w[id].tal)
      guide         창의 게임 설명 {text: 소개 한 단락, goal: 목표 한 줄}
+     weathers      날씨 목록(day·night·rain·sunset 중) · ambience 날씨별 공간음 이름 — game/weather 맨 위 주석
      items         스테이지에서 받는 장식 [{id, name, stage: 몇 번째 스테이지(1~4), at: 다는 자리, shape: 모양 만드는 함수 또는 null}…]
                    받았는지 = 저장 기록 flags[item:<세계 id>:<id>] (items.give) — 받은 것만 고를 수 있고 못 받은 것은 물음표 칸. 처음엔 '없음'만
      map           모험 지도 = 스테이지 4칸 [{name, zone: 그 스테이지 첫 구역(아직 없으면 null)}…] (시리즈 규칙: 한 세계 스테이지 4개, 20~30분)
@@ -47,18 +48,27 @@ function ICON_LAMP(){if(ICON)return ICON;const c=document.createElement('canvas'
   g.fillStyle='#e05a4a';g.beginPath();g.ellipse(48,50,34,26,0,Math.PI,0);g.fill();g.fillStyle='#a8382e';g.beginPath();g.ellipse(48,50,34,6,0,0,Math.PI);g.fill();
   g.fillStyle='#fff6e6';[[34,38,5],[52,30,4.5],[64,42,3.5],[44,46,3]].forEach(q=>{g.beginPath();g.arc(q[0],q[1],q[2],0,7);g.fill();});
   return ICON=c.toDataURL();}
-function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.8:1.8*.62,b=new THREE.Group();g.scale.setScalar(S);g.add(b);if(held)b.position.y=-.5; // 손잡이 꼭대기(0.5)가 손에
-  const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.32,8),new THREE.MeshLambertMaterial({color:'#f2e2cc'}));st.position.y=.16;b.add(st);
+function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.68:1.8*.62,b=new THREE.Group();g.scale.setScalar(S);g.add(b);if(held)b.position.y=-.62; // 손잡이 꼭대기(0.62)가 손에
+  /* 2026-11-04 아이템 규칙: 뒤에서 봐도 알아보게 — 두께 있는 빨간 갓(회전체: 둥근 윗면 + 말린 가장자리 + 크림색 주름 아랫면), 그 아래 노란 불빛 구슬, 크림색 줄기, 진갈색 손잡이 고리 */
+  const capMat=new THREE.MeshStandardMaterial({color:'#e05a4a',emissive:'#7a1e14',emissiveIntensity:.35,roughness:.85}),gillMat=new THREE.MeshLambertMaterial({color:'#f3dcc0',side:THREE.DoubleSide});
+  const capP=[[0,.24],[.08,.235],[.16,.21],[.225,.165],[.27,.105],[.29,.05],[.285,.02],[.265,.005],[.24,.01]].map(([x,y])=>new THREE.Vector2(x,y));
+  const cap=new THREE.Mesh(new THREE.LatheGeometry(capP,20),capMat);cap.position.y=.3;b.add(cap);
+  const gill=new THREE.Mesh(new THREE.LatheGeometry([[.24,.01],[.17,.035],[.09,.05],[0,.055]].map(([x,y])=>new THREE.Vector2(x,y)),20),gillMat);gill.position.y=.3;b.add(gill); // 갓 아랫면(주름, 크림색)
+  const stMat=new THREE.MeshLambertMaterial({color:'#f6ead8'});
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(.07,.095,.2,10),stMat);st.position.y=.1;b.add(st); // 줄기(아래 받침)
   const bulbMat=new THREE.MeshStandardMaterial({color:'#ffe9a0',emissive:'#ffc94a',emissiveIntensity:1.1,roughness:.8});
-  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),bulbMat);bulb.scale.y=.8;bulb.position.y=.27;b.add(bulb);
-  const capMat=new THREE.MeshStandardMaterial({color:'#e05a4a',emissive:'#7a1e14',emissiveIntensity:.35,roughness:.85});
-  const cap=new THREE.Mesh(new THREE.SphereGeometry(.22,14,8,0,Math.PI*2,0,Math.PI/2),capMat);cap.scale.y=.75;cap.position.y=.3;b.add(cap);
-  const dotM=new THREE.MeshLambertMaterial({color:'#fff6e6'});[[.1,.1,.35],[-.12,.06,.4],[.02,-.14,.38],[-.04,.14,.44],[.15,-.05,.4]].forEach(([x,z,y])=>{const d=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),dotM);d.position.set(x,y,z);d.scale.y=.5;b.add(d);});
-  const hd=new THREE.Mesh(new THREE.TorusGeometry(.1,.022,6,14,Math.PI),new THREE.MeshLambertMaterial({color:'#5a3826'}));hd.position.y=.4;b.add(hd);
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.14,14,10),bulbMat);bulb.scale.y=.85;bulb.position.y=.25;b.add(bulb); // 불빛 구슬(갓 바로 아래 — 옆·뒤에서도 보임)
+  const dotM=new THREE.MeshLambertMaterial({color:'#fff6e6'});
+  const capY=r=>{for(let k=1;k<capP.length;k++){const A=capP[k-1],B=capP[k];if(r<=B.x)return A.y+(B.y-A.y)*(r-A.x)/(B.x-A.x);}return .05;},up=new THREE.Vector3(0,1,0);
+  [[0,0],[.17,.3],[.17,2.4],[.17,4.4],[.235,1.35],[.235,3.4],[.235,5.4]].forEach(([r,a],k)=>{const d=new THREE.Mesh(new THREE.SphereGeometry(k?.04:.05,8,6),dotM);d.scale.y=.4;
+    const px=Math.cos(a)*r,pz=Math.sin(a)*r,py=.3+capY(r)-.008,sl=(capY(Math.max(0,r-.01))-capY(r+.01))/.02;d.position.set(px,py,pz);
+    d.quaternion.setFromUnitVectors(up,new THREE.Vector3(r?px/r*sl:0,1,r?pz/r*sl:0).normalize());b.add(d);}); // 흰 점(갓 위 — 갓 면에 붙여)
+  const hd=new THREE.Mesh(new THREE.TorusGeometry(.1,.026,8,16,Math.PI),new THREE.MeshLambertMaterial({color:'#5a3826'}));hd.position.y=.52;b.add(hd);
   const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,214,110,.85)');gr.addColorStop(1,'rgba(255,214,110,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);
   const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
-  const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.75}));h.scale.set(1.3,1.3,1);h.position.y=.27;b.add(h);
-  if(held){g.userData.carry={ax:-1.15,az:-.18,ex:-.5};g.userData.hang=true;}
+  const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.75}));h.scale.set(1.2,1.2,1);h.position.y=.25;b.add(h);
+  // 드는 모양: 옆구리 쪽 손에 늘어뜨려(팔을 바깥으로 조금 벌려 몸 밖에 매달림 — 뒤에서 봐도 갓·불빛이 보임). show = 얻는 순간 번쩍 들어 보이기
+  if(held){g.userData.carry={ax:-.35,az:-1.0,ex:-.25};g.userData.show={ax:-1.45,az:-.42,ex:-.1};g.userData.showLift=.16;g.userData.hang=true;}
   g.userData.setOn=on=>{bulbMat.emissiveIntensity=on?1.1:.05;capMat.emissiveIntensity=on?.35:0;h.visible=on;};return g;}
 const ANT_SVG='<svg viewBox="0 0 40 22"><g fill="currentColor"><ellipse cx="9" cy="13" rx="6.5" ry="4.8"/><circle cx="19" cy="12.5" r="3.2"/><circle cx="28.5" cy="11.5" r="4.6"/></g><g stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M30 7.5q2-6 7-5.5M27.5 7.5q0-6 4-7"/><path d="M15.5 15l-3 6M19 15.5v6M22.5 15l3 6"/></g></svg>';
 export default {
@@ -79,6 +89,10 @@ export default {
   backdrop:{zone:'basecamp',at:[0,1.2,-.2],r:21,h:15,bob:[1.2,.3],speed:.07,sweep:[.25,1.3],
     show:{at:[1.1,2.5],az:.35}}, // 탐험 준비: 원더룹을 세울 자리와 카메라 방향(개미굴도 광장 한쪽 트인 자리로 옮겨 세운다) — 앞을 가리는 소품이 없는 각도
   /* 탐험 준비(탐험가 소개) 창 — 개미굴 #show 그대로(개미탈 4색). 지도는 시리즈 규칙대로 스테이지 4칸 */
+  /* 날씨·시간대(game/weather, 2026-11-04): 게임을 열 때 이 목록에서 하나를 무작위로 골라 그 판 동안 유지. ambience = 날씨별 공간음(합성 소리 이름 birds·crickets·rain·wind).
+     하늘·빛 색은 야외 구역의 하늘 설정(game/sky keys — 낮·노을·밤)과 rainKey(비 오는 날 — 없으면 기본 회청색)로, 실내 구역은 구역 정보 indoor:true */
+  weathers:['day','night','rain','sunset'],
+  ambience:{day:'birds',night:'crickets',rain:'rain',sunset:'wind'},
   talModel:'ant',talLabel:'개미탈',
   talColors:[['갈색 개미','#a8603f','#7e4229'],['검은 개미','#3e3446','#241d2a'],['황금 개미','#e0a63a','#a8701e'],['풀잎 개미','#6fa65a','#4a7a3c']],
   guide:{text:'개미 마을이 너무 궁금해서 개미탈을 쓰고 몰래 들어온 탐험가 원더룹이에요. 겁은 조금 많지만 발은 누구보다 빨라요.',goal:'개미굴 가장 깊은 곳, 여왕개미의 방까지 가 보기'},
@@ -98,7 +112,7 @@ export default {
     {text:'목표는 개미굴 가장 깊은 곳, 여왕개미의 방. 하지만 깊은 굴은 아주 어둡고, 어디선가 자꾸 바스락 소리가 난대요…',vo:'assets/audio/antvillage/pro3.mp3',cam:{at:[0,1.2,-.2],r:20,h:14,a:[1.0,1.4],speed:.07,bob:[1.2,.3]}}],
   /* 첫 미션 — 개미굴 광장 '버섯 랜턴을 찾아요' 그대로(카드 문구·나레이션 m_lamp·g_lamp·민트 빛기둥·냄새 길). 자리는 베이스캠프 방 안(광장 이식 때 바꿈) */
   firstMission:{
-    item:{id:'lantern',name:'버섯 랜턴',at:[2.8,-1.0],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,light:true,desc:'어두운 굴을 환하게 비춰 주는 버섯 랜턴. 켜고 끌 수 있어요.',where:'첫 미션',tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
+    item:{id:'lantern',name:'버섯 랜턴',at:[.8,-1.2],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,light:true,desc:'어두운 굴을 환하게 비춰 주는 버섯 랜턴. 켜고 끌 수 있어요.',where:'첫 미션',tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
     quest:'광장 어딘가에 떨어진 버섯 랜턴을 찾아요',
     popup:{kicker:'미션',title:'버섯 랜턴을 찾아요',text:'깊은 개미굴은 아주 어두워요. 광장 어딘가에 떨어진 버섯 랜턴을 먼저 찾아보세요. 청록 빛기둥이 솟은 바위 위에 있어요.'},
     narration:{vo:'assets/audio/antvillage/m_lamp.mp3'},

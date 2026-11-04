@@ -23,13 +23,14 @@ import {blocking,clock,cue,cues} from './core.js';
 import {COMMON} from './synth.js';
 import {ANT} from './sfx-ant.js';
 import {asBeds} from './music.js';
-const SRC={},BUF={},LEN={},SYN={},PEND={};let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null;
+const SRC={},BUF={},LEN={},SYN={},PEND={};let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null;
 const S={muted:false,tts:false};
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webkitAudioContext)();
     out=ctx.createGain();out.gain.value=S.muted?0:.85;out.connect(ctx.destination);           // 전체 (개미굴 master)
     sfxBus=ctx.createGain();sfxBus.gain.value=.9;sfxBus.connect(out);                       // 효과음
     musicBus=ctx.createGain();musicBus.gain.value=.5;musicBus.connect(out);                 // 배경음
+    ambBus=ctx.createGain();ambBus.gain.value=.32;ambBus.connect(out);                     // 공간음(game/weather — 새소리·풀벌레·빗소리·바람, 음악을 덮지 않게 작게, 2026-11-04)
     voiceOut=ctx.createGain();voiceOut.gain.value=1;voiceOut.connect(ctx.destination);}    // 목소리 (개미굴 voOut — 전체를 거치지 않음)
   catch(e){ctx=null;}return ctx;}
 const awake=()=>!SHOT&&!S.muted&&ctx&&ctx.state==='running';
@@ -107,4 +108,6 @@ function tickNarration(){
   if(!cur&&NQ.length&&!blocking())cur=NQ.shift();}
 const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
-export {songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+/* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
+const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
+export {ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};

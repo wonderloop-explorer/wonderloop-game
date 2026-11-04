@@ -12,6 +12,7 @@ import {set as setGoal} from './goal.js';
 import {preload,register,sfx,voice} from './sound.js';
 import {setTool} from './controls.js';
 import {flags,setFlag} from './state.js';
+import {spinFrames} from './profile.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0,light=null,pool=null,lampOn=false,lampK=0;
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
@@ -48,9 +49,33 @@ function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M
 function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispose(obj);obj=null;}
   setFlag(haveKey(W,it),true);setGoal(null);sfx('pickup');giveHeld(W,it);
   const G=F.got||{};if(cardShown()==='notice')stopVO();
-  itemCard({title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,who:'아이템'});
+  showOff(it);
+  const fr=it.model?spinFrames(it.model(THREE,{held:false})):null; // 획득 창: 아이콘 대신 그 물건이 천천히 도는 모습
+  itemCard({title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,frames:fr,sec:3.2,who:'아이템'});
   if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title);
   setQuest(F.next||'');}
+/* 얻는 순간 장면(2026-11-04 시리즈 규칙): 원더룹이 멈춰 서서 물건을 번쩍 들어 보이고(07 showT — 물건 userData.show 자세), 카메라가 1.6초 동안 원더룹 앞쪽 3/4(물건을 든 오른손 쪽)으로 돌아갔다가
+   따라가기 시점으로 부드럽게 돌아온다(view.focus). 획득 창·나레이션은 같이 나온다. 화면을 누르거나 키를 누르면 바로 끝(카메라는 controls가 손대면 넘겨받음) */
+function showOff(it){const U=ctx.WL.userData,V=ctx.view;if(U.stopWalk)U.stopWalk();U.showT=1.7;if(!V||SHOT)return;
+  const P=ctx.WL.position.clone(),ry=ctx.WL.rotation.y,cam=ctx.camera.position,AT=new THREE.Vector3(P.x,P.y+.95,P.z),D=3.8,Y=1.5;
+  // 앞쪽 3/4(물건을 든 왼손 쪽 먼저 — 몸에 가려지지 않게)에서 가리는 물체가 없는 쪽을 고른다
+  const ray=new THREE.Raycaster(),objs=[];ray.layers.enableAll(); // 방 소품 원래 부품은 클릭 판정 층(1)에 있다
+  ctx.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.isInstancedMesh&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false))objs.push(o);});
+  const inWL=o=>{for(let q=o;q;q=q.parent)if(q===ctx.WL)return true;return false;};
+  const fromAng=a=>new THREE.Vector3(P.x+Math.sin(ry+a)*D,P.y+Y,P.z+Math.cos(ry+a)*D);let A=null;
+  for(const a of [.6,-.6,1,-1,.25,-.25,0]){const f=fromAng(a),dir=AT.clone().sub(f),L=dir.length();ray.set(f,dir.normalize());ray.far=L-.35;if(!ray.intersectObjects(objs,false).some(h=>!inWL(h.object))){A=a;break;}}
+  if(A===null)return; // 모든 쪽이 막혔으면 카메라는 그대로(들어 보이기만)
+  // 카메라는 원더룹 둘레를 둥글게 돌아(곧게 건너가면 머리를 뚫고 지나간다) 앞쪽으로 → 1초 머문 뒤 → 원래 각도·거리로 돌아와 따라가기에 넘김
+  const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y;let a1=ry+A,da=((a1-a0+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;a1=a0+da;
+  const T_IN=.55,T_HOLD=.95,T_OUT=.6,ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;let t=0,last=performance.now(),done=false;
+  const at=(k,aa,bb)=>aa+(bb-aa)*ease(Math.min(1,Math.max(0,k)));
+  const fin=()=>{if(done)return;done=true;U.showT=0;if(V.req&&V.req.fn===fn)V.hold(null);off();};
+  const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;if(t>T_IN+T_HOLD+T_OUT){setTimeout(fin,0);return null;}
+    const k=t<T_IN?t/T_IN:t<T_IN+T_HOLD?1:1-(t-T_IN-T_HOLD)/T_OUT,a=at(k,a0,a1),r=at(k,r0,D),y=at(k,y0,Y),ay=at(k,.85,.95);
+    return {from:[P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r],at:[P.x,P.y+ay,P.z]};};
+  V.hold(fn);
+  const end=()=>fin(),off=()=>{removeEventListener('pointerdown',end,true);removeEventListener('keydown',end,true);};
+  setTimeout(()=>{addEventListener('pointerdown',end,true);addEventListener('keydown',end,true);},120);}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
 function clearMission(){lampOn=false;{const U=ctx&&ctx.WL&&ctx.WL.userData;if(U&&U.heldObj&&U.heldObj.userData.missionItem&&U.setHeld)U.setHeld(null);} // 처음부터 하기: 쥐고 있던 미션 물건도 내려놓음
   if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}

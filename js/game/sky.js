@@ -14,9 +14,12 @@ const DEFAULT_KEYS=[
   {top:'#7f8fc4',horizon:'#f6b98a',hemi:'#f7c9a6',ground:'#a7787a',hemiI:.42,sun:'#ff9f6a',sunI:.5,sunDir:[11,-4,3],fill:.16,fog:'#e9b494',fogNear:22,fogFar:80,stars:0},
   {top:'#1c2350',horizon:'#4a4778',hemi:'#8b92c8',ground:'#4a3e58',hemiI:.2,sun:'#9fb0e8',sunI:.08,sunDir:[-4,-11,2],fill:.1,fog:'#30325a',fogNear:18,fogFar:70,stars:1},
 ];
+/* 비 오는 날(game/weather, 2026-11-04): S.rain(0~1)만큼 지금 시간의 하늘·빛을 이 값 쪽으로 섞는다 — 흐린 회청색 하늘, 약한 햇빛, 가까운 안개. 세계마다 sky({rainKey})로 바꿈 */
+const RAIN_KEY={top:'#8c98a8',horizon:'#c4c9cd',hemi:'#c9d0d8',ground:'#8d8c82',hemiI:.5,sun:'#d4dae2',sunI:.16,sunDir:[3,-12,4],fill:.2,fog:'#b8bfc5',fogNear:14,fogFar:58,stars:0,milky:0};
 const CKEYS=['top','horizon','hemi','ground','sun','fog'],NKEYS=['hemiI','sunI','fill','fogNear','fogFar','stars','milky'];
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
-function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3}={}){
+function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey=null}={}){
+  const RK=Object.assign({},RAIN_KEY,rainKey||{}),RC={};CKEYS.forEach(c=>RC[c]=new THREE.Color(RK[c]));RC.dir=new THREE.Vector3(...RK.sunDir).normalize();
   const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
   // 하늘 둥근 지붕: 지평선 → 위로 색이 바뀐다(땅 아래는 지평선 색). 카메라를 따라다닌다
@@ -42,7 +45,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3}={}){
   first.renderOrder=-9;first.frustumCulled=false;
   const g=new THREE.Group();g.name='sky';g.add(dome,stars,first);(parent||null)&&parent.add(g);
   const cur={};CKEYS.forEach(c=>cur[c]=new THREE.Color());cur.dir=new THREE.Vector3();
-  const S={group:g,t,goal:null,dur:0,from:0,tw:0,clk:0,
+  const S={group:g,t,goal:null,dur:0,from:0,tw:0,clk:0,rain:0,
     get night(){return ss(.6,2,S.t);},
     set(v){S.t=Math.max(0,Math.min(2,v));S.goal=null;},
     to(v,sec=4){S.from=S.t;S.goal=Math.max(0,Math.min(2,v));S.dur=Math.max(.01,sec);S.tw=0;},
@@ -51,12 +54,12 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3}={}){
     light(L,camera,dt,sunDirOut){
       if(S.goal!=null){S.tw+=dt;const k=ss(0,1,S.tw/S.dur);S.t=S.from+(S.goal-S.from)*k;if(S.tw>=S.dur){S.t=S.goal;S.goal=null;}}
       const i=Math.min(1,Math.floor(S.t)),u=S.t-i,a=KC[i],b=KC[i+1],ka=K[i],kb=K[i+1];
-      CKEYS.forEach(c=>cur[c].copy(a[c]).lerp(b[c],u));const num=n=>ka[n]+(kb[n]-ka[n])*u;
+      const R=S.rain||0;CKEYS.forEach(c=>{cur[c].copy(a[c]).lerp(b[c],u);if(R)cur[c].lerp(RC[c],R*(S.t>1.5?.35:1));});const num0=n=>ka[n]+(kb[n]-ka[n])*u,num=n=>R?num0(n)+(Math.min(num0(n),RK[n])-num0(n))*R*(n==='stars'||n==='milky'?1:S.t>1.5?.35:1):num0(n); // 비: 밤이면 조금만 섞음(이미 어두움)
       uni.top.value.copy(cur.top);uni.horizon.value.copy(cur.horizon);
       L.hemi.color.copy(cur.hemi);L.hemi.groundColor.copy(cur.ground);L.hemi.intensity=num('hemiI');
       L.sun.color.copy(cur.sun);L.sun.intensity=num('sunI');L.fill.intensity=num('fill');
       if(L.fog){L.fog.color.copy(cur.fog);L.fog.near=num('fogNear');L.fog.far=num('fogFar');}
-      if(sunDirOut)sunDirOut.copy(cur.dir.copy(a.dir).lerp(b.dir,u).normalize());
+      if(sunDirOut){cur.dir.copy(a.dir).lerp(b.dir,u);if(R)cur.dir.lerp(RC.dir,R);sunDirOut.copy(cur.dir.normalize());}
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
       smat.opacity=st*ss(1.75,2,S.t);uni.milky.value=num('milky')*ss(1.7,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
       if(camera){g.position.copy(camera.position);g.scale.setScalar(Math.min(1,camera.far*.9/radius));}},  // 08이 카메라 먼 거리를 안개 끝으로 당기면 하늘도 그 안으로

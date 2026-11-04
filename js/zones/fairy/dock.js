@@ -371,19 +371,19 @@ ROCKS.forEach(r=>{SOLID.push([r.c[0],r.c[1],r.c[2]]);add(new THREE.CylinderGeome
    모두 말을 걸 수 있다(한두 마디 — 첫별 축제 준비·물길 이야기). 강 이쪽 주민 둘과 이야기하면 사공 요정에게 가라는 할 일로 넘어간다.
    주민 하나 = 그리기 1번(흰 천 결 한 장 + 색 → bakeFairy into body), 휴대폰은 동그란 그림자 무리 하나(blobMany) */
 const VILL=[
-  {kind:'flower',name:'꽃 요정',o:{petal:'#f4a7b9'},a:[-7,1.4],b:[-2.2,2.3],side:'S',lines:['오늘 밤이 첫별 축제래! 꽃잎 바구니 나르느라 날개가 없어도 바빠.','꽃잎은 가볍지만, 백 장이면 이야기가 달라.']},
-  {kind:'flower',name:'꽃 요정',o:{petal:'#f7c08a',dress:'#fbe7a8'},a:[6.3,3.4],face:[7.4,4.2],side:'S',lines:['바람아, 오늘은 제발 축제 장식 날리지 마.','지난번엔 내 꽃잎 리본을 연못까지 날려 보냈거든.']},
-  {kind:'wind',name:'바람 요정',o:{dress:'#a9d8b0'},a:[7.4,4.2],face:[6.3,3.4],side:'S',lines:['나 아니야! …아마도.','클로버를 뒤튼 것도 내가 아니야. 아침 바람이 조금 신이 났을 뿐이지.']},
-  {kind:'mushroom',name:'꼬마 버섯 요정',o:{cap:'#b99ae0'},a:[2.6,6.4],b:[6.2,6.9],side:'S',lines:['비 온 다음 날엔 내 키가 한 뼘씩 자라.','어른들이 그러는데, 진짜 우리는 땅속에서 서로 손을 잡고 있대.']},
-  {kind:'flower',name:'꽃 요정',o:{petal:'#fbf1e2',hem:'#c9b2ee'},a:[9.6,-.7],face:[9.6,-3],side:'S',lines:['이슬배가 안 떠서 강 건너 친구를 못 보고 있어.','물길만 열리면 금방인데…']},
-  {kind:'wind',name:'바람 요정',o:{dress:'#c7e6f2',hair:'#6e4a33'},a:[-11.5,3.2],b:[-7.5,4.6],side:'S',lines:['후~ 나는 바람으로 길 안내를 해. 오늘은 별꽃 전망대 쪽으로 불고 있어.']},
-  {kind:'flower',name:'꽃 요정',o:{petal:'#c9b2ee'},a:[-6,-9.2],b:[-1,-9.2],side:'N',lines:['강을 건너왔구나! 이 길로 조금만 더 가면 민들레 공중정원이야. 문은 축제 전에 열린대.']},
-  {kind:'mushroom',name:'꼬마 버섯 요정',o:{cap:'#e2493c'},a:[-10.5,-9.4],face:[-8.4,-11.6],side:'N',lines:['여긴 민들레 공중정원 가는 길이야. 문은 아직 닫혀 있지만, 축제 전엔 열릴 거야.']}];
+  {repeat:'바구니가 아직도 무거워~ 그래도 축제 생각하면 힘이 나!',kind:'flower',name:'꽃 요정',o:{petal:'#f4a7b9'},a:[-7,1.4],b:[-2.2,2.3],side:'S',lines:['오늘 밤이 첫별 축제래! 꽃잎 바구니 나르느라 날개가 없어도 바빠.','꽃잎은 가볍지만, 백 장이면 이야기가 달라.']},
+  {repeat:'장식이 또 날아가면 바람 요정 탓이야!',kind:'flower',name:'꽃 요정',o:{petal:'#f7c08a',dress:'#fbe7a8'},a:[6.3,3.4],face:[7.4,4.2],side:'S',lines:['바람아, 오늘은 제발 축제 장식 날리지 마.','지난번엔 내 꽃잎 리본을 연못까지 날려 보냈거든.']},
+  {repeat:'후~ 이번엔 진짜 나 아니야.',kind:'wind',name:'바람 요정',o:{dress:'#a9d8b0'},a:[7.4,4.2],face:[6.3,3.4],side:'S',lines:['나 아니야! …아마도.','클로버를 뒤튼 것도 내가 아니야. 아침 바람이 조금 신이 났을 뿐이지.']},
+  {repeat:'내일은 한 뼘 더 커 있을 거야!',kind:'mushroom',name:'꼬마 버섯 요정',o:{cap:'#b99ae0'},a:[2.6,6.4],b:[6.2,6.9],side:'S',lines:['비 온 다음 날엔 내 키가 한 뼘씩 자라.','어른들이 그러는데, 진짜 우리는 땅속에서 서로 손을 잡고 있대.']},
+  {repeat:'강 건너 친구한테 안부 전해 줘!',kind:'flower',name:'꽃 요정',o:{petal:'#fbf1e2',hem:'#c9b2ee'},a:[9.6,-.7],face:[9.6,-3],side:'S',lines:['이슬배가 안 떠서 강 건너 친구를 못 보고 있어.','물길만 열리면 금방인데…']},
+  {repeat:'바람 따라가면 길을 안 잃어~',kind:'wind',name:'바람 요정',o:{dress:'#c7e6f2',hair:'#6e4a33'},a:[-11.5,3.2],b:[-7.5,4.6],side:'S',lines:['후~ 나는 바람으로 길 안내를 해. 오늘은 별꽃 전망대 쪽으로 불고 있어.']},
+  {repeat:'민들레 공중정원은 이 길 끝이야!',kind:'flower',name:'꽃 요정',o:{petal:'#c9b2ee'},a:[-6,-9.2],b:[-1,-9.2],side:'N',lines:['강을 건너왔구나! 이 길로 조금만 더 가면 민들레 공중정원이야. 문은 축제 전에 열린대.']},
+  {repeat:'공중정원 바람은 아주 세대. 꽉 잡아!',kind:'mushroom',name:'꼬마 버섯 요정',o:{cap:'#e2493c'},a:[-10.5,-9.4],face:[-8.4,-11.6],side:'N',lines:['여긴 민들레 공중정원 가는 길이야. 문은 아직 닫혀 있지만, 축제 전엔 열릴 거야.']}];
 const vShadow=blobMany(VILL.length,.6);if(vShadow)root.add(vShadow);
 const villagers=VILL.map((d,i)=>{const v=villager(d.kind,d.o);bakeFairy(v,{into:v.body});v.root.position.set(d.a[0],0,d.a[1]);
   const f=d.face||d.b;if(f)v.root.rotation.y=Math.atan2(f[0]-d.a[0],f[1]-d.a[1]);root.add(v.root);keep.push(v.root);G.occlude.add(v.root,.3,.8);
   const st={d,v,i,u:(i*.37)%1,dir:1,wait:0,talked:false};
-  st.npc=G.dialog.npc({name:d.name,root:v.root,bubbleY:d.kind==='mushroom'?.75:.95,variants:[{when:()=>true,lines:d.lines}],onDone:()=>{if(!st.talked){st.talked=true;villTalked();}}});
+  st.npc=G.dialog.npc({name:d.name,repeatLine:d.repeat,root:v.root,bubbleY:d.kind==='mushroom'?.75:.95,variants:[{when:()=>true,lines:d.lines}],onDone:()=>{if(!st.talked){st.talked=true;villTalked();}}});
   return st;});
 let talkedN=0;
 function villTalked(){talkedN++;if(st.phase==='arrive'&&talkedN<=2){q(talkedN<2?`마을 요정들과 이야기해요 (${talkedN}/2)`:'선착장의 사공 요정에게 가 봐요');if(talkedN===2)G.sound.sfx('chime');}}
@@ -401,10 +401,10 @@ const st={phase:'arrive'};
 const q=t=>G.ui.setQuest(t);
 q('마을 요정들과 이야기해요 (0/2)');
 let shroomTalked=false;
-G.dialog.npc({name:'버섯 요정',root:shroom.root,bubbleY:1.05,onDone:()=>{if(!shroomTalked){shroomTalked=true;villTalked();}return G.profile.meet('mushroom',shroom.root);},variants:[ // 소개 카드는 끝까지 들었을 때만(onDone — game/dialog)
+G.dialog.npc({name:'버섯 요정',repeatLine:'사공 요정은 선착장 끝에 있어. 어서 가 봐!',root:shroom.root,bubbleY:1.05,onDone:()=>{if(!shroomTalked){shroomTalked=true;villTalked();}return G.profile.meet('mushroom',shroom.root);},variants:[ // 소개 카드는 끝까지 들었을 때만(onDone — game/dialog)
   {when:()=>!hasUmb(),lines:['어머, 꽃봉오리 손님이네! 오늘 밤 첫별 축제 보러 왔구나?','축제는 별꽃 전망대에서 열려. 사공 아저씨 배를 타야 갈 수 있지.']},
   {when:()=>hasUmb(),lines:['우산 받았구나! 민들레 공중정원에선 그걸 펴고 바람을 탄대. 부럽다~']}]});
-const boatNpc=G.dialog.npc({name:'사공 요정',root:boatman.root,bubbleY:1.3,talkR:.9,onDone:()=>afterBoatman(),variants:[
+const boatNpc=G.dialog.npc({name:'사공 요정',repeatLine:'준비되면 말해 주렴!',root:boatman.root,bubbleY:1.3,talkR:.9,onDone:()=>afterBoatman(),variants:[
   {when:()=>st.phase==='arrive',lines:['어이쿠, 손님이구나! 첫별 축제 가는 길이지?','그런데 큰일이야. 아침 바람에 클로버 잎들이 뒤틀려서 물길을 꽉 막아 버렸어.','물길이 막히면 이슬방울이 못 굴러와. 이슬이 없으니 이슬배가 못 떠나고 있단다!','저기 강가에 뒤틀린 클로버 잎 세 개 보이지? 손으로 돌려서 바로 놓아 줄 수 있겠니?']},
   {when:()=>st.phase==='clovers',lines:['클로버는 이쪽 강가를 따라 셋 있어. 살랑살랑 반짝이는 잎이야. 가까이 가서 돌려 줘!']},
   {when:()=>st.phase==='boat'&&!nearBoat(),lines:['이슬배가 찰랑찰랑 찼어! 자, 타렴. 내가 노를 저어 줄게.']}, // 배 앞에서는 사공 '말 걸기' 대신 '이슬배 타기'만(헷갈리지 않게 — 2026-11-03)

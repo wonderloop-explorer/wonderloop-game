@@ -34,6 +34,7 @@ const css=`
   background:var(--panel);color:var(--ink);border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;box-shadow:0 14px 40px rgba(30,14,36,.45);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s}
 #wlGet.on{opacity:1;transform:translate(-50%,0) scale(1)}
 #wlGet .ic{flex:none;display:grid;place-items:center;width:58px;height:58px;box-sizing:border-box;border-radius:50%;background:#f3ead6;border:1.5px solid #a77a52}#wlGet .ic:has(img:not([src])){display:none}
+#wlGet.spin .ic{width:92px!important;height:92px!important}#wlGet.spin img{width:92px!important;height:92px!important;filter:none!important}
 #wlGet img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 0 .7px #7a5236) drop-shadow(0 0 .7px #7a5236)}#wlGet img:not([src]){display:none}
 #wlGet .t{margin:0;font-size:1.2rem;font-family:"Jua",sans-serif}
 #wlGet .s{margin:.2rem 0 0;font-size:.9rem;color:var(--ink-soft)}
@@ -188,9 +189,10 @@ function tickFade(){if(!fade)return;const f=fade,e=clock.t-f.t0;
    itemget 소리. 막지는 않지만(개미굴과 같음) 카드 자리를 함께 써서 미션 카드·결과창과 겹치지 않는다. 시점 기록 kind 'card' who '아이템' */
 const gt=$('#wlGet');let gtDone=null,gtCue=null,gtEnd=0;
 /* 아이템 획득 카드 — 같은 모양으로 스테이지 완료 안내도(sound·who만 바꿔) */
-function itemCard({title='',text='',icon=null,sec=2.8,sound='itemget',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
-  const img=gt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
-function closeItemCard(){if(cardOn!=='item')return;gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
+let gtSpin=0;
+function itemCard({title='',text='',icon=null,frames=null,sec=2.8,sound='itemget',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
+  const img=gt.querySelector('img');clearInterval(gtSpin);gt.classList.toggle('spin',!!(frames&&frames.length));if(frames&&frames.length){let k=0;img.src=frames[0];if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gtSpin=setInterval(()=>{k=(k+1)%frames.length;img.src=frames[k];},90);}else if(icon)img.src=icon;else img.removeAttribute('src'); /* frames: 도는 물건(game/profile spinFrames) — 아이콘 대신 */gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
+function closeItemCard(){if(cardOn!=='item')return;clearInterval(gtSpin);gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
 /* 스테이지 완료 배지 (엔진 공통, 2026-11-03 — 요정의 숲부터): stageBadge({img, stage, next, title?, sub?, sec, sound, box, medal})
    세계 그림(투명 배지, 가운데 크림색 칸 = 글자 자리)에 큰 글자 "<stage> 탐험 완료!"(Jua·진갈색)와 작은 글자 "다음 목적지: <next>"(Gowun Dodum·연한 갈색)를 얹는다.

@@ -62,8 +62,9 @@ async function goZone(id,spawn){clearDevcheck();
   return true;}
 /* 세계의 옷·탈: 상상의 세계(구역 정보에 hood가 있는 곳)에 들어가면 탐험복 그대로 탈만 그 세계 것으로 바꿔 쓴다.
    outfit을 적으면 그 옷(예: 'casual'), 안 적으면 탐험복. hood가 없는 구역(베이스캠프 등)은 지금 차림 그대로 */
+const DEV_HEAD=new URLSearchParams(location.search).has('debug');document.body.classList.toggle('wl-devhead',DEV_HEAD); // 개발용 머리말·아래 안내 글은 ?debug일 때만
 function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥근 땅 세기는 구역 정보 bend(없으면 끔 — 실내·베이스캠프)
-  {const h=document.querySelector('header');if(h)h.style.display=z.world?'none':'';document.body.classList.toggle('wl-world',!!z.world);} // 세계 구역: 베이스캠프 머리말·아래 조작 안내 글자 숨김(조작법 창에 다 있음) // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
+  {const h=document.querySelector('header');if(h)h.style.display=z.world||!DEV_HEAD?'none':''; /* 개발용 머리말('원더룹 베이스캠프 / … 실험')은 주소에 ?debug일 때만(2026-11-04) */document.body.classList.toggle('wl-world',!!z.world);} // 세계 구역: 베이스캠프 머리말·아래 조작 안내 글자 숨김(조작법 창에 다 있음) // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);
   GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
@@ -71,6 +72,9 @@ zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5)});window.wlGame=GAME; // 콘솔·시험 도구용
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
+GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
+{const q=new URLSearchParams(location.search);if(!q.has('shot')||q.has('weather')){nightTarget=night=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}}
+{const wb=document.getElementById('weatherBtn'),lab=()=>{wb.textContent='날씨: '+GAME.weather.weatherName();};lab();wb.addEventListener('click',()=>{GAME.weather.nextWeather();if(!(zone.cur&&zone.cur.sky)){nightTarget=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}lab();});}
 GAME.startFront({ctx:{scene,camera,renderer,WL},world:WORLD,zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
 {let done=false;const go=()=>{if(done)return;done=true;if(window.wlBootDone)window.wlBootDone();};requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(go,1500);} // 공통 로딩 화면(index.html #wlBoot): 첫 구역을 그린 뒤 치운다 — 최소 1초·0.4초 사라짐·루프 멈춤은 로딩 화면 쪽. 화면이 가려져 그리기가 멈춰 있어도 1.5초 뒤엔 치운다(촬영 모드는 로딩 화면이 스스로 바로 지움)
 window.wlZone={go:goZone,get cur(){return zone.cur;},get area(){return zone.area;},list:Object.keys(ZONES),blocked,overlap}; // blocked·overlap: 끼임 자동 시험(tools/stuck-test.js)
@@ -99,6 +103,7 @@ initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)
    if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
 
 /* ---------- 애니메이션 ---------- */
+const INL={hemi,sun,fill};
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
 /* 안개: 처음부터 늘 켜 두고 하늘 없는 구역에서는 아주 멀리 밀어 둔다(그림은 그대로) — 구역마다 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다 */
 const FOG_OFF=1e4;scene.fog=new THREE.Fog(0xffffff,FOG_OFF,FOG_OFF*2);
@@ -136,7 +141,7 @@ function perfTick(now,work){const P=PERF;if(!P.last||now-P.last>500){P.t0=now;P.
   if(now-P.t0<1000)return;const sec=(now-P.t0)/1000;P.fps=P.n*1000/(now-P.t0);P.ivA=P.iv/P.n;P.workA=P.work/P.n;P.t0=now;P.n=P.iv=P.work=0;
   if(MOBILE&&!SHOT){P.play+=sec;if(idle(now))P.bad=0;else if(P.fps<26)P.bad++;else P.bad=0;
     const want=Math.max(P.bad>=3?P.level+1:P.level,P.play>1200?2:P.play>600?1:0);if(want>P.level&&P.level<4){P.level=Math.min(4,want);P.bad=0;applyQuality();}}}
-function applyQuality(){const L=PERF.level;if(zone.cur&&zone.cur.quality)zone.cur.quality(L);if(L>=3)setPixelCap(L>=4?1:1.1);}
+function applyQuality(){const L=PERF.level;GAME.weather.rainQuality(L);if(zone.cur&&zone.cur.quality)zone.cur.quality(L);if(L>=3)setPixelCap(L>=4?1:1.1);}
 const nextFrame=()=>{if(!SHOT&&!paused)schedule();};
 if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
@@ -156,9 +161,10 @@ function tickBody(){
   sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
   if(SK)SK.light({hemi,sun,fill,fog:scene.fog},camera,dt,Z.sun.dir);else if(scene.fog.near<FOG_OFF){scene.fog.near=FOG_OFF;scene.fog.far=FOG_OFF*2;}
   {const far=SK?Math.min(120,scene.fog.far+4):120;if(camera.far!==far){camera.far=far;camera.updateProjectionMatrix();}} // 하늘 있는 구역: 안개가 다 덮는 곳부터는 그리지 않는다(하늘 지붕은 그 안으로 줄어듦)
+  const wx=SK?{night:0,rain:SK.rain||0}:GAME.weather.indoorLight(INL,dt,rawLin); // 실내 날씨: 밤은 푸르고 어둡게, 비는 회청색(창문 하늘은 구역 light(env)가 env.weather·env.rain으로)
   cave+=((SK?0:caveTarget)-cave)*Math.min(1,dt*2.2);dayLabel(); // 하늘 있는 구역에서는 굴 조명을 쓰지 않는다
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}
-  const env={night:n,cave,flick,reduce};WL.userData.nightK=SK?Math.min(1,SK.t/2*1.3):n; // 탈 효과(화관 별가루)가 해 질 녘·밤에 더 또렷하게
+  const env={night:n,cave,flick,reduce,weather:GAME.weather.weather(),rain:wx.rain,deep:wx.night};WL.userData.nightK=SK?Math.min(1,SK.t/2*1.3):n; // 탈 효과(화관 별가루)가 해 질 녘·밤에 더 또렷하게
   if(Z.mood){const m=Z.mood;hemi.intensity*=m.hemi??1;sun.intensity*=m.sun??1;fill.intensity*=m.fill??1; // 구역 분위기(땅속 등): 하늘빛·해를 줄이고 색을 물들인다 — 없으면 예전과 같다
     if(m.sky!=null){hemi.color.lerp(rawLin(m.sky),m.tint??.5);hemi.groundColor.lerp(rawLin(m.ground??m.sky),m.tint??.5);}}
   if(Z.light)Z.light(env,dt); // 구역 조명(램프·등불 등)과 효과의 밝기
@@ -166,6 +172,7 @@ function tickBody(){
    if(U.rimU){U.rimU.value=a*(.08+.45*dark);U.liftU.value=a*(.02+.17*dark);}}
   // 위 세기는 r128 옛 조명 단위 → 물리 단위로 (옛 방식은 셰이더에서 π를 곱했다)
   [hemi,sun,fill,...Z.lights].forEach(l=>l.intensity*=PI);
+  GAME.weather.tickWeather(dt,Z,camera); // 빗줄기·공간음
   if(Z.update)Z.update(dt,t,env); // 구역 움직임 (베이스캠프: 먼지·김·시계)
   driveInput();GAME.controls.tickControls(dt,WL.userData.dashCool());
   updateWL(dt,t);

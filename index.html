@@ -81,7 +81,7 @@ body.debug .bar>button{display:inline-block} body.debug #stats{display:block;ord
 body.debug #wlQuest{visibility:hidden} /* 시험용 단추를 연 동안 위 안내 문구는 숨김(성능 표시와 겹치지 않게) */
 body.debug #dbgBtn{background:rgba(255,184,107,.72)}
 body:not(.wl-dev) #dbgBtn{display:none} /* 톱니 단추: 공개 주소 게임은 절대 없음, 한 파일 HTML(개발자판)은 늘, 로컬은 ?debug 일 때만(08) */
-body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아래 조작 안내 글자를 빼고 조작법 창으로(08 zoneLook) */
+body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아래 조작 안내 글자를 빼고 조작법 창으로(08 zoneLook) */
 @media (pointer:coarse){
   .bar .hint{display:none}
   body.debug #stats{display:block}
@@ -285,7 +285,7 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
 <div id="stage"></div>
 <div class="grain"></div>
 <div id="wlVig" aria-hidden="true"></div> <!-- 비네팅(개미굴 #vig 그대로, 2026-11-04 — 시리즈 공통, 휴대폰도): 가장자리로 갈수록 살짝 어둡게. 3D 그림 위·화면 글자 아래, 영상 캡처에는 안 들어감 -->
-<header>
+<header style="display:none">
   <h1>원더룹 베이스캠프</h1>
   <p>파스텔 색연필 로우폴리, 소품·텍스처 디테일 실험</p>
 </header>
@@ -300,6 +300,7 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
   <button id="exprBtn" type="button">표정: 기본</button>
   <button id="actBtn" type="button">동작: 서기</button>
   <button id="emphBtn" type="button">캐릭터 강조: 자동</button>
+  <button id="weatherBtn" type="button">날씨: 낮</button>
   <button id="outfitBtn" type="button">옷: 평상복</button>
   <button id="bendBtn" type="button">둥근 땅: 중</button>
   <button id="boundsBtn" type="button">경계 보기: 끔</button>
@@ -311,7 +312,7 @@ body.wl-world .bar .hint:not(#stats){display:none} /* 세계 구역에서는 아
 </div>
 
 <script id="wl-vercheck">fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.v&&j.v!==window.WL_V){const u=new URL(location.href);if(u.searchParams.get('_v')!==j.v){u.searchParams.set('_v',j.v);location.replace(u);}}}).catch(()=>{});</script>
-<script>window.WL_V='3d1994092f';</script>
+<script>window.WL_V='af8c8abe9d';</script>
 <script id="wl-vguard">(()=>{const V=window.WL_V,re=/^(?:\.\/|\/)?(?:[^:?#]*\/)?(?:assets|js)\//,base=location.origin+location.pathname.replace(/[^/]*$/,'');
 const fix=u=>{if(typeof u!=='string'||!V||/[?&]v=/.test(u)||/^(data|blob):/.test(u))return u;let r=u;if(u.startsWith(location.origin))r=u.slice(location.origin.length);else if(/^[a-z]+:/i.test(u))return u;
   if(!re.test(r)&&!(u.startsWith(base)&&re.test(u.slice(base.length))))return u;const i=u.indexOf('#'),h=i<0?'':u.slice(i),b=i<0?u:u.slice(0,i);return b+(b.includes('?')?'&':'?')+'v='+V+h;};
@@ -323,65 +324,66 @@ for(const C of [HTMLImageElement,HTMLAudioElement,HTMLSourceElement,HTMLVideoEle
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./js/01-textures.js": "./js/01-textures.js?v=3d1994092f",
-    "./js/02-zone.js": "./js/02-zone.js?v=3d1994092f",
-    "./js/03-scene.js": "./js/03-scene.js?v=3d1994092f",
-    "./js/04-character.js": "./js/04-character.js?v=3d1994092f",
-    "./js/05-hair-headwear.js": "./js/05-hair-headwear.js?v=3d1994092f",
-    "./js/06-outfits.js": "./js/06-outfits.js?v=3d1994092f",
-    "./js/07-actions.js": "./js/07-actions.js?v=3d1994092f",
-    "./js/08-main.js": "./js/08-main.js?v=3d1994092f",
-    "./js/09-capture.js": "./js/09-capture.js?v=3d1994092f",
-    "./js/game/bend.js": "./js/game/bend.js?v=3d1994092f",
-    "./js/game/codex.js": "./js/game/codex.js?v=3d1994092f",
-    "./js/game/companion.js": "./js/game/companion.js?v=3d1994092f",
-    "./js/game/controls.js": "./js/game/controls.js?v=3d1994092f",
-    "./js/game/core.js": "./js/game/core.js?v=3d1994092f",
-    "./js/game/course.js": "./js/game/course.js?v=3d1994092f",
-    "./js/game/devcheck.js": "./js/game/devcheck.js?v=3d1994092f",
-    "./js/game/dialog.js": "./js/game/dialog.js?v=3d1994092f",
-    "./js/game/events.js": "./js/game/events.js?v=3d1994092f",
-    "./js/game/felt.js": "./js/game/felt.js?v=3d1994092f",
-    "./js/game/front.js": "./js/game/front.js?v=3d1994092f",
-    "./js/game/fx.js": "./js/game/fx.js?v=3d1994092f",
-    "./js/game/goal.js": "./js/game/goal.js?v=3d1994092f",
-    "./js/game/hud.js": "./js/game/hud.js?v=3d1994092f",
-    "./js/game/index.js": "./js/game/index.js?v=3d1994092f",
-    "./js/game/interact.js": "./js/game/interact.js?v=3d1994092f",
-    "./js/game/items.js": "./js/game/items.js?v=3d1994092f",
-    "./js/game/lamps.js": "./js/game/lamps.js?v=3d1994092f",
-    "./js/game/mission.js": "./js/game/mission.js?v=3d1994092f",
-    "./js/game/music.js": "./js/game/music.js?v=3d1994092f",
-    "./js/game/occlude.js": "./js/game/occlude.js?v=3d1994092f",
-    "./js/game/popup.js": "./js/game/popup.js?v=3d1994092f",
-    "./js/game/profile.js": "./js/game/profile.js?v=3d1994092f",
-    "./js/game/ride.js": "./js/game/ride.js?v=3d1994092f",
-    "./js/game/sfx-ant.js": "./js/game/sfx-ant.js?v=3d1994092f",
-    "./js/game/sky.js": "./js/game/sky.js?v=3d1994092f",
-    "./js/game/sound.js": "./js/game/sound.js?v=3d1994092f",
-    "./js/game/state.js": "./js/game/state.js?v=3d1994092f",
-    "./js/game/synth.js": "./js/game/synth.js?v=3d1994092f",
-    "./js/game/title.js": "./js/game/title.js?v=3d1994092f",
-    "./js/game/titlescreen.js": "./js/game/titlescreen.js?v=3d1994092f",
-    "./js/game/ui.js": "./js/game/ui.js?v=3d1994092f",
-    "./js/hoods/crown.js": "./js/hoods/crown.js?v=3d1994092f",
-    "./js/worlds/antvillage.js": "./js/worlds/antvillage.js?v=3d1994092f",
-    "./js/worlds/index.js": "./js/worlds/index.js?v=3d1994092f",
-    "./js/zones/basecamp.js": "./js/zones/basecamp.js?v=3d1994092f",
-    "./js/zones/fairy/dock.js": "./js/zones/fairy/dock.js?v=3d1994092f",
-    "./js/zones/fairy/fairies.js": "./js/zones/fairy/fairies.js?v=3d1994092f",
-    "./js/zones/fairy/forest.js": "./js/zones/fairy/forest.js?v=3d1994092f",
-    "./js/zones/fairy/music.js": "./js/zones/fairy/music.js?v=3d1994092f",
-    "./js/zones/fairy/paint.js": "./js/zones/fairy/paint.js?v=3d1994092f",
-    "./js/zones/fairy/world.js": "./js/zones/fairy/world.js?v=3d1994092f",
-    "./js/zones/sample-fx.js": "./js/zones/sample-fx.js?v=3d1994092f",
-    "./js/zones/sample-indoor.js": "./js/zones/sample-indoor.js?v=3d1994092f",
-    "./js/zones/sample-outdoor.js": "./js/zones/sample-outdoor.js?v=3d1994092f"
+    "./js/01-textures.js": "./js/01-textures.js?v=af8c8abe9d",
+    "./js/02-zone.js": "./js/02-zone.js?v=af8c8abe9d",
+    "./js/03-scene.js": "./js/03-scene.js?v=af8c8abe9d",
+    "./js/04-character.js": "./js/04-character.js?v=af8c8abe9d",
+    "./js/05-hair-headwear.js": "./js/05-hair-headwear.js?v=af8c8abe9d",
+    "./js/06-outfits.js": "./js/06-outfits.js?v=af8c8abe9d",
+    "./js/07-actions.js": "./js/07-actions.js?v=af8c8abe9d",
+    "./js/08-main.js": "./js/08-main.js?v=af8c8abe9d",
+    "./js/09-capture.js": "./js/09-capture.js?v=af8c8abe9d",
+    "./js/game/bend.js": "./js/game/bend.js?v=af8c8abe9d",
+    "./js/game/codex.js": "./js/game/codex.js?v=af8c8abe9d",
+    "./js/game/companion.js": "./js/game/companion.js?v=af8c8abe9d",
+    "./js/game/controls.js": "./js/game/controls.js?v=af8c8abe9d",
+    "./js/game/core.js": "./js/game/core.js?v=af8c8abe9d",
+    "./js/game/course.js": "./js/game/course.js?v=af8c8abe9d",
+    "./js/game/devcheck.js": "./js/game/devcheck.js?v=af8c8abe9d",
+    "./js/game/dialog.js": "./js/game/dialog.js?v=af8c8abe9d",
+    "./js/game/events.js": "./js/game/events.js?v=af8c8abe9d",
+    "./js/game/felt.js": "./js/game/felt.js?v=af8c8abe9d",
+    "./js/game/front.js": "./js/game/front.js?v=af8c8abe9d",
+    "./js/game/fx.js": "./js/game/fx.js?v=af8c8abe9d",
+    "./js/game/goal.js": "./js/game/goal.js?v=af8c8abe9d",
+    "./js/game/hud.js": "./js/game/hud.js?v=af8c8abe9d",
+    "./js/game/index.js": "./js/game/index.js?v=af8c8abe9d",
+    "./js/game/interact.js": "./js/game/interact.js?v=af8c8abe9d",
+    "./js/game/items.js": "./js/game/items.js?v=af8c8abe9d",
+    "./js/game/lamps.js": "./js/game/lamps.js?v=af8c8abe9d",
+    "./js/game/mission.js": "./js/game/mission.js?v=af8c8abe9d",
+    "./js/game/music.js": "./js/game/music.js?v=af8c8abe9d",
+    "./js/game/occlude.js": "./js/game/occlude.js?v=af8c8abe9d",
+    "./js/game/popup.js": "./js/game/popup.js?v=af8c8abe9d",
+    "./js/game/profile.js": "./js/game/profile.js?v=af8c8abe9d",
+    "./js/game/ride.js": "./js/game/ride.js?v=af8c8abe9d",
+    "./js/game/sfx-ant.js": "./js/game/sfx-ant.js?v=af8c8abe9d",
+    "./js/game/sky.js": "./js/game/sky.js?v=af8c8abe9d",
+    "./js/game/sound.js": "./js/game/sound.js?v=af8c8abe9d",
+    "./js/game/state.js": "./js/game/state.js?v=af8c8abe9d",
+    "./js/game/synth.js": "./js/game/synth.js?v=af8c8abe9d",
+    "./js/game/title.js": "./js/game/title.js?v=af8c8abe9d",
+    "./js/game/titlescreen.js": "./js/game/titlescreen.js?v=af8c8abe9d",
+    "./js/game/ui.js": "./js/game/ui.js?v=af8c8abe9d",
+    "./js/game/weather.js": "./js/game/weather.js?v=af8c8abe9d",
+    "./js/hoods/crown.js": "./js/hoods/crown.js?v=af8c8abe9d",
+    "./js/worlds/antvillage.js": "./js/worlds/antvillage.js?v=af8c8abe9d",
+    "./js/worlds/index.js": "./js/worlds/index.js?v=af8c8abe9d",
+    "./js/zones/basecamp.js": "./js/zones/basecamp.js?v=af8c8abe9d",
+    "./js/zones/fairy/dock.js": "./js/zones/fairy/dock.js?v=af8c8abe9d",
+    "./js/zones/fairy/fairies.js": "./js/zones/fairy/fairies.js?v=af8c8abe9d",
+    "./js/zones/fairy/forest.js": "./js/zones/fairy/forest.js?v=af8c8abe9d",
+    "./js/zones/fairy/music.js": "./js/zones/fairy/music.js?v=af8c8abe9d",
+    "./js/zones/fairy/paint.js": "./js/zones/fairy/paint.js?v=af8c8abe9d",
+    "./js/zones/fairy/world.js": "./js/zones/fairy/world.js?v=af8c8abe9d",
+    "./js/zones/sample-fx.js": "./js/zones/sample-fx.js?v=af8c8abe9d",
+    "./js/zones/sample-indoor.js": "./js/zones/sample-indoor.js?v=af8c8abe9d",
+    "./js/zones/sample-outdoor.js": "./js/zones/sample-outdoor.js?v=af8c8abe9d"
   }
 }
 </script>
 <!-- 08-main.js가 01~07을 번호 순서대로 import한다. 버전(?v=)과 위 importmap의 js 줄은 tools/stamp.py가 쓴다 -->
-<script type="module" src="js/08-main.js?v=3d1994092f"></script>
+<script type="module" src="js/08-main.js?v=af8c8abe9d"></script>
 
 </body>
 </html>
