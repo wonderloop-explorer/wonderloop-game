@@ -11,7 +11,7 @@ index.html 자체는 Pages가 최대 10분 캐시하고, 사파리는 로컬 서
 그래서 version.json({"v":버전})도 쓰고, index.html 맨 앞 작은 스크립트가 이것을 캐시 없이 읽어 버전이 다르면 주소에 &_v=새버전을 붙여 다시 연다
 (주소가 달라 사파리도 새 index.html을 받는다). 톱니 메뉴 성능 상자 맨 위에 '버전 …'이 보인다.
 """
-import hashlib, json, os, re, sys
+import base64, hashlib, json, os, re, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 INDEX = os.path.join(ROOT, 'index.html')
@@ -50,6 +50,13 @@ def stamp(html, v):
     if 'wl-vercheck' not in html:  # 사파리가 옛 index.html을 기억해도 새 버전으로 다시 연다(맨 위 설명)
         html = html.replace('<script type="importmap">', "<script id=\"wl-vercheck\">fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.v&&j.v!==window.WL_V){const u=new URL(location.href);if(u.searchParams.get('_v')!==j.v){u.searchParams.set('_v',j.v);location.replace(u);}}}).catch(()=>{});</script>\n<script type=\"importmap\">", 1)
     html = re.sub(r'src="js/08-main\.js(\?v=[0-9a-f]*)?"', f'src="js/08-main.js?v={v}"', html)
+    # 공통 로딩 화면의 행성 그림(assets/common/loading-planet.webp)을 index.html 안에 data URI로 — 네트워크를 기다리지 않고
+    # 발자국·별과 한꺼번에 나오게(아이폰에서 행성만 늦게 나왔다, 2026-11-04). 그림을 바꾸면 이 스크립트가 다시 넣는다.
+    with open(os.path.join(ROOT, 'assets/common/loading-planet.webp'), 'rb') as f:
+        uri = 'data:image/webp;base64,' + base64.b64encode(f.read()).decode()
+    html, n = re.subn(r'<script>window\.WL_BOOT_IMG="[^"]*";</script>', lambda m: f'<script>window.WL_BOOT_IMG="{uri}";</script>', html)
+    if n != 1:
+        sys.exit('index.html에서 window.WL_BOOT_IMG 줄을 못 찾음(공통 로딩 화면)')
     return html
 
 

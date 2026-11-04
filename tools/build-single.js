@@ -137,11 +137,7 @@ async function main() {
   cut(/<script type="importmap">[\s\S]*?<\/script>\n?/, 'importmap');
   cut(/<!-- 08-main\.js가[^\n]*-->\n?/, '모듈 주석');
   cut(/<script type="module" src="js\/08-main\.js[^"]*"><\/script>\n?/, '모듈 시작');
-  // 공통 로딩 화면(#wlBoot): 행성 그림을 data URI로 머리에 넣는다(로딩 화면은 모듈·WL_FILES보다 먼저 돈다). 미리 받기 줄은 뺀다.
-  cut(/<link rel="preload" as="image" href="assets\/common\/loading-planet\.webp"[^>]*>\n?/, '로딩 화면 미리 받기');
-  const bootImg = 'data:image/webp;base64,' + fs.readFileSync(path.join(ROOT, 'assets/common/loading-planet.webp')).toString('base64');
-  h = h.replace('<style>\n#wlBoot{', () => `<script>window.WL_BOOT_IMG=${JSON.stringify(bootImg)};</script>\n<style>\n#wlBoot{`);
-  if (!h.includes('window.WL_BOOT_IMG=')) throw new Error('index.html에서 못 찾음: 로딩 화면 CSS');
+  if (!/window\.WL_BOOT_IMG="data:image/.test(h)) throw new Error('index.html에 로딩 화면 행성 그림(WL_BOOT_IMG)이 없다 → python3 tools/stamp.py');
   h = h.replace(/<title>[^<]*<\/title>/, () => `<title>${S.title}</title>`); // 바꿀 글은 늘 함수로($' 같은 특수 문자가 코드에 있다)
   const esc = s => s.replace(/<\/(script)/gi, '<\\/$1').replace(/<!--/g, '<\\!--');
   const note = `<!-- ${S.title}
