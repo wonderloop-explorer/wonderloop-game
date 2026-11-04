@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="9b799bd8e4";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="4a6107fbcc";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 ef2fa9b, 버전 af8c8abe9d, 2026-11-04)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 5f32ede, 버전 731631b103, 2026-11-04)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -76,7 +76,9 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
 @media (max-width:520px){ button{font-size:18px} .hint{font-size:15px} }
 @media (pointer:coarse){ .grain{display:none} } /* 개미굴과 같음: 휴대폰은 종이결 덮개(화면 전체 섞기)를 빼서 매 프레임 합성 비용을 던다 */
 /* 시험용 단추(시간·둘러보기·탈·머리…)와 성능 표시는 평소에 숨기고, 왼쪽 위 톱니 단추나 주소 뒤 ?debug 로 연다(08). 안내 글자는 컴퓨터에서만(휴대폰은 조이스틱·단추와 겹쳐서 숨김) */
-.bar>button,#stats{display:none}
+.bar>button,#stats,.spdBox{display:none}
+body.debug .spdBox{display:grid;grid-template-columns:auto auto;gap:4px 10px;align-items:center;background:rgba(40,26,34,.84);color:#fff6e8;border-radius:12px;padding:8px 12px;font-size:15px}
+.spdBox input{width:min(46vw,220px);vertical-align:middle;touch-action:pan-x}.spdBox output{font-variant-numeric:tabular-nums;white-space:nowrap}.spdBox button{grid-column:1/3;font-size:15px;padding:3px 10px}
 body.debug .bar>button{display:inline-block} body.debug #stats{display:block;order:-1;width:auto;max-width:100%;white-space:pre-line;text-align:left;background:rgba(40,26,34,.84);color:#fff6e8;border-radius:12px;padding:6px 12px;font:600 13px/1.5 -apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif} /* 성능 표시: 읽기 쉬운 상자, 시험용 단추 맨 위 */
 #dbgBtn{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:calc(12px + env(safe-area-inset-left,0px));z-index:15;
   width:52px;height:52px;padding:0;display:grid;place-items:center;border-radius:50%;box-sizing:border-box;color:#4a2a2a;
@@ -309,6 +311,7 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
   <button id="actBtn" type="button">동작: 서기</button>
   <button id="emphBtn" type="button">캐릭터 강조: 자동</button>
   <button id="weatherBtn" type="button">날씨: 낮</button>
+  <div class="spdBox" id="spdBox"><label>걷기 속도 <input id="walkSpd" type="range" min="0.8" max="7" step="0.1"></label><output id="walkOut"></output><label>달리기 속도 <input id="runSpd" type="range" min="1.5" max="11" step="0.1"></label><output id="runOut"></output><button id="spdReset" type="button">기본값</button></div>
   <button id="outfitBtn" type="button">옷: 평상복</button>
   <button id="bendBtn" type="button">둥근 땅: 중</button>
   <button id="boundsBtn" type="button">경계 보기: 끔</button>
@@ -321,8 +324,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="af8c8abe9d";
-window.WL_BUILD={"commit":"ef2fa9b","date":"2026-11-04","stage":"basecamp"};
+window.WL_V="731631b103";
+window.WL_BUILD={"commit":"5f32ede","date":"2026-11-04","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -1349,7 +1352,7 @@ import {flags} from './game/state.js';
 import {canGlide} from './game/items.js'; // 활공: 구역 정보 glide(true 늘·false 안 함), 없으면 활공 아이템(민들레 솜털 우산)을 가졌을 때
 import {hint} from './game/ui.js';
 import {sfx} from './game/sound.js'; // 걸음·뛰어오름·내려앉음 소리 (개미굴 step·jump·land)
-import {HIP,SM,WL,WLS,antennae,arms,eyes,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
+import {HIP,SM,WL,WLS,antennae,arms,eyes,hips,hoodParts,legs,neck,shirtU,skin,spine,wlBody} from './04-character.js';
 /* 작은 부품은 그림자를 드리우지 않게 (그림자용으로 한 번 더 그리는 비용 절약) */
 WL.updateMatrixWorld(true);{const sc=new THREE.Vector3();WL.traverse(o=>{if(!o.isMesh||!o.castShadow)return;o.geometry.computeBoundingSphere();o.getWorldScale(sc);if(o.geometry.boundingSphere.radius*Math.max(sc.x,sc.y,sc.z)<.1)o.castShadow=false;});}
 /* 어두운 곳 가독성: 캐릭터 재질에 테두리 빛(림 라이트)과 약한 자체 밝기를 더함 — 주변이 어두울수록 강해짐 */
@@ -1386,9 +1389,36 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
 /* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
-const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.9; // 2026-11-04 시리즈 기준: 개미굴 원본 걷기(초당 5 — 키 1.38의 3.6배)보다 22% 느리게 = 초당 3.9(키의 2.8배), 달리기·대쉬도 같은 비율. 기준·동작 촬영은 예전 1.5
-const DRV={walk:WALK,run:WALK*8/5,dash:WALK*17/5,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
-const LEG_A=SHOTM?.5:.75,STRIDE_W=2*.3*Math.sin(LEG_A),STRIDE_R=2*.3*Math.sin(.85)*1.5; // 걷기 다리 흔들기·한 걸음 길이(발걸음 계산, 아래 moving)
+const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:4.0; // 걷기 속도(설정값 — 아래 SPEED). 기본 = 개미굴 원본(초당 5 — 키 1.38의 3.6배)의 0.8배 = 4.0(키 2.9배). 기준·동작 촬영은 예전 1.5
+const DRV={walk:WALK,run:SHOTM?WALK*8/5:6.4,dash:SHOTM?WALK*17/5:6.4*17/8,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
+const LEG_A=SHOTM?.5:.75; // (기준·동작 촬영의 예전 걷기 — 다리를 엉덩이에서 흔들기만)
+/* 걷기·달리기 속도 설정값(2026-11-04): 개미굴 원본 걷기 5·달리기 8의 0.8배가 기본. 톱니 메뉴 막대로 바로 바꾸고(이 기기에 기억 'wl-speed'), 대쉬 = 달리기 × 17/8(개미굴 비율).
+   기준·동작 촬영(SHOTM)은 예전 1.5 그대로 */
+const SPEED={def:{walk:4.0,run:6.4},H:1.38,
+  set(w,r){if(SHOTM)return;if(w)DRV.walk=+w;if(r)DRV.run=+r;DRV.dash=DRV.run*17/8;try{localStorage.setItem('wl-speed',JSON.stringify({walk:DRV.walk,run:DRV.run}));}catch(e){}},
+  reset(){SPEED.set(SPEED.def.walk,SPEED.def.run);try{localStorage.removeItem('wl-speed');}catch(e){}}};
+if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed')||'null');if(o&&o.walk&&o.run){DRV.walk=+o.walk;DRV.run=+o.run;DRV.dash=DRV.run*17/8;}}catch(e){}
+/* 발을 디디는 걸음(2026-11-04 — 다리를 시계추처럼 흔들기만 해서 발이 미끄러지고 떠 보였다). 촬영 모드(SHOTM)는 예전 그대로.
+   다리: 엉덩이 관절(thigh, 원더룹 안 높이 0.3) → 무릎(shin, 0.125 아래) → 발목(foot, 0.075 아래) → 장화 바닥(0.082 아래). 서면 장화 바닥이 바닥에 닿는다(hips를 1.8cm 내림).
+   - 실제로 움직인 빠르기 v(위치 변화 — 직접 조작·눌러서 걷기·벽 따라 미끄러지기·대쉬 모두)로 계산한다.
+   - 한 발이 땅에 있는 동안 그 발은 몸 아래를 v로 뒤로 지나간다(= 바닥에 붙어 있음): 디딘 동안 지나가는 거리 Lc ≤ LC, 땅에 있는 비율 duty(걷기 .62 → 달리기 .36).
+     걸음 수 f(초당) = v·2·duty/LC(1.6~8.5) → 디딘 거리 Lc = v·2·duty/f. 더 빨라 LC를 넘으면 duty를 줄여 두 발이 다 뜨는 구간(달리기처럼 통통)이 생긴다 — 그래도 디딘 발은 미끄러지지 않는다.
+   - 뜬 발은 살짝 들려(걷기 4.5cm·달리기 9cm) 앞으로, 발바닥은 바닥과 나란히(뗄 때 발끝이 살짝 들림).
+   - 엉덩이 높이 = 디딘 발에 닿을 수 있는 높이(두 관절 다리 길이 0.2) → 걸음마다 저절로 들썩임. 두 발이 다 뜨면 살짝 위로.
+   - 팔은 같은 쪽 다리와 반대로, 달리면 팔꿈치를 굽히고 몸을 앞으로 숙인다. 서기·걷기·달리기는 v에 따라 이어진다(무게 w로 섞음). */
+const GT={ph:0,v:0,w:0,f:0,hip:.3,L1:.125,L2:Math.hypot(.075,.02),PHI:Math.atan2(.02,.075),SOLE:.1,R:.125+Math.hypot(.075,.02),DROP:.018}; // 발목 뼈는 무릎에서 (0, -0.075, +0.02) — 정강이가 살짝 앞으로 꺾여 있어 PHI만큼 보정
+if(!SHOTM)hips.position.y=HIP-GT.DROP; // 서 있을 때 장화 바닥이 바닥에 닿게(예전엔 1.8cm 떠 있었다)
+const _ssm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
+function legIK(lg,dz,fy,hip,toe){const D0=Math.hypot(dz,hip-fy),D=Math.min(D0,GT.R*.999),L1=GT.L1,L2=GT.L2;
+  const al=Math.atan2(dz,hip-fy),a1=Math.acos(Math.min(1,Math.max(-1,(L1*L1+D*D-L2*L2)/(2*L1*D)))),kn=Math.PI-Math.acos(Math.min(1,Math.max(-1,(L1*L1+L2*L2-D*D)/(2*L1*L2))));
+  return {th:-(al+a1),kn:kn+GT.PHI,bt:(al+a1)-kn-GT.PHI-toe};}
+function gait(dt,vRaw,on){const G=GT;G.v+=(vRaw-G.v)*Math.min(1,dt*12);const v=Math.max(0,G.v);G.w+=((on?1:0)-G.w)*Math.min(1,dt*(on?9:7));const w=G.w;if(w<.002){G.ph=0;G.f=0;return null;}
+  const runK=_ssm(DRV.walk*1.08,DRV.run*.92,v),LC=.27+.03*runK,duty=.62-.26*runK;
+  const f=Math.max(1.6,Math.min(8.5,v*2*duty/LC));G.f=f;const Lc=Math.min(LC,v*2*duty/f),dE=v>.02?Math.min(duty,Lc*f/(2*v)):duty;
+  G.ph=(G.ph+dt*f/2)%1;const lift=(.045+.045*runK)*Math.min(1,v/1.2);
+  const ft=[0,1].map(i=>{const u=(G.ph+i*.5)%1;if(u<dE)return {dz:Lc/2-u/dE*Lc,y:G.SOLE,c:true,s:0};const q=(u-dE)/(1-dE),e=q*q*(3-2*q);return {dz:-Lc/2+e*Lc,y:G.SOLE+Math.sin(Math.PI*q)*lift,c:false,s:q};});
+  let hip=G.SOLE+G.R*.985+(ft[0].c||ft[1].c?0:.022*runK);for(const F of ft)if(F.c)hip=Math.min(hip,G.SOLE+Math.sqrt(Math.max(0,G.R*G.R-F.dz*F.dz))*.985);
+  G.hip=hip;return {w,runK,ft,hip,f};}
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
 const PUFF_S=.6,puffTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.5,'rgba(255,255,255,.5)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
@@ -1579,7 +1609,7 @@ const rigSync=(()=>{
  if(c.skinnormal_vertex.includes(from))c.skinnormal_vertex=c.skinnormal_vertex.replace(from,'objectNormal = transpose( inverse( mat3( skinMatrix ) ) ) * objectNormal;');
  else console.warn('원더룹: 스키닝 법선 패치 실패');}
 function updateWL(dt,t){
-  shirtU.uInv.value.copy(wlBody.matrixWorld).invert();
+  shirtU.uInv.value.copy(wlBody.matrixWorld).invert();const PX0=WL.position.x,PZ0=WL.position.z;
   let moving=false;const H=hasHeights();
   {const U=WL.userData,dv=U.riding?null:U.drive,ml=dv?Math.hypot(dv.x,dv.z):0;if(D.cd>0)D.cd-=dt;if(SL.t>0)SL.t-=dt; // 직접 조작 (위 "직접 조작")
    let mx=Math.sin(WL.rotation.y),mz=Math.cos(WL.rotation.y);if(ml>.08){mx=dv.x/ml;mz=dv.z/ml;wlTarget=null;markerA=0;}
@@ -1626,8 +1656,8 @@ function updateWL(dt,t){
   if(moving){const s0=Math.floor(wlPhase/PI);
     // 발걸음(2026-11-04 — 발이 미끄러져 보이지 않게): 걷기는 다리를 ±0.75라디안 흔들어 한 걸음 2·0.3·sin(0.75)=0.41m, 위상 속도 = π·속도/한 걸음.
     // 달리기는 공중에 뜨는 구간이 있어 한 걸음 0.45×1.5. 기준·동작 촬영(SHOTM)은 예전 값(11, ±0.5) 그대로
-    const sp=D.spd>.05&&!wlTarget?D.spd:(WL.userData.action==='뛰기'?DRV.walk*1.9:DRV.walk),runK=!wlTarget&&D.spd>DRV.walk*1.2||WL.userData.action==='뛰기';
-    wlPhase+=dt*(SHOTM?11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1)):Math.min(40,PI*sp/(runK?STRIDE_R:STRIDE_W)));if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
+    const sp=D.spd>.05&&!wlTarget?D.spd:(WL.userData.action==='뛰기'?DRV.walk*1.9:DRV.walk);
+    wlPhase+=dt*(SHOTM?11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1)):PI*Math.max(1.6,GT.f||sp/.27)); /* 촬영 모드가 아니면 걸음 수(gait) 그대로 — 걸음마다 발소리 */if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
   const sw=moving?Math.sin(wlPhase):0;
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*LEG_A;legs[1].rotation.x=-sw*LEG_A;
@@ -1655,7 +1685,7 @@ function updateWL(dt,t){
   else{const f=floorAt(X,Z,V.y);wlBlob.position.set(X,f+0.046,Z);wlBlob.scale.setScalar((1-hopY*0.8-Math.min(.55,(V.y-f)*.18))*WLS*0.8);} // 발밑 그림자는 아래 바닥에, 높을수록 작게
   markerA=Math.max(0,markerA-dt*1.2);marker.material.opacity=markerA*0.9;marker.scale.setScalar(1+(1-markerA)*0.6);
   {const U=WL.userData,A=U.action||'서기';U.at=(U.at||0)+dt;const at=U.at;
-   let T=null;if(moving){if(A==='뛰기'||(!wlTarget&&D.spd>DRV.walk*1.2))T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at);
+   let T=null;if(moving){if(SHOTM&&(A==='뛰기'||(!wlTarget&&D.spd>DRV.walk*1.2)))T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at); /* 촬영 모드가 아니면 걷기·달리기는 아래 gait */
    U.aw=Math.max(0,Math.min(1,(U.aw||0)+(T?1:-1)*dt*6));
    const base={ex0:-.12,ex1:-.12,ez0:0,ez1:0,kx0:0,kx1:0,lx0:legs[0].rotation.x,lx1:legs[1].rotation.x,ly0:legs[0].position.y,ly1:legs[1].position.y,ax0:arms[0].rotation.x,ax1:arms[1].rotation.x,az0:arms[0].rotation.z,az1:arms[1].rotation.z,bx:0,bz:body.rotation.z,by:body.position.y,hx:0,hy:0,hz:neck.rotation.z,wy:WL.position.y/WLS};
    if(!U.pc)U.pc=Object.assign({},base);const tg=T?Object.assign({},base,T):base;for(const k in tg)U.pc[k]+=(tg[k]-U.pc[k])*Math.min(1,dt*10);
@@ -1667,6 +1697,13 @@ function updateWL(dt,t){
      neck.rotation.set(L('hx'),L('hy'),L('hz'));
      WL.position.y=GY+L('wy')*WLS;}
    else{U.pc=Object.assign({},base);body.rotation.x=0;body.position.z=0;neck.rotation.x=0;neck.rotation.y=0;legs.forEach(lg=>{lg.userData.knee.rotation.x=0;lg.userData.boot.rotation.x=-lg.rotation.x*.6;});arms.forEach(ap=>ap.userData.elbow.rotation.set(-.12,0,0));}
+   if(!SHOTM){const vr=dt>0?Math.hypot(WL.position.x-PX0,WL.position.z-PZ0)/dt:0,on=moving&&!V.air&&!WL.userData.riding&&!V.jump,g=gait(dt,on?Math.min(vr,30):0,on);
+     if(g){const w=g.w,mix=(a,b)=>a+(b-a)*w;
+       legs.forEach((lg,i)=>{const F=g.ft[i],k=legIK(lg,F.dz,F.y,g.hip,F.c?0:Math.sin(Math.PI*F.s)*.35);lg.position.y=mix(lg.position.y,g.hip);lg.rotation.x=mix(lg.rotation.x,k.th);lg.rotation.z=0;
+         lg.userData.knee.rotation.x=mix(lg.userData.knee.rotation.x,k.kn);lg.userData.boot.rotation.x=mix(lg.userData.boot.rotation.x,k.bt);});
+       const lean=.05+.13*g.runK;body.rotation.x=mix(body.rotation.x,lean);body.position.y=mix(body.position.y,g.hip-.3+.3-.3*Math.cos(lean));body.position.z=mix(body.position.z,-.3*Math.sin(lean));
+       arms.forEach((ap,i)=>{const th=legs[i].rotation.x;ap.rotation.x=mix(ap.rotation.x,-th*(1.05+.35*g.runK));ap.userData.elbow.rotation.x=mix(ap.userData.elbow.rotation.x,-.12-.95*g.runK);});
+       body.rotation.z=mix(body.rotation.z,(g.ft[0].dz-g.ft[1].dz)*.18);}}
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
    if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
@@ -1721,7 +1758,7 @@ function unstick(dt,H){const U=WL.userData,X=WL.position.x,Z=WL.position.z,fy=H?
   if(best)ST.push=best;else if(ST.safe){WL.position.x=ST.safe.x;WL.position.z=ST.safe.z;}}
 const _gp=new THREE.Vector3();
 const walking=()=>!!wlTarget; // 영상 캡처: 걸어가서 도착했는지
-export {DRV,hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};
+export {DRV,SPEED,GT as GAIT,hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,walking,wlHit};
 
 </script>
 <script type="text/x-wl-module" data-path="js/08-main.js">
@@ -1734,7 +1771,7 @@ import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,se
 import {WL} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
-import {DRV,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
+import {DRV,GAIT,SPEED,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
 import {CURRENT as WORLD} from './worlds/index.js'; // 지금 세계 설정(시리즈 공통 틀 — 타이틀 화면)
 import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
@@ -1802,6 +1839,10 @@ GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
 {const q=new URLSearchParams(location.search);if(!q.has('shot')||q.has('weather')){nightTarget=night=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}}
+window.wlGait={gait:GAIT,DRV,SPEED}; // 시험 도구(걸음 미끄러짐 재기 — tools/gait-test.py)
+{const w=document.getElementById('walkSpd'),r=document.getElementById('runSpd'),wo=document.getElementById('walkOut'),ro=document.getElementById('runOut'),H=SPEED.H; // 걷기·달리기 속도 막대(톱니 메뉴 — 움직이는 즉시, 이 기기에 기억). 1초에 원더룹 키 몇 배인지 같이
+ const show=()=>{w.value=DRV.walk;r.value=DRV.run;wo.textContent=`${DRV.walk.toFixed(1)}m/초 · 키 ${(DRV.walk/H).toFixed(2)}배 (원본의 ${(DRV.walk/5).toFixed(2)})`;ro.textContent=`${DRV.run.toFixed(1)}m/초 · 키 ${(DRV.run/H).toFixed(2)}배 (원본의 ${(DRV.run/8).toFixed(2)})`;};
+ w.addEventListener('input',()=>{SPEED.set(+w.value,null);show();});r.addEventListener('input',()=>{SPEED.set(null,+r.value);show();});document.getElementById('spdReset').addEventListener('click',()=>{SPEED.reset();show();});show();}
 {const wb=document.getElementById('weatherBtn'),lab=()=>{wb.textContent='날씨: '+GAME.weather.weatherName();};lab();wb.addEventListener('click',()=>{GAME.weather.nextWeather();if(!(zone.cur&&zone.cur.sky)){nightTarget=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}lab();});}
 GAME.startFront({ctx:{scene,camera,renderer,WL},world:WORLD,zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
 {let done=false;const go=()=>{if(done)return;done=true;if(window.wlBootDone)window.wlBootDone();};requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(go,1500);} // 공통 로딩 화면(index.html #wlBoot): 첫 구역을 그린 뒤 치운다 — 최소 1초·0.4초 사라짐·루프 멈춤은 로딩 화면 쪽. 화면이 가려져 그리기가 멈춰 있어도 1.5초 뒤엔 치운다(촬영 모드는 로딩 화면이 스스로 바로 지움)
@@ -4302,12 +4343,14 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
   const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
   // 하늘 둥근 지붕: 지평선 → 위로 색이 바뀐다(땅 아래는 지평선 색). 카메라를 따라다닌다
-  const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0}};
+  const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0},cloud:{value:0},cloudK:{value:1}};
   const mat=new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     // 은하수(milky): 하늘을 비스듬히 가로지르는 옅은 띠 — 가운데가 밝고 잔물결처럼 얼룩진 푸른 흰빛(그리기는 하늘 지붕 그대로 1회)
-    fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
+    fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;uniform float cloud;uniform float cloudK;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
       'if(milky>0.){float b=dot(d,normalize(vec3(.55,.42,.72)));float m=exp(-b*b*28.)*smoothstep(.05,.35,h);float n=.6+.4*sin(d.x*23.+sin(d.z*17.)*2.)*sin(d.z*19.+d.y*11.);c+=vec3(.16,.19,.3)*m*n*milky;}'+
+      // 비구름(cloud, game/weather — 비 오는 날): 하늘 전체를 얼룩진 회색 구름으로 덮는다(해·달·별은 안 보임)
+      'if(cloud>0.){float n2=.5+.25*sin(d.x*7.+sin(d.z*5.+d.y*3.)*2.)*sin(d.z*6.-d.x*2.)+.25*sin(d.x*17.+d.z*13.);vec3 cc=mix(vec3(.47,.5,.55),vec3(.72,.74,.77),n2)*mix(.8,1.,k);c=mix(c,cc*cloudK,cloud*smoothstep(-.1,.12,h));}'+
       'gl_FragColor=vec4(c,1.);\n#include <colorspace_fragment>\n}'});
   const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,24,12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
   // 별: 위쪽 하늘에 고르게(지평선 근처는 드물게). 첫별은 따로 크게
@@ -4340,7 +4383,9 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
       if(L.fog){L.fog.color.copy(cur.fog);L.fog.near=num('fogNear');L.fog.far=num('fogFar');}
       if(sunDirOut){cur.dir.copy(a.dir).lerp(b.dir,u);if(R)cur.dir.lerp(RC.dir,R);sunDirOut.copy(cur.dir.normalize());}
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
-      smat.opacity=st*ss(1.75,2,S.t);uni.milky.value=num('milky')*ss(1.7,2,S.t);fmat.opacity=ss(1.55,1.8,S.t)*tw;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
+      const clr=1-R; // 비: 달·별·첫별·은하수는 안 보임(맑은 밤에만), 하늘은 구름(밤이면 어둡게)
+      uni.cloud.value=R;uni.cloudK.value=1-.62*ss(.6,2,S.t);
+      smat.opacity=st*ss(1.75,2,S.t)*clr;uni.milky.value=num('milky')*ss(1.7,2,S.t)*clr;fmat.opacity=ss(1.55,1.8,S.t)*tw*clr;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
       if(camera){g.position.copy(camera.position);g.scale.setScalar(Math.min(1,camera.far*.9/radius));}},  // 08이 카메라 먼 거리를 안개 끝으로 당기면 하늘도 그 안으로
     dispose(){dot.dispose();}};
   return S;}
@@ -5448,9 +5493,16 @@ aoPlane(10,0.7,g=>{g.rotateZ(PI);g.rotateY(PI/2);},[-4.93,0.35,0],0.22);
 const WX=0.8,WY=3.0,WZ=-4.97;
 const skyDay=new THREE.MeshBasicMaterial({map:skyTex(false)});
 const skyNight=new THREE.MeshBasicMaterial({map:skyTex(true),transparent:true,opacity:0});
-const _rainSky=new THREE.Color(0x8e9aac);
 add(new THREE.CircleGeometry(0.9,24),skyDay,WX,WY,WZ,{cast:false,line:false});
 add(new THREE.CircleGeometry(0.9,24),skyNight,WX,WY,WZ+0.005,{cast:false,line:false});
+/* 비 오는 날 창문(game/weather, 2026-11-04): 구름이 덮인 회색 하늘 판을 맨 위에 겹쳐 비 정도만큼 보이게(해·달·별 그림은 가려짐) + 유리에 흐르는 빗줄기.
+   난수를 쓰지 않는 그림(사인 무늬)이라 다른 그림의 난수 순서를 바꾸지 않는다 */
+const skyRain=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,map:(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  const gr=g.createLinearGradient(0,0,0,128);gr.addColorStop(0,'#8c96a4');gr.addColorStop(1,'#b9bfc6');g.fillStyle=gr;g.fillRect(0,0,128,128);
+  for(let i=0;i<26;i++){const x=(Math.sin(i*12.9898)*.5+.5)*128,y=(Math.sin(i*78.233)*.5+.5)*110,r=14+(Math.sin(i*3.7)*.5+.5)*22;const cg=g.createRadialGradient(x,y,0,x,y,r);const l=i%3?'rgba(214,218,224,.55)':'rgba(120,128,140,.5)';cg.addColorStop(0,l);cg.addColorStop(1,'rgba(200,205,212,0)');g.fillStyle=cg;g.fillRect(0,0,128,128);}
+  g.strokeStyle='rgba(236,242,250,.55)';g.lineWidth=1.2;for(let i=0;i<34;i++){const x=(Math.sin(i*45.164)*.5+.5)*128,y=(Math.sin(i*19.19)*.5+.5)*128;g.beginPath();g.moveTo(x,y);g.lineTo(x-2,y+9+(i%4)*3);g.stroke();}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})()});
+const skyRainMesh=add(new THREE.CircleGeometry(0.9,24),skyRain,WX,WY,WZ+0.008,{cast:false,line:false});skyRainMesh.visible=false;
 const frameMat=M('#b88457','wood');
 add(new THREE.TorusGeometry(0.95,0.09,6,22),frameMat,WX,WY,WZ+0.04,{thr:60});
 boxAt(0.06,1.8,0.06,frameMat,WX,WY-0.9,WZ+0.04);boxAt(1.8,0.06,0.06,frameMat,WX,WY-0.03,WZ+0.04);
@@ -5753,13 +5805,13 @@ return {
     camera:{target:[0,1.5,-0.2],dist:27,polar:[0.55,1.32],azimuth:[0.12,1.45],start:[0.98,0.8],minDist:3,maxDist:48}}},
   indoor:true, // 실내(game/weather): 비는 내리지 않고 창문 하늘·들어오는 빛 색·먹먹한 소리로만 날씨를 보여 준다
   sun:{dir:sunDir,shadow:8,follow:false},  // 해 방향, 그림자 범위(반지름), 그림자가 원더룹을 따라갈지(야외)
-  keepOut:[ML,minute],          // 정적 병합에서 뺄 것(움직이거나 클릭하는 것)
+  keepOut:[ML,minute,skyRainMesh], // 정적 병합에서 뺄 것(움직이거나 클릭하는 것, 비 오는 날만 보이는 창문 구름 판)
   lights:[lampLight,crateLight], // 08이 옛 조명 단위 → 물리 단위(π)로 바꿀 구역 조명
   click(ray){if(ray.intersectObjects(lampHit,false).length){lampOn=!lampOn;return true;}return false;},
   // 조명 단계(env: night 저녁 정도, cave 어두운 굴 정도, flick 깜빡임) — 08의 해·하늘빛 계산과 같은 프레임에 부른다
   light(env,dt){const n=env.night;lampLevel+=((lampOn?1:0)-lampLevel)*Math.min(1,dt*6);
-    const rn=env.rain||0;poolMat.opacity=(0.08+0.32*n)*lampLevel;beamMat2.opacity=0.22*(1-n)*(1-.85*rn);dustMat.opacity=0.85*(1-n)*(1-.8*rn);skyNight.opacity=n; // 날씨(game/weather): 비면 창문 하늘을 흐린 회청색으로, 햇살 줄기·먼지는 거의 안 보이게
-    if(rn>.001||skyDay.userData.rn){skyDay.color.setRGB(1,1,1).lerp(_rainSky,.75*rn);skyDay.userData.rn=rn>.001;}
+    const rn=env.rain||0;poolMat.opacity=(0.08+0.32*n)*lampLevel;beamMat2.opacity=0.22*(1-n)*(1-.85*rn);dustMat.opacity=0.85*(1-n)*(1-.8*rn);skyNight.opacity=n*(1-rn); // 날씨(game/weather): 비면 창문 하늘을 구름 덮인 회청색으로(달·별 그림은 숨김 — 맑은 밤에만), 햇살 줄기·먼지는 거의 안 보이게
+    skyRain.opacity=rn;skyRainMesh.visible=rn>.002;skyRain.color.setScalar(1-.45*n); // 구름 판(밤비면 조금 어둡게) — 비가 아니면 그리지 않음
     lampLight.intensity=(0.55+0.95*n)*lampLevel*env.flick;
     glowMat.emissiveIntensity=0.15+(0.55+0.6*n)*lampLevel;capMat.emissiveIntensity=0.05+0.3*n*lampLevel;
     crateLight.intensity=(0.25+0.6*n)*env.flick;
@@ -7170,9 +7222,9 @@ export function deepForest({root,cx=0,cz=0,gaps=[]}){
   const _c=new THREE.Color(),ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
   return {group,
     update(camera,SK){if(camera)movers.forEach(o=>o.holder.position.set((camera.position.x-cx)*o.k,0,(camera.position.z-cz)*o.k));
-      const t=SK?SK.t:0,i=Math.min(1,Math.floor(t)),u=ss(0,1,t-i);_c.copy(SHAFT_C[i]).lerp(SHAFT_C[i+1],u);shaftMat.color.copy(_c);shaftMat.opacity=SHAFT_O[i]+(SHAFT_O[i+1]-SHAFT_O[i])*u;},
+      const t=SK?SK.t:0,i=Math.min(1,Math.floor(t)),u=ss(0,1,t-i);_c.copy(SHAFT_C[i]).lerp(SHAFT_C[i+1],u);shaftMat.color.copy(_c);shaftMat.opacity=(SHAFT_O[i]+(SHAFT_O[i+1]-SHAFT_O[i])*u)*(1-(SK&&SK.rain||0));if(shafts)shafts.visible=shaftMat.opacity>.003&&shafts.userData.lvOk!==false;}, /* 비 오는 날(game/weather)은 해가 안 보이니 빛줄기도 없음 */
     /* 자동 화질(08): 2단계부터 먼 두 겹(카메라를 따라오는 겹)·빛줄기를 끈다 */
-    setLevel(L){movers.forEach(o=>o.holder.visible=L<2);if(shafts)shafts.visible=L<2;},
+    setLevel(L){movers.forEach(o=>o.holder.visible=L<2);if(shafts){shafts.userData.lvOk=L<2;shafts.visible=L<2;}},
     dispose(){mats.forEach(m=>{if(m.map&&m.map!==CRAYON())m.map.dispose();});shaftMat.map.dispose();}};}
 
 </script>
