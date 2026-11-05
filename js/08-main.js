@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {PI,QUALITY,rawLin,rngLoaded,scene} from './01-textures.js';
 import {ZONES,areaAt,blocked,doorAt,floorAt,groundY,loadZone,overlap,unloadZone,zone} from './02-zone.js';
 import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui} from './03-scene.js';
-import {WL} from './04-character.js';
+import {WL,arms,neck,spine} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
 import {DRV,GAIT,SPEED,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
@@ -70,7 +70,7 @@ function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥�
   GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
-GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z)});window.wlGame=GAME; // 콘솔·시험 도구용
+GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z),rig:{neck,spine,arms}});window.wlGame=GAME; // 콘솔·시험 도구용
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
@@ -104,7 +104,7 @@ function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const
 initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),walk:()=>[+DRV.walk.toFixed(2),DRV.dash],zone:()=>zone.cur});
 [['boundsBtn',()=>toggleBounds(),on=>`경계 보기: ${on?'켜짐':'끔'}`],['measBtn',()=>toggleMeasure(),on=>`걷는 시간 재기: ${on?'켜짐':'끔'}`],['sizeBtn',()=>!!toggleSize(),on=>`크기 확인: ${on?'켜짐':'끔'}`]]
   .forEach(([id,f,lab])=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>{b.textContent=lab(f());});});
-{const b=document.getElementById('rollBtn');if(b)b.addEventListener('click',()=>rollTest());} // 굴러가는 물건 시험(game/incident — 사건 순간 카메라 + 공 셋)
+{const b=document.getElementById('rollBtn');if(b)b.addEventListener('click',()=>rollTest());} document.querySelectorAll('.reactBtn').forEach(b=>b.addEventListener('click',()=>GAME.react.react(b.dataset.react))); // 리액션 모음 하나씩(game/react) // 굴러가는 물건 시험(game/incident — 사건 순간 카메라 + 공 셋)
 {const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
    if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
 
@@ -261,7 +261,7 @@ function tickBody(){
     camera.position.lerp(_fv.set(...C.hv.from),k);controls.target.lerp(_fv.set(...C.hv.at),k);camera.lookAt(controls.target);}
   else{C.ready=false;C.hv=null;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
-  if(!rig&&!C.hv){controls.update();if(Z.camBox&&!GAME.view.req)clampBox(camera.position,Z.camBox);}GAME.occlude.prepCut();renderFrame(); // 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
+  if(!rig&&!C.hv){controls.update();if(Z.camBox&&!GAME.view.req)clampBox(camera.position,Z.camBox);}GAME.occlude.prepCut();{const fx=GAME.react.camPre(camera,dt);renderFrame();if(fx)GAME.react.camPost(camera);} // 리액션 화면 흔들림·시야(game/react) — 그 한 장에만. 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}${window.WL_BUILD?' · 커밋 '+window.WL_BUILD.commit:''}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':

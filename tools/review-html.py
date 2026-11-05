@@ -58,6 +58,7 @@ DESC = {
     'js/game/synth.js': '합성 소리 도구',
     'js/sfx/common.js': '효과음 공통 묶음(종류 이름 — 개미굴 원본 소리 그대로 + 새 6개)',
     'js/sfx/antvillage.js': '개미굴 전용 효과음 7개',
+    'js/game/react.js': '원더룹 리액션 모음(후덜덜·화면 흔들림·기쁨·깜짝 놀람·갸웃·폴짝·한숨)',
     'js/game/incident.js': '사건 연출 공통 처리(사건 순간 카메라·굴러가는 물건)',
     'js/game/music.js': '코드로 연주하는 배경음 엔진(마디·선율·parts·층 쌓기)',
     'js/game/codex.js': '도감·숨겨진 비밀·엔딩',

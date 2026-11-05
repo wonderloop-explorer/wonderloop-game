@@ -97,7 +97,7 @@ export default {
   ambience:{day:'birds',night:'crickets',rain:'rain',sunset:'wind'},
   talModel:'ant',talLabel:'개미탈',
   talColors:[['갈색 개미','#a8603f','#7e4229'],['검은 개미','#3e3446','#241d2a'],['황금 개미','#e0a63a','#a8701e'],['풀잎 개미','#6fa65a','#4a7a3c']],
-  guide:{text:'개미 마을이 너무 궁금해서 개미탈을 쓰고 몰래 들어온 탐험가 원더룹이에요. 겁은 조금 많지만 발은 누구보다 빨라요.',goal:'개미굴 가장 깊은 곳, 여왕개미의 방까지 가 보기'},
+  guide:{text:'개미 마을이 너무 궁금해서 개미탈을 쓰고 몰래 들어온 탐험가 원더룹이에요. 겁은 조금 많지만 호기심은 누구보다 많아요.',goal:'개미굴 가장 깊은 곳, 여왕개미의 방까지 가 보기'},
   // 받는 스테이지는 개미굴 이야기 흐름에 맞춰 둔 값(원본은 도감을 다 모으면 둘 다) — 모양은 개미굴 이식 때 단다
   items:[{id:'crown',name:'반짝 왕관',stage:4,at:'head',shape:null},{id:'star',name:'별 핀',stage:3,at:'hood',shape:null}],
   map:[{name:'중앙 광장',zone:null},{name:'식량 저장고',zone:null},{name:'보육실',zone:null},{name:'여왕의 방',zone:null}],
