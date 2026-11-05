@@ -38,22 +38,22 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
 /* 직접 조작 (개미굴 편 조작 그대로 — 키보드 WASD·방향키, 휴대폰 조이스틱. 08이 game/controls 입력을 카메라 방향으로 바꿔 매 프레임 넣는다):
    U.drive={x,z,run} 가고 싶은 방향(길이 0이면 멈춤) — 누르는 동안 바로 그쪽으로 걷고(눌러서 걷기 목표는 취소), 떼면 서서히 멈춘다.
    U.jumpReq 뛰어오르기(땅에 있을 때만), U.dashReq 대쉬(0.24초 앞으로 휙, 0.75초 동안 다시 못 함).
-   빠르기는 개미굴 비율 그대로 원더룹 걸음에 맞춤: 걷기 1.5 · 달리기(Shift를 누른 채·조이스틱 끝까지) ×8/5 · 대쉬 ×17/5. 속도는 초당 8로 따라가고 몸은 초당 10으로 돈다.
+   빠르기는 개미굴 비율 그대로 원더룹 걸음에 맞춤: 걷기 · 대쉬 17(Shift·대쉬 단추). 원더룹은 달리지 않는다(2026-11-05 — 시리즈 규칙, 기준·동작 촬영의 shotDrive 달리기 ×8/5만 그대로). 속도는 초당 8로 따라가고 몸은 초당 10으로 돈다.
    점프는 개미굴과 같은 체공 시간(약 0.67초)에 키의 2/3쯤 — 높이 구역이 아니어도 뛴다. 촬영 모드는 직접 조작을 쓰지 않는다(기준 화면 그대로).
    움직임 효과(개미굴 그대로): 대쉬 — 몸을 0.45 앞으로 숙이고(초당 14로), 땅에 있으면 0.035초마다 발밑 먼지(0.5초 동안 커지며 흐려지고 떠오름), 더듬이는 뒤로 ·
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
 /* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
 const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.15; // 걷기 속도(설정값 — 아래 SPEED). 기본 3.15 = 개미굴 원본 걷기(초당 5)의 0.63배(2026-11-05 — 0.9배 4.5가 빠르다고 해서 30% 더 줄임). 기준·동작 촬영은 예전 1.5
-const DRV={walk:WALK,run:SHOTM?WALK*8/5:8,dash:SHOTM?WALK*17/5:17,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,joyRun:false,burst:0,sy:1,sxz:1};
+const DRV={walk:WALK,run:WALK*8/5,dash:SHOTM?WALK*17/5:17,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
 const LEG_A=SHOTM?.5:.75; // (기준·동작 촬영의 예전 걷기 — 다리를 엉덩이에서 흔들기만)
-/* 걷기·달리기 속도 설정값(2026-11-05): 걷기 = 3.15(개미굴 원본 5의 0.63배 — 처음 0.9배 4.5에서 30% 줄임), 달리기 = 원본 8 그대로, 대쉬 = 달리기 × 17/8(원본 17). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed3' —
+/* 걷기 속도 설정값(2026-11-05): 걷기 = 3.15(개미굴 원본 5의 0.63배 — 처음 0.9배 4.5에서 30% 줄임), 대쉬 = 원본 17 그대로, 달리기 없음(DRV.run은 촬영 모드 shotDrive용). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed3' —
    예전 'wl-speed'·'wl-speed2'에 남은 막대 값은 쓰지 않는다).
    기준·동작 촬영(SHOTM)은 예전 1.5 그대로 */
-const SPEED={def:{walk:3.15,run:8},H:1.38,
-  set(w,r){if(SHOTM)return;if(w)DRV.walk=+w;if(r)DRV.run=+r;DRV.dash=DRV.run*17/8;try{localStorage.setItem('wl-speed3',JSON.stringify({walk:DRV.walk,run:DRV.run}));}catch(e){}},
-  reset(){SPEED.set(SPEED.def.walk,SPEED.def.run);try{localStorage.removeItem('wl-speed3');}catch(e){}}};
-if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed3')||'null');if(o&&o.walk&&o.run){DRV.walk=+o.walk;DRV.run=+o.run;DRV.dash=DRV.run*17/8;}}catch(e){}
+const SPEED={def:{walk:3.15},H:1.38,
+  set(w){if(SHOTM)return;if(w)DRV.walk=+w;try{localStorage.setItem('wl-speed3',JSON.stringify({walk:DRV.walk}));}catch(e){}},
+  reset(){SPEED.set(SPEED.def.walk);try{localStorage.removeItem('wl-speed3');}catch(e){}}};
+if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed3')||'null');if(o&&o.walk)DRV.walk=+o.walk;}catch(e){}
 const GT={f:0,w:0,DROP:.018}; // (시험 도구 호환 — 걸음 계산은 없음)
 if(!SHOTM)hips.position.y=HIP-GT.DROP; // 서 있을 때 장화 바닥이 바닥에 닿게(2026-11-04 — 예전엔 1.8cm 떠 있었다)
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
@@ -252,10 +252,9 @@ function updateWL(dt,t){
    let mx=Math.sin(WL.rotation.y),mz=Math.cos(WL.rotation.y);if(ml>.08){mx=dv.x/ml;mz=dv.z/ml;wlTarget=null;markerA=0;}
    if(U.dashReq){U.dashReq=false;if(D.cd<=0&&!U.riding&&!V.jump){sfx('dash');D.dashT=DRV.dashT;D.cd=DRV.dashCd;D.dx=mx;D.dz=mz;WL.rotation.y=Math.atan2(mx,mz);wlTarget=null;}}
    if(U.jumpReq){U.jumpReq=false;if(!V.air&&!V.jump&&!U.riding){V.vy=DRV.jumpVy;V.air=true;V.jumpT=0;sfx('jump');}}
-   if(!wlTarget){D.spd+=((ml>.08?(dv.run?DRV.run:DRV.walk*(dv.k??1)):0)-D.spd)*Math.min(1,dt*8); // 조이스틱은 미는 만큼 걷기(dv.k, controls JOY)
-     {const jr=!!(dv&&dv.joyRun&&ml>.08);if(jr&&!D.joyRun&&!V.air&&D.dashT<=0){D.burst=5;sfx('land',{gain:.25,cue:false,minor:true});}D.joyRun=jr;} // 조이스틱 끝에서 버텨 달리기로 바뀌는 순간 발밑 흙먼지 톡 + 아주 작은 착지 소리
+   if(!wlTarget){D.spd+=((ml>.08?(SHOTM&&dv.run?DRV.run:DRV.walk*(dv.k??1)):0)-D.spd)*Math.min(1,dt*8); // 조이스틱은 미는 만큼 걷기(dv.k, controls JOY)
      if(ml>.08){let diff=Math.atan2(mx,mz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);}
-     if(D.dashT>0){D.dashT-=dt;mx=D.dx;mz=D.dz;D.spd=DRV.dash;if(D.dashT<=0)D.spd=ml>.08?DRV.run:(SHOTM?DRV.walk*.4:2);}
+     if(D.dashT>0){D.dashT-=dt;mx=D.dx;mz=D.dz;D.spd=DRV.dash;if(D.dashT<=0)D.spd=ml>.08?(SHOTM?DRV.run:DRV.walk):(SHOTM?DRV.walk*.4:2);}
      if(D.spd>.05&&!V.jump){const st=D.spd*dt,nx=WL.position.x+mx*st,nz=WL.position.z+mz*st,fy=H?V.y:undefined;
        if(slideGo(mx,mz,st,fy))moving=true;}}
    else D.spd=0;}
@@ -359,7 +358,7 @@ function updateWL(dt,t){
    for(let i=0;i<(U.hoods||[]).length;i++){const H=U.hoods[i];if(H.mod&&H.mod.tick&&H.press)H.mod.tick(H.press.g,dt,t,U,U.hw===i&&!U.hoodMorph);}} // 탈의 매 프레임 효과(핀 화관 별가루 — 쓰고 있을 때만 새로 나오고, 벗으면 남은 것만 사라짐)
   // 개미굴 움직임 효과: 대쉬 숙임·먼지, 공중 늘어남, 착지 찌그러짐 (위 "움직임 효과")
   D.lean+=((D.dashT>0?.45:0)-D.lean)*Math.min(1,dt*14);if(D.lean>.001)body.rotation.x=Math.max(body.rotation.x,D.lean); // 달리기 자세의 숙임과 겹치지 않게 — 모두 합쳐 개미굴처럼 0.45
-  if(D.dashT>0&&!V.air){D.puffT-=dt;if(D.puffT<=0){spawnPuff(WL.position.x,GY,WL.position.z);D.puffT=.035;}}if(D.burst){if(!V.air)for(let i=0;i<D.burst;i++)spawnPuff(WL.position.x-Math.sin(WL.rotation.y)*.12,GY,WL.position.z-Math.cos(WL.rotation.y)*.12);D.burst=0;}if(puffs.length)tickPuffs(dt);
+  if(D.dashT>0&&!V.air){D.puffT-=dt;if(D.puffT<=0){spawnPuff(WL.position.x,GY,WL.position.z);D.puffT=.035;}}if(puffs.length)tickPuffs(dt);
   {let sy=1,sxz=1;if(D.landT>0){D.landT-=dt;const k=Math.sin(Math.max(0,D.landT)/.22*PI);sy=1-.16*k;sxz=1+.09*k;}else if(V.air&&V.glide<.3){sy=V.vy>0?1.08:1.02;sxz=V.vy>0?.95:.99;}
    if(sy!==1||Math.abs(D.sy-1)>1e-4||Math.abs(D.sxz-1)>1e-4){D.sy+=(sy-D.sy)*Math.min(1,dt*22);D.sxz+=(sxz-D.sxz)*Math.min(1,dt*22);if(Math.abs(D.sy-1)<1e-4&&sy===1){D.sy=1;D.sxz=1;}WL.scale.set(WLS*D.sxz,WLS*D.sy,WLS*D.sxz);}}
   // 몸통: 위 계산은 발바닥 기준 몸 원점의 위치·회전 → 엉덩이 축 뼈(spine)로 옮김 (spine·(0,-HIP,0) = 예전 몸 변환)

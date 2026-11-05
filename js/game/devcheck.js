@@ -2,10 +2,10 @@
    ㉠ 경계 보기: 지금 구역 걷기 판정(02 blocked)을 0.2m 칸으로 훑어 바닥에 색으로 겹친다 — 걸을 수 있는 곳 연두, 경계(막힌 곳과 맞닿은 칸) 노랑, 막힌 곳 빨강.
       땅 높이를 따라 1m 칸 판에 붙인다(야외 언덕도). 그림만 겹칠 뿐 걷기·카메라는 그대로.
    ㉡ 걷는 시간 재기: 켜면 바닥 두 곳을 차례로 누른다 → 직선 거리와 장애물을 돌아가는 길(0.25m 칸 A* — 원더룹이 실제로 지나갈 수 있는 칸)을 그리고,
-      원더룹 걸음(07 DRV.walk, 게임 3.15m/초)·달리기로 몇 초인지 보여 준다. 세 번째 누르면 새로 시작.
+      원더룹 걸음(07 DRV.walk, 게임 3.15m/초)으로 몇 초인지 보여 준다. 세 번째 누르면 새로 시작.
    ㉢ 크기 확인: 지금 구역의 주민·생물(대화 상대 NPC + 구역이 userData.wlCreature='이름'을 붙인 물체)의 키를 원더룹 키(탈 더듬이를 뺀 머리 꼭대기까지 = 1) 대비 비율로 목록 —
       0.6보다 작거나 1.5보다 크면 '!' 표시. 배경·건물·식물 같은 공간 요소는 넣지 않는다(이름표를 붙이지 않으니 저절로 빠짐).
-   08이 initDevcheck({scene, camera, renderer, WL, blocked, groundY, walk:()=>[걷기, 달리기], zone:()=>지금 구역}) — 촬영 모드에서는 부르지 않는다. 시험 도구 window.wlDev. */
+   08이 initDevcheck({scene, camera, renderer, WL, blocked, groundY, walk:()=>[걷기, 대쉬], zone:()=>지금 구역}) — 촬영 모드에서는 부르지 않는다. 시험 도구 window.wlDev. */
 import * as THREE from 'three';
 import {npcList} from './dialog.js';
 let C=null,panel=null,overlay=null,meas=null,measOn=false,pts=[],line=null,marks=[];
@@ -56,7 +56,7 @@ function measure(p){if(pts.length>=2){pts=[];clearMeas();}pts.push(p);mark(p,pts
   if(pts.length===2){const [a,b]=pts,st=Math.hypot(b.x-a.x,b.z-a.z),P=path(a,b),[wk,rn]=C.walk();let L=null;
     if(P){L=0;for(let i=1;i<P.length;i++)L+=P[i].distanceTo(P[i-1]);const pos=P.map(v=>new THREE.Vector3(v.x,(C.groundY(v.x,v.z)||0)+.08,v.z));
       line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pos),new THREE.LineBasicMaterial({color:'#ffd46a',depthTest:false,fog:false}));line.renderOrder=20;C.scene.add(line);}
-    meas=`걷는 시간 재기\n직선 ${st.toFixed(1)}m`+(L!=null?` · 돌아가는 길 ${L.toFixed(1)}m\n걷기 ${(L/wk).toFixed(1)}초 · 달리기 ${(L/rn).toFixed(1)}초 (원더룹 걸음 ${wk}m/초)`:'\n그 자리까지 걸어서 갈 수 없어요(막힌 곳)');}
+    meas=`걷는 시간 재기\n직선 ${st.toFixed(1)}m`+(L!=null?` · 돌아가는 길 ${L.toFixed(1)}m\n걷기 ${(L/wk).toFixed(1)}초 (원더룹 걸음 ${wk}m/초)`:'\n그 자리까지 걸어서 갈 수 없어요(막힌 곳)');}
   else meas='걷는 시간 재기: 두 번째 곳을 눌러요';showPanel();return meas;}
 function toggleMeasure(on=!measOn){measOn=on;pts=[];clearMeas();meas=null;const el=C.renderer.domElement;
   if(on){el.addEventListener('pointerdown',pick,true);el.addEventListener('click',stopClick,true);}else{el.removeEventListener('pointerdown',pick,true);el.removeEventListener('click',stopClick,true);}showPanel();return measOn;}

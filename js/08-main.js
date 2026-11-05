@@ -43,7 +43,7 @@ let shotDrive=null; // 촬영 모드: 직접 조작 대신 wlShot.drive({x,z,run
 function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=shotDrive;return;}
   const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward'); // 첫 화면·옷 갈아입기 동안은 서 있는다
   camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
-  const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,run:a.run,k:a.k,joyRun:a.joyRun};
+  const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,k:a.k};
   if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}
   if(I.dashReq){U.dashReq=true;I.dashReq=false;if(GAME.dialog.talking())GAME.dialog.endTalk();}}
 GAME.controls.controlHooks.onWardrobe=()=>GAME.front.toggleWardrobe(); // C: 옷 갈아입기 창(game/front — 개미굴 옷장과 같은 방식)
@@ -75,9 +75,9 @@ GAME.front.applyLook(WL.userData);
 GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
 {const q=new URLSearchParams(location.search);if(!q.has('shot')||q.has('weather')){nightTarget=night=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}}
 window.wlGait={gait:GAIT,DRV,SPEED}; // 시험 도구(걸음 미끄러짐 재기 — tools/gait-test.py)
-{const w=document.getElementById('walkSpd'),r=document.getElementById('runSpd'),wo=document.getElementById('walkOut'),ro=document.getElementById('runOut'),H=SPEED.H; // 걷기·달리기 속도 막대(톱니 메뉴 — 움직이는 즉시, 이 기기에 기억). 1초에 원더룹 키 몇 배인지 같이
- const show=()=>{w.value=DRV.walk;r.value=DRV.run;wo.textContent=`${DRV.walk.toFixed(1)}m/초 · 키 ${(DRV.walk/H).toFixed(2)}배 (원본의 ${(DRV.walk/5).toFixed(2)})`;ro.textContent=`${DRV.run.toFixed(1)}m/초 · 키 ${(DRV.run/H).toFixed(2)}배 (원본의 ${(DRV.run/8).toFixed(2)})`;};
- w.addEventListener('input',()=>{SPEED.set(+w.value,null);show();});r.addEventListener('input',()=>{SPEED.set(null,+r.value);show();});document.getElementById('spdReset').addEventListener('click',()=>{SPEED.reset();show();});show();}
+{const w=document.getElementById('walkSpd'),wo=document.getElementById('walkOut'),H=SPEED.H; // 걷기 속도 막대(달리기는 없다 — 2026-11-05)(톱니 메뉴 — 움직이는 즉시, 이 기기에 기억). 1초에 원더룹 키 몇 배인지 같이
+ const show=()=>{w.value=DRV.walk;wo.textContent=`${DRV.walk.toFixed(1)}m/초 · 키 ${(DRV.walk/H).toFixed(2)}배 (원본의 ${(DRV.walk/5).toFixed(2)})`;};
+ w.addEventListener('input',()=>{SPEED.set(+w.value);show();});document.getElementById('spdReset').addEventListener('click',()=>{SPEED.reset();show();});show();}
 {const wb=document.getElementById('weatherBtn'),lab=()=>{wb.textContent='날씨: '+GAME.weather.weatherName();};lab();wb.addEventListener('click',()=>{GAME.weather.nextWeather();if(!(zone.cur&&zone.cur.sky)){nightTarget=GAME.weather.indoorNight();lightState=nightTarget>=1?1:0;}lab();});}
 GAME.startFront({ctx:{scene,camera,renderer,WL},world:WORLD,zone:()=>zone.cur,restart:()=>goZone(zone.cur.root.name.replace(/^zone:/,''))});
 {let done=false;const go=()=>{if(done)return;done=true;if(window.wlBootDone)window.wlBootDone();};requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(go,1500);} // 공통 로딩 화면(index.html #wlBoot): 첫 구역을 그린 뒤 치운다 — 최소 1초·0.4초 사라짐·루프 멈춤은 로딩 화면 쪽. 화면이 가려져 그리기가 멈춰 있어도 1.5초 뒤엔 치운다(촬영 모드는 로딩 화면이 스스로 바로 지움)
@@ -100,7 +100,7 @@ function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const
 {const b=document.getElementById('bendBtn');if(b)b.addEventListener('click',()=>{const I=bendInfo();if(!I.on)return;setLevel((I.level+1)%4);bendBtn();});}
 /* 진행 초기화(시험용, 톱니 메뉴): 저장된 진행(flags — 우산·완료·소개 카드)·도감을 지우고 다시 연다. 실수로 눌리지 않게 3초 안에 한 번 더 눌러야 */
 /* 세계 만들기 도구(시험용, 톱니 메뉴 — game/devcheck): 경계 보기 · 걷는 시간 재기(바닥 두 곳) · 크기 확인(주민·생물 키 / 원더룹 키) */
-initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),walk:()=>[+DRV.walk.toFixed(2),+DRV.run.toFixed(2)],zone:()=>zone.cur});
+initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),walk:()=>[+DRV.walk.toFixed(2),DRV.dash],zone:()=>zone.cur});
 [['boundsBtn',()=>toggleBounds(),on=>`경계 보기: ${on?'켜짐':'끔'}`],['measBtn',()=>toggleMeasure(),on=>`걷는 시간 재기: ${on?'켜짐':'끔'}`],['sizeBtn',()=>!!toggleSize(),on=>`크기 확인: ${on?'켜짐':'끔'}`]]
   .forEach(([id,f,lab])=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>{b.textContent=lab(f());});});
 {const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();

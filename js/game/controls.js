@@ -1,8 +1,8 @@
 /* 원더룹 — 조작 (개미굴 편 index.html의 keydown·pointer·wheel·joy를 엔진 공통으로 옮긴 것)
-   키보드: WASD 이동(카메라가 보는 쪽이 앞) · 방향키 카메라 돌리기(←→ 초당 2.3, ↑↓ 초당 1.3) · Space 점프 · Shift 대쉬(누른 채면 달리기) · E 말 걸기·손 상호작용(dialog) ·
+   키보드: WASD 이동(카메라가 보는 쪽이 앞) · 방향키 카메라 돌리기(←→ 초당 2.3, ↑↓ 초당 1.3) · Space 점프 · Shift 대쉬(원더룹은 달리지 않는다 — 2026-11-05) · E 말 걸기·손 상호작용(dialog) ·
      F 세계 도구(setTool) · M 소리(sound) · H 조작 도움말 · C 옷장(hooks.onWardrobe) · Esc 창 닫기 · -/+ 카메라 거리
    마우스: 화면을 끌면 카메라가 원더룹 둘레로 돈다(가로 0.006·세로 0.004 라디안/픽셀, 위아래 -0.55~1.15) · 휠로 거리(×0.01, 4~13 — 가장 가까이는 08 CAM_MIN, 세로 화면은 배율을 곱한 뒤 4m)
-   휴대폰: 왼쪽 아래 조이스틱(반지름 45px, 미는 만큼 걷기 · 가장자리에 0.4초 버티면 달리기 — 아래 JOY) · 오른쪽 점프·대쉬 단추(말 걸기 단추는 ui #wlAct) · 화면을 끌어 카메라
+   휴대폰: 왼쪽 아래 조이스틱(반지름 45px, 미는 만큼 걷기 — 아래 JOY, 끝까지 밀어도 걷기) · 오른쪽 점프·대쉬 단추(말 걸기 단추는 ui #wlAct) · 화면을 끌어 카메라
      · 두 손가락으로 벌리고 오므리면 카메라 거리(휠과 같은 3~13, 손가락 사이 거리에 반비례). 사파리가 페이지 자체를 확대하지 않게 막는다(gesture·두 손가락 touchmove·두 번 누르기)
    - 입력칸(INPUT·TEXTAREA·SELECT)에 쓰는 중이면 키를 가로채지 않고, 단추에 초점이 있으면 Space·Enter는 그 단추 몫(개미굴과 같음).
    - 창이 비활성화되면(blur) 눌린 키·조이스틱을 모두 푼다.
@@ -19,17 +19,13 @@ const CAM={yawPx:.006,pitchPx:.004,pitchMin:-.55,pitchMax:1.15,distMin:4,distMax
 const keys={};
 const input={keys,jx:0,jy:0,jumpReq:false,dashReq:false,
   cam:{yaw:0,pitch:.34,dist:7.5,on:false}, // on: 08이 따라가기 카메라를 이 값으로 그릴 때만 끌기·휠을 받는다
-  /* 앞(+)·옆(+오른쪽) 입력과 달리기 — 08이 카메라 방향으로 바꾼다 */
-  /* 휴대폰 조이스틱 (2026-11-05 — 끝에 스치기만 해도 달리기로 바뀌어 '갑자기 빨라졌다'): JOY.dead 안쪽은 무시(원더룹이 떨리지 않게),
-     그 밖은 미는 만큼 걷기 k = JOY.min~1(JOY.full에서 걷기 속도 그대로), 가장자리(JOY.edge 이상)에 JOY.hold초 계속 대고 있어야 달리기(joyRun).
-     속도가 걷기 ↔ 달리기로 부드럽게 오르내리는 건 07(초당 8로 따라감 — 약 0.3초). 키보드 Shift 달리기는 그대로 */
-  axes(){const k=keys,m=Math.hypot(input.jx,input.jy),jo=m>=JOY.dead,jx=jo?input.jx:0,jy=jo?input.jy:0;
-    if(m>=JOY.edge){if(input.edgeAt==null)input.edgeAt=performance.now();}else input.edgeAt=null;
-    const joyRun=input.edgeAt!=null&&performance.now()-input.edgeAt>=JOY.hold*1000,kb=k.KeyW||k.KeyS||k.KeyA||k.KeyD;
+  /* 앞(+)·옆(+오른쪽) 입력 — 08이 카메라 방향으로 바꾼다. 달리기는 없다(2026-11-05 — 이동은 걷기와 대쉬만) */
+  /* 휴대폰 조이스틱 (2026-11-05): JOY.dead 안쪽은 무시(원더룹이 떨리지 않게), 그 밖은 미는 만큼 걷기 k = JOY.min~1(JOY.full부터 끝까지 걷기 속도 — 최고 속도).
+     속도가 부드럽게 오르내리는 건 07(초당 8로 따라감) */
+  axes(){const k=keys,m=Math.hypot(input.jx,input.jy),jo=m>=JOY.dead,jx=jo?input.jx:0,jy=jo?input.jy:0,kb=k.KeyW||k.KeyS||k.KeyA||k.KeyD;
     const f=(k.KeyW?1:0)-(k.KeyS?1:0)-jy,s=(k.KeyD?1:0)-(k.KeyA?1:0)+jx;
-    return {f,s,run:!!(k.ShiftLeft||k.ShiftRight)||joyRun,joyRun:joyRun&&!kb,
-      k:kb||!jo?1:JOY.min+(1-JOY.min)*Math.min(1,(m-JOY.dead)/(JOY.full-JOY.dead))};}};
-const JOY={dead:.15,full:.75,min:.3,edge:.95,hold:.4};
+    return {f,s,k:kb||!jo?1:JOY.min+(1-JOY.min)*Math.min(1,(m-JOY.dead)/(JOY.full-JOY.dead))};}};
+const JOY={dead:.15,full:.75,min:.3};
 const hooks={onWardrobe:null};
 let tool=null;
 const typing=t=>t&&(/INPUT|TEXTAREA|SELECT/.test(t.tagName)||t.isContentEditable);
@@ -67,9 +63,9 @@ const css=`
 /* 조작법 창(2026-11-04, 개미굴 게임 #how의 디자인·구성·키 설명 표 그대로 — 시리즈 공통 틀): 키보드·터치 두 칸 → 이렇게 놀아요 → 소리가 안 들릴 때 → 휴대폰이 따뜻해질 때 → 알겠어요.
    세계에만 해당하는 글(개미굴의 도감·랜턴·읽어주기·냄새 길 등)은 세계 설정 controlsNote로 — setHelpNote(note): keys(키보드 표 E 다음), talk(터치 '말 걸기' 설명),
    touch(터치 표 끝), play(이렇게 놀아요), heatBefore·heatAfter(따뜻해질 때 목록 앞·뒤). 없는 칸은 빠진다. 예전 세계(요정의 숲)는 setHelpExtra(list, play) — play와 '이 세계에서' 표 */
-const KEYS_A=[['W A S D','걷기'],['Shift','대쉬, 누르고 있으면 달리기'],['스페이스','점프'],['방향키','시점 돌리기'],['+ −','카메라 거리'],['E','말 걸기, 살펴보기, 대화 넘기기']];
+const KEYS_A=[['W A S D','걷기'],['Shift','순간 대쉬'],['스페이스','점프'],['방향키','시점 돌리기'],['+ −','카메라 거리'],['E','말 걸기, 살펴보기, 대화 넘기기']];
 const KEYS_B=[['M','소리 켜고 끄기'],['H','조작법 열고 닫기'],['C','옷 갈아입기']];
-const TOUCH_A=[['왼쪽 원','미는 만큼 걷기, 끝에서 잠깐 버티면 달리기'],['드래그','시점 돌리기'],['점프','뛰어오르기'],['대쉬','순간 돌진']];
+const TOUCH_A=[['왼쪽 원','미는 만큼 걷기'],['드래그','시점 돌리기'],['점프','뛰어오르기'],['대쉬','순간 대쉬']];
 const SND_TIPS=['오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.','다른 앱이나 메시지에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.',
   '아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.','그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.'];
 const HEAT_TIPS=['<b>충전하면서</b> 하면 더 뜨거워져요. 가능하면 충전기를 빼고 해 주세요.','화면 <b>밝기를 조금 낮추면</b> 발열이 줄어요.'];
