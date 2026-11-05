@@ -124,9 +124,9 @@ const clock=new THREE.Timer();clock.connect(document);const tmp=new THREE.Vector
 const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1/60;
 /* 안전장치: 프레임 안에서 오류가 나도 멈추지 않게 — 콘솔에 한 번 남기고, 이번 화면은 그려 두고, 다음 프레임을 잇는다 */
 const tickErrSeen=new Set();
-/* 플레이 중 아끼기(촬영 모드는 그대로 — 한 걸음씩 직접 진행): 초당 60프레임으로 묶고(120Hz 화면에서도 60번만 그림), 휴대폰 단계는 30프레임(발열, 2026-11-01),
+/* 플레이 중 아끼기(촬영 모드는 그대로 — 한 걸음씩 직접 진행): 컴퓨터는 화면 갱신마다(개미굴 원본과 같게, 2026-11-05 — 예전엔 60으로 묶었다), 휴대폰 단계는 30프레임(발열, 2026-11-01),
    창이 가려지거나(document.hidden) 다른 창을 보고 있으면(blur) 그리기를 멈췄다가 돌아오면(focus·누르기) 다시 그린다. 멈춘 동안 게임 시간도 멈춘다(돌아온 첫 프레임 간격은 0.05초로 자른다). */
-let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_MS=1000/(QUALITY.tier==='mobile'?30:60);
+let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_MS=QUALITY.tier==='mobile'?1000/30:0; // 컴퓨터는 개미굴 원본처럼 화면 갱신마다(120Hz면 120번 — 2026-11-05, 60으로 묶으면 원본보다 덜 부드러웠다), 휴대폰은 30
 const schedule=()=>{if(!rafOn){rafOn=true;requestAnimationFrame(frame);}}; // 루프가 두 갈래로 갈라지지 않게 예약은 한 번만
 /* 쉴 때 아끼기(휴대폰 단계, 2026-11-02 발열): 대화·카드가 열려 있거나, 1.5초 넘게 손대지 않고 원더룹·카메라가 가만히 있으면 초당 20프레임.
    누르기·끌기·키·조이스틱, 원더룹이 움직이거나 탈것을 타거나 카메라가 움직이면 바로 30프레임으로 */
@@ -148,7 +148,7 @@ function frame(now){rafOn=false;if(paused)return;
   const id=idle(now),ms=id?50:(FPS60.on?1000/60:FRAME_MS),N=Math.max(1,Math.round(ms/VS.v));if(VS.cnt<N){schedule();return;}VS.cnt=0;
   const L=frameLog,i=L.n%240;L.iv[i]=lastFrame>0&&now-lastFrame<1000?now-lastFrame:0;L.idle[i]=id?1:0;L.n++;
   lastFrame=now;frameNow=now;const w0=performance.now();tick();L.dt[i]=ui.lastDt||0;markMotion(now);perfTick(now,performance.now()-w0);}
-window.wlFrameLog={log:frameLog,vs:VS,fps60:FPS60,target:()=>idle(performance.now())?50:(FPS60.on?1000/60:FRAME_MS)};
+window.wlFrameLog={log:frameLog,vs:VS,fps60:FPS60,target:()=>idle(performance.now())?50:(FPS60.on?1000/60:(FRAME_MS||VS.v))};
 /* ?debug 프레임 간격 기록(2026-11-05): 그린 프레임마다 간격(ms)을 막대로 — 초록 목표 ±1.5ms, 노랑 그보다 김, 파랑 쉬는 20프레임. 아래 줄에 화면 갱신(Hz)·몇 번에 한 번·평균·흔들림(표준편차)·최소/최대·벗어난 비율.
    '60프레임으로 보기'는 휴대폰 단계에서도 60프레임(30과 비교용, 이 기기 이 탭에서만) */
 {const b=document.getElementById('fps60Btn'),cv=document.getElementById('frameGraph'),out=document.getElementById('frameOut'),g=cv.getContext('2d');
@@ -262,7 +262,7 @@ function tickBody(){
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}${window.WL_BUILD?' · 커밋 '+window.WL_BUILD.commit:''}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':
-      `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${Math.round(1000/FRAME_MS)}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계 · 플레이 ${Math.floor(P.play/60)}분${idle(performance.now())?' · 쉬는 중 20프레임':''}`);}
+      `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${FRAME_MS?Math.round(1000/FRAME_MS):"화면 갱신마다"}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계 · 플레이 ${Math.floor(P.play/60)}분${idle(performance.now())?' · 쉬는 중 20프레임':''}`);}
   nextFrame();
 }
 tick();

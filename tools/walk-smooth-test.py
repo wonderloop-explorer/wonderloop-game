@@ -15,7 +15,7 @@ OUT = os.path.join(ROOT, a[a.index('--out') + 1] if '--out' in a else 'docs/comp
 WALK = float(a[a.index('--walk') + 1]) if '--walk' in a else 2.0
 MOBILE = '--mobile' in a
 SAMPLE = r"""(sec)=>new Promise(res=>{const W=wlGame.mission.hero(),hp=W.getObjectByName('spine'),v=new W.position.constructor(),out=[];const L=wlFrameLog.log;let n0=L.n;const t0=performance.now();
-  const f=()=>{if(L.n!==n0){n0=L.n;const i=(L.n-1)%240;hp.getWorldPosition(v);out.push([performance.now()-t0,L.iv[i],L.dt[i],L.idle[i],v.y,W.rotation.y,W.position.x,W.position.z,wlGait.gait.w]);}
+  const f=()=>{if(L.n!==n0){n0=L.n;const i=(L.n-1)%240;hp.getWorldPosition(v);out.push([performance.now()-t0,L.iv[i],L.dt[i],L.idle[i],v.y,W.rotation.y,W.position.x,W.position.z,W.userData.walkAmt||0]);}
     if(performance.now()-t0<sec*1000)requestAnimationFrame(f);else res(out);};f();})"""
 PLACE = "()=>{const W=wlGame.mission.hero();const sp=wlZone.cur.spawn;W.position.set(sp.x,0,sp.z+3);W.rotation.y=Math.PI;}"
 
