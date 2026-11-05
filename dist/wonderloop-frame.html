@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="fa23c15921";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="504c82e4a9";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 83010e7, 버전 6746f30f7e, 2026-11-05)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 a9c2364, 버전 b71677e6f2, 2026-11-05)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -334,8 +334,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="6746f30f7e";
-window.WL_BUILD={"commit":"83010e7","date":"2026-11-05","stage":"basecamp"};
+window.WL_V="b71677e6f2";
+window.WL_BUILD={"commit":"a9c2364","date":"2026-11-05","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -1796,7 +1796,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
 const _kf=new THREE.Vector3(),_ct=new THREE.Vector3(),_cw=new THREE.Vector3();
 let shotDrive=null; // 촬영 모드: 직접 조작 대신 wlShot.drive({x,z,run})로 미는 값(끼임 시험) — 평소 null
 function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=shotDrive;return;}
-  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward'); // 첫 화면·옷 갈아입기 동안은 서 있는다
+  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward')||GAME.core.blocking('itemget'); // 아이템 획득 연출 동안도(game/itemget — 원본 ctrlLock). 첫 화면·옷 갈아입기 동안은 서 있는다
   camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
   const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,k:a.k};
   if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}
@@ -3168,7 +3168,7 @@ const css=`
 #wlWard .done{flex:none;display:block;width:100%;text-align:center;box-sizing:border-box;margin-top:1rem;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;min-height:48px;cursor:pointer}
 /* 시리즈 공통 틀(body.wl-antui): 미션 카드·아이템 카드를 개미굴 #mission·#getCard 그대로 — 크림 판·그림자, 제목도 고운돋움, 아이콘은 동그라미 없이 */
 body.wl-antui #wlNotice .t,body.wl-antui #wlGet .t{font-family:"Gowun Dodum",sans-serif}
-body.wl-antui #wlGet{border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;background:var(--panel);box-shadow:0 14px 40px rgba(30,14,36,.45)}
+body.wl-antui #wlGet{border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;background:rgba(44,30,42,.95);color:#fbe9d8;box-shadow:0 14px 40px rgba(30,14,36,.45)}body.wl-antui #wlGet .s{color:#d9bfb3} /* 아이템 획득 카드는 늘 개미굴 어두운 판(꿀방울 카드 그대로 — 이야기 소개 카드와 같은 값, 2026-11-05 사용자 요청) */
 body.wl-antui #wlGet .ic{width:auto;height:auto;background:none;border:0;border-radius:0}body.wl-antui #wlGet img{width:58px;height:58px;filter:none}
 /* 모험 떠나기 전 이야기 소개(개미굴 #story) — 2026-11-04 사용자 요청으로 개미굴 어두운 화면 값(판 rgba(44,30,42,.95)·글자 #fbe9d8·민트 #5cc4b9)으로 늘 어둡게: 화면 아래 가운데 카드, 건너뛰기·다음, 점 */
 #wlStory{position:fixed;inset:0;z-index:31;display:none;place-items:end center;padding:1rem 1rem calc(env(safe-area-inset-bottom,0px) + 3.5rem);box-sizing:border-box;background:linear-gradient(180deg,rgba(30,14,36,0) 35%,rgba(30,14,36,.6))}
@@ -3761,6 +3761,7 @@ export {clearIncident,initIncident,scatter,show,tickIncident};
    이 폴더는 three와 서로만 가져다 쓴다(02~08·구역 모듈이 가져다 쓴다). 08이 initGame()으로 장면을 넘기고 매 프레임 updateGame(dt)을 부른다.
    구역을 떠날 때 clearZoneGame()이 그 구역의 NPC·트리거·이벤트 줄을 비우고 배경음을 서서히 멈춘다(02 unloadZone). */
 import {clearReact,initReact,tickReact} from './react.js';
+import {clearItemGet,initItemGet,tickItemGet} from './itemget.js';
 import {clock,cues,tickCore} from './core.js';
 import {bed,stopAll,tickBed,tickNarration} from './sound.js';
 import {clearDialog,clickNPC,initDialog,setDialogZone,tickDialog} from './dialog.js';
@@ -3796,15 +3797,16 @@ const view={camera:null,aim:null,
   focus({at,from=null,dist=7,sec=2}){return new Promise(done=>{view.req={at,from,dist,sec,t:0,done};});},
   hold(fn,o){view.req=fn?{fn,t:0,snap:!!(o&&o.snap)}:null;}}; // snap: fn이 지금 카메라 자리에서 시작할 때 — 섞지 않고 바로 그 길로(섞으면 곧은 선으로 질러가 원더룹 머리를 뚫었다, 2026-11-05)
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact(c);}
-function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);}
-function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();setQuest('');setPrompt('');}
+function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact(c);initItemGet(c);}
+function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);}
+function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)
 export {clickNPC,clearZoneGame,clock,cues,initGame,startFront,steps,updateGame,view};
 export * as core from './core.js';
 export * as sound from './sound.js';
 export * as react from './react.js';
+export * as itemget from './itemget.js';
 export * as controls from './controls.js';
 export * as ui from './ui.js';
 export * as dialog from './dialog.js';
@@ -3869,6 +3871,60 @@ function initInteract(c){ctx=c;}
 function clearInteract(){doing=null;near=null;ITEMS.length=0;}
 const busy=()=>!!doing;
 export {act,add,busy,clearInteract,click,initInteract,prompt,remove,start,tickInteract};
+
+</script>
+<script type="text/x-wl-module" data-path="js/game/itemget.js">
+/* ===== 원본: js/game/itemget.js ===== */
+/* 원더룹 — 아이템 획득 공통 연출 (2026-11-05 — 개미굴 원본 꿀방울 얻기 startItemGet·updateItem을 그대로 옮김, 규칙은 docs/series-rules.md '아이템')
+   itemGet({obj, to:'hand'|'bag', held:()=>손에 쥘 물체, card:{title,text,icon}, scale, top, onDone}) → Promise(끝나면)
+   ① 날아오기 0.85초: obj(장면에 있는 물체 — 떠 있던 물건, 주는 주민 배 등)가 지금 자리에서 원더룹 머리 위(top, 기본 발밑 + 1.95m — 물건 원점이 밑이면 더듬이 바로 위)로 포물선(높이 1.6)을 그리며 빙글빙글(초당 7)
+      — 시작에 item-pickup 소리. 원더룹은 멈춰 선다(조작 잠금 core 'itemget' — 원본 ctrlLock).
+   ② 들어 보이기 1.9초: 머리 위에서 위아래로 살랑(초당 4·0.08)·천천히 돌고(초당 2.5)·숨쉬듯 커졌다 작아짐(scale × (1 + sin·0.065), 원본 1.55 ± 0.1),
+      도착 순간 반짝이 열넷이 흩어지고(원본 burstSparkles — 별 그림, 더하기 섞기) 아래 획득 카드(ui.itemCard — 아이콘·제목·한 줄, item-get 소리).
+      원더룹은 카메라 쪽으로 돌아서서 웃는다(game/react 'joy' — 몸통 통통 없이, 원본 hold: 카메라 방향으로 초당 8 + happy 얼굴).
+   ③ 넣기 0.38초: to='bag'이면 배낭 쪽으로 작아지며 들어가 사라지고(원본 stow), to='hand'면 오른손 자리로 내려오며 작아져 held()가 만든 물체를 쥔다(07 setHeld).
+   카메라는 움직이지 않는다(원본과 같다 — 예전 버섯 랜턴은 카메라가 원더룹 둘레를 돌아 앞으로 갔는데 휴대폰에서 버벅였다, 2026-11-05).
+   촬영 모드에서도 같은 순서(게임 시간). 구역을 떠나면 clearItemGet(). */
+import * as THREE from 'three';
+import {block,cue} from './core.js';
+import {sfx} from './sound.js';
+import {itemCard} from './ui.js';
+import {react} from './react.js';
+let C=null,cur=null,STAR=null;
+const _v=new THREE.Vector3(),_w=new THREE.Vector3();
+function initItemGet(c){C=c;}
+function star(){if(STAR)return STAR;const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#fff3c0';g.beginPath(); // 원본 STAR 그대로
+  for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?7:30;g.lineTo(32+Math.cos(a)*r,32+Math.sin(a)*r);}g.fill();STAR=new THREE.CanvasTexture(c);STAR.colorSpace=THREE.SRGBColorSpace;return STAR;}
+let seed=777;const rnd=()=>((seed=(seed*1103515245+12345)&0x7fffffff)/0x7fffffff),rr=(a,b)=>a+(b-a)*rnd();
+function itemGet({obj,to='bag',held=null,card=null,scale=1.55,top=1.95,onDone=null}){if(!C||!obj)return Promise.resolve(false);clearItemGet();
+  const U=C.WL.userData;if(U.stopWalk)U.stopWalk();block('itemget',true);
+  obj.updateWorldMatrix(true,false);const from=obj.getWorldPosition(new THREE.Vector3());C.scene.attach(obj);
+  const s0=obj.scale.clone();sfx('item-pickup');cue({kind:'itemget',who:'아이템',text:card&&card.title||'',dur:3.13});
+  return new Promise(res=>{cur={obj,to,held,card,scale,top,onDone,res,ph:'fly',t:0,from,s0,sp:[]};});}
+function burst(p){const tx=star();for(let i=0;i<14;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+  sp.position.copy(p);const a=rnd()*6.28,e=rr(-.3,1),life=rr(.6,1.1);C.scene.add(sp);cur.sp.push({sp,t:life,life,v:new THREE.Vector3(Math.cos(a)*rr(1,2.2),e*1.8+.6,Math.sin(a)*rr(1,2.2))});}}
+function tickItemGet(dt){if(!cur)return;const R=cur,o=R.obj,W=C.WL,P=W.position;R.t+=dt;
+  for(let i=R.sp.length-1;i>=0;i--){const s=R.sp[i];s.t-=dt;s.sp.position.addScaledVector(s.v,dt);s.v.y-=2*dt;const k=Math.max(0,s.t/s.life);s.sp.material.opacity=k;s.sp.scale.setScalar(.35*k+.1);s.sp.material.rotation+=dt*3;
+    if(s.t<=0){s.sp.removeFromParent();s.sp.material.dispose();R.sp.splice(i,1);}}
+  if(R.ph==='done'){if(!R.sp.length)cur=null;return;}
+  _v.set(P.x,P.y+R.top,P.z);
+  if(R.ph==='fly'){const k=Math.min(1,R.t/.85);o.position.lerpVectors(R.from,_v,k);o.position.y+=Math.sin(k*Math.PI)*1.6;o.rotation.y+=dt*7;
+    if(k>=1){R.ph='hold';R.t=0;burst(o.position);react('joy',{sec:2.3,sound:null,punch:false,bounce:false});
+      if(R.card)itemCard({title:R.card.title||'',text:R.card.text||'',icon:R.card.icon||null,sec:R.card.sec||2.8,who:'아이템'});}}
+  else if(R.ph==='hold'){o.position.copy(_v);o.position.y+=Math.sin(R.t*4)*.08;o.rotation.y+=dt*2.5;o.scale.copy(R.s0).multiplyScalar(R.scale*(1+Math.sin(R.t*7)*.065));
+    if(R.t>1.9){R.ph='stow';R.t=0;R.top0=o.position.clone();}}
+  else if(R.ph==='stow'){const k=Math.min(1,R.t/.38);
+    if(R.to==='hand'){W.updateWorldMatrix(true,true);U_hand(_w);}else W.localToWorld(_w.set(0,.75,-.3)); // 손(07 held 뼈) 또는 배낭
+    o.position.lerpVectors(R.top0,_w,k);o.scale.copy(R.s0).multiplyScalar(R.scale*(1-k*(R.to==='hand'?.6:.94)));o.rotation.y+=dt*2.5;
+    if(k>=1)finish(true);}}
+function U_hand(v){const U=C.WL.userData;if(U.heldBone)U.heldBone.getWorldPosition(v);else C.WL.localToWorld(v.set(-.3,.6,.2));return v;}
+function finish(ok){const R=cur;if(!R||R.ph==='done')return;R.ph='done';block('itemget',false);
+  R.obj.removeFromParent();R.obj.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map&&m.map!==STAR)m.map.dispose();m.dispose();});});
+  if(R.to==='hand'&&R.held){const U=C.WL.userData;const h=R.held();if(h&&U.setHeld)U.setHeld(h);}
+  if(R.onDone)try{R.onDone(ok);}catch(e){console.error(e);}R.res(ok);}
+function clearItemGet(){if(!cur)return;finish(false);cur.sp.forEach(s=>{s.sp.removeFromParent();s.sp.material.dispose();});cur=null;}
+const itemGetting=()=>!!cur&&cur.ph!=='done';
+export {clearItemGet,initItemGet,itemGet,itemGetting,tickItemGet};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/items.js">
@@ -3947,7 +4003,7 @@ export {lampSet};
    세계 설정 firstMission(js/worlds/<세계>.js 맨 위 형식 주석)으로 채운다: 그 세계에서 꼭 필요한 물건 하나(개미굴 = 어두운 굴을 비출 버섯 랜턴)를 얻는 것.
    흐름: '모험 시작'(game/front) → 할 일 안내(quest) + 목적지에 민트 빛기둥·이름표 + 발밑부터 민트 동그라미 길(goal style 'ant')
          → 미션 카드(ui.notice — 개미굴 #mission, sus 소리, 6초 또는 누르면 닫힘)와 미션 나레이션(눌러 닫으면 멈춤, 저절로 닫히면 끝까지)
-         → 목적지에 떠서 도는 물건(item.model)에 1.5m 안으로 가면 줍기: pickup 소리, 오른손에 쥠(07 setHeld), 아이템 카드(ui.itemCard) + 획득 나레이션,
+         → 목적지에 떠서 도는 물건(item.model)에 1.5m 안으로 가면 줍기: 아이템 획득 공통 연출(game/itemget — 머리 위로 날아와 떠 있다가 오른손에 쥠, 원더룹은 카메라를 보며 웃음, 아이템 카드) + 획득 나레이션,
            세계 도구 단추(controls.setTool — 개미굴 랜턴 켜고 끄기)·다음 할 일(next).
    시간 제한·실패·점수 없음. 받았는지 = flags['have:<세계 id>:<물건 id>'] (저장) — 받았으면 미션 없이 손에 쥔 채로 시작한다.
    startMission(W)는 game/front가 게임을 시작할 때(조작법 창이 열려 있으면 닫힌 뒤) 부른다. 구역을 떠나면 game/index가 clearMission(). */
@@ -3957,7 +4013,7 @@ import {set as setGoal} from './goal.js';
 import {preload,register,sfx,voice} from './sound.js';
 import {setTool} from './controls.js';
 import {flags,setFlag} from './state.js';
-import {spinFrames} from './profile.js';
+import {itemGet} from './itemget.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0,light=null,pool=null,lampOn=false,lampK=0;
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
@@ -3991,43 +4047,15 @@ function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;cons
 function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
   if(obj){obj.rotation.y+=dt*1.3;obj.position.y=obj.userData.y0+Math.sin(t*2)*.15;if(obj.userData.tick)obj.userData.tick(t);}
   const P=ctx.WL.position,r=it.pickR||1.5;if(Math.hypot(P.x-it.at[0],P.z-it.at[1])<r)pick();}
-function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispose(obj);obj=null;}
-  setFlag(haveKey(W,it),true);setGoal(null);sfx('item-pickup');giveHeld(W,it);
+function pick(){const {W,F,it}=M;M.got=true;const o=obj;obj=null;
+  setFlag(haveKey(W,it),true);setGoal(null);
   const G=F.got||{};if(cardShown()==='notice')stopVO();
-  showOff(it);
-  const fr=it.model?spinFrames(it.model(THREE,{held:false})):null; // 획득 창: 아이콘 대신 그 물건이 천천히 도는 모습
-  itemCard({title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,frames:fr,sec:3.2,who:'아이템'});
   if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title);
-  setQuest(F.next||'');}
-/* 얻는 순간 장면(2026-11-04 시리즈 규칙): 원더룹이 멈춰 서서 물건을 번쩍 들어 보이고(07 showT — 물건 userData.show 자세), 카메라가 1.6초 동안 원더룹 앞쪽 3/4(물건을 든 오른손 쪽)으로 돌아갔다가
-   따라가기 시점으로 부드럽게 돌아온다(view.focus). 획득 창·나레이션은 같이 나온다. 화면을 누르거나 키를 누르면 바로 끝(카메라는 controls가 손대면 넘겨받음) */
-function showOff(it){const U=ctx.WL.userData,V=ctx.view;if(U.stopWalk)U.stopWalk();U.showT=1.7;if(!V||SHOT)return;
-  const P=ctx.WL.position.clone(),ry=ctx.WL.rotation.y,cam=ctx.camera.position,AT=new THREE.Vector3(P.x,P.y+.95,P.z),PO=ctx.camera.aspect<1;let D=3.8,Y=1.5; // 세로 화면은 될 수 있으면 멀리(3.8m면 얼굴만 꽉 차고 든 물건이 안 보였다) — 아래에서 1.6·1.3·1배 차례로
-  // 앞쪽 3/4(물건을 든 왼손 쪽 먼저 — 몸에 가려지지 않게)에서 가리는 물체가 없는 쪽을 고른다
-  const ray=new THREE.Raycaster(),objs=[];ray.layers.enableAll(); // 방 소품 원래 부품은 클릭 판정 층(1)에 있다
-  ctx.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.isInstancedMesh&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false))objs.push(o);});
-  const inWL=o=>{for(let q=o;q;q=q.parent)if(q===ctx.WL)return true;return false;};
-  // 2026-11-05: 끝 자리만 보던 것을 도는 길 전체로 — 휴대폰에서 카메라가 원더룹 둘레를 도는 길에 지구본·화분이 있어 그 속을 지나가며 화면을 덮었다.
-  // 앞쪽 각도 후보 × 도는 방향(짧은 쪽·반대쪽)마다 길을 12칸으로 나눠, 칸마다 원더룹이 보이는지(시선)와 칸 사이를 지나며 물체를 뚫지 않는지 본다. 모두 막히면 카메라는 그대로(들어 보이기만)
-  const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y,ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,_d=new THREE.Vector3();
-  const pos=(k,a1)=>{const e=ease(k),a=a0+(a1-a0)*e,r=r0+(D-r0)*e,y=y0+(Y-y0)*e;return new THREE.Vector3(P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r);};
-  const hit=(f,t,skip)=>{_d.copy(t).sub(f);const L=_d.length();if(L<1e-3)return false;ray.set(f,_d.normalize());ray.far=L-(skip||0);return ray.intersectObjects(objs,false).some(h=>!inWL(h.object));};
-  const clear=a1=>{let prev=null;for(let i=0;i<=12;i++){const q=pos(i/12,a1);if(i>=3&&hit(q,AT,.35))return false;if(prev&&(hit(prev,q)||hit(q,prev)))return false;prev=q;}return true;};
-  let a1=null;
-  for(const pk of PO?[1.6,1.3,1]:[1]){D=3.8*pk;Y=1.5*pk;
-  for(const a of [.6,-.6,1,-1,.25,-.25,0]){const da=((ry+a-a0+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
-    for(const d of [da,da-Math.sign(da||1)*Math.PI*2])if(clear(a0+d)){a1=a0+d;break;}if(a1!==null)break;}if(a1!==null)break;}
-  if(a1===null)return;
-  // 카메라는 원더룹 둘레를 둥글게 돌아(곧게 건너가면 머리를 뚫고 지나간다) 앞쪽으로 → 1초 머문 뒤 → 원래 각도·거리로 돌아와 따라가기에 넘김
-  const T_IN=.55,T_HOLD=.95,T_OUT=.6;let t=0,last=performance.now(),done=false;
-  const at=(k,aa,bb)=>aa+(bb-aa)*ease(Math.min(1,Math.max(0,k)));
-  const fin=()=>{if(done)return;done=true;U.showT=0;if(V.req&&V.req.fn===fn)V.hold(null);off();};
-  const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;if(t>T_IN+T_HOLD+T_OUT){setTimeout(fin,0);return null;}
-    const k=t<T_IN?t/T_IN:t<T_IN+T_HOLD?1:1-(t-T_IN-T_HOLD)/T_OUT,a=at(k,a0,a1),r=at(k,r0,D),y=at(k,y0,Y),ay=at(k,.85,.95);
-    return {from:[P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r],at:[P.x,P.y+ay,P.z]};};
-  V.hold(fn,{snap:true}); // 도는 길이 지금 카메라 자리에서 시작하므로 섞지 않는다
-  const end=()=>fin(),off=()=>{removeEventListener('pointerdown',end,true);removeEventListener('keydown',end,true);};
-  setTimeout(()=>{addEventListener('pointerdown',end,true);addEventListener('keydown',end,true);},120);}
+  setQuest(F.next||'');
+  /* 아이템 획득 공통 연출(game/itemget — 개미굴 꿀방울 그대로): 떠 있던 물건이 머리 위로 날아와 잠시 떠 있고, 원더룹은 카메라를 보며 웃고, 아래 획득 카드 → 오른손에 쥠 */
+  const card={title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,sec:3.2};
+  if(o)itemGet({obj:o,to:'hand',held:()=>{giveHeld(W,it);return null;},card,scale:it.getScale||1.1,top:it.getTop||1.72});
+  else{giveHeld(W,it);itemCard({...card,who:'아이템'});}}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
 function clearMission(){lampOn=false;{const U=ctx&&ctx.WL&&ctx.WL.userData;if(U&&U.heldObj&&U.heldObj.userData.missionItem&&U.setHeld)U.setHeld(null);} // 처음부터 하기: 쥐고 있던 미션 물건도 내려놓음
   if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}
@@ -4370,7 +4398,7 @@ export {cards,clearProfile,found,initProfile,meet,pic,portrait,seen,setup,spinFr
      hop     기뻐서 폴짝: 두 팔을 번쩍 들고 0.28m 두 번 폴짝(한 번 0.45초, 내려앉을 때 살짝 찌그러짐), 04 '신남'. 1.1초, 뛸 때마다 jump
      sigh    안도의 한숨: 0.5초 숨을 들이쉬며 어깨·고개가 살짝 올라갔다가 → 1.5초 내쉬며 어깨가 내려앉고(팔이 몸 쪽으로, 몸통 0.045 내려감) 고개가 앞으로 툭, 04 '기쁨'(눈 감은 웃음). 2초, 소리 event-whoosh(작게)
    공통: 원더룹이 걷거나 대쉬하면 몸 리액션의 자세는 그대로 겹쳐질 뿐 이동을 막지 않는다(갇히지 않게). 표정은 끝나면 리액션 전 표정으로(그동안 다른 코드가 표정을 바꿨으면 그대로 둠).
-   옵션: {sec, sound(null이면 소리 없음), face:false(joy가 카메라로 돌지 않게), punch:false(시야 좁힘 끔)}.
+   옵션: {sec, sound(null이면 소리 없음), face:false(joy가 카메라로 돌지 않게), bounce:false(joy 몸통 통통 없이), punch:false(시야 좁힘 끔)}.
    그리기: 07 updateWL 뒤(game updateGame — tickReact)에 뼈(neck·spine·팔)와 원더룹 높이에 더하기만 한다 — 07이 매 프레임 다시 정하므로 끝나면 저절로 원래대로.
    카메라 흔들림·시야는 08이 그리기 바로 앞뒤로 camPre/camPost(그린 뒤 되돌려 따라가기 카메라에 흔들림이 쌓이지 않게 — 원본도 카메라 자리를 매 프레임 새로 썼다).
    촬영 모드에서도 같은 그림이 나오게 흔들림 난수는 시드 고정. 시험: 톱니 메뉴 '리액션: …' 단추(game/devcheck). */
@@ -4393,7 +4421,7 @@ function react(name,o={}){if(!C)return Promise.resolve(false);
   if(snd)sfx(snd,D.gain?{gain:D.gain}:{});if((o.punch??D.punch))punch=.9;
   const prev=U.exprName;if(U.setExpr&&D.expr)U.setExpr(D.expr);
   cue({kind:'react',id:name,who:NAMES[name],text:'',dur:sec});
-  return new Promise(res=>{cur={name,t:0,sec,expr:D.expr,prev,res,face:o.face!==false,hops:0};});}
+  return new Promise(res=>{cur={name,t:0,sec,expr:D.expr,prev,res,face:o.face!==false,bounce:o.bounce!==false,hops:0};});}
 const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
   if(!cur)return;const R=cur,{WL}=C,{neck,spine,arms}=C.rig,U=WL.userData;R.t+=dt;const t=R.t,s=R.sec;
@@ -4401,7 +4429,7 @@ function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
   const env=Math.min(1,t/.15,(s-t)/.25); // 새 리액션은 부드럽게 들어가고 나옴
   switch(R.name){
     case 'shiver':neck.rotation.z+=Math.sin(T*42)*.035;break; // 원본 그대로(들어가고 나옴 없이)
-    case 'joy':{spine.position.y+=Math.abs(Math.sin(T*9))*.07; // 원본 그대로
+    case 'joy':{if(R.bounce)spine.position.y+=Math.abs(Math.sin(T*9))*.07; // 원본 그대로(bounce:false = 꿀방울 들어 보일 때처럼 웃기만)
       if(R.face&&!(U.walkAmt>0)){const cp=C.camera.position,a=Math.atan2(cp.x-WL.position.x,cp.z-WL.position.z);let d=a-WL.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));WL.rotation.y+=d*Math.min(1,dt*8);}break;}
     case 'startle':{if(t<.12){const k=Math.sin(t/.12*Math.PI*.5);spine.position.y-=.05*k;arms[0].rotation.z+=.2*k;arms[1].rotation.z-=.2*k;neck.rotation.x-=.13*k;}
       else{const u=Math.min(1,(t-.12)/.38),j=Math.sin(u*Math.PI);WL.position.y+=.25*j;arms[0].rotation.z-=.7*j;arms[1].rotation.z+=.7*j;neck.rotation.x-=.13*env;
