@@ -64,15 +64,24 @@ if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed')||'null');if(o&
 const GT={ph:0,v:0,w:0,f:0,hip:.3,L1:.125,L2:Math.hypot(.075,.02),PHI:Math.atan2(.02,.075),SOLE:.1,R:.125+Math.hypot(.075,.02),DROP:.018}; // 발목 뼈는 무릎에서 (0, -0.075, +0.02) — 정강이가 살짝 앞으로 꺾여 있어 PHI만큼 보정
 if(!SHOTM)hips.position.y=HIP-GT.DROP; // 서 있을 때 장화 바닥이 바닥에 닿게(예전엔 1.8cm 떠 있었다)
 const _ssm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
+/* 방향 돌리기(2026-11-05): 예전엔 남은 각의 dt×10배씩 — 처음 한 프레임에 크게 돌아 '툭' 돌았다. 이제는 각속도 상한(초당 13라디안, 뒤로 돌기 약 0.25~0.3초)에
+   가속(초당 90라디안²)을 둬 부드럽게 출발·도착. 도는 동안에도 이동·걸음은 그대로 이어진다(촬영 모드는 예전 그대로) */
+const TURN={w:0};function turnStep(diff,dt){const want=Math.sign(diff)*Math.min(13,Math.abs(diff)*14);TURN.w+=Math.max(-90*dt,Math.min(90*dt,want-TURN.w));let st=TURN.w*dt;if(Math.abs(st)>Math.abs(diff)||st*diff<0){st=st*diff<0?0:diff;if(st===diff)TURN.w=0;}return st;}
 function legIK(lg,dz,fy,hip,toe){const D0=Math.hypot(dz,hip-fy),D=Math.min(D0,GT.R*.999),L1=GT.L1,L2=GT.L2;
   const al=Math.atan2(dz,hip-fy),a1=Math.acos(Math.min(1,Math.max(-1,(L1*L1+D*D-L2*L2)/(2*L1*D)))),kn=Math.PI-Math.acos(Math.min(1,Math.max(-1,(L1*L1+L2*L2-D*D)/(2*L1*L2))));
   return {th:-(al+a1),kn:kn+GT.PHI,bt:(al+a1)-kn-GT.PHI-toe};}
-function gait(dt,vRaw,on){const G=GT;G.v+=(vRaw-G.v)*Math.min(1,dt*12);const v=Math.max(0,G.v);G.w+=((on?1:0)-G.w)*Math.min(1,dt*(on?9:7));const w=G.w;if(w<.002){G.ph=0;G.f=0;return null;}
-  const runK=_ssm(DRV.walk*1.08,DRV.run*.92,v),LC=.27+.03*runK,duty=.62-.26*runK;
-  const f=Math.max(1.6,Math.min(8.5,v*2*duty/LC));G.f=f;const Lc=Math.min(LC,v*2*duty/f),dE=v>.02?Math.min(duty,Lc*f/(2*v)):duty;
-  G.ph=(G.ph+dt*f/2)%1;const lift=(.045+.045*runK)*Math.min(1,v/1.2);
+function gait(dt,vRaw,on){const G=GT;G.v+=(vRaw-G.v)*(1-Math.exp(-dt*10));const v=Math.max(0,G.v);G.w+=((on?1:0)-G.w)*(1-Math.exp(-dt*(on?8:6)));const w=G.w;if(w<.002){G.ph=0;G.f=0;G.base=0;return null;}
+  /* 2026-11-05 덜컹 고침: 예전엔 엉덩이 높이 = 디딘 발에 닿는 높이의 최솟값이라, 두 발이 다 땅에 있는 순간마다 4~5cm 뾰족하게 꺼졌다(다리 0.2m의 1/4).
+     이제는 ① 걸음 길이를 짧게(걷기 0.20m — 짧은 다리로 종종걸음) ② 엉덩이 바탕 높이 = 걸음 끝에서도 발이 닿는 높이(속도 → 걸음 길이에 따라 이어서 바뀜)
+     ③ 그 위에 아주 작은 들썩임(최대 6mm, 디딘 발이 몸 바로 아래일 때 위로 — 부드러운 코사인)만. 바탕이 걸음 끝까지 닿는 높이라 IK가 늘 닿고 꺾이는 곳이 없다. */
+  const runK=_ssm(DRV.walk*1.08,DRV.run*.92,v),LC=.20+.06*runK,LMAX=.28,duty=.62-.26*runK;
+  const f=Math.max(1.6,Math.min(8.5,v*2*duty/LC));G.f=f;const Lc=Math.min(LMAX,v*2*duty/f),dE=v>.02?Math.min(duty,Lc*f/(2*v)):duty;
+  G.ph=(G.ph+dt*f/2)%1;const lift=(.04+.04*runK)*Math.min(1,v/.8);
   const ft=[0,1].map(i=>{const u=(G.ph+i*.5)%1;if(u<dE)return {dz:Lc/2-u/dE*Lc,y:G.SOLE,c:true,s:0};const q=(u-dE)/(1-dE),e=q*q*(3-2*q);return {dz:-Lc/2+e*Lc,y:G.SOLE+Math.sin(Math.PI*q)*lift,c:false,s:q};});
-  let hip=G.SOLE+G.R*.985+(ft[0].c||ft[1].c?0:.022*runK);for(const F of ft)if(F.c)hip=Math.min(hip,G.SOLE+Math.sqrt(Math.max(0,G.R*G.R-F.dz*F.dz))*.985);
+  const reach=G.SOLE+Math.sqrt(Math.max(0,G.R*G.R-(Lc/2)*(Lc/2)))*.985,stand=G.SOLE+G.R*.985;
+  const amp=.006*Math.min(1,v/.6);G.base=reach-amp*.3; // 걸음 길이(Lc)가 이미 부드럽게 바뀌므로 바탕도 따로 늦추지 않는다(늦추면 걸음 끝에서 닿지 않아 안전장치가 꺾었다)
+  const bob=amp*.5*(1+Math.cos(4*Math.PI*(G.ph-dE/2)));
+  let hip=G.base+bob+.012*runK*(1-dE/duty);for(const F of ft)if(F.c)hip=Math.min(hip,G.SOLE+Math.sqrt(Math.max(0,G.R*G.R-F.dz*F.dz))*.985); // 안전장치(닿지 않을 때만)
   G.hip=hip;return {w,runK,ft,hip,f};}
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
 const PUFF_S=.6,puffTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
@@ -271,7 +280,7 @@ function updateWL(dt,t){
    if(U.dashReq){U.dashReq=false;if(D.cd<=0&&!U.riding&&!V.jump){sfx('dash');D.dashT=DRV.dashT;D.cd=DRV.dashCd;D.dx=mx;D.dz=mz;WL.rotation.y=Math.atan2(mx,mz);wlTarget=null;}}
    if(U.jumpReq){U.jumpReq=false;if(!V.air&&!V.jump&&!U.riding){V.vy=DRV.jumpVy;V.air=true;V.jumpT=0;sfx('jump');}}
    if(!wlTarget){D.spd+=((ml>.08?(dv.run?DRV.run:DRV.walk):0)-D.spd)*Math.min(1,dt*8);
-     if(ml>.08){let diff=Math.atan2(mx,mz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);}
+     if(ml>.08){let diff=Math.atan2(mx,mz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=SHOTM?diff*Math.min(1,dt*10):turnStep(diff,dt);}
      if(D.dashT>0){D.dashT-=dt;mx=D.dx;mz=D.dz;D.spd=DRV.dash;if(D.dashT<=0)D.spd=ml>.08?DRV.run:DRV.walk*.4;}
      if(D.spd>.05&&!V.jump){const st=D.spd*dt,nx=WL.position.x+mx*st,nz=WL.position.z+mz*st,fy=H?V.y:undefined;
        if(slideGo(mx,mz,st,fy))moving=true;}}
@@ -279,7 +288,7 @@ function updateWL(dt,t){
   if(V.jump){WL.position.x+=V.jump.vx*dt;WL.position.z+=V.jump.vz*dt;} // 튀어 날아가는 중: 걷기 대신
   else if(wlTarget&&!WL.userData.riding){const dx=wlTarget.x-WL.position.x,dz=wlTarget.z-WL.position.z,d=Math.hypot(dx,dz);
     if(d<0.06)wlTarget=null;else{const st=Math.min(DRV.walk*dt*(WL.userData.action==='뛰기'?1.9:1),d),nx=WL.position.x+dx/d*st,nz=WL.position.z+dz/d*st;
-      let diff=Math.atan2(dx,dz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);
+      let diff=Math.atan2(dx,dz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=SHOTM?diff*Math.min(1,dt*10):turnStep(diff,dt);
       const fy=H?V.y:undefined; // 높이가 있는 구역: 발보다 높은 발판 옆면은 막힘
       if(canGo(nx,nz,fy)){WL.position.x=nx;WL.position.z=nz;moving=true;}
       else if(canGo(nx,WL.position.z,fy)){WL.position.x=nx;moving=true;}
@@ -313,12 +322,12 @@ function updateWL(dt,t){
     // 달리기는 공중에 뜨는 구간이 있어 한 걸음 0.45×1.5. 기준·동작 촬영(SHOTM)은 예전 값(11, ±0.5) 그대로
     const sp=D.spd>.05&&!wlTarget?D.spd:(WL.userData.action==='뛰기'?DRV.walk*1.9:DRV.walk);
     wlPhase+=dt*(SHOTM?11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1)):PI*Math.max(1.6,GT.f||sp/.27)); /* 촬영 모드가 아니면 걸음 수(gait) 그대로 — 걸음마다 발소리 */if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
-  const sw=moving?Math.sin(wlPhase):0;
+  const sw=moving&&SHOTM?Math.sin(wlPhase):0; // 촬영 모드가 아니면 다리 흔들기 대신 아래 gait(섞이는 동안 시계추가 겹쳐 덜컹이지 않게)
   legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*LEG_A;legs[1].rotation.x=-sw*LEG_A;
   arms[0].rotation.x=-sw*0.6;arms[1].rotation.x=sw*0.6;
   body.rotation.z=sw*0.06;
-  body.position.y=moving?Math.abs(Math.cos(wlPhase))*0.05:Math.sin(t*2.2)*0.012;
+  body.position.y=moving&&SHOTM?Math.abs(Math.cos(wlPhase))*0.05:Math.sin(t*2.2)*0.012;
   let hopY=0,wave=0;if(wlHop>0){wlHop=Math.max(0,wlHop-dt*1.6);wave=Math.sin((1-wlHop)*PI);hopY=wave*0.4;}
   if(H||V.air||WL.userData.airW>.001){const U=WL.userData;U.airW=(U.airW||0)+((V.air?1:0)-(U.airW||0))*Math.min(1,dt*10);wave=Math.max(wave,U.airW*.55,V.glide); // 공중에서는 팔을 들고(개미굴: 다리 앞뒤로), 활공은 두 팔로 물건을 받침
     if(U.airW>.001&&V.glide<.3){const a=U.airW;legs[0].rotation.x+=(-.6-legs[0].rotation.x)*a;legs[1].rotation.x+=(.4-legs[1].rotation.x)*a;}

@@ -160,7 +160,11 @@ function wlMerge(list){
       // 다리 축은 발 관절보다 2cm 뒤(발 관절 z +.02) — 테는 다리 축을 둘러싸고, 높이는 장화·뒤꿈치 겉면 가운데 높은 쪽 바로 위
       {const sy=(x,z)=>Math.max(.082*Math.sqrt(Math.max(0,1-(x/.105)**2-((z-.03)/.1365)**2)),.0624*Math.sqrt(Math.max(0,1-(x/.078)**2-((z+.035)/.0741)**2)));
        const pts=[];for(let k=0;k<48;k++){const t=k/48*PI*2,x=.068*Math.sin(t),z=-.02+.068*Math.cos(t);pts.push(new THREE.Vector3(x,sy(x,z)+.003,z));}
-       addA(wm(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),64,.008,8,true),aCuff),o);}
+       addA(wm(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),64,.008,8,true),aCuff),o);
+       // 장화 목(2026-11-05): 장화 본체(큰 공)와 뒤꿈치 감싸기(작은 공)가 만나는 뒤쪽 위가 V자로 파여 걸을 때 정강이 살이 보였다 → 다리 축을 둘러싼 장화 색 원통을
+       // 발목 테 선까지 올려 틈을 메운다(윗변은 테와 같은 높이 sy, 아랫변은 장화 속 1cm — 장화를 닫힌 모양으로, 발이 꺾여도 발과 함께 움직임)
+       {const g=new THREE.CylinderGeometry(.066,.066,1,48,1,true),P=g.attributes.position;for(let k=0;k<P.count;k++){const x=P.getX(k),z=P.getZ(k)-.02;P.setXYZ(k,x,P.getY(k)>0?sy(x,z)+.002:.01,z);}g.computeVertexNormals();
+        addA(wm(g,aBoot),o);}}
       const hl=addA(wm(new THREE.SphereGeometry(.078,14,10),aBoot),o);hl.scale.set(1,.8,.95);hl.position.set(0,0,-.035);}     // 뒤꿈치 감싸기(위끝 6.2cm — 발목 테 아래)
     // 정강이: v2 정강이는 발목 아래로 5.5cm 더 내려가 발이 꺾이면 장화 바닥으로 살이 비쳤다 → 이 옷에서는 무릎~발목 1.5cm 아래까지만(장화 안)
     if(n.startsWith('shin.')){addA(wm(new THREE.SphereGeometry(.061,14,10),skin),o);addA(wm(new THREE.CylinderGeometry(.061,.064,.09,14).translate(0,-.045,0),skin),o);}});
