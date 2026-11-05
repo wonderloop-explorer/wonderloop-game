@@ -43,7 +43,7 @@ let shotDrive=null; // 촬영 모드: 직접 조작 대신 wlShot.drive({x,z,run
 function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=shotDrive;return;}
   const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward'); // 첫 화면·옷 갈아입기 동안은 서 있는다
   camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
-  const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,run:a.run};
+  const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,run:a.run,k:a.k,joyRun:a.joyRun};
   if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}
   if(I.dashReq){U.dashReq=true;I.dashReq=false;if(GAME.dialog.talking())GAME.dialog.endTalk();}}
 GAME.controls.controlHooks.onWardrobe=()=>GAME.front.toggleWardrobe(); // C: 옷 갈아입기 창(game/front — 개미굴 옷장과 같은 방식)
