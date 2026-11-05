@@ -2,7 +2,7 @@
    세계 설정 firstMission(js/worlds/<세계>.js 맨 위 형식 주석)으로 채운다: 그 세계에서 꼭 필요한 물건 하나(개미굴 = 어두운 굴을 비출 버섯 랜턴)를 얻는 것.
    흐름: '모험 시작'(game/front) → 할 일 안내(quest) + 목적지에 민트 빛기둥·이름표 + 발밑부터 민트 동그라미 길(goal style 'ant')
          → 미션 카드(ui.notice — 개미굴 #mission, sus 소리, 6초 또는 누르면 닫힘)와 미션 나레이션(눌러 닫으면 멈춤, 저절로 닫히면 끝까지)
-         → 목적지에 떠서 도는 물건(item.model)에 1.5m 안으로 가면 줍기: pickup 소리, 오른손에 쥠(07 setHeld), 아이템 카드(ui.itemCard) + 획득 나레이션,
+         → 목적지에 떠서 도는 물건(item.model)에 1.5m 안으로 가면 줍기: 아이템 획득 공통 연출(game/itemget — 머리 위로 날아와 떠 있다가 오른손에 쥠, 원더룹은 카메라를 보며 웃음, 아이템 카드) + 획득 나레이션,
            세계 도구 단추(controls.setTool — 개미굴 랜턴 켜고 끄기)·다음 할 일(next).
    시간 제한·실패·점수 없음. 받았는지 = flags['have:<세계 id>:<물건 id>'] (저장) — 받았으면 미션 없이 손에 쥔 채로 시작한다.
    startMission(W)는 game/front가 게임을 시작할 때(조작법 창이 열려 있으면 닫힌 뒤) 부른다. 구역을 떠나면 game/index가 clearMission(). */
@@ -12,7 +12,7 @@ import {set as setGoal} from './goal.js';
 import {preload,register,sfx,voice} from './sound.js';
 import {setTool} from './controls.js';
 import {flags,setFlag} from './state.js';
-import {spinFrames} from './profile.js';
+import {itemGet} from './itemget.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0,light=null,pool=null,lampOn=false,lampK=0;
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
@@ -46,43 +46,15 @@ function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;cons
 function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
   if(obj){obj.rotation.y+=dt*1.3;obj.position.y=obj.userData.y0+Math.sin(t*2)*.15;if(obj.userData.tick)obj.userData.tick(t);}
   const P=ctx.WL.position,r=it.pickR||1.5;if(Math.hypot(P.x-it.at[0],P.z-it.at[1])<r)pick();}
-function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispose(obj);obj=null;}
-  setFlag(haveKey(W,it),true);setGoal(null);sfx('item-pickup');giveHeld(W,it);
+function pick(){const {W,F,it}=M;M.got=true;const o=obj;obj=null;
+  setFlag(haveKey(W,it),true);setGoal(null);
   const G=F.got||{};if(cardShown()==='notice')stopVO();
-  showOff(it);
-  const fr=it.model?spinFrames(it.model(THREE,{held:false})):null; // 획득 창: 아이콘 대신 그 물건이 천천히 도는 모습
-  itemCard({title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,frames:fr,sec:3.2,who:'아이템'});
   if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title);
-  setQuest(F.next||'');}
-/* 얻는 순간 장면(2026-11-04 시리즈 규칙): 원더룹이 멈춰 서서 물건을 번쩍 들어 보이고(07 showT — 물건 userData.show 자세), 카메라가 1.6초 동안 원더룹 앞쪽 3/4(물건을 든 오른손 쪽)으로 돌아갔다가
-   따라가기 시점으로 부드럽게 돌아온다(view.focus). 획득 창·나레이션은 같이 나온다. 화면을 누르거나 키를 누르면 바로 끝(카메라는 controls가 손대면 넘겨받음) */
-function showOff(it){const U=ctx.WL.userData,V=ctx.view;if(U.stopWalk)U.stopWalk();U.showT=1.7;if(!V||SHOT)return;
-  const P=ctx.WL.position.clone(),ry=ctx.WL.rotation.y,cam=ctx.camera.position,AT=new THREE.Vector3(P.x,P.y+.95,P.z),PO=ctx.camera.aspect<1;let D=3.8,Y=1.5; // 세로 화면은 될 수 있으면 멀리(3.8m면 얼굴만 꽉 차고 든 물건이 안 보였다) — 아래에서 1.6·1.3·1배 차례로
-  // 앞쪽 3/4(물건을 든 왼손 쪽 먼저 — 몸에 가려지지 않게)에서 가리는 물체가 없는 쪽을 고른다
-  const ray=new THREE.Raycaster(),objs=[];ray.layers.enableAll(); // 방 소품 원래 부품은 클릭 판정 층(1)에 있다
-  ctx.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.isInstancedMesh&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false))objs.push(o);});
-  const inWL=o=>{for(let q=o;q;q=q.parent)if(q===ctx.WL)return true;return false;};
-  // 2026-11-05: 끝 자리만 보던 것을 도는 길 전체로 — 휴대폰에서 카메라가 원더룹 둘레를 도는 길에 지구본·화분이 있어 그 속을 지나가며 화면을 덮었다.
-  // 앞쪽 각도 후보 × 도는 방향(짧은 쪽·반대쪽)마다 길을 12칸으로 나눠, 칸마다 원더룹이 보이는지(시선)와 칸 사이를 지나며 물체를 뚫지 않는지 본다. 모두 막히면 카메라는 그대로(들어 보이기만)
-  const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y,ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,_d=new THREE.Vector3();
-  const pos=(k,a1)=>{const e=ease(k),a=a0+(a1-a0)*e,r=r0+(D-r0)*e,y=y0+(Y-y0)*e;return new THREE.Vector3(P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r);};
-  const hit=(f,t,skip)=>{_d.copy(t).sub(f);const L=_d.length();if(L<1e-3)return false;ray.set(f,_d.normalize());ray.far=L-(skip||0);return ray.intersectObjects(objs,false).some(h=>!inWL(h.object));};
-  const clear=a1=>{let prev=null;for(let i=0;i<=12;i++){const q=pos(i/12,a1);if(i>=3&&hit(q,AT,.35))return false;if(prev&&(hit(prev,q)||hit(q,prev)))return false;prev=q;}return true;};
-  let a1=null;
-  for(const pk of PO?[1.6,1.3,1]:[1]){D=3.8*pk;Y=1.5*pk;
-  for(const a of [.6,-.6,1,-1,.25,-.25,0]){const da=((ry+a-a0+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
-    for(const d of [da,da-Math.sign(da||1)*Math.PI*2])if(clear(a0+d)){a1=a0+d;break;}if(a1!==null)break;}if(a1!==null)break;}
-  if(a1===null)return;
-  // 카메라는 원더룹 둘레를 둥글게 돌아(곧게 건너가면 머리를 뚫고 지나간다) 앞쪽으로 → 1초 머문 뒤 → 원래 각도·거리로 돌아와 따라가기에 넘김
-  const T_IN=.55,T_HOLD=.95,T_OUT=.6;let t=0,last=performance.now(),done=false;
-  const at=(k,aa,bb)=>aa+(bb-aa)*ease(Math.min(1,Math.max(0,k)));
-  const fin=()=>{if(done)return;done=true;U.showT=0;if(V.req&&V.req.fn===fn)V.hold(null);off();};
-  const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;if(t>T_IN+T_HOLD+T_OUT){setTimeout(fin,0);return null;}
-    const k=t<T_IN?t/T_IN:t<T_IN+T_HOLD?1:1-(t-T_IN-T_HOLD)/T_OUT,a=at(k,a0,a1),r=at(k,r0,D),y=at(k,y0,Y),ay=at(k,.85,.95);
-    return {from:[P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r],at:[P.x,P.y+ay,P.z]};};
-  V.hold(fn,{snap:true}); // 도는 길이 지금 카메라 자리에서 시작하므로 섞지 않는다
-  const end=()=>fin(),off=()=>{removeEventListener('pointerdown',end,true);removeEventListener('keydown',end,true);};
-  setTimeout(()=>{addEventListener('pointerdown',end,true);addEventListener('keydown',end,true);},120);}
+  setQuest(F.next||'');
+  /* 아이템 획득 공통 연출(game/itemget — 개미굴 꿀방울 그대로): 떠 있던 물건이 머리 위로 날아와 잠시 떠 있고, 원더룹은 카메라를 보며 웃고, 아래 획득 카드 → 오른손에 쥠 */
+  const card={title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,sec:3.2};
+  if(o)itemGet({obj:o,to:'hand',held:()=>{giveHeld(W,it);return null;},card,scale:it.getScale||1.1,top:it.getTop||1.72});
+  else{giveHeld(W,it);itemCard({...card,who:'아이템'});}}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
 function clearMission(){lampOn=false;{const U=ctx&&ctx.WL&&ctx.WL.userData;if(U&&U.heldObj&&U.heldObj.userData.missionItem&&U.setHeld)U.setHeld(null);} // 처음부터 하기: 쥐고 있던 미션 물건도 내려놓음
   if(obj){obj.removeFromParent();dispose(obj);obj=null;}M=null;stopVO();}

@@ -99,7 +99,7 @@ const css=`
 #wlWard .done{flex:none;display:block;width:100%;text-align:center;box-sizing:border-box;margin-top:1rem;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;min-height:48px;cursor:pointer}
 /* 시리즈 공통 틀(body.wl-antui): 미션 카드·아이템 카드를 개미굴 #mission·#getCard 그대로 — 크림 판·그림자, 제목도 고운돋움, 아이콘은 동그라미 없이 */
 body.wl-antui #wlNotice .t,body.wl-antui #wlGet .t{font-family:"Gowun Dodum",sans-serif}
-body.wl-antui #wlGet{border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;background:var(--panel);box-shadow:0 14px 40px rgba(30,14,36,.45)}
+body.wl-antui #wlGet{border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;background:rgba(44,30,42,.95);color:#fbe9d8;box-shadow:0 14px 40px rgba(30,14,36,.45)}body.wl-antui #wlGet .s{color:#d9bfb3} /* 아이템 획득 카드는 늘 개미굴 어두운 판(꿀방울 카드 그대로 — 이야기 소개 카드와 같은 값, 2026-11-05 사용자 요청) */
 body.wl-antui #wlGet .ic{width:auto;height:auto;background:none;border:0;border-radius:0}body.wl-antui #wlGet img{width:58px;height:58px;filter:none}
 /* 모험 떠나기 전 이야기 소개(개미굴 #story) — 2026-11-04 사용자 요청으로 개미굴 어두운 화면 값(판 rgba(44,30,42,.95)·글자 #fbe9d8·민트 #5cc4b9)으로 늘 어둡게: 화면 아래 가운데 카드, 건너뛰기·다음, 점 */
 #wlStory{position:fixed;inset:0;z-index:31;display:none;place-items:end center;padding:1rem 1rem calc(env(safe-area-inset-bottom,0px) + 3.5rem);box-sizing:border-box;background:linear-gradient(180deg,rgba(30,14,36,0) 35%,rgba(30,14,36,.6))}

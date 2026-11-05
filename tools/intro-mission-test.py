@@ -55,7 +55,13 @@ with sync_playwright() as p:
     for _ in range(40):
         if pg.evaluate('wlGame.mission.missionState()?.got'): break
         pg.wait_for_timeout(250)
-    pg.wait_for_timeout(500); shot('mission-got')
+    pg.wait_for_timeout(1300); shot('mission-got')  # 아이템 획득 공통 연출(game/itemget): 머리 위에 떠 있는 중
+    R['획득 연출 중 머리 위'] = pg.evaluate("wlGame.itemget.itemGetting()")
+    R['획득 카드'] = pg.evaluate("(()=>{const g=document.getElementById('wlGet');return g&&g.classList.contains('on')?g.innerText.replace(/\\s+/g,' '):null})()")
+    for _ in range(30):
+        if not pg.evaluate("wlGame.itemget.itemGetting()"): break
+        pg.wait_for_timeout(200)
+    pg.wait_for_timeout(300); shot('mission-held')
     R['얻음'] = pg.evaluate('wlGame.mission.missionState()')
     R['손에 쥠'] = pg.evaluate('!!wlGame.mission.hero().userData.heldObj')
     R['도구 단추'] = pg.evaluate("(()=>{const b=document.getElementById('wlTool');return b&&getComputedStyle(b).display!=='none'?b.textContent:null})()")

@@ -41,7 +41,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
 const _kf=new THREE.Vector3(),_ct=new THREE.Vector3(),_cw=new THREE.Vector3();
 let shotDrive=null; // 촬영 모드: 직접 조작 대신 wlShot.drive({x,z,run})로 미는 값(끼임 시험) — 평소 null
 function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=shotDrive;return;}
-  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward'); // 첫 화면·옷 갈아입기 동안은 서 있는다
+  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward')||GAME.core.blocking('itemget'); // 아이템 획득 연출 동안도(game/itemget — 원본 ctrlLock). 첫 화면·옷 갈아입기 동안은 서 있는다
   camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
   const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,k:a.k};
   if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}

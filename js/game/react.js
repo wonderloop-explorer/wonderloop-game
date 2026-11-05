@@ -14,7 +14,7 @@
      hop     기뻐서 폴짝: 두 팔을 번쩍 들고 0.28m 두 번 폴짝(한 번 0.45초, 내려앉을 때 살짝 찌그러짐), 04 '신남'. 1.1초, 뛸 때마다 jump
      sigh    안도의 한숨: 0.5초 숨을 들이쉬며 어깨·고개가 살짝 올라갔다가 → 1.5초 내쉬며 어깨가 내려앉고(팔이 몸 쪽으로, 몸통 0.045 내려감) 고개가 앞으로 툭, 04 '기쁨'(눈 감은 웃음). 2초, 소리 event-whoosh(작게)
    공통: 원더룹이 걷거나 대쉬하면 몸 리액션의 자세는 그대로 겹쳐질 뿐 이동을 막지 않는다(갇히지 않게). 표정은 끝나면 리액션 전 표정으로(그동안 다른 코드가 표정을 바꿨으면 그대로 둠).
-   옵션: {sec, sound(null이면 소리 없음), face:false(joy가 카메라로 돌지 않게), punch:false(시야 좁힘 끔)}.
+   옵션: {sec, sound(null이면 소리 없음), face:false(joy가 카메라로 돌지 않게), bounce:false(joy 몸통 통통 없이), punch:false(시야 좁힘 끔)}.
    그리기: 07 updateWL 뒤(game updateGame — tickReact)에 뼈(neck·spine·팔)와 원더룹 높이에 더하기만 한다 — 07이 매 프레임 다시 정하므로 끝나면 저절로 원래대로.
    카메라 흔들림·시야는 08이 그리기 바로 앞뒤로 camPre/camPost(그린 뒤 되돌려 따라가기 카메라에 흔들림이 쌓이지 않게 — 원본도 카메라 자리를 매 프레임 새로 썼다).
    촬영 모드에서도 같은 그림이 나오게 흔들림 난수는 시드 고정. 시험: 톱니 메뉴 '리액션: …' 단추(game/devcheck). */
@@ -37,7 +37,7 @@ function react(name,o={}){if(!C)return Promise.resolve(false);
   if(snd)sfx(snd,D.gain?{gain:D.gain}:{});if((o.punch??D.punch))punch=.9;
   const prev=U.exprName;if(U.setExpr&&D.expr)U.setExpr(D.expr);
   cue({kind:'react',id:name,who:NAMES[name],text:'',dur:sec});
-  return new Promise(res=>{cur={name,t:0,sec,expr:D.expr,prev,res,face:o.face!==false,hops:0};});}
+  return new Promise(res=>{cur={name,t:0,sec,expr:D.expr,prev,res,face:o.face!==false,bounce:o.bounce!==false,hops:0};});}
 const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
   if(!cur)return;const R=cur,{WL}=C,{neck,spine,arms}=C.rig,U=WL.userData;R.t+=dt;const t=R.t,s=R.sec;
@@ -45,7 +45,7 @@ function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
   const env=Math.min(1,t/.15,(s-t)/.25); // 새 리액션은 부드럽게 들어가고 나옴
   switch(R.name){
     case 'shiver':neck.rotation.z+=Math.sin(T*42)*.035;break; // 원본 그대로(들어가고 나옴 없이)
-    case 'joy':{spine.position.y+=Math.abs(Math.sin(T*9))*.07; // 원본 그대로
+    case 'joy':{if(R.bounce)spine.position.y+=Math.abs(Math.sin(T*9))*.07; // 원본 그대로(bounce:false = 꿀방울 들어 보일 때처럼 웃기만)
       if(R.face&&!(U.walkAmt>0)){const cp=C.camera.position,a=Math.atan2(cp.x-WL.position.x,cp.z-WL.position.z);let d=a-WL.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));WL.rotation.y+=d*Math.min(1,dt*8);}break;}
     case 'startle':{if(t<.12){const k=Math.sin(t/.12*Math.PI*.5);spine.position.y-=.05*k;arms[0].rotation.z+=.2*k;arms[1].rotation.z-=.2*k;neck.rotation.x-=.13*k;}
       else{const u=Math.min(1,(t-.12)/.38),j=Math.sin(u*Math.PI);WL.position.y+=.25*j;arms[0].rotation.z-=.7*j;arms[1].rotation.z+=.7*j;neck.rotation.x-=.13*env;
