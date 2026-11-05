@@ -67,7 +67,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(args=['--mute-audio', '--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'])
     c = b.new_context(viewport={'width': 1280, 'height': 720}, record_video_dir=os.path.join(OUT, 'vid'), record_video_size={'width': 1280, 'height': 720})
     pg = c.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)[:200]))
-    pg.goto(f'http://localhost:8000/?notitle&weather=day&zonetest&zone=sample-outdoor{q}'); pg.evaluate("localStorage.removeItem('wl-speed');localStorage.setItem('wl-help-seen','1')")
+    pg.goto(f'http://localhost:8000/?notitle&weather=day&zonetest&zone=sample-outdoor{q}'); pg.evaluate("localStorage.removeItem('wl-speed3');localStorage.setItem('wl-help-seen','1')")
     pg.reload(); pg.wait_for_function('window.wlGame&&window.wlGait&&window.wlFrameLog&&wlGame.mission.hero()', timeout=120000); pg.wait_for_timeout(2500)
     pg.evaluate('([w])=>wlGait.SPEED.set(w,null)', [WALK])
     R['속도'] = pg.evaluate('({walk:wlGait.DRV.walk,run:wlGait.DRV.run,단계:wlFrameLog.target()})')

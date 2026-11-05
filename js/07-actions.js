@@ -44,16 +44,16 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
 /* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
-const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:4.5; // 걷기 속도(설정값 — 아래 SPEED). 기본 = 개미굴 원본 걷기(초당 5)의 0.9배 = 4.5(2026-11-05). 기준·동작 촬영은 예전 1.5
+const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.15; // 걷기 속도(설정값 — 아래 SPEED). 기본 3.15 = 개미굴 원본 걷기(초당 5)의 0.63배(2026-11-05 — 0.9배 4.5가 빠르다고 해서 30% 더 줄임). 기준·동작 촬영은 예전 1.5
 const DRV={walk:WALK,run:SHOTM?WALK*8/5:8,dash:SHOTM?WALK*17/5:17,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
 const LEG_A=SHOTM?.5:.75; // (기준·동작 촬영의 예전 걷기 — 다리를 엉덩이에서 흔들기만)
-/* 걷기·달리기 속도 설정값(2026-11-05): 걷기 = 개미굴 원본 5의 0.9배(4.5), 달리기 = 원본 8 그대로, 대쉬 = 달리기 × 17/8(원본 17). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed2' —
-   예전 'wl-speed'에 남은 막대 값은 쓰지 않는다).
+/* 걷기·달리기 속도 설정값(2026-11-05): 걷기 = 3.15(개미굴 원본 5의 0.63배 — 처음 0.9배 4.5에서 30% 줄임), 달리기 = 원본 8 그대로, 대쉬 = 달리기 × 17/8(원본 17). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed3' —
+   예전 'wl-speed'·'wl-speed2'에 남은 막대 값은 쓰지 않는다).
    기준·동작 촬영(SHOTM)은 예전 1.5 그대로 */
-const SPEED={def:{walk:4.5,run:8},H:1.38,
-  set(w,r){if(SHOTM)return;if(w)DRV.walk=+w;if(r)DRV.run=+r;DRV.dash=DRV.run*17/8;try{localStorage.setItem('wl-speed2',JSON.stringify({walk:DRV.walk,run:DRV.run}));}catch(e){}},
-  reset(){SPEED.set(SPEED.def.walk,SPEED.def.run);try{localStorage.removeItem('wl-speed2');}catch(e){}}};
-if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed2')||'null');if(o&&o.walk&&o.run){DRV.walk=+o.walk;DRV.run=+o.run;DRV.dash=DRV.run*17/8;}}catch(e){}
+const SPEED={def:{walk:3.15,run:8},H:1.38,
+  set(w,r){if(SHOTM)return;if(w)DRV.walk=+w;if(r)DRV.run=+r;DRV.dash=DRV.run*17/8;try{localStorage.setItem('wl-speed3',JSON.stringify({walk:DRV.walk,run:DRV.run}));}catch(e){}},
+  reset(){SPEED.set(SPEED.def.walk,SPEED.def.run);try{localStorage.removeItem('wl-speed3');}catch(e){}}};
+if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed3')||'null');if(o&&o.walk&&o.run){DRV.walk=+o.walk;DRV.run=+o.run;DRV.dash=DRV.run*17/8;}}catch(e){}
 const GT={f:0,w:0,DROP:.018}; // (시험 도구 호환 — 걸음 계산은 없음)
 if(!SHOTM)hips.position.y=HIP-GT.DROP; // 서 있을 때 장화 바닥이 바닥에 닿게(2026-11-04 — 예전엔 1.8cm 떠 있었다)
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
@@ -295,10 +295,10 @@ function updateWL(dt,t){
     // 달리기는 공중에 뜨는 구간이 있어 한 걸음 0.45×1.5. 기준·동작 촬영(SHOTM)은 예전 값(11, ±0.5) 그대로
     const sp=D.spd>.05&&!wlTarget?D.spd:(WL.userData.action==='뛰기'?DRV.walk*1.9:DRV.walk);
     wlPhase+=dt*(SHOTM?11*(D.spd>.05&&!wlTarget?Math.min(1.8,D.spd/DRV.walk):(WL.userData.action==='뛰기'?1.6:1)):sp*3.2); /* 촬영 모드가 아니면 개미굴 원본 그대로: 걸음 위상 = 속도 × 3.2(속도 0.9배면 걸음도 0.9배 — 발이 안 미끄러짐) */if(Math.floor(wlPhase/PI)!==s0&&!V.air&&!WL.userData.riding)sfx('step',{cue:false,minor:true});} // 발이 땅에 닿을 때마다 (개미굴 step)
-  /* 걷기·달리기 (2026-11-05 — 개미굴 원본 그대로로 되돌림: antvillage 주인공 걷기 줄을 옮김). 다리 ±0.8·팔 ±0.7 × 세기(amt = 속도 ÷ 4.5, 최대 1 — 원본 '속도 ÷ 5'를 걷기 0.9배에 맞춤),
+  /* 걷기·달리기 (2026-11-05 — 개미굴 원본 그대로로 되돌림: antvillage 주인공 걷기 줄을 옮김). 다리 ±0.8·팔 ±0.7 × 세기(amt = 속도 ÷ 기본 걷기 속도, 최대 1 — 원본 '속도 ÷ 5'를 걷기 속도에 맞춤. 걸음 빠르기는 속도에 비례해 발이 미끄러지지 않음),
      무릎·발목은 굽히지 않고(장화는 다리와 한 덩어리), 다리를 들어 올리지 않고, 몸 들썩임 없이(원본은 몸 높이를 매 프레임 되돌려 들썩임이 화면에 안 나왔다) 고개만 좌우로 0.05.
      속도가 줄면 세기도 함께 줄어 서기로 이어진다. 촬영 모드(SHOTM)는 예전 걷기(1.5, 다리 흔들기 0.5) 그대로 */
-  const amt=SHOTM?1:Math.min(1,D.spd>.05&&!wlTarget?D.spd/4.5:(wlTarget?DRV.walk/4.5:0));WL.userData.walkAmt=moving?amt:0;
+  const amt=SHOTM?1:Math.min(1,D.spd>.05&&!wlTarget?D.spd/SPEED.def.walk:(wlTarget?DRV.walk/SPEED.def.walk:0));WL.userData.walkAmt=moving?amt:0;
   const sw=moving?Math.sin(wlPhase):0;
   if(SHOTM){legs[0].position.y=0.3+Math.max(0,sw)*0.08;legs[1].position.y=0.3+Math.max(0,-sw)*0.08;
   legs[0].rotation.x=sw*LEG_A;legs[1].rotation.x=-sw*LEG_A;
