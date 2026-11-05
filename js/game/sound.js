@@ -13,15 +13,16 @@
      대사·나레이션 목소리가 나오는 동안(파일·읽어 주기 모두, 길이는 voice()의 dur) 배경음을 40%로 줄였다가 끝나면 0.6초에 걸쳐 되돌린다
      (개미굴에는 없던 규칙 — 요정의 숲부터. 개미굴은 목소리 1, 배경음 0.5×0.85로 저절로 위에 들렸다).
    코드로 연주하는 배경음: songs({id:곡}) — game/music.js. 파일 배경음과 같은 자리라 크로스페이드·줄이기·M이 같다. bedHandle()로 지금 곡(예: 축제 bloom()).
-   효과음 이름·소리는 개미굴 sfx()와 같다(sfx-ant.js). 개미굴에 없던 dex 말고 secret·cut은 원더룹 것.
+   효과음 = 공통 묶음(js/sfx/common.js — 종류 이름 sfx('item-get'), 목록·이름 규칙 docs/sfx-list.md) + 지금 세계 전용 묶음(js/sfx/<세계>.js).
+     옛 이름(개미굴 sfx 이름 'itemget'·'click'…)도 그대로 받아 종류 이름으로 바꾼다(ALIAS). 시점 기록 id는 종류 이름.
+     useWorld(세계 id, 바꿔 끼우기 {종류:'다른 이름'|'파일 주소'}): 08 zoneLook이 구역마다 — 세계 전용 묶음을 켜고, 그 세계 설정 sfx로 몇 종류만 바꾼다.
    소리 끄고 켜기: M 키 또는 setMuted(참거짓) — 소리는 늘 켜진 채로 시작(개미굴과 같음). 끄면 말하던 목소리도 멈춘다.
    소리 깨우기(개미굴 wakeAudio): 누르기·터치·키·화면 복귀(visibilitychange·pageshow·focus) 때 다시 켜고 빈 소리를 한 번 틀어 아이폰을 깨운다.
      아이폰 무음 스위치를 켜도 들리게 audioSession 'playback'. 화면에 돌아와 0.8초 뒤에도 소리가 멈춰 있으면 onWakeFail(안내 문구)을 부른다.
    구역 배경음: 구역 정보 music:'이름' 또는 {id,gain,fade} → assets/audio/<이름>.mp3(확장자를 적으면 그 파일). 구역을 옮기면 앞 곡이 줄어드는 동안
      새 곡이 커진다(크로스페이드). 파일이 아직 없으면 조용히 빈 자리(콘솔 경고 한 번). */
 import {blocking,clock,cue,cues} from './core.js';
-import {COMMON} from './synth.js';
-import {ANT} from './sfx-ant.js';
+import {common as SFX,WORLD_SFX} from '../sfx/index.js';
 import {asBeds} from './music.js';
 const SRC={},BUF={},LEN={},SYN={},PEND={};let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null;
 const S={muted:false,tts:false};
@@ -50,7 +51,13 @@ function setMuted(m){S.muted=!!m;if(m){VOICES.forEach(v=>{try{v.stop();}catch(e)
 window.addEventListener('keydown',e=>{if(e.code!=='KeyM'||e.repeat||SHOT||(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)))return;audio();setMuted(!S.muted);});
 function register(map){Object.assign(SRC,map);}
 function synth(map){Object.assign(SYN,map);}
-synth(ANT);synth(COMMON);
+synth(SFX.SOUNDS);for(const k in SFX.FILES)SRC[k]=SFX.FILES[k];
+/* 종류 이름 풀기: 옛 이름 → 종류 → 세계 바꿔 끼우기 */
+let WSET=null,WOVR={},WALIAS={};
+function useWorld(id,ovr){const W=id&&WORLD_SFX[id]||null;if(W!==WSET){WSET=W;WALIAS=W&&W.ALIAS||{};if(W)synth(W.SOUNDS);}
+  WOVR={};if(ovr)for(const k in ovr){const v=ovr[k];if(/\.(mp3|ogg|wav|m4a)(\?|$)/i.test(v)){const fid='file:'+v;SRC[fid]=v;WOVR[k]=fid;}else WOVR[k]=v;}}
+function kindOf(id){return SFX.ALIAS[id]||WALIAS[id]||id;}
+function resolve(id){const k=kindOf(id),o=WOVR[k];return o?(SFX.ALIAS[o]||WALIAS[o]||o):k;}
 function load(id){if(BUF[id]||!SRC[id])return Promise.resolve(BUF[id]);if(PEND[id])return PEND[id];const c=audio();if(!c)return Promise.resolve(null);
   return PEND[id]=(async()=>{try{const ab=await (await fetch(SRC[id]+(SRC[id].includes('?')?'':'?v='+(window.WL_V||'')))).arrayBuffer();BUF[id]=await c.decodeAudioData(ab);LEN[id]=BUF[id].duration;}catch(e){console.warn('원더룹: 소리 파일을 못 읽음',id,e);}
     delete PEND[id];return BUF[id];})();}
@@ -64,8 +71,8 @@ function play(id,o={}){const b=BUF[id],y=SYN[id];if(!awake()||(!b&&!(y&&y.play))
   if(b){const s=c.createBufferSource();s.buffer=b;if(o.rate)s.playbackRate.value=o.rate;s.connect(g);s.onended=()=>g.disconnect();s.start();live.push(now+b.duration);return s;}
   y.play(c,g,o);live.push(now+y.dur);const tm=setTimeout(()=>g.disconnect(),(y.dur+.5)*1000);
   return {stop(){clearTimeout(tm);try{g.disconnect();}catch(e){}}};}
-function sfx(id,o={}){const src=play(id,o);if(SRC[id]&&!BUF[id])load(id);
-  if(o.cue!==false)cue({kind:'sfx',id,file:SRC[id]||null,dur:+(LEN[id]||(SYN[id]&&SYN[id].dur)||0).toFixed(3),...(!BUF[id]&&SYN[id]?{synth:true}:{})});return src;}
+function sfx(name,o={}){const kind=kindOf(name),id=resolve(name);const src=play(id,o);if(SRC[id]&&!BUF[id])load(id);
+  if(o.cue!==false)cue({kind:'sfx',id:kind,...(id!==kind?{as:id}:{}),file:SRC[id]||null,dur:+(LEN[id]||(SYN[id]&&SYN[id].dur)||0).toFixed(3),...(!BUF[id]&&SYN[id]?{synth:true}:{})});return src;}
 function tts(text,who){if(!S.tts||!('speechSynthesis' in window)||!text)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text).replace(/…+/g,', '));u.lang='ko-KR';speechSynthesis.speak(u);}catch(e){}}
 /* 목소리 하나 (대사·나레이션 공통): {id,text,who,kind} → {dur, stop()} */
 const SPEAK=new Set(); // 지금 말하는 목소리 (배경음 줄이기)
@@ -110,4 +117,4 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};

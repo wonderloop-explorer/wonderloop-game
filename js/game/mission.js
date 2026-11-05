@@ -32,7 +32,7 @@ function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:sr
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
 function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
-  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use,on});};setTool({label:lab(),use,on});}}
+  if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('ui-click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use,on});};setTool({label:lab(),use,on});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
   M={W,F,it,got:false,at:F.goal&&F.goal.at||it.at};t=0;
@@ -47,7 +47,7 @@ function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M
   if(obj){obj.rotation.y+=dt*1.3;obj.position.y=obj.userData.y0+Math.sin(t*2)*.15;if(obj.userData.tick)obj.userData.tick(t);}
   const P=ctx.WL.position,r=it.pickR||1.5;if(Math.hypot(P.x-it.at[0],P.z-it.at[1])<r)pick();}
 function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispose(obj);obj=null;}
-  setFlag(haveKey(W,it),true);setGoal(null);sfx('pickup');giveHeld(W,it);
+  setFlag(haveKey(W,it),true);setGoal(null);sfx('item-pickup');giveHeld(W,it);
   const G=F.got||{};if(cardShown()==='notice')stopVO();
   showOff(it);
   const fr=it.model?spinFrames(it.model(THREE,{held:false})):null; // 획득 창: 아이콘 대신 그 물건이 천천히 도는 모습

@@ -63,7 +63,7 @@ function meet(id){if(!BY[id])return false;return find(id)||showCard(id,false);}
 function showCard(id,isNew){const d=BY[id];return cardSlot('dex',r=>{dexDone=r;$('#wlDex .k2').textContent=isNew?'새 도감 카드':W.name;const img=$('#wlDex img');img.src=d.icon||ICON_Q;
   $('#wlDex h2').textContent=d.t;$('#wlDex .fact').textContent=d.f;const mb=$('#wlDex .moreB'),mp=$('#wlDex .more');mb.hidden=!d.x;mb.textContent='더 알아보기';mp.hidden=true;mp.textContent=d.x||'';
   $('#wlDex .cnt').textContent=`${W.name} ${found.size}/${W.cards.length}`;$('#wlDex .ok').textContent=isNew?'도감에 넣기':'닫기';
-  dexCue=cue({kind:'card',who:isNew?'새 도감 카드':W.name,text:d.t,sub:d.f,dur:0});dex.style.display='grid';block('dex',true);if(isNew)sfx('dex');
+  dexCue=cue({kind:'card',who:isNew?'새 도감 카드':W.name,text:d.t,sub:d.f,dur:0});dex.style.display='grid';block('dex',true);if(isNew)sfx('card-new');
   mb.onclick=()=>{mp.hidden=false;mb.textContent='다시 듣기';if(dexVoice)dexVoice.stop();dexVoice=voice({id:'x_'+d.id,text:d.x,who:'나레이션',kind:'narration'});};});}
 function closeDex(){if(cardShown()!=='dex')return;dex.style.display='none';if(dexVoice){dexVoice.stop();dexVoice=null;}if(dexCue)dexCue.dur=+(clock.t-dexCue.t).toFixed(4);dexCue=null;
   block('dex',false);const d=dexDone;dexDone=null;cardDone();if(d)d();}
@@ -71,7 +71,7 @@ $('#wlDex .ok').addEventListener('click',closeDex);cardCloser('dex',closeDex);
 /* 숨겨진 비밀 */
 function findSecret(id){const q=SBY[id];if(!q||sfound.has(id))return false;sfound.add(id);save();let v=null;
   return secretCard({kicker:'숨겨진 비밀 발견!',title:q.t,text:q.f,icon:q.icon,count:secretLine(),button:'비밀 수첩에 넣기',
-    onOpen:()=>{sfx('secret');v=voice({id:'s_'+q.id,text:'비밀 발견! '+q.f,who:'나레이션',kind:'narration'});}}).then(r=>{if(v)v.stop();return r;});}
+    onOpen:()=>{sfx('card-secret');v=voice({id:'s_'+q.id,text:'비밀 발견! '+q.f,who:'나레이션',kind:'narration'});}}).then(r=>{if(v)v.stop();return r;});}
 /* 비밀 자리: 금빛 반짝임 (안내 표시) */
 const SPOTS=[];let sparkTex=null;
 function spark(){if(sparkTex)return sparkTex;const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,30);

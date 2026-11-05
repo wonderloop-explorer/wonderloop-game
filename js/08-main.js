@@ -10,7 +10,7 @@ import {DRV,GAIT,SPEED,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from
 import * as GAME from './game/index.js';
 import {CURRENT as WORLD} from './worlds/index.js'; // 지금 세계 설정(시리즈 공통 틀 — 타이틀 화면)
 import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
-import {clearDevcheck,initDevcheck,toggleBounds,toggleMeasure,toggleSize} from './game/devcheck.js'; // 톱니 메뉴: 경계 보기·걷는 시간 재기·크기 확인
+import {clearDevcheck,initDevcheck,rollTest,toggleBounds,toggleMeasure,toggleSize} from './game/devcheck.js'; // 톱니 메뉴: 경계 보기·걷는 시간 재기·크기 확인·굴러가는 물건 시험
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
@@ -56,7 +56,7 @@ async function goZone(id,spawn){clearDevcheck();
   try{const nz=await loadZone(id),old=zone.cur;unloadZone(old);zone.cur=nz;
     const sp=spawn||nz.spawn;stopWalk();WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;
     zone.area=areaAt(sp.x,sp.z)||Object.keys(nz.areas)[0];setupView(nz,zone.area);
-    WL.userData.atlas.clear('swap');zoneLook(nz);if(PERF.level&&nz.quality)nz.quality(PERF.level);doorLock=true;GAME.sound.sfx('enter'); // 구역에 들어갈 때 (개미굴 enter)
+    WL.userData.atlas.clear('swap');zoneLook(nz);if(PERF.level&&nz.quality)nz.quality(PERF.level);doorLock=true;GAME.sound.sfx('zone-enter'); // 구역에 들어갈 때 (개미굴 enter)
     const zb=document.getElementById('zoneBtn');if(zb)zb.textContent='구역: '+nz.name;
   }finally{zoneBusy=false;}
   return true;}
@@ -66,10 +66,11 @@ const DEV_HEAD=new URLSearchParams(location.search).has('debug');document.body.c
 function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥근 땅 세기는 구역 정보 bend(없으면 끔 — 실내·베이스캠프)
   {const h=document.querySelector('header');if(h)h.style.display=z.world||!DEV_HEAD?'none':''; /* 개발용 머리말('원더룹 베이스캠프 / … 실험')은 주소에 ?debug일 때만(2026-11-04) */document.body.classList.toggle('wl-world',!!z.world);} // 세계 구역: 베이스캠프 머리말·아래 조작 안내 글자 숨김(조작법 창에 다 있음) // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);
+  {const W=z.world||WORLD;GAME.sound.useWorld(W.sfxWorld||W.id||null,W.sfx||null);} // 효과음: 그 세계 전용 묶음(js/sfx/<세계>.js) + 세계 설정 sfx로 몇 종류만 바꿔 끼우기(game/sound useWorld)
   GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
-GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5)});window.wlGame=GAME; // 콘솔·시험 도구용
+GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z)});window.wlGame=GAME; // 콘솔·시험 도구용
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
@@ -103,6 +104,7 @@ function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const
 initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),walk:()=>[+DRV.walk.toFixed(2),DRV.dash],zone:()=>zone.cur});
 [['boundsBtn',()=>toggleBounds(),on=>`경계 보기: ${on?'켜짐':'끔'}`],['measBtn',()=>toggleMeasure(),on=>`걷는 시간 재기: ${on?'켜짐':'끔'}`],['sizeBtn',()=>!!toggleSize(),on=>`크기 확인: ${on?'켜짐':'끔'}`]]
   .forEach(([id,f,lab])=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>{b.textContent=lab(f());});});
+{const b=document.getElementById('rollBtn');if(b)b.addEventListener('click',()=>rollTest());} // 굴러가는 물건 시험(game/incident — 사건 순간 카메라 + 공 셋)
 {const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
    if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
 

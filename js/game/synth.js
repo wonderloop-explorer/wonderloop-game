@@ -1,7 +1,7 @@
 /* 원더룹 — 합성 소리: 소리 파일이 없을 때 Web Audio로 즉석에서 만드는 효과음·배경음
    - 등록: sound.synth({id:{dur, play(ac,out,o)}}) — 효과음. 배경음은 {bed(ac,out)→{tick(dt),stop()}}.
    - 같은 id로 sound.register({id:'url'})하면 그 파일을 읽은 뒤부터 파일이 먼저다(ElevenLabs로 뽑은 소리로 하나씩 바꿔 끼우기).
-   - 이 파일에는 소리 도구와 모든 세계가 함께 쓰는 소리(도감 카드 dex, 비밀 secret, 그림 컷 cut)만 둔다. 세계 소리는 구역 폴더에(예: js/zones/<세계>/sounds.js).
+   - 이 파일에는 소리 도구만 둔다. 효과음 공통 묶음은 js/sfx/common.js(예전 여기 있던 dex·secret·cut도 그리로), 세계 전용은 js/sfx/<세계>.js.
    - 소리는 화면 그림에 쓰지 않으므로 Math.random을 쓴다(시드 난수 순서와 상관없음). */
 const NB=new WeakMap();
 const rr=(a,b)=>a+Math.random()*(b-a);
@@ -22,11 +22,4 @@ function hiss(ac,out,o){const {t=0,a=.005,d=.1,g=.3,kind='white'}=o,T=ac.current
   const e=env(ac,out,T,a,d,g);filt(ac,s,{ft:'bandpass',ff:2000,...o},T,a+d).connect(e);s.start(T,Math.random()*1.5);s.stop(T+a+d+.05);s.onended=()=>e.disconnect();return s;}
 /* 종소리: 기본음 + 맑은 배음 두 개 */
 function bell(ac,out,{t=0,f=880,d=1.2,g=.2}){tone(ac,out,{t,f,d,g,a:.003});tone(ac,out,{t,f:f*2.76,d:d*.4,g:g*.22,a:.002});tone(ac,out,{t,f:f*5.4,d:d*.18,g:g*.08,a:.002});}
-/* 공통 소리 */
-const COMMON={
-  dex:{dur:1.1,play(ac,out){bell(ac,out,{f:1047,d:.6,g:.16});bell(ac,out,{t:.09,f:1568,d:.9,g:.15});}},                 // 새 도감 카드: 팅-팅 오름
-  secret:{dur:1.5,play(ac,out){[1319,1568,1976,2637].forEach((f,i)=>bell(ac,out,{t:i*.07,f,d:.9,g:.11}));                 // 비밀 발견: 반짝이는 오름 + 고운 쉬익
-    hiss(ac,out,{ft:'highpass',ff:6000,a:.3,d:.9,g:.05});}},
-  cut:{dur:.45,play(ac,out){hiss(ac,out,{ff:1800,ff2:4200,fq:.8,a:.05,d:.22,g:.22});hiss(ac,out,{t:.13,ff:3200,fq:1.2,d:.07,g:.08});}}, // 그림 컷: 종이 스치는 소리
-};
-export {COMMON,bell,env,hiss,noise,rr,tone};
+export {bell,env,hiss,noise,rr,tone};

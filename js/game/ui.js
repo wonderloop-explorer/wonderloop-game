@@ -152,7 +152,7 @@ const closers={};const cardCloser=(kind,fn)=>{closers[kind]=fn;}; // 다른 모�
 const nt=$('#wlNotice');let ntDone=null,ntCue=null,ntEnd=0;
 function notice({kicker='미션',title='',text='',icon=null}){return enqueue('notice',r=>{ntDone=r;nt.querySelector('.k').textContent=kicker;nt.querySelector('.t').textContent=title;nt.querySelector('.s').textContent=text;
   const img=nt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');nt.querySelector('.h').textContent=coarse?'화면을 누르면 닫혀요':'아무 키나 누르면 닫혀요';
-  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');block('notice',true);ntEnd=clock.t+6;sfx('sus');});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
+  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');block('notice',true);ntEnd=clock.t+6;sfx('mission-start');});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
 function closeNotice(why){if(cardOn!=='notice')return;nt.classList.remove('on');endCue(ntCue);ntCue=null;block('notice',false);const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
 const noticeShown=()=>cardOn==='notice';
 /* 비밀 카드 (숨겨진 비밀을 찾았을 때 — 개미굴 도감 비밀 카드 모양): 아무 키나 누르거나 단추로 닫힘 */
@@ -171,8 +171,8 @@ sc.querySelector('button').addEventListener('click',closeSecret);
 const ct=$('#wlCut');let ctDone=null,ctCue=null,ctEnd=0;
 function cut({src,alt='',sec=4.5,id=''}){return enqueue('cut',r=>{ctDone=r;const img=ct.querySelector('img');img.src=src;img.alt=alt;ct.setAttribute('aria-label',alt);
   ct.querySelector('p').textContent=coarse?'화면을 누르면 넘어가요':'누르거나 아무 키나 누르면 넘어가요';ctEnd=clock.t+sec;
-  ctCue=cue({kind:'card',who:'그림',id,text:alt,dur:0});ct.classList.add('on');block('cut',true);sfx('cut');});}
-function closeCut(){if(cardOn!=='cut')return;ct.classList.remove('on');sfx('cut',{gain:.6});endCue(ctCue);ctCue=null;block('cut',false);const d=ctDone;ctDone=null;cardDone();if(d)d();}
+  ctCue=cue({kind:'card',who:'그림',id,text:alt,dur:0});ct.classList.add('on');block('cut',true);sfx('card-cut');});}
+function closeCut(){if(cardOn!=='cut')return;ct.classList.remove('on');sfx('card-cut',{gain:.6});endCue(ctCue);ctCue=null;block('cut',false);const d=ctDone;ctDone=null;cardDone();if(d)d();}
 /* 화면 전환: transition(fn, {out:.6, hold:.2, in:.7, color:'#1e0e24'}) → 화면이 서서히 덮였다가(게임 시간) fn()을 부르고(프라미스면 끝날 때까지 기다림)
    잠시 뒤 다시 밝아진다(비밀 통로를 지나 다른 구역으로 같은 이동). 하는 동안 막힘('fade'). 영상에는 그리지 않는다(HTML) → 시점 기록 kind 'transition'으로 편집 때 같은 전환을 넣는다.
    움직임 줄이기 설정이면 덮고 밝아지는 시간을 짧게(0.15초). */
@@ -190,7 +190,7 @@ function tickFade(){if(!fade)return;const f=fade,e=clock.t-f.t0;
 const gt=$('#wlGet');let gtDone=null,gtCue=null,gtEnd=0;
 /* 아이템 획득 카드 — 같은 모양으로 스테이지 완료 안내도(sound·who만 바꿔) */
 let gtSpin=0;
-function itemCard({title='',text='',icon=null,frames=null,sec=2.8,sound='itemget',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
+function itemCard({title='',text='',icon=null,frames=null,sec=2.8,sound='item-get',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
   const img=gt.querySelector('img');clearInterval(gtSpin);gt.classList.toggle('spin',!!(frames&&frames.length));if(frames&&frames.length){let k=0;img.src=frames[0];if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gtSpin=setInterval(()=>{k=(k+1)%frames.length;img.src=frames[k];},90);}else if(icon)img.src=icon;else img.removeAttribute('src'); /* frames: 도는 물건(game/profile spinFrames) — 아이콘 대신 */gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
 function closeItemCard(){if(cardOn!=='item')return;clearInterval(gtSpin);gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
@@ -200,7 +200,7 @@ cardCloser('item',closeItemCard);
    통통 튀며 나타나고, 꽃 메달이 살짝 커졌다 돌아오고, 둘레로 반짝이가 흩어진다(짧은 효과음). sec초(기본 3.6, 게임 시간) 뒤 부드럽게 사라진다. 글자는 칸에 맞게 저절로 줄인다.
    막지 않는다. 카드 자리를 함께 써서 다른 카드와 겹치지 않는다. 시점 기록 kind 'card' who '완료' */
 const bd=$('#wlBadge');let bdDone=null,bdCue=null,bdEnd=0,bdOut=0;
-function stageBadge({img,stage='',next='',title=null,sub=null,sec=3.6,sound='success',box=[.128,.414,.868,.893],medal=[.4995,.2186,.13],ar=3.365}){
+function stageBadge({img,stage='',next='',title=null,sub=null,sec=3.6,sound='mission-clear',box=[.128,.414,.868,.893],medal=[.4995,.2186,.13],ar=3.365}){
   const T=title??(stage?stage+' 탐험 완료!':''),S=sub??(next?'다음 목적지: '+next:'');
   return enqueue('badge',r=>{bdDone=r;bd.style.setProperty('--ar',ar);const im=bd.querySelector('.bg');im.src=img;im.alt=T;
     const tx=bd.querySelector('.txt');tx.style.cssText=`left:${box[0]*100}%;top:${box[1]*100}%;width:${(box[2]-box[0])*100}%;height:${(box[3]-box[1])*100}%`;
@@ -229,7 +229,7 @@ function profileCard({name='',intro='',likes='',quote='',img=null,bg=null,kicker
 function closeProfile(){if(cardOn!=='profile')return;pf.classList.remove('on');popShown('prof',false);root.classList.remove('prof-on');block('profile',false);endCue(pfCue);pfCue=null;const d=pfDone;pfDone=null;cardDone();if(d)d();}
 const profileShown=()=>cardOn==='profile';
 cardCloser('profile',closeProfile);
-pf.querySelector('button').addEventListener('click',()=>{sfx('click');closeProfile();});
+pf.querySelector('button').addEventListener('click',()=>{sfx('ui-click');closeProfile();});
 // 도감 카드처럼 단추로 닫는다 — 키보드는 E·Enter·Space·Esc(0.6초 뒤부터), 뒤 어두운 곳을 눌러도
 window.addEventListener('keydown',e=>{if(cardOn!=='profile'||performance.now()-cardOpenT<=600)return;if(['KeyE','Enter','Space','Escape','NumpadEnter'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();closeProfile();}},true);
 pf.addEventListener('pointerdown',e=>{if(e.target===pf&&performance.now()-cardOpenT>600)closeProfile();});
@@ -242,10 +242,10 @@ cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));
 /* 결과 화면: result({title,text,buttons:[{label,act}],note}) → 누른 단추의 번호로 resolve */
 const rs=$('#wlResult');let rsCue=null;
-function result({title,text,buttons=[],note='',sound='success'}){return enqueue('result',r=>{if(sound)sfx(sound); // 개미굴: 통과하면 success (잡혔을 때 등은 sound:'caught' 또는 null)
+function result({title,text,buttons=[],note='',sound='mission-clear'}){return enqueue('result',r=>{if(sound)sfx(sound); // 개미굴: 통과하면 success (잡혔을 때 등은 sound:'ant-caught' 또는 null)
   rs.querySelector('h2').textContent=title;rs.querySelector('p').textContent=text;rs.querySelector('p.sec').textContent=note; // note: 비밀 개수 줄 (codex.secretLine())
   ['.b1','.b2'].forEach((s,i)=>{const b=rs.querySelector(s),B=buttons[i];b.style.display=B?'':'none';if(!B)return;b.textContent=B.label;
-    b.onclick=()=>{sfx('click');rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;try{B.act&&B.act();}finally{cardDone();r(i);}};});
+    b.onclick=()=>{sfx('ui-click');rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;try{B.act&&B.act();}finally{cardDone();r(i);}};});
   rsCue=cue({kind:'card',who:'결과',text:title,sub:text,dur:0});
   rs.style.display='grid';block('result',true);});}
 const resultShown=()=>cardOn==='result';

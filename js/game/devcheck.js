@@ -5,9 +5,14 @@
       원더룹 걸음(07 DRV.walk, 게임 3.15m/초)으로 몇 초인지 보여 준다. 세 번째 누르면 새로 시작.
    ㉢ 크기 확인: 지금 구역의 주민·생물(대화 상대 NPC + 구역이 userData.wlCreature='이름'을 붙인 물체)의 키를 원더룹 키(탈 더듬이를 뺀 머리 꼭대기까지 = 1) 대비 비율로 목록 —
       0.6보다 작거나 1.5보다 크면 '!' 표시. 배경·건물·식물 같은 공간 요소는 넣지 않는다(이름표를 붙이지 않으니 저절로 빠짐).
+   ㉣ 굴러가는 물건 시험(2026-11-05, game/incident): 원더룹 앞에 바구니 하나와 공 셋 — 바구니가 덜컹(event-clunk) 하며 사건 순간 카메라(show, 1.1초)가 비추고,
+      공이 서로 다른 쪽으로 천천히 굴러간다(scatter). 걸어가 닿으면 톡 하고 바구니로. 다 모으면 반짝임 + 2초 뒤 치움. 다시 누르면 처음부터.
    08이 initDevcheck({scene, camera, renderer, WL, blocked, groundY, walk:()=>[걷기, 대쉬], zone:()=>지금 구역}) — 촬영 모드에서는 부르지 않는다. 시험 도구 window.wlDev. */
 import * as THREE from 'three';
 import {npcList} from './dialog.js';
+import {scatter,show} from './incident.js';
+import {toast} from './ui.js';
+import {sfx} from './sound.js';
 let C=null,panel=null,overlay=null,meas=null,measOn=false,pts=[],line=null,marks=[];
 const CELL=.2;
 function initDevcheck(c){C=c;}
@@ -74,6 +79,26 @@ function sizeList(){const WH=wlHeight(),seen=new Set(),L=[];
 function toggleSize(on=!sizeText){if(!on){sizeText='';showPanel();return false;}const S=sizeList();
   sizeText=`크기 확인 — 원더룹 키 ${S.wl.toFixed(2)}m = 1 (주민·생물 0.6~1.5)\n`+(S.list.length?S.list.map(x=>`${x.bad?'! ':'  '}${x.name}  ${x.r.toFixed(2)}${x.bad?(x.r<.6?' — 너무 작아요':' — 너무 커요'):''}`).join('\n'):'이 구역에는 주민·생물이 없어요');
   showPanel();return S;}
-function clearDevcheck(){if(overlay)toggleBounds(false);if(measOn){pts=[];clearMeas();meas=null;}if(sizeText)sizeText='';showPanel();} // 구역을 바꿀 때
-window.wlDev={bounds:toggleBounds,measure:p=>{if(!measOn)toggleMeasure(true);return measure(p);},measureOn:toggleMeasure,size:toggleSize,sizeList,wlHeight};
-export {clearDevcheck,initDevcheck,toggleBounds,toggleMeasure,toggleSize};
+/* ㉣ 굴러가는 물건 시험 */
+let RT=null;
+function endRoll(){if(!RT)return;if(RT.h)RT.h.stop();RT.g.removeFromParent();RT.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});clearTimeout(RT.tm);RT=null;}
+function rollTest(){endRoll();const W=C.WL,P=W.position;let a=W.rotation.y,bx=0,bz=0;
+  for(const da of [0,.6,-.6,1.2,-1.2,Math.PI]){const t=a+da,x=P.x+Math.sin(t)*1.6,z=P.z+Math.cos(t)*1.6;if(!C.blocked(x,z)&&!C.blocked(x+.4,z)&&!C.blocked(x-.4,z)&&!C.blocked(x,z+.4)&&!C.blocked(x,z-.4)){a=t;bx=x;bz=z;break;}}
+  if(!bx&&!bz){toast('바구니를 놓을 빈자리가 없어요');return false;}
+  const g=new THREE.Group(),y0=C.groundY(bx,bz)||0;g.position.set(bx,y0,bz);C.scene.add(g);
+  const bs=new THREE.Mesh(new THREE.CylinderGeometry(.42,.32,.36,10,1,true),new THREE.MeshStandardMaterial({color:'#b98552',roughness:.9,side:THREE.DoubleSide,flatShading:true}));bs.position.y=.18;g.add(bs);
+  const bt=new THREE.Mesh(new THREE.CircleGeometry(.32,10),new THREE.MeshStandardMaterial({color:'#8a5f3a',roughness:.9}));bt.rotation.x=-Math.PI/2;bt.position.y=.02;g.add(bt);
+  const balls=['#e8705a','#f2c94c','#6fa8dc'].map((c,i)=>{const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.22,1),new THREE.MeshStandardMaterial({color:c,roughness:.7,flatShading:true}));
+    m.position.set((i-1)*.22,.42+(i===1?.12:0),i===1?-.05:.06);m.castShadow=true;g.add(m);return m;});
+  RT={g,h:null,tm:0};const st=RT;let k=0;
+  const away=Math.atan2(bx-P.x,bz-P.z); // 원더룹에서 바구니 쪽 = 굴러가는 쪽
+  const wob=()=>{if(RT!==st)return;k++;g.rotation.z=Math.sin(k*1.9)*.12*(1-k/18);if(k<18)requestAnimationFrame(wob);else{g.rotation.z=0;go();}};
+  const go=()=>{show({at:[bx,y0+.4,bz],dist:5.5,sec:1.1,sound:'event-clunk'});
+    st.h=scatter({items:balls,center:[bx,bz],dir:away,spread:2.6,dist:[2.4,3.4],radius:.22,
+      onBack:(i,n,N)=>toast(n<N?`공을 모아 줘요 (${n}/${N})`:'다 모았어요!'),
+      onDone:()=>{sfx('event-sparkle');st.tm=setTimeout(()=>{if(RT===st)endRoll();},2000);}});
+    toast('공이 굴러가요! 걸어가 닿으면 바구니로 돌아가요');};
+  requestAnimationFrame(wob);return true;}
+function clearDevcheck(){endRoll();if(overlay)toggleBounds(false);if(measOn){pts=[];clearMeas();meas=null;}if(sizeText)sizeText='';showPanel();} // 구역을 바꿀 때
+window.wlDev={roll:rollTest,get rolling(){return RT&&RT.h?RT.h.left:null;},bounds:toggleBounds,measure:p=>{if(!measOn)toggleMeasure(true);return measure(p);},measureOn:toggleMeasure,size:toggleSize,sizeList,wlHeight};
+export {rollTest,clearDevcheck,initDevcheck,toggleBounds,toggleMeasure,toggleSize};

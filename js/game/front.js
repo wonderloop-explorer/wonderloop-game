@@ -185,10 +185,10 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   // 오른쪽 위 메뉴(개미굴 #uiBtn): 노란 '☰ 메뉴' → 소리·옷 갈아입기·조작법 칩
   menu=document.createElement('div');menu.id='wlMenu';const mb=document.createElement('button');mb.type='button';mb.className='wl-chip y';mb.setAttribute('aria-expanded','false');
   const ls=document.createElement('div');ls.className='ls';const chip=(t,on)=>{const b=document.createElement('button');b.type='button';b.className='wl-chip';b.textContent=t;b.addEventListener('click',e=>{b.blur();on(e);});return b;};
-  const snd=chip('',()=>{setMuted(!soundSettings.muted);sfx('click');sndLabel();}),sndLabel=()=>{snd.textContent=soundSettings.muted?'소리 꺼짐':'소리 켜짐';};
-  ls.append(snd,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('click');setMenu(false);showHelp(!helpShown());}));
+  const snd=chip('',()=>{setMuted(!soundSettings.muted);sfx('ui-click');sndLabel();}),sndLabel=()=>{snd.textContent=soundSettings.muted?'소리 꺼짐':'소리 켜짐';};
+  ls.append(snd,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
   const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on)sndLabel();};
-  mb.addEventListener('click',()=>{sfx('click');mb.blur();setMenu(!menu.classList.contains('open'));});setMenu(false);menu.append(mb,ls);
+  mb.addEventListener('click',()=>{sfx('ui-click');mb.blur();setMenu(!menu.classList.contains('open'));});setMenu(false);menu.append(mb,ls);
   // 왼쪽 위 가방 단추(개미굴 '도감 0/11' 노란 칩 자리): 받은 물건을 줄줄이 늘어놓지 않고 한 단추 → 탐험 가방 창
   items=document.createElement('div');items.id='wlItems';corner.append(items,menu);renderItems();
   {const tb=document.getElementById('wlTool');if(tb)items.appendChild(tb);} // 세계 도구 단추(랜턴 켜고 끄기 — 개미굴 #leftCol처럼 가방 단추 바로 아래, 겹치지 않게)
@@ -229,8 +229,8 @@ function renderWorldBag(L){const W=curWorld();bag.innerHTML='';const H=document.
   L.forEach(i=>d.appendChild(card({got:i.got,img:i.img,title:i.name,text:i.got?i.f:i.where+'에서 받을 수 있어요'})));
   H.appendChild(pbtn('close wl-pop-foot','닫기',()=>closeBag()));bag.appendChild(H);}
 function openBag(){build();if(bagOn||frontOn||wardOn||storyOn)return;if(blocking('talk')||cardShown()){toast('지금은 가방을 열 수 없어요');return;}
-  bagOn=true;sfx('dex');renderBag();bag.classList.add('on');popShown('bag',true);document.body.classList.add('wl-bag-on');block('bag',true);if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();setTimeout(()=>{const b=bag.querySelector('.close');if(b&&!coarse)b.focus({preventScroll:true});},50);}
-function closeBag(){if(!bagOn)return;bagOn=false;popShown('bag',false);sfx('click');bag.classList.remove('on');document.body.classList.remove('wl-bag-on');block('bag',false);}
+  bagOn=true;sfx('ui-book');renderBag();bag.classList.add('on');popShown('bag',true);document.body.classList.add('wl-bag-on');block('bag',true);if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();setTimeout(()=>{const b=bag.querySelector('.close');if(b&&!coarse)b.focus({preventScroll:true});},50);}
+function closeBag(){if(!bagOn)return;bagOn=false;popShown('bag',false);sfx('ui-close');bag.classList.remove('on');document.body.classList.remove('wl-bag-on');block('bag',false);}
 /* ---------- 첫 화면 ---------- */
 function art(F){const box=document.createElement('div');box.className='art';
   if(F.img){const r=new Image(),l=new Image();r.className='rib';l.className='logo';r.alt='';l.alt=[F.ribbon,F.logo].filter(Boolean).join(' ');r.src=F.img.ribbon;l.src=F.img.logo;box.append(l,r);
@@ -245,12 +245,12 @@ function renderFront(){const F=zone().front;el.innerHTML='';delete el.dataset.as
   const top=document.createElement('div');top.className='top';top.appendChild(art(F));
   const p=document.createElement('p');p.className='sub';p.textContent=F.intro||F.sub||'';top.appendChild(p);
   const B=document.createElement('div');B.className='btns';
-  if(hasProgress())B.append(pbtn('go','이어서 하기',()=>begin(false)),pbtn('gh','새로 시작',()=>{sfx('click');el.dataset.ask='1';el.querySelector('.ask .no').focus({preventScroll:true});}));
-  else B.appendChild(pbtn('go','새로 시작',()=>{sfx('click');openWardrobe('start');}));
-  B.appendChild(pbtn('gh','조작법',()=>{sfx('click');showHelp(true);}));top.appendChild(B);
+  if(hasProgress())B.append(pbtn('go','이어서 하기',()=>begin(false)),pbtn('gh','새로 시작',()=>{sfx('ui-click');el.dataset.ask='1';el.querySelector('.ask .no').focus({preventScroll:true});}));
+  else B.appendChild(pbtn('go','새로 시작',()=>{sfx('ui-click');openWardrobe('start');}));
+  B.appendChild(pbtn('gh','조작법',()=>{sfx('ui-click');showHelp(true);}));top.appendChild(B);
   const tip=document.createElement('p');tip.className='tip';tip.innerHTML='소리와 함께 즐겨 주세요<span class="sep"> · </span>소리가 안 들리면 조작법을 봐 주세요';top.appendChild(tip);
   const ask=document.createElement('div');ask.className='ask';ask.innerHTML='<p>처음부터 다시 할까요?<br>받은 물건과 만난 친구 기록이 지워져요.</p>';
-  const ar=document.createElement('div');ar.className='row';ar.append(pbtn('yes','처음부터 하기',()=>{sfx('click');fresh=true;delete el.dataset.ask;openWardrobe('start');}),pbtn('no','아니요',()=>{sfx('click');delete el.dataset.ask;}));ask.appendChild(ar);top.appendChild(ask);
+  const ar=document.createElement('div');ar.className='row';ar.append(pbtn('yes','처음부터 하기',()=>{sfx('ui-click');fresh=true;delete el.dataset.ask;openWardrobe('start');}),pbtn('no','아니요',()=>{sfx('ui-click');delete el.dataset.ask;}));ask.appendChild(ar);top.appendChild(ask);
   el.append(top);}
 let fresh=false;
 /* 첫 화면 뒤 카메라: 구역 정보 titleView — {from:[x,y,z], r, y, speed, a0}면 카메라는 그 자리(트인 곳 — 물 위 등)에 두고 보는 쪽만 천천히 돌아본다(가까운 큰 잎이 화면을 덮지 않게),
@@ -266,7 +266,7 @@ function openTitle(W){build();frontOn=true;document.body.classList.add('wl-front
   const go=async fr=>{playWorldMusic(W);
     if(fr){if(busy)return;busy=true;try{resetAll();if(restart)await restart();startTime();playWorldMusic(W);}finally{busy=false;}} // 처음부터 하기(2026-11-04): 기록을 지우고 구역을 같은 그림으로 다시 만드는 일을 여기서 — '모험 시작' 때 화면을 까맣게 덮지 않고 카메라만 내려오게(다시 만드는 짧은 멈춤은 타이틀 위에서)
     if(worldX()||(zone().front&&zone().front.explorer)){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
-  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('click');go(false);},onContinue:()=>{playWorldMusic(W);begin(false);},onFresh:()=>{sfx('click');go(true);},onHow:()=>{sfx('click');showHelp(true);},onClick:()=>sfx('click')});
+  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('ui-click');go(false);},onContinue:()=>{playWorldMusic(W);begin(false);},onFresh:()=>{sfx('ui-click');go(true);},onHow:()=>{sfx('ui-click');showHelp(true);},onClick:()=>sfx('ui-click')});
   document.querySelector('.wlg').appendChild(tEl);if(tEl._place)tEl._place();
   titleCam(W);
   return true;} // 개미굴처럼 단추에 미리 초점을 주지 않는다(Tab으로 옮겨 가면 초점 테두리가 보임)
@@ -277,7 +277,7 @@ const backToFront=()=>{if(tEl){tEl.hidden=false;titleCam(WORLD);}else{el.classLi
 function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!zone().front)return false;build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');
   startTime();renderFront();el.classList.add('on');orbit();setTimeout(()=>{const b=el.querySelector('.go');if(b&&!coarse)b.focus({preventScroll:true});},50);return true;}
 function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
-async function begin(fr){if(busy)return;busy=true;sfx('click');const W=curWorld();
+async function begin(fr){if(busy)return;busy=true;sfx('ui-click');const W=curWorld();
   if(W){ // 처음부터 하기도 같은 연출(구역은 '처음부터 하기'를 누를 때 이미 다시 만들었다 — openTitle go) // 시리즈 공통 틀(개미굴 beginGame 그대로, 2026-11-04): 화면을 까맣게 덮지 않고 — 원더룹이 카메라를 등지고 서면 카메라가 이야기 소개 자리에서 원더룹 등 뒤로 휙 내려온다(따라가기 카메라가 지금 자리에서 이어 받아 약 0.5초)
     const P=ctx.WL.position,c=ctx.camera.position;const ry=Math.atan2(P.x-c.x,P.z-c.z);ctx.WL.rotation.y=ry;closeFront();
     VIEW.start({from:[P.x-Math.sin(ry)*7,P.y+.85+1.9,P.z-Math.cos(ry)*7]});}
@@ -306,7 +306,7 @@ function openIntro(W){const L=W.introNarration;storyOn=true;let i=0,full='',show
     bs.append(pbtn('skip','건너뛰기',()=>end()),pbtn('next',lastS?'모험 시작':'다음',()=>{if(typing){typing=false;tx.textContent=full;return;}if(lastS)end();else{i++;st=0;show();}}));
     const d=document.createElement('div');d.className='dots';L.forEach((_,j)=>{const e=document.createElement('i');if(j===i)e.className='on';d.appendChild(e);});
     cd.append(tx,bs,d);story.appendChild(cd);setTimeout(()=>{const b=story.querySelector('.next');if(b&&!coarse)b.focus({preventScroll:true});},30);};
-  const show=()=>{full=L[i].text;shown=0;typing=true;draw();sfx('blip');say();};
+  const show=()=>{full=L[i].text;shown=0;typing=true;draw();sfx('talk-next');say();};
   const end=()=>{if(!storyOn)return;storyOn=false;stopVO();story.classList.remove('on');begin(fresh);};
   story._key=e=>{if(!storyOn)return;if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();end();}};
   show();story.classList.add('on');}
@@ -320,7 +320,7 @@ function openStory(){{const W=worldX();if(W&&W.introNarration&&W.introNarration.
   else orbit();
   const draw=()=>{story.innerHTML='';const c=document.createElement('div');c.className='scard';const t=document.createElement('p');t.className='stext';t.textContent=L[i];
     const bs=document.createElement('div');bs.className='sbtns';const last=i===L.length-1;
-    bs.append(pbtn('skip','건너뛰기',()=>end()),pbtn('next',last?'모험 시작!':'다음',()=>{sfx('blip');if(last)end();else{i++;draw();}}));
+    bs.append(pbtn('skip','건너뛰기',()=>end()),pbtn('next',last?'모험 시작!':'다음',()=>{sfx('talk-next');if(last)end();else{i++;draw();}}));
     const d=document.createElement('div');d.className='dots';L.forEach((_,j)=>{const e=document.createElement('i');if(j===i)e.className='on';d.appendChild(e);});
     c.append(t,bs,d);story.appendChild(c);setTimeout(()=>{const b=story.querySelector('.next');if(b&&!coarse)b.focus({preventScroll:true});},30);};
   const end=()=>{if(!storyOn)return;storyOn=false;story.classList.remove('on');begin(fresh);};
@@ -344,19 +344,19 @@ function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),
   B.append(k,nl,ni);
   if(E.bio){const b=document.createElement('p');b.className='bio';b.textContent=E.bio;B.appendChild(b);}
   if(E.goal){const g=document.createElement('div');g.className='goal';const sp=document.createElement('span');sp.textContent='목표';g.append(sp,E.goal);B.appendChild(g);}
-  if(X){const S=wsave(),pickW=(k,i,snd='click')=>{S[k]=i;save();applyWorldLook(U,X);sfx(snd);faceCam();}; // 탐험 준비: 탈 색 → 옷 조합 → 장식 (개미굴 #show 순서)
+  if(X){const S=wsave(),pickW=(k,i,snd='ui-click')=>{S[k]=i;save();applyWorldLook(U,X);sfx(snd);faceCam();}; // 탐험 준비: 탈 색 → 옷 조합 → 장식 (개미굴 #show 순서)
     B.append(lab(X.talLabel||'탈 색'),opts(X.talColors.map(h=>h[0]),S.tal|0,i=>pickW('tal',i),X.talColors.map(h=>h[1])));
-    const C=U.outfitCombos||[];B.append(lab('옷 조합'),opts(C.map(c=>c.name),look.combo|0,i=>{look.combo=i;save();U.setCombo(i);sfx('click');faceCam();},C.map(c=>[c.top,c.scarf])));
+    const C=U.outfitCombos||[];B.append(lab('옷 조합'),opts(C.map(c=>c.name),look.combo|0,i=>{look.combo=i;save();U.setCombo(i);sfx('ui-click');faceCam();},C.map(c=>[c.top,c.scarf])));
     const L=decoList2(X),got=L.map(d=>!d.id||itemGot(X,d)),cur=got[S.deco|0]?S.deco|0:0;
-    B.append(lab('장식'),opts(L.map((d,i)=>got[i]?{name:d.name}:{name:'?',q:true,label:`잠김 — ${d.stage?d.stage+'번째 스테이지':'스테이지'}에서 받으면 열려요`}),cur,i=>pickW('deco',i,'pickup')));
+    B.append(lab('장식'),opts(L.map((d,i)=>got[i]?{name:d.name}:{name:'?',q:true,label:`잠김 — ${d.stage?d.stage+'번째 스테이지':'스테이지'}에서 받으면 열려요`}),cur,i=>pickW('deco',i,'item-pickup')));
     if(got.some(g=>!g)){const n=document.createElement('p');n.className='acclock';n.textContent='? 칸은 스테이지에서 받은 물건이에요. 받으면 달아 볼 수 있어요';B.appendChild(n);}}
   else{
-  B.append(lab('조끼 색'),opts(U.vestColors||[],U.vestIdx|0,i=>{look.vest=i;U.setVest(i);save();sfx('click');},U.vestHex),
-    lab('목수건 색'),opts(U.scarfColors||[],U.scarfIdx|0,i=>{look.scarf=i;U.setScarf(i);save();sfx('click');},U.scarfHex));
+  B.append(lab('조끼 색'),opts(U.vestColors||[],U.vestIdx|0,i=>{look.vest=i;U.setVest(i);save();sfx('ui-click');},U.vestHex),
+    lab('목수건 색'),opts(U.scarfColors||[],U.scarfIdx|0,i=>{look.scarf=i;U.setScarf(i);save();sfx('ui-click');},U.scarfHex));
   if(E.deco&&E.deco.list){const D=E.deco.list.map(d=>({name:d.name,lock:d.flag&&!flags[d.flag]?d.lock:null}));const cur=Math.max(0,E.deco.list.findIndex(d=>d.hood===(look.deco||E.deco.list[0].hood)));
-    B.append(lab(E.deco.label||'장식'),opts(D,cur,i=>{const d=E.deco.list[i];look.deco=d.hood;save();if(U.setHood)U.setHood(d.hood);sfx('click');}));
+    B.append(lab(E.deco.label||'장식'),opts(D,cur,i=>{const d=E.deco.list[i];look.deco=d.hood;save();if(U.setHood)U.setHood(d.hood);sfx('ui-click');}));
     const lk=E.deco.list.find(d=>d.flag&&!flags[d.flag]);if(lk){const n=document.createElement('p');n.className='acclock';n.textContent=lk.lock;B.appendChild(n);}}}
-  const faces=U.exprNames||[];B.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('blip');}));
+  const faces=U.exprNames||[];B.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('talk-next');}));
   if(E.map){const cur=(zone().root&&zone().root.name||'').replace(/^zone:/,'');B.appendChild(lab('모험 지도'));const ol=document.createElement('ol');ol.className='map';
     E.map.forEach(([n,id])=>{const li=document.createElement('li');li.textContent=n;if(id)li.className='on';if(id===cur)li.setAttribute('aria-current','true');ol.appendChild(li);});B.appendChild(ol);}
   const spin=document.createElement('div');spin.className='spin';spin.append(pbtn('','↺ 돌려 보기',()=>{ctx.WL.rotation.y+=Math.PI/4;spinHold=performance.now();}),pbtn('','돌려 보기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;spinHold=performance.now();}));B.appendChild(spin);
@@ -376,7 +376,7 @@ function showcase(){const W=ctx.WL,cam=ctx.camera;let dx=cam.position.x-W.positi
 function canWear(){const U=ctx.WL.userData;return !(blocking('talk')||blocking('fade')||cardShown()==='result'||cardShown()==='cut'||U.riding||(U.vert&&U.vert.air));}
 function openWardrobe(mode='game'){build();if(wardOn||bagOn||storyOn)return;const fromFront=mode==='start'||frontOn;if(!fromFront&&!canWear()){toast('지금은 옷을 갈아입을 수 없어요');return;}
   if(frontOn&&mode!=='start')mode='front';
-  wardOn=true;wardFrom=mode;document.body.classList.add('wl-ward-on');popShown('ward',true);sfx('pickup');if(frontOn){el.classList.remove('on');if(tEl)tEl.hidden=true;}else{block('ward',true);setHints(false);}
+  wardOn=true;wardFrom=mode;document.body.classList.add('wl-ward-on');popShown('ward',true);sfx('ui-open');if(frontOn){el.classList.remove('on');if(tEl)tEl.hidden=true;}else{block('ward',true);setHints(false);}
   corner.classList.remove('on');if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();renderWard(mode);ward.classList.add('on');showcase();
   input.dragHook=dx=>{ctx.WL.rotation.y+=dx*.012;spinHold=performance.now();};spin();}
 /* 탐험 준비 창이 열려 있는 동안 원더룹이 제자리에서 천천히 돈다(개미굴 showAng — 초당 0.35라디안). 끌거나 돌려 보기 단추를 누르면 2.5초 쉬었다 다시 */
@@ -385,7 +385,7 @@ let faceTo=null;function faceCam(){const W=ctx.WL,c=ctx.camera;faceTo=Math.atan2
 let spinHold=0,spinRaf=0;function spin(){cancelAnimationFrame(spinRaf);let last=performance.now();const red=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const f=now=>{if(!wardOn)return;spinRaf=requestAnimationFrame(f);const dt=Math.min(.1,(now-last)/1000);last=now;const W=ctx.WL;if(faceTo!=null){let d=faceTo-W.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));W.rotation.y+=d*Math.min(1,dt*8);if(Math.abs(d)<.01)faceTo=null;}
     else if(!red&&now-spinHold>2500)W.rotation.y+=dt*.35;};spinRaf=requestAnimationFrame(f);}
-function closeWardrobe(go=false){if(!wardOn)return;wardOn=false;document.body.classList.remove('wl-ward-on');popShown('ward',false);ward.classList.remove('on');input.dragHook=null;const U=ctx.WL.userData;if(U.setExpr)U.setExpr('기본');sfx('click');
+function closeWardrobe(go=false){if(!wardOn)return;wardOn=false;document.body.classList.remove('wl-ward-on');popShown('ward',false);ward.classList.remove('on');input.dragHook=null;const U=ctx.WL.userData;if(U.setExpr)U.setExpr('기본');sfx('ui-click');
   if(wardFrom==='start'){if(go)openStory();else backToFront();}
   else if(wardFrom==='front')backToFront();else{block('ward',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}}
 function toggleWardrobe(){if(wardOn)closeWardrobe();else openWardrobe('game');}

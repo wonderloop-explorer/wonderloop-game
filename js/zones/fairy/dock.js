@@ -344,7 +344,7 @@ const secN=()=>SECRETS.filter(S=>G.profile.seen(S.id)).length;
 function secretTick(t){const W=WL(),cam=G.view.camera;SECRETS.forEach((S,j)=>{S.m.tick(1/60,t);if(MOB&&cam)S.m.root.visible=Math.hypot(cam.position.x-S.pos[0],cam.position.z-S.pos[2])<13;if(!W||G.profile.seen(S.id)){S.star.visible=false;return;}const p=S.m.root.position,d=Math.hypot(W.position.x-p.x,W.position.z-p.z);
   S.star.visible=d<6.5&&G.ui.hintsVisible();if(S.star.visible){const k=.5+.5*Math.sin(t*3.1+j),sc=.35+.35*k*k;S.star.scale.set(sc,sc,1);S.star.material.rotation=t*.6;S.star.material.opacity=.45+.55*k;}
   if(Math.hypot(W.position.x-S.at[0],W.position.z-S.at[1])<1.6&&!G.core.blocking()&&!G.ui.cardShown()&&!(W.userData.vert&&W.userData.vert.air)){
-    const img=G.profile.found(S.id,S.m.root);G.sound.sfx('dex');
+    const img=G.profile.found(S.id,S.m.root);G.sound.sfx('card-new');
     G.ui.secret({kicker:'숨겨진 비밀 발견!',title:S.title,text:S.text,icon:img,count:`발견한 비밀 ${secN()}/${SECRETS.length}`,button:'가방에 넣기'});}});}
 /* ---------- 이슬배 (원더룹이 타는 길쭉한 나뭇잎배, 2026-11-02 그릇 배 대신) + 굴러오는 큰 이슬방울 ----------
    원더룹은 앞쪽에 앉고(ride pose '앉기'), 사공은 뒤쪽 끝에 서서 배 옆 바깥으로 노를 젓는다(노 끝이 물에 닿는 곳에 작은 물결). 굴러온 이슬방울은 배 가운데에 담겨 반짝인다 */
@@ -386,7 +386,7 @@ const villagers=VILL.map((d,i)=>{const v=villager(d.kind,d.o);bakeFairy(v,{into:
   st.npc=G.dialog.npc({name:d.name,repeatLine:d.repeat,root:v.root,bubbleY:d.kind==='mushroom'?.75:.95,variants:[{when:()=>true,lines:d.lines}],onDone:()=>{if(!st.talked){st.talked=true;villTalked();}}});
   return st;});
 let talkedN=0;
-function villTalked(){talkedN++;if(st.phase==='arrive'&&talkedN<=2){q(talkedN<2?`마을 요정들과 이야기해요 (${talkedN}/2)`:'선착장의 사공 요정에게 가 봐요');if(talkedN===2)G.sound.sfx('chime');}}
+function villTalked(){talkedN++;if(st.phase==='arrive'&&talkedN<=2){q(talkedN<2?`마을 요정들과 이야기해요 (${talkedN}/2)`:'선착장의 사공 요정에게 가 봐요');if(talkedN===2)G.sound.sfx('event-sparkle');}}
 function tickVillagers(dt,t){const W=WL(),cam=G.view.camera;villagers.forEach(s=>{const {d,v}=s,p=v.root.position;let moving=false;
   const near=W&&Math.hypot(W.position.x-p.x,W.position.z-p.z)<2;
   if(near){const ty=Math.atan2(W.position.x-p.x,W.position.z-p.z);v.root.rotation.y+=Math.atan2(Math.sin(ty-v.root.rotation.y),Math.cos(ty-v.root.rotation.y))*Math.min(1,dt*6);}
@@ -419,9 +419,9 @@ function afterBoatman(){const meet=()=>G.profile.meet('boatman',boatman.root);
 CLOVERS.forEach(c=>G.interact.add({root:c.g,at:[c.x,zS(c.x)+.55],face:[c.x,c.g.position.z],label:'돌리기',action:'돌리기',dur:1.5,once:true,near:2.6,
   when:()=>st.phase==='clovers',
   onStart:()=>{c.u=0;},
-  onDone:()=>{c.done=true;fixed++;G.sound.sfx('chime');q(fixed<3?`클로버 잎 돌리기 (${fixed}/3)`:'물길이 열렸어요!');if(fixed===3)openChannel();}}));
+  onDone:()=>{c.done=true;fixed++;G.sound.sfx('event-sparkle');q(fixed<3?`클로버 잎 돌리기 (${fixed}/3)`:'물길이 열렸어요!');if(fixed===3)openChannel();}}));
 function openChannel(){st.phase='rolling';G.dialog.say('사공 요정','물길이 열렸다! 저기 봐, 이슬방울이 굴러온다!',3);
-  drop={t:0};bigDrop.visible=true;G.sound.sfx('whoosh');
+  drop={t:0};bigDrop.visible=true;G.sound.sfx('event-whoosh');
   // 물길이 열리면 카메라가 원더룹 대신 굴러오는 이슬방울을 따라 비추고, 나뭇잎배에 퐁 들어간 뒤 0.8초 있다가 원더룹 쪽으로 돌아온다(2026-11-02)
   dropCam=-1;G.view.hold(()=>{if(dropCam===0)return null;const p=bigDrop.visible?bigDrop.position:boat.position;const asp=G.view.camera.aspect,K=asp<1.25?Math.min(1.6,(1.25/asp)**.6):1,fx=p.x+5.2*K;return {at:[p.x,.35,p.z],from:[fx,2.4,cz(fx)+.6]};});} // 물길 위(소품이 없는 곳)에서 굴러오는 쪽을 마주 보며
 let dropCam=0; // -1 굴러오는 중, 양수 = 배에 들어간 뒤 남은 초
@@ -438,7 +438,7 @@ function openSpot(cx,cz,{prefer=[1,0],d0=1,d1=1.5,r=.38,avoid=[]}={}){let best=n
   for(let i=0;i<48;i++){const a=pa+(i%2?1:-1)*Math.ceil(i/2)*PI/24;for(const d of [d0,(d0+d1)/2,d1]){const x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d;if(!free(x,z))continue;
       const sc=-Math.abs(Math.atan2(Math.sin(a-pa),Math.cos(a-pa)))-Math.abs(d-1.2)*.3;if(sc>bs){bs=sc;best=[x,z];}}}
   return best;}
-function startRide(){st.phase='riding';q('');boatman.wave(false);G.sound.sfx('pop');G.sound.sfx('whoosh',{minor:true}); // 탈 때 '퐁'(배에 올라탐) + 물 가르는 소리
+function startRide(){st.phase='riding';q('');boatman.wave(false);G.sound.sfx('event-pop');G.sound.sfx('event-whoosh',{minor:true}); // 탈 때 '퐁'(배에 올라탐) + 물 가르는 소리
   // 사공은 이슬배로 옮겨 타고 함께 간다
   bmG.visible=false;const bm2=fairy('boatman');bm2.root.position.set(0,hull.userData.floor(-.66),-.66*BL/2);bm2.root.scale.setScalar(.95);boat.add(bm2.root); // 사공은 배 뒤쪽 끝(노 젓는 자리), 원더룹은 앞쪽에 앉는다(ride fwd·pose)
   {const oar=bm2.root.userData.oar;bm2.arms[1].add(oar);oar.position.set(0,-.17,.03);}rower=bm2; // 배에서는 노를 왼손(+x, 마을 반대쪽 남쪽 강가)으로 — 카메라도 그쪽에서 봐서 마을 집·꽃지붕 속을 지나가지 않게
@@ -480,7 +480,7 @@ const INTRO='intro:fairy-compass';let intro=null;
 if(!G.state.flags[INTRO]&&!G.state.flags['meet:'+FAIRY_WORLD.world+':boatman']&&st.phase==='arrive'){let t=0,line=null;const glow=G.fx.particles({parent:root,n:14,box:[.08,.05,.08],vel:[0,.35,0],sway:.15,color:'#fff0b0',size:.07,life:[.5,1],additive:true,rate:0,seed:79});glow.points.visible=false;
   intro={tick(dt){const W=WL();if(!W)return;t+=dt;
       if(t>1.2&&!line&&!G.core.blocking()&&G.state.flags.compass&&W.userData.charm&&W.userData.charm.g.visible){G.state.setFlag(INTRO,true);const P=new THREE.Vector3();bmG.getWorldPosition(P);
-        W.userData.charmPoint={x:P.x,z:P.z,sec:3.2};G.sound.sfx('chime');
+        W.userData.charmPoint={x:P.x,z:P.z,sec:3.2};G.sound.sfx('event-sparkle');
         W.userData.charm.g.getWorldPosition(P);glow.points.visible=true;glow.burst(14,P);
         line=G.fx.guide({parent:root,from:[W.position.x,W.position.z],to:[bmG.position.x,bmG.position.z],sec:2.8});G.ui.hint(line.points);
         G.dialog.say('원더룹','개미굴에서 받은 나침반이 어딘가를 가리키고 있어!',2.8);t=0;}
@@ -553,7 +553,7 @@ function update(dt,t){
   // 큰 이슬방울이 물길을 따라 굴러와 이슬배에 퐁 들어감
   if(drop){drop.t+=dt;const T2=3.2,u=Math.min(1,drop.t/T2),x=-14+(BOAT0[0]+14)*u,z=cz(x)-.3+(BOAT0[2]-(cz(BOAT0[0])-.3))*u*u;
     bigDrop.position.set(x,.5+Math.abs(Math.sin(u*PI*3))*.25*(1-u),z);bigDrop.rotation.z=-x*1.8;
-    if(u>=1){dropCam=.8;bigDrop.visible=false;drop=null;boatReady=true;st.phase='boat';boatDew.visible=true;dewPop=0;splash.burst(36,{x:BOAT0[0],y:.35,z:BOAT0[2]});splashT=1.4;G.sound.sfx('pop');q('이슬배를 타고 강을 건너요');
+    if(u>=1){dropCam=.8;bigDrop.visible=false;drop=null;boatReady=true;st.phase='boat';boatDew.visible=true;dewPop=0;splash.burst(36,{x:BOAT0[0],y:.35,z:BOAT0[2]});splashT=1.4;G.sound.sfx('event-pop');q('이슬배를 타고 강을 건너요');
       G.ui.notice({kicker:'알림',title:'이슬배가 준비됐어요!',text:'이슬방울이 배 안으로 쏙 들어갔어요. 이제 이슬배를 타고 강을 건너요.'});}} // 아무 키(Enter)·화면 아무 곳 누르기로 닫힘(ui.notice)
   // 우산을 펴고 활공하기 시작하면 안내 문구와 아이템 카드를 치운다(할 일을 해냈으니까)
   if(hasUmb()&&!st.glided){const W=WL();if(W&&W.userData.vert.air&&W.userData.vert.vy<-.3&&W.userData.vert.glide>.05){st.glided=true;q('');G.ui.closeItemCard();}} // 우산이 펴지기 시작할 때(배에서 둑으로 내려설 때의 작은 낙하는 빼고) // 우산이 펴지기 직전(떨어지기 시작할 때) 치워 펴지는 순간에는 카드가 없다

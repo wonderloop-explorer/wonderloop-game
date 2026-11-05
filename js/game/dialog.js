@@ -30,7 +30,7 @@ const talkable=n=>n&&n.root&&n.root.visible!==false&&linesOf(n).length>0;
 function show(){const L=talk.L;if(talk.i>=L.length){endTalk(true);return;}const text=L[talk.i];
   const last=talk.i>=L.length-1; // 넘기는 법: 터치는 대화창이나 아래 단추("다음"·"닫기"), 키보드는 E, 마우스는 대화창이나 화면 누르기
   showDialog(talk.n.name,text,coarse?(last?'눌러서 닫기':'눌러서 계속'):(last?'E 또는 클릭으로 닫기':'E 또는 클릭으로 계속'));
-  sfx('blip');if(talk.h)talk.h.stop();talk.h=voice({id:talk.n.voice&&talk.n.voice[text],text,who:talk.n.name,kind:'dialogue'});}
+  sfx(talk.i?'talk-next':'talk-start');if(talk.h)talk.h.stop();talk.h=voice({id:talk.n.voice&&talk.n.voice[text],text,who:talk.n.name,kind:'dialogue'});}
 function startTalk(n){if(!talkable(n)||talk)return false;
 if(saying){const r=saying.r;saying=null;r(true);} // 떠 있던 혼잣말은 끝내고
   const R=rawLines(n);talk={n,i:0,h:null,L:linesOf(n),sig:sigOf(R)};block('talk',true);show();return true;}
@@ -43,7 +43,7 @@ function advance(){if(!talk)return false;talk.i++;show();return true;}
 function say(who,text,sec,id){return new Promise(r=>sayQ.push({who,text,sec,id,r}));}
 function tickSay(){
   if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r(true);}
-  if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('blip');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
+  if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
     s.end=clock.t+Math.max(s.sec||0,h.dur);saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
    아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).

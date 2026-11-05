@@ -35,6 +35,8 @@
                        quest: 할 일 안내, popup: {kicker, title, text} 미션 카드, narration: {vo, text} 미션 나레이션,
                        goal: {at:[x,z], label} 민트 빛기둥·동그라미 길이 이어지는 목적지(없으면 item.at), got: {title, text:{key, touch}, vo} 얻었을 때 카드·나레이션, next: 다음 할 일 안내 }
      옷 조합(윗옷·바지 색 + 목도리 색)은 원더룹 자신의 옷이라 세계 설정이 아니라 06 outfitCombos 한 목록·한 저장값(세계가 바뀌어도 그대로)
+     sfx           효과음 바꿔 끼우기(선택) {종류 이름: '다른 소리 이름' 또는 'assets/sfx/<세계>/<이름>.mp3'} — 없으면 공통 묶음 그대로(docs/sfx-list.md).
+                   그 세계 전용 소리는 js/sfx/<세계>.js(세계 id로 저절로 켜짐 — js/sfx/index.js 목록)
      controlsNote  조작법 창(공통 틀) 안의 세계 전용 글 — 없으면 그 칸이 빠진다
                    { keys: [[키, 설명]…] (키보드 표의 E 다음에 들어감), talk: 터치 '말 걸기' 설명, touch: [[이름, 설명]…] (터치 표 끝),
                      play: '이렇게 놀아요' 한 단락, heatBefore·heatAfter: '휴대폰이 따뜻해질 때' 목록의 앞·뒤 항목(HTML) }
