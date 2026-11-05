@@ -245,15 +245,16 @@ function tickBody(){
      if(k<1)_cw.set(_ct.x+(_cw.x-_ct.x)*k,_ct.y+(_cw.y-_ct.y)*k,_ct.z+(_cw.z-_ct.z)*k);}
     /* 구역이 비춰 달라는 곳(game view.focus·hold): 그쪽 자리·보는 점으로 섞는다 — 들어갈 때·돌아올 때 0.45초 */
     {const V=GAME.view,r=V.req;let want=0;if(r){r.t+=dt;let at=null,from=null;
-       if(r.fn){const o=r.fn();if(o){at=o.at;from=o.from;want=1;}}else if(r.t<r.sec+.45){at=r.at;from=r.from;want=r.t<r.sec?1:0;
+       if(r.fn){const o=r.fn();if(o){at=o.at;from=o.from;want=1;if(r.snap)C.fw=1;}}else if(r.t<r.sec+.45){at=r.at;from=r.from;want=r.t<r.sec?1:0;
          if(!from){const dx=WL.position.x-at[0],dz=WL.position.z-at[2],L=Math.hypot(dx,dz)||1;from=[at[0]+dx/L*r.dist,at[1]+r.dist*.55,at[2]+dz/L*r.dist];}}
        else V.req=null;if(at){C.fAt=at;C.fFrom=from;}}
      C.fw=(C.fw||0)+(want-(C.fw||0))*Math.min(1,dt/.45*2.2);if(C.fw<.002)C.fw=0;
      if(C.fw>0&&C.fAt){const w=C.fw*C.fw*(3-2*C.fw);_ct.lerp(_fv.set(...C.fAt),w);_cw.lerp(_fv.set(...C.fFrom),w);}}
     if(Z.camBox&&(C.fw||0)<.5)clampBox(_cw,Z.camBox); // 카메라 상자(구역 정보 camBox): 경계 너머 빈 곳·세계 끝이 보이지 않게 카메라 자리를 상자 안으로(연출 중에는 빼고)
     _cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
-    camera.position.lerp(_cw,SHOT?Math.min(1,dt*7):1-Math.exp(-dt*7));camera.position.y=Math.max(camera.position.y,groundY(camera.position.x,camera.position.z)+.6); // 따라오는 길에도 땅 속으로 들어가지 않게
-    controls.target.lerp(_ct,SHOT?Math.min(1,dt*10):1-Math.exp(-dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
+    const snap=!SHOT&&GAME.view.req&&GAME.view.req.snap&&C.fw>=1; // view.hold(fn,{snap}) — 연출 길을 그대로 따라감(늦게 따라가면 도는 길의 안쪽을 질러 원더룹 머리를 지나갔다)
+    camera.position.lerp(_cw,snap?1:SHOT?Math.min(1,dt*7):1-Math.exp(-dt*7));camera.position.y=Math.max(camera.position.y,groundY(camera.position.x,camera.position.z)+.6); // 따라오는 길에도 땅 속으로 들어가지 않게
+    controls.target.lerp(_ct,snap?1:SHOT?Math.min(1,dt*10):1-Math.exp(-dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
   else if(GAME.view.req&&GAME.view.req.fn&&(C.hv=GAME.view.req.fn())){C.ready=false;const k=Math.min(1,dt*1.5); // 방 카메라 구역에서도 view.hold(첫 화면 배경 루프 — 베이스캠프): 개미굴 타이틀처럼 그 자리로 부드럽게
     camera.position.lerp(_fv.set(...C.hv.from),k);controls.target.lerp(_fv.set(...C.hv.at),k);camera.lookAt(controls.target);}
   else{C.ready=false;C.hv=null;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);

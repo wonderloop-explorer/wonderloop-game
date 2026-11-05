@@ -57,23 +57,30 @@ function pick(){const {W,F,it}=M;M.got=true;if(obj){obj.removeFromParent();dispo
 /* 얻는 순간 장면(2026-11-04 시리즈 규칙): 원더룹이 멈춰 서서 물건을 번쩍 들어 보이고(07 showT — 물건 userData.show 자세), 카메라가 1.6초 동안 원더룹 앞쪽 3/4(물건을 든 오른손 쪽)으로 돌아갔다가
    따라가기 시점으로 부드럽게 돌아온다(view.focus). 획득 창·나레이션은 같이 나온다. 화면을 누르거나 키를 누르면 바로 끝(카메라는 controls가 손대면 넘겨받음) */
 function showOff(it){const U=ctx.WL.userData,V=ctx.view;if(U.stopWalk)U.stopWalk();U.showT=1.7;if(!V||SHOT)return;
-  const P=ctx.WL.position.clone(),ry=ctx.WL.rotation.y,cam=ctx.camera.position,AT=new THREE.Vector3(P.x,P.y+.95,P.z),D=3.8,Y=1.5;
+  const P=ctx.WL.position.clone(),ry=ctx.WL.rotation.y,cam=ctx.camera.position,AT=new THREE.Vector3(P.x,P.y+.95,P.z),PO=ctx.camera.aspect<1;let D=3.8,Y=1.5; // 세로 화면은 될 수 있으면 멀리(3.8m면 얼굴만 꽉 차고 든 물건이 안 보였다) — 아래에서 1.6·1.3·1배 차례로
   // 앞쪽 3/4(물건을 든 왼손 쪽 먼저 — 몸에 가려지지 않게)에서 가리는 물체가 없는 쪽을 고른다
   const ray=new THREE.Raycaster(),objs=[];ray.layers.enableAll(); // 방 소품 원래 부품은 클릭 판정 층(1)에 있다
   ctx.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.isInstancedMesh&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false))objs.push(o);});
   const inWL=o=>{for(let q=o;q;q=q.parent)if(q===ctx.WL)return true;return false;};
-  const fromAng=a=>new THREE.Vector3(P.x+Math.sin(ry+a)*D,P.y+Y,P.z+Math.cos(ry+a)*D);let A=null;
-  for(const a of [.6,-.6,1,-1,.25,-.25,0]){const f=fromAng(a),dir=AT.clone().sub(f),L=dir.length();ray.set(f,dir.normalize());ray.far=L-.35;if(!ray.intersectObjects(objs,false).some(h=>!inWL(h.object))){A=a;break;}}
-  if(A===null)return; // 모든 쪽이 막혔으면 카메라는 그대로(들어 보이기만)
+  // 2026-11-05: 끝 자리만 보던 것을 도는 길 전체로 — 휴대폰에서 카메라가 원더룹 둘레를 도는 길에 지구본·화분이 있어 그 속을 지나가며 화면을 덮었다.
+  // 앞쪽 각도 후보 × 도는 방향(짧은 쪽·반대쪽)마다 길을 12칸으로 나눠, 칸마다 원더룹이 보이는지(시선)와 칸 사이를 지나며 물체를 뚫지 않는지 본다. 모두 막히면 카메라는 그대로(들어 보이기만)
+  const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y,ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,_d=new THREE.Vector3();
+  const pos=(k,a1)=>{const e=ease(k),a=a0+(a1-a0)*e,r=r0+(D-r0)*e,y=y0+(Y-y0)*e;return new THREE.Vector3(P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r);};
+  const hit=(f,t,skip)=>{_d.copy(t).sub(f);const L=_d.length();if(L<1e-3)return false;ray.set(f,_d.normalize());ray.far=L-(skip||0);return ray.intersectObjects(objs,false).some(h=>!inWL(h.object));};
+  const clear=a1=>{let prev=null;for(let i=0;i<=12;i++){const q=pos(i/12,a1);if(i>=3&&hit(q,AT,.35))return false;if(prev&&(hit(prev,q)||hit(q,prev)))return false;prev=q;}return true;};
+  let a1=null;
+  for(const pk of PO?[1.6,1.3,1]:[1]){D=3.8*pk;Y=1.5*pk;
+  for(const a of [.6,-.6,1,-1,.25,-.25,0]){const da=((ry+a-a0+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
+    for(const d of [da,da-Math.sign(da||1)*Math.PI*2])if(clear(a0+d)){a1=a0+d;break;}if(a1!==null)break;}if(a1!==null)break;}
+  if(a1===null)return;
   // 카메라는 원더룹 둘레를 둥글게 돌아(곧게 건너가면 머리를 뚫고 지나간다) 앞쪽으로 → 1초 머문 뒤 → 원래 각도·거리로 돌아와 따라가기에 넘김
-  const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y;let a1=ry+A,da=((a1-a0+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;a1=a0+da;
-  const T_IN=.55,T_HOLD=.95,T_OUT=.6,ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;let t=0,last=performance.now(),done=false;
+  const T_IN=.55,T_HOLD=.95,T_OUT=.6;let t=0,last=performance.now(),done=false;
   const at=(k,aa,bb)=>aa+(bb-aa)*ease(Math.min(1,Math.max(0,k)));
   const fin=()=>{if(done)return;done=true;U.showT=0;if(V.req&&V.req.fn===fn)V.hold(null);off();};
   const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;if(t>T_IN+T_HOLD+T_OUT){setTimeout(fin,0);return null;}
     const k=t<T_IN?t/T_IN:t<T_IN+T_HOLD?1:1-(t-T_IN-T_HOLD)/T_OUT,a=at(k,a0,a1),r=at(k,r0,D),y=at(k,y0,Y),ay=at(k,.85,.95);
     return {from:[P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r],at:[P.x,P.y+ay,P.z]};};
-  V.hold(fn);
+  V.hold(fn,{snap:true}); // 도는 길이 지금 카메라 자리에서 시작하므로 섞지 않는다
   const end=()=>fin(),off=()=>{removeEventListener('pointerdown',end,true);removeEventListener('keydown',end,true);};
   setTimeout(()=>{addEventListener('pointerdown',end,true);addEventListener('keydown',end,true);},120);}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
