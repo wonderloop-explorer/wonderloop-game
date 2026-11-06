@@ -21,6 +21,7 @@
    그리기: 07 updateWL 뒤(game updateGame — tickReact)에 뼈(neck·spine·팔)와 원더룹 높이에 더하기만 한다 — 07이 매 프레임 다시 정하므로 끝나면 저절로 원래대로.
    카메라 흔들림·시야는 08이 그리기 바로 앞뒤로 camPre/camPost(그린 뒤 되돌려 따라가기 카메라에 흔들림이 쌓이지 않게 — 원본도 카메라 자리를 매 프레임 새로 썼다).
    촬영 모드에서도 같은 그림이 나오게 흔들림 난수는 시드 고정. 시험: 톱니 메뉴 '리액션: …' 단추(game/devcheck). */
+import * as THREE from 'three';
 import {cue} from './core.js';
 import {sfx} from './sound.js';
 let C=null,cur=null,shk=null,punch=0,T=0,seed=12345,camSave=null,sway=0,swayK=0,paleK=0,paleStep=0,paleWant=0;
@@ -48,10 +49,18 @@ function react(name,o={}){if(!C)return Promise.resolve(false);
    0.45초에 다가가 sec초 머문 뒤 0.45초에 원래 자리로 돌아온다(game view.hold — 화면을 만지면 끝). */
 function closeUp(sec=1.1){if(!C||!C.view)return Promise.resolve();const W=C.WL,P=W.position,cam=C.camera.position;
   const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y;let a1=W.rotation.y+.35,d=a1-a0;d=Math.atan2(Math.sin(d),Math.cos(d));a1=a0+d;
+  const asp=C.camera.aspect||1.6,RW=2.4*(asp<1.25?Math.min(1.8,1.25/asp):1); // 세로 화면은 물러나서(얼굴만 화면 가득 차지 않게 — 2026-11-06 아이폰)
+  // 도는 길(네 칸)과 끝 자리가 모두 트인 가장 먼 거리 — 벽 밖·벽 속을 지나면 덜 물러남(세로 화면에서 물러난 길이 방 벽을 뚫었다)
+  const face=new THREE.Vector3(P.x,P.y+1.05,P.z),pathOk=(r,A)=>[.125,.25,.375,.5,.625,.75,.875,1].every(k=>{const a=a0+(A-a0)*k,rr=r0+(r-r0)*k,y=y0+(1.3-y0)*k;return clearPath(new THREE.Vector3(P.x+Math.sin(a)*rr,P.y+y,P.z+Math.cos(a)*rr),face);});
+  let R1=null;for(const r of [RW,(RW+2.4)/2,2.4])if(pathOk(r,a1)){R1=r;break;}
+  if(R1==null){a1=a0;R1=Math.min(r0,RW);for(const r of [RW,(RW+2.4)/2,2.4])if(pathOk(r,a0)){R1=r;break;}} // 도는 길이 막히면 돌지 않고 지금 방향 그대로 다가가기만
   const IN=.45,OUT=.45,e=k=>k*k*(3-2*k);let t=0,last=performance.now();
   return new Promise(res=>{const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;if(t>IN+sec+OUT){setTimeout(()=>{if(C.view.req&&C.view.req.fn===fn)C.view.hold(null);res();},0);return null;}
-      const k=e(Math.min(1,t/IN))*e(Math.min(1,(IN+sec+OUT-t)/OUT)),a=a0+(a1-a0)*k,r=r0+(2.4-r0)*k,y=y0+(1.3-y0)*k,hy=P.y+.85+.2*k;
+      const k=e(Math.min(1,t/IN))*e(Math.min(1,(IN+sec+OUT-t)/OUT)),a=a0+(a1-a0)*k,r=r0+(R1-r0)*k,y=y0+(1.3-y0)*k,hy=P.y+.85+.2*k;
       return {from:[P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r],at:[P.x,hy,P.z]};};C.view.hold(fn,{snap:true});});}
+/* 두 점 사이가 트였는지(양쪽으로 — 방 벽은 한쪽 면이라 바깥에서 쏘면 안 맞는다). 원더룹·안내 표시·빛 효과는 빼고 */
+function clearPath(a,b){const objs=[];C.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false)){for(let q=o;q;q=q.parent)if(q===C.WL)return;objs.push(o);}});
+  const hit=(p,q)=>{const d=new THREE.Vector3().subVectors(q,p),L=d.length(),ray=new THREE.Raycaster(p,d.normalize(),0,Math.max(.01,L-.3));ray.layers.enableAll();return ray.intersectObjects(objs,false).length>0;};return !hit(a,b)&&!hit(b,a);}
 /* 긴장 구역 카메라 일렁임(game/stage가 매 프레임 k를 준다, 0~1): 개미굴 보육실 — 보모개미가 깨어날수록 카메라가 sin(31t)·sin(43t+1) × k × 0.05 떨렸다(원본 그대로) */
 function setSway(k){sway=k;}
 const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);

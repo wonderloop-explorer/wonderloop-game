@@ -28,6 +28,7 @@ import {openBag,playerName} from './front.js';
 import {resetAll} from './state.js';
 let C=null,BG=null,MINI=null,END=null,STAR=null,RAYS=null,HALO=null;
 const _v=new THREE.Vector3(),_w=new THREE.Vector3();
+const narrowK=()=>{const a=C&&C.camera&&C.camera.aspect||1.6;return a<1.25?Math.min(2,1.25/a):1;};
 function initFinale(c){C=c;}
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 function canvasTex(f,n=128){const c=document.createElement('canvas');c.width=c.height=n;f(c.getContext('2d'),n);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
@@ -54,9 +55,10 @@ function revealCard({kicker='',title='',text='',img=null,btn='받았어요'}){if
     const b=el.querySelector('button');b.textContent=btn;const done=()=>{el.remove();sfx('ui-click');cue({kind:'card',who:'큰 획득',text:'닫힘',dur:0});res();};b.addEventListener('click',done);
     (document.querySelector('.wlg')||document.body).appendChild(el);b.focus({preventScroll:true});sfx('item-get');cue({kind:'card',who:'큰 획득',text:title,sub:text,dur:0});
     if(SHOT)setTimeout(done,3500);});}
-function clearView(cam,p,skip){const ray=new THREE.Raycaster(),d=_v.copy(p).sub(cam),L=d.length();ray.set(cam,d.normalize());ray.far=L-.3;ray.layers.enableAll();
-  const objs=[];C.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false)){for(let q=o;q;q=q.parent)if(q===skip||q===C.WL)return;objs.push(o);}});
-  return !ray.intersectObjects(objs,false).length;}
+function clearView(cam,p,skip){const objs=[];C.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false)){for(let q=o;q;q=q.parent)if(q===skip||q===C.WL)return;objs.push(o);}});
+  // 양쪽으로 쏜다: 방 벽은 한쪽 면이라 벽 밖 카메라에서 안으로 쏘면 뒷면이라 안 맞는다(세로 화면에서 물러난 카메라가 방 밖으로 나가 까맣게 보였다)
+  const hit=(a,b)=>{const d=new THREE.Vector3().subVectors(b,a),L=d.length(),ray=new THREE.Raycaster(a,d.normalize(),.3,Math.max(.31,L-.3));ray.layers.enableAll();return ray.intersectObjects(objs,false).length>0;};
+  return !hit(cam,p)&&!hit(p,cam);}
 const PH=[.7,1.6,2.6,4.5,5.6]; // 빛기둥 · 튀어나옴 · 떠올라 돌기 · 내려옴 · 머묾 → 창
 function bigGet({from=null,giver=null,giverH=1.6,model,card={},to='bag',held=null,onDone=null}){if(!C)return Promise.resolve(false);if(BG)endBig();texs();
   const W=C.WL,P=W.position,U=W.userData;if(U.stopWalk)U.stopWalk();block('bigget',true);
@@ -65,9 +67,11 @@ function bigGet({from=null,giver=null,giverH=1.6,model,card={},to='bag',held=nul
   W.rotation.y=Math.atan2(base.x-P.x,base.z-P.z); // 원본: 선물 쪽을 본다
   const ry=W.rotation.y,fx=Math.sin(ry),fz=Math.cos(ry),rx=Math.cos(ry),rz=-Math.sin(ry);
   // 카메라: 원본 QCAM처럼 원더룹 뒤 비스듬히(뒤 0.5 : 옆 1) — 원더룹 머리와 선물 사이 거리에 맞춰 물러나 둘 다 화면 안에(원본 거리 그대로면 선물이 위로 잘렸다)
-  const camFor=q=>{const h=new THREE.Vector3(P.x,P.y+1.1,P.z),mid=h.clone().add(q).multiplyScalar(.5),D=h.distanceTo(q),k=D*1.15+2.2;return new THREE.Vector3(mid.x+(-fx*.45+rx)*k,mid.y+.35+D*.15,mid.z+(-fz*.45+rz)*k);};
+  // 세로 화면(휴대폰)은 따라가기 카메라와 같은 배율(1.25/화면비, 최대 2)로 물러난다 — 가로 기준 거리 그대로면 주는 이와 선물이 반쯤 잘렸다(2026-11-06 아이폰)
+  const camFor=(q,m=narrowK())=>{const h=new THREE.Vector3(P.x,P.y+1.1,P.z),mid=h.clone().add(q).multiplyScalar(.5),D=h.distanceTo(q),k=(D*1.15+2.2)*m;return new THREE.Vector3(mid.x+(-fx*.45+rx)*k,mid.y+.35+D*.15,mid.z+(-fz*.45+rz)*k);};
   let spot=base.clone(),cam=camFor(spot);
-  for(const o of [[0,0,0],[0,.7,0],[rx*1.3,.3,rz*1.3],[-rx*1.3,.3,-rz*1.3],[0,1.4,0],[rx*2.2,.9,rz*2.2]]){const q=base.clone().add(new THREE.Vector3(...o)),c=camFor(q);if(clearView(c,q,giver)){spot=q;cam=c;break;}}
+  const head=new THREE.Vector3(P.x,P.y+1.1,P.z),nk=narrowK(),ms=[...new Set([nk,(nk+1)/2,1])]; // 세로 화면에서 물러나다 벽에 막히면 덜 물러남
+  find:for(const m of ms)for(const o of [[0,0,0],[0,.7,0],[rx*1.3,.3,rz*1.3],[-rx*1.3,.3,-rz*1.3],[0,1.4,0],[rx*2.2,.9,rz*2.2]]){const q=base.clone().add(new THREE.Vector3(...o)),c=camFor(q,m);if(clearView(c,q,giver)&&clearView(c,head,giver)){spot=q;cam=c;break find;}}
   const g=storybook(model(THREE));g.scale.multiplyScalar(.01);C.scene.add(g);const s0=g.scale.clone().multiplyScalar(100);
   const rays=new THREE.Sprite(add(RAYS));rays.material.opacity=0;rays.scale.setScalar(2.6);rays.renderOrder=-1;g.add(rays);rays.position.z=-.1;
   const halo=new THREE.Sprite(add(HALO));halo.scale.setScalar(1.6);g.add(halo);
@@ -105,6 +109,7 @@ function endBig(ok=false){const B=BG;if(!B)return;BG=null;removeEventListener('p
 /* ---------- ② 귀환 비행 ---------- */
 let FL=null;
 function flight({vehicle,path,speed=3,seat=.35,onEnd=null,view=null}){if(!C)return Promise.resolve(false);
+  if(FL){const f=FL;FL=null;f.res(false);} // 앞 비행이 끝나기 전에 새로 타면 앞 비행을 끝냄(부른 쪽이 그 탈것을 치움 — 시험 단추를 거듭 누르면 날개개미가 쌓였다)
   storybook(vehicle);if(!vehicle.parent)C.scene.add(vehicle);sfx('event-whoosh');cue({kind:'flight',who:'귀환 비행',text:'',dur:0});
   if(C.view){const p=path[0],q=path[Math.min(2,path.length-1)],dx=q[0]-p[0],dz=q[2]-p[2],L=Math.hypot(dx,dz)||1;C.view.start(view||{from:[p[0]-dz/L*6-dx/L*3,p[1]+3,p[2]+dx/L*6-dz/L*3]});} // 처음 각도만(옆 비스듬히) — 그 뒤는 플레이어 카메라
   return new Promise(res=>{FL={vehicle,res,onEnd};ride({vehicle,path,speed,seat,pose:'앉기',onEnd:()=>{const f=FL;FL=null;sfx('land');if(f&&f.onEnd)try{f.onEnd();}catch(e){console.error(e);}res(true);}});});}
@@ -206,6 +211,6 @@ function cert(W){const c=W.cert||{},el=document.createElement('div');el.id='wlCe
   const cols=['#f2c14e','#ef8fae','#7fe0d8','#8f7fd8','#ff9f5a'];for(let i=0;i<40;i++){const f=document.createElement('i');f.className='confetti';f.style.left=Math.random()*100+'%';f.style.background=cols[i%5];f.style.animationDuration=(2.2+Math.random()*2)+'s';f.style.animationDelay=(Math.random()*.8)+'s';el.appendChild(f);}
   q('button').addEventListener('click',()=>{sfx('ui-click');el.remove();});(document.querySelector('.wlg')||document.body).appendChild(el);sfx('mission-clear');q('button').focus({preventScroll:true});}
 function tickFinale(dt){tickBig(dt);tickFlight(dt);}
-function clearFinale(){endBig(false);endMini(false);closeEnding();FL=null;}
+function clearFinale(){endBig(false);endMini(false);closeEnding();if(FL){const f=FL;FL=null;f.res(false);}}
 const finaleState=()=>({big:BG?{t:+BG.t.toFixed(2),revealed:!!BG.revealed}:null,mini:!!MINI,ending:!!END,flight:!!FL});
 export {bigGet,cert,clearFinale,closeEnding,ending,finaleState,flight,initFinale,miniature,miniatureAt,miniaturePath,tickFinale};

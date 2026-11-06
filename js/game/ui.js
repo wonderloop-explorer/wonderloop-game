@@ -102,7 +102,7 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
 @media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast{transition:none}#wlProf .dcard{animation:none}#wlNotice:not(.on),#wlGet:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
 @media (max-width:600px){#wlDlg .line{font-size:1.06rem;line-height:1.55}#wlDlg{padding:1.15rem 1.05rem .75rem}#wlDlg .who{font-size:.95rem}}
-@media (pointer:coarse){#wlDlg,#wlGet{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}} /* 터치 화면: 조이스틱·단추 위로 */
+@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}#wlGet{bottom:calc(env(safe-area-inset-bottom,0px) + 152px)}} /* 터치 화면: 대화창은 조이스틱·단추 위로, 아이템 획득 카드는 조이스틱(위끝 142px)에 걸치지 않을 만큼만 낮게 — 원더룹을 가리지 않게(2026-11-06 아이폰) */
 #wlBadge{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 11vh);width:min(560px,calc(100vw - 20px));transform:translate(-50%,0);z-index:21;pointer-events:none;display:none}
 #wlBadge.on{display:block;animation:wlbIn .7s cubic-bezier(.25,1.6,.45,1) both}#wlBadge.out{animation:wlbOut .45s ease-in both}
 #wlBadge .bg{position:relative;display:block;width:100%;height:auto;filter:drop-shadow(0 8px 14px rgba(30,14,36,.35))}
