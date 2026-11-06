@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="dc113fbc6d";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="d3954724db";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 b100c8e, 버전 06e311bc03, 2026-11-06)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 7cc3f70, 버전 eeeb1477c7, 2026-11-06)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -93,7 +93,9 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 @media (pointer:coarse){
   .bar .hint{display:none}
   body.debug #stats{display:block}
-  body.debug .bar{top:calc(56px + env(safe-area-inset-top,0px));bottom:auto;align-content:flex-start;max-height:62vh;overflow-y:auto}
+  body.debug .bar{top:calc(56px + env(safe-area-inset-top,0px));bottom:auto;align-content:flex-start;max-height:62vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  body.debug .bar,body.debug .bar *{touch-action:pan-y} /* 손가락으로 밀어 아래 시험 단추까지(모든 요소 touch-action:none 때문에 안 밀렸다, 2026-11-06 아이폰) */
+  body.debug .bar .spdBox input{touch-action:pan-x}
 }
 </style>
 <!-- 공통 로딩 화면 #wlBoot (시리즈 공통 틀, 2026-11-04 — 모든 세계가 같은 화면·같은 문구). 글꼴은 그리기를 막지 않게 늦게 붙이고(그동안 기본 글꼴로 글자가 먼저 보임),
@@ -345,8 +347,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="06e311bc03";
-window.WL_BUILD={"commit":"b100c8e","date":"2026-11-06","stage":"basecamp"};
+window.WL_V="eeeb1477c7";
+window.WL_BUILD={"commit":"7cc3f70","date":"2026-11-06","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -2893,6 +2895,7 @@ export {rollTest,clearDevcheck,initDevcheck,toggleBounds,toggleMeasure,toggleSiz
    ⑤ 스테이지 빛: 끔 → 세계 설정 stages의 빛(개미굴 꿀 저장소·보육실·지네 동굴) 차례로.
    ⑥ 큰 획득 시험: 앞 3m 큰 주민(가리개) 위로 세계 finale.gift. ⑦ 귀환 비행 시험: 세계 finale.vehicle을 타고 둘레를 날아 한 바퀴. ⑧ 미니어처 시험(세계 finale.miniature — 없으면 구역 크기로 다섯 자리).
    ⑨ 엔딩 화면 시험 · ⑩ 엔딩 순서 시험(큰 획득 → 귀환 비행 → 미니어처 → 엔딩 화면) · 미니어처 경로 저장(JSON 내려받기 — 유튜브 앰비언스 영상용). */
+import {sbMat} from './storybook.js';
 import * as THREE from 'three';
 import {addEmotion,addTension,setTestLight} from './stage.js';
 import {guard,hide,pass,remove} from './stealth.js';
@@ -2907,7 +2910,7 @@ const gy=(x,z)=>C.groundY?C.groundY(x,z)||0:0;
 function faceOpen(){if(!C.blocked)return;const p=P();let best=ry(),bn=-1;for(let i=0;i<16;i++){const a=i/16*Math.PI*2;let n=0;
     for(let f=1;f<=7;f+=1)for(let r=-6;r<=6;r+=1.5){const x=p.x+Math.sin(a)*f+Math.cos(a)*r,z=p.z+Math.cos(a)*f-Math.sin(a)*r;if(!C.blocked(x,z))n++;}if(n>bn){bn=n;best=a;}}
   C.WL.rotation.y=best;}
-const mat=(c,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:.85,...o});
+const mat=(c,o={})=>sbMat(c,{...o,ei:o.emissiveIntensity}); // 시험 모형도 동화책 손그림 재질(game/storybook)
 function ring(c,r,col){const m=new THREE.Mesh(new THREE.RingGeometry(r-.08,r,48),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.6,depthWrite:false,side:THREE.DoubleSide}));
   m.rotation.x=-Math.PI/2;m.position.set(c[0],gy(c[0],c[1])+.04,c[1]);C.scene.add(m);hint(m);return m;}
 const drop=o=>{if(!o)return;o.removeFromParent();o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>m.dispose());});};
@@ -2938,7 +2941,7 @@ function guardFig(){const g=new THREE.Group(),b=mat('#7e4229'),d=mat('#3e2834');
   [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),mat('#fff6e6'));e.position.set(s*.15,1.48,.45);g.add(e);});
   const sp=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2,6),mat('#c8a070'));sp.position.set(.5,1,0);g.add(sp);return g;}
 function stealthGuard(){toggle('guard',()=>{faceOpen();const p=at(6.5),home=[P().x,P().z,ry()],m=guardFig(),h=Math.atan2(P().x-p[0],P().z-p[1]);m.position.set(p[0],gy(p[0],p[1]),p[1]);m.rotation.y=h;C.scene.add(m);
-  const e=guard({obj:m,heading:h,range:5,cone:.58,height:2.2,who:'경비',safe:home,lines:{alert:['거기 누구냐!'],back:['휴, 입구로 돌아왔어요']}});
+  const e=guard({obj:m,heading:h,range:4,cone:.58,height:2.2,who:'경비',safe:home,lines:{alert:['거기 누구냐!'],back:['휴, 입구로 돌아왔어요']}});
   SPOTS.guard=p;const bc=at(3.2,1.3);SPOTS.box=bc;const box=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.4),mat('#c99d5c'));box.position.set(bc[0],gy(bc[0],bc[1])+.6,bc[1]);C.scene.add(box);const hh=hide({at:bc,r:.95});
   const rg=ring(p,5,'#ffd23f');toast('경비 영역(노란 고리)에 들어가면 ? → ! — 나무 상자 뒤에 숨으면 안 보여요');
   return ()=>{remove(e);remove(hh);drop(m);drop(box);drop(rg);};});}
@@ -3191,6 +3194,7 @@ export {icon,injectFelt,mk,setIcons,setTheme,tape};
       'YouTube @wonderloop_world', 단추 '▶ 원더룹 채널 보러 가기'(새 창)·'인증서 보기'(세계 cert가 있을 때)·'처음부터 다시 하기' + '가방 보기'(모은 아이템·카드 다시 구경 — game/front 가방).
       배경은 세계 finale.endBackdrop(없으면 backdrop)을 시작 타이틀처럼 천천히 도는 카메라 루프. 조작·화면 구석 표시는 숨긴다.
    흐름(엔딩 순서): bigGet → flight → miniature → ending. 시험: 톱니 메뉴 '큰 획득 시험'·'귀환 비행 시험'·'미니어처 시험'·'엔딩 화면 시험'·'엔딩 순서 시험'(game/devstory). */
+import {storybook} from './storybook.js';
 import * as THREE from 'three';
 import {block,cue} from './core.js';
 import {sfx,zoneMusic,songs} from './sound.js';
@@ -3242,7 +3246,7 @@ function bigGet({from=null,giver=null,giverH=1.6,model,card={},to='bag',held=nul
   const camFor=q=>{const h=new THREE.Vector3(P.x,P.y+1.1,P.z),mid=h.clone().add(q).multiplyScalar(.5),D=h.distanceTo(q),k=D*1.15+2.2;return new THREE.Vector3(mid.x+(-fx*.45+rx)*k,mid.y+.35+D*.15,mid.z+(-fz*.45+rz)*k);};
   let spot=base.clone(),cam=camFor(spot);
   for(const o of [[0,0,0],[0,.7,0],[rx*1.3,.3,rz*1.3],[-rx*1.3,.3,-rz*1.3],[0,1.4,0],[rx*2.2,.9,rz*2.2]]){const q=base.clone().add(new THREE.Vector3(...o)),c=camFor(q);if(clearView(c,q,giver)){spot=q;cam=c;break;}}
-  const g=model(THREE);g.scale.multiplyScalar(.01);C.scene.add(g);const s0=g.scale.clone().multiplyScalar(100);
+  const g=storybook(model(THREE));g.scale.multiplyScalar(.01);C.scene.add(g);const s0=g.scale.clone().multiplyScalar(100);
   const rays=new THREE.Sprite(add(RAYS));rays.material.opacity=0;rays.scale.setScalar(2.6);rays.renderOrder=-1;g.add(rays);rays.position.z=-.1;
   const halo=new THREE.Sprite(add(HALO));halo.scale.setScalar(1.6);g.add(halo);
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.55,.75,8,24,1,true),new THREE.MeshBasicMaterial({color:'#ffe9a0',transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,fog:false}));
@@ -3279,7 +3283,7 @@ function endBig(ok=false){const B=BG;if(!B)return;BG=null;removeEventListener('p
 /* ---------- ② 귀환 비행 ---------- */
 let FL=null;
 function flight({vehicle,path,speed=3,seat=.35,onEnd=null,view=null}){if(!C)return Promise.resolve(false);
-  if(!vehicle.parent)C.scene.add(vehicle);sfx('event-whoosh');cue({kind:'flight',who:'귀환 비행',text:'',dur:0});
+  storybook(vehicle);if(!vehicle.parent)C.scene.add(vehicle);sfx('event-whoosh');cue({kind:'flight',who:'귀환 비행',text:'',dur:0});
   if(C.view){const p=path[0],q=path[Math.min(2,path.length-1)],dx=q[0]-p[0],dz=q[2]-p[2],L=Math.hypot(dx,dz)||1;C.view.start(view||{from:[p[0]-dz/L*6-dx/L*3,p[1]+3,p[2]+dx/L*6-dz/L*3]});} // 처음 각도만(옆 비스듬히) — 그 뒤는 플레이어 카메라
   return new Promise(res=>{FL={vehicle,res,onEnd};ride({vehicle,path,speed,seat,pose:'앉기',onEnd:()=>{const f=FL;FL=null;sfx('land');if(f&&f.onEnd)try{f.onEnd();}catch(e){console.error(e);}res(true);}});});}
 function tickFlight(dt){if(FL&&FL.vehicle.userData.tick)FL.vehicle.userData.tick(dt);}
@@ -3489,6 +3493,10 @@ const css=`
 /* 시리즈 공통 틀(body.wl-antui): 미션 카드·아이템 카드를 개미굴 #mission·#getCard 그대로 — 크림 판·그림자, 제목도 고운돋움, 아이콘은 동그라미 없이 */
 body.wl-antui #wlNotice .t,body.wl-antui #wlGet .t{font-family:"Gowun Dodum",sans-serif}
 body.wl-antui #wlGet{border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;background:rgba(44,30,42,.95);color:#fbe9d8;box-shadow:0 14px 40px rgba(30,14,36,.45)}body.wl-antui #wlGet .s{color:#d9bfb3} /* 아이템 획득 카드는 늘 개미굴 어두운 판(꿀방울 카드 그대로 — 이야기 소개 카드와 같은 값, 2026-11-05 사용자 요청) */
+body.wl-antui #wlDlg{background:#2e2030;color:#fbe9d8;border:0;border-radius:20px;padding:1.3rem 1.2rem .9rem;box-shadow:0 14px 40px rgba(30,14,36,.4)}body.wl-antui #wlDlg::before{display:none}
+body.wl-antui #wlDlg .who{left:16px;top:-14px;background:#f2b63c;color:#2a1a22;border-radius:999px;padding:.25rem .75rem;font-size:.88rem;font-family:"Gowun Dodum",sans-serif;transform:none;filter:none}body.wl-antui #wlDlg .who::before,body.wl-antui #wlDlg .who::after{display:none}
+body.wl-antui #wlDlg .line{color:#fbe9d8}body.wl-antui #wlDlg .more{color:#d9bfb3}
+@media (max-width:600px){body.wl-antui #wlDlg .line{font-size:1.12rem;line-height:1.62}body.wl-antui #wlDlg .who{font-size:.95rem}} /* 대화창도 개미굴 #dlg 어두운 화면 값 그대로(--bubble #2e2030·노란 알약 이름표 #f2b63c — 2026-11-06 사용자 요청, 펠트·민트 테이프 없음) */
 body.wl-antui #wlGet .ic{width:auto;height:auto;background:none;border:0;border-radius:0}body.wl-antui #wlGet img{width:58px;height:58px;filter:none}
 /* 모험 떠나기 전 이야기 소개(개미굴 #story) — 2026-11-04 사용자 요청으로 개미굴 어두운 화면 값(판 rgba(44,30,42,.95)·글자 #fbe9d8·민트 #5cc4b9)으로 늘 어둡게: 화면 아래 가운데 카드, 건너뛰기·다음, 점 */
 #wlStory{position:fixed;inset:0;z-index:31;display:none;place-items:end center;padding:1rem 1rem calc(env(safe-area-inset-bottom,0px) + 3.5rem);box-sizing:border-box;background:linear-gradient(180deg,rgba(30,14,36,0) 35%,rgba(30,14,36,.6))}
@@ -3785,7 +3793,7 @@ function initFront(o){ctx=o.ctx;VIEW=o.view;zone=o.zone;restart=o.restart;WORLD=
     if(bagOn&&(e.code==='Escape'||e.code==='KeyB')){e.preventDefault();e.stopImmediatePropagation();closeBag();return;}
     if(!wardOn)return;if(e.target&&e.target.tagName==='INPUT')return;if(e.code==='Escape'||(e.code==='KeyC'&&wardFrom==='game')){e.preventDefault();e.stopImmediatePropagation();closeWardrobe();}},true);
   controlHooks.onBag=()=>{if(bagOn)closeBag();else openBag();};
-  if(titleWorld()){document.body.classList.add('wl-antui');['wlNotice','wlGet'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('wl-felt');});} // 시리즈 공통 틀: 미션 카드·아이템 카드도 개미굴 #mission·#getCard 모양(펠트 없음)
+  if(titleWorld()){document.body.classList.add('wl-antui');['wlNotice','wlGet','wlDlg'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('wl-felt');});{const w=document.querySelector('#wlDlg .who');if(w)w.classList.remove('wl-tape','mint','wl-mk');}} // 시리즈 공통 틀: 미션 카드·아이템 카드도 개미굴 #mission·#getCard 모양(펠트 없음)
   const Z=zone(),F=Z&&Z.front;if(titleWorld())setHelpNote(WORLD.controlsNote||null);else setHelpExtra(F&&F.help,F&&F.play);if(F&&F.theme)setTheme(F.theme); // 세계 색(펠트 한 벌은 game/felt)
   if(NO||!openFront()){startTime();corner.classList.add('on');}}
 const frontShown=()=>frontOn,wardrobeShown=()=>wardOn,bagShown=()=>bagOn;
@@ -4335,6 +4343,7 @@ export {lampSet};
            세계 도구 단추(controls.setTool — 개미굴 랜턴 켜고 끄기)·다음 할 일(next).
    시간 제한·실패·점수 없음. 받았는지 = flags['have:<세계 id>:<물건 id>'] (저장) — 받았으면 미션 없이 손에 쥔 채로 시작한다.
    startMission(W)는 game/front가 게임을 시작할 때(조작법 창이 열려 있으면 닫힌 뒤) 부른다. 구역을 떠나면 game/index가 clearMission(). */
+import {storybook} from './storybook.js';
 import * as THREE from 'three';
 import {notice,itemCard,setQuest,cardShown} from './ui.js';
 import {set as setGoal} from './goal.js';
@@ -4360,12 +4369,12 @@ function tickLamp(dt){if(!light)return;const want=lampOn&&!!(ctx.WL.userData.hel
 function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,kind:'narration'});return tok;}
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
-function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
+function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=storybook(it.model(THREE,{held:true}));h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
   if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('ui-click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use,on});};setTool({label:lab(),use,on});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
   M={W,F,it,got:false,at:F.goal&&F.goal.at||it.at};t=0;
-  if(it.model){obj=it.model(THREE,{held:false});obj.position.set(it.at[0],(ctx.ground?ctx.ground(it.at[0],it.at[1]):0)+(it.y??1.1),it.at[1]);obj.userData.y0=obj.position.y;ctx.scene.add(obj);}
+  if(it.model){obj=storybook(it.model(THREE,{held:false}));obj.position.set(it.at[0],(ctx.ground?ctx.ground(it.at[0],it.at[1]):0)+(it.y??1.1),it.at[1]);obj.userData.y0=obj.position.y;ctx.scene.add(obj);}
   setQuest(F.quest||'');
   setGoal({at:M.at,label:F.goal&&F.goal.label||it.name,style:'ant',h:3.4});
   const P=F.popup||{};
@@ -4785,7 +4794,7 @@ function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
     case 'tilt':{const k=ease(Math.min(1,t/.35))*ease(Math.min(1,(s-t)/.4));neck.rotation.z+=.32*k;neck.rotation.y+=.12*k;break;}
     case 'hop':{const H=.45,i=Math.floor(t/H),u=(t-i*H)/H;if(i<2){if(i>=R.hops){R.hops=i+1;if(i>0)sfx('jump');}const j=Math.sin(u*Math.PI);WL.position.y+=.28*j;
         if(u>.85||u<.08)spine.position.y-=.03;}
-      const a=env*2;arms[0].rotation.z-=a;arms[1].rotation.z+=a;break;}
+      const a=env*1.7,f=env*.55;arms[0].rotation.z-=a;arms[1].rotation.z+=a;arms[0].rotation.x+=f;arms[1].rotation.x+=f;break;} // 두 팔을 앞쪽 비스듬히 위로(곧게 위로 들면 큰 탈 뒤에 숨어 앞에서 안 보였다, 2026-11-06)
     case 'sigh':{let up=0,dn=0;if(t<.5)up=ease(t/.5);else{up=1-ease((t-.5)/.35);dn=ease(Math.min(1,(t-.5)/.6))*ease(Math.min(1,(s-t)/.45));}
       spine.position.y+=.025*up-.045*dn;neck.rotation.x+=-.1*up+.18*dn;arms[0].rotation.z+=-.12*up+.24*dn;arms[1].rotation.z-=-.12*up+.24*dn;break;}
     case 'pale':{const k=ease(Math.min(1,t/.3))*ease(Math.min(1,(s-t)/.4));spine.position.y-=.025*k;arms[0].rotation.z+=.15*k;arms[1].rotation.z-=.15*k;neck.rotation.z+=Math.sin(T*42)*.012*k;break;} // 움츠러들며 아주 작게 떨림
@@ -5111,10 +5120,11 @@ export {applyStart,flags,gotAt,onFlag,resetAll,resetProgress,setFlag};
       처음 보이면 머리 위 '?'(크림색 동그라미, 크기 0.35+0.35·sus) + guard-notice(작게) → sus가 1이 되면 '!'(노란 동그라미) + guard-alert + 원더룹 후덜덜(얼굴빛 하얗게)
       → 0.35초 guard-windup(덤비기 전) → 0.55초 뒤 guard-caught + 짧은 흔들림 + 화면 전환(0.35초 어두워졌다 0.5초에 밝아짐 — 뚝 끊기지 않게)과 함께 safe 자리로.
       '?' 단계에서 멀어지거나 숨으면 sus가 줄어 원래대로. 원본은 '!' 뒤 쫓아와 잡았지만 시리즈는 달리지 않으니 쫓지 않고 바로 옮긴다(원본과 다른 점).
-   safe: [x,z,바라볼 각도] 또는 ()=>[x,z,ry] (세계 설정에서 채움 — 입구 쪽). lines: {notice:['…'], alert:['거기 누구냐!'], back:['…']} — 그 단계에서 한 줄(game/dialog say).
+   safe: [x,z,바라볼 각도] 또는 ()=>[x,z,ry] (세계 설정에서 채움 — 입구 쪽). lines: {notice:['…'], alert:['거기 누구냐!'], back:['…']} — 그 단계에서 한 줄(game/dialog say — notice·alert는 그 존재가, back은 원더룹 혼잣말).
    소리 이름은 효과음 공통 묶음(guard-notice·guard-alert·guard-windup·guard-caught) — 개미굴은 세계 설정 sfx로 원본 ant-alert·ant-windup·ant-caught를 끼운다.
    세계 설정 stages[구역 id].stealth = {hides:[…], pass:[…], guards:[…]} (모델은 함수 — (THREE)=>Object3D)도 08이 구역에 들어올 때 setStealthZone이 만든다.
    alertLevel() = 가장 높은 알아차림(0~1) — game/stage 긴장 구역 카메라 떨림이 그만큼 커진다(원본 보육실). 시험: 톱니 메뉴 '지나가는 큰 존재 시험'·'경비 영역 시험'(game/devstory). */
+import {storybook} from './storybook.js';
 import * as THREE from 'three';
 import {block,blocking,cue} from './core.js';
 import {sfx} from './sound.js';
@@ -5156,7 +5166,7 @@ function caught(e){if(busy)return;busy=e;block('caught',true);const U=C.WL.userD
   setTimeout(()=>{if(busy===e)sfx('guard-windup');},350);
   setTimeout(()=>{if(busy!==e)return;sfx('guard-caught');react('shake',{preset:'caught',sound:null});
     transition(()=>{const s=typeof e.safe==='function'?e.safe():e.safe;if(s){const W=C.WL;W.position.set(s[0],C.ground?C.ground(s[0],s[1]):W.position.y,s[1]);if(s[2]!=null)W.rotation.y=s[2];}
-      EYES.forEach(x=>{x.sus=0;x.st='calm';x.sp.visible=false;});},{out:.35,hold:.15,in:.5}).then(()=>{block('caught',false);busy=null;const b=pick(e.lines&&e.lines.back);if(b)say(who(e),b,2);});},900);}
+      EYES.forEach(x=>{x.sus=0;x.st='calm';x.sp.visible=false;});},{out:.35,hold:.15,in:.5}).then(()=>{block('caught',false);busy=null;const b=pick(e.lines&&e.lines.back);if(b)say('원더룹',b,2);});},900);}
 function tickStealth(dt){if(!C)return;const P=C.WL.position;
   for(const e of EYES){const moving=e.kind==='pass'&&!busy&&!blocking('talk')?walk(e,dt):false;if(e.model&&e.model.userData.tick)e.model.userData.tick(dt,moving);
     if(e.st==='alert')continue;const v=busy||blocking('itemget')||blocking('front')?0:sees(e);
@@ -5172,12 +5182,53 @@ function remove(o){HIDES=HIDES.filter(h=>h!==o);EYES=EYES.filter(e=>{if(e!==o)re
 /* 세계 설정 stages[구역].stealth로 만들기 (08 구역에 들어올 때) */
 function setStealthZone(z,W){clearStealth();const s=(z&&z.stealth)||(W&&W.stages&&z&&W.stages[z.id]&&W.stages[z.id].stealth);if(!s)return;
   (s.hides||[]).forEach(h=>hide({...h,obj:h.model?addModel(h.model,h.at):h.obj}));
-  (s.pass||[]).forEach(p=>pass({...p,model:p.model?p.model(THREE):null,ownModel:true}));
+  (s.pass||[]).forEach(p=>pass({...p,model:p.model?storybook(p.model(THREE)):null,ownModel:true}));
   (s.guards||[]).forEach(g=>guard({...g,obj:g.model?addModel(g.model,g.at,g.heading):g.obj}));}
-function addModel(f,at,ry=0){const m=f(THREE);m.position.set(at[0],C.ground?C.ground(at[0],at[1]):0,at[1]);m.rotation.y=ry;C.scene.add(m);return m;}
+function addModel(f,at,ry=0){const m=storybook(f(THREE));m.position.set(at[0],C.ground?C.ground(at[0],at[1]):0,at[1]);m.rotation.y=ry;C.scene.add(m);return m;}
 function clearStealth(){EYES.forEach(e=>{e.sp.removeFromParent();e.sp.material.dispose();if(e.ownModel&&e.model)e.model.removeFromParent();});EYES=[];HIDES=[];if(busy){block('caught',false);busy=null;}}
 const stealthState=()=>EYES.map(e=>({kind:e.kind,st:e.st,sus:+e.sus.toFixed(2),pos:eyePos(e).map(v=>+(+v).toFixed(2))}));
 export {alertLevel,clearStealth,guard,hidden,hide,initStealth,pass,remove,setStealthZone,stealthState,tickStealth};
+
+</script>
+<script type="text/x-wl-module" data-path="js/game/storybook.js">
+/* ===== 원본: js/game/storybook.js ===== */
+/* 원더룹 — 동화책 손그림 재질 (시리즈 공통 규칙, 2026-11-06 사용자 요청 — 규칙은 docs/series-rules.md '오브젝트 그림')
+   원더룹 세계의 오브젝트는 늘 동화책 손그림처럼 보인다: 반짝이는 3D 금속·매끈한 플라스틱 느낌이 아니라 개미굴 원본 그대로
+   ① 툰 음영 3단(0.55·0.82·1 — 그림자 면이 한 덩어리로 또렷, 2D 그림 같은 느낌) ② 모든 면에 크레용 결(CRAYON — 흰 바탕에 옅은 크림 획·점, 색은 재질 색을 곱함).
+   (요정의 숲 zones/fairy/paint.js toon()·CRAYON과 같은 값 — 그쪽은 구역 전용 캐시라 놓아 두고, 세계 설정 모델·연출 물건은 이 파일을 쓴다)
+   storybook(obj): obj 안 메시의 재질(Standard·Lambert·Phong·Basic·Toon)을 같은 색·발광·양면·투명도의 툰 + 크레용 결 재질로 바꾼다(같은 재질은 한 번만 바꿈).
+     바꾼 재질은 원래 재질 userData.sb에 남는다 — 모델이 원래 재질을 잡아 두고 값을 바꾸는 경우(랜턴 켜고 끄기)는 (m.userData.sb||m)에.
+     스프라이트(빛무리·반짝이)·직접 쓴 셰이더(ShaderMaterial)·userData.noStorybook 재질은 그대로.
+   부르는 곳: 세계 설정 모델을 만드는 game/finale(큰 획득 선물·귀환 탈것)·game/mission(첫 미션 물건)·game/stealth(지나가는 존재·숨을 곳)·game/devstory(시험 모형).
+   새 오브젝트를 만들 때는 처음부터 sbMat(색,{emissive,ei,side,opacity})을 쓰거나 다 만든 뒤 storybook(g). */
+import * as THREE from 'three';
+let CR=null,GRAD=null;
+function crayon(){if(CR)return CR;let s=20261106;const R=()=>((s=(s*1103515245+12345)&0x7fffffff)/0x7fffffff),rr=(a,b)=>a+R()*(b-a);
+  const size=256,cols=['#efe2d6','#ffffff','#e2d2c6','#fff6ea','#d8c8bc'],pick=()=>cols[Math.floor(R()*cols.length)];
+  const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');g.fillStyle='#ffffff';g.fillRect(0,0,size,size);g.lineCap='round';
+  for(let i=0;i<1100;i++){const x=R()*size,y=R()*size,len=rr(6,18),ang=R()*Math.PI,w=rr(1.5,5);g.strokeStyle=pick();g.globalAlpha=rr(.1,.32);g.lineWidth=w;
+    const dx=Math.cos(ang)*len,dy=Math.sin(ang)*len;for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){g.beginPath();g.moveTo(x+ox*size,y+oy*size);g.lineTo(x+dx+ox*size,y+dy+oy*size);g.stroke();}}
+  for(let i=0;i<900;i++){g.globalAlpha=rr(.1,.3);g.fillStyle=pick();g.beginPath();g.arc(R()*size,R()*size,rr(.8,3),0,7);g.fill();}
+  g.globalAlpha=1;CR=new THREE.CanvasTexture(c);CR.wrapS=CR.wrapT=THREE.RepeatWrapping;CR.colorSpace=THREE.SRGBColorSpace;CR.anisotropy=4;return CR;}
+function grad(){if(GRAD)return GRAD;const d=new Uint8Array([.549,.82,1].map(v=>Math.round(Math.pow(v,2.2)*255)).flatMap(v=>[v,v,v,255]));
+  GRAD=new THREE.DataTexture(d,3,1,THREE.RGBAFormat);GRAD.minFilter=GRAD.magFilter=THREE.NearestFilter;GRAD.generateMipmaps=false;GRAD.needsUpdate=true;return GRAD;}
+/* 새 재질: 색은 16진수(sRGB) 또는 THREE.Color */
+function sbMat(color,o={}){const m=new THREE.MeshToonMaterial({color:color instanceof THREE.Color?color.clone():new THREE.Color(color),gradientMap:grad(),map:o.map||crayon()});
+  if(o.emissive){m.emissive=o.emissive instanceof THREE.Color?o.emissive.clone():new THREE.Color(o.emissive);m.emissiveIntensity=o.ei??1;}
+  if(o.side)m.side=o.side;if(o.opacity!=null&&o.opacity<1||o.transparent){m.transparent=true;m.opacity=o.opacity??1;m.depthWrite=o.depthWrite??false;}
+  if(o.flat)m.flatShading=true;return m;}
+const KINDS=new Set(['MeshStandardMaterial','MeshPhysicalMaterial','MeshLambertMaterial','MeshPhongMaterial','MeshBasicMaterial','MeshToonMaterial']);
+function conv(m){if(!m||!KINDS.has(m.type)||m.userData.noStorybook)return m;if(m.userData.sbOf)return m;if(m.userData.sb)return m.userData.sb;
+  if(m.type==='MeshToonMaterial'){if(!m.map)m.map=crayon();if(!m.gradientMap)m.gradientMap=grad();m.needsUpdate=true;m.userData.sbOf=m;return m;}
+  const t=sbMat(m.color||'#ffffff',{map:m.map||null,side:m.side});
+  if(m.emissive&&m.type!=='MeshBasicMaterial'){t.emissive.copy(m.emissive);t.emissiveIntensity=m.emissiveIntensity;}
+  if(m.type==='MeshBasicMaterial'){t.emissive.copy(m.color);t.emissiveIntensity=.55;} // 빛을 안 받던 재질은 어두운 면에서도 밝게(툰 1단만큼)
+  if(m.transparent){t.transparent=true;t.opacity=m.opacity;t.depthWrite=m.depthWrite;}if(m.vertexColors)t.vertexColors=true;t.visible=m.visible;
+  t.userData.sbOf=m;m.userData.sb=t;return t;}
+function storybook(obj){if(!obj)return obj;const old=new Set();
+  obj.traverse(o=>{if(!o.isMesh||o.isSprite)return;const a=Array.isArray(o.material)?o.material:[o.material];const b=a.map(m=>{const n=conv(m);if(n!==m)old.add(m);return n;});o.material=Array.isArray(o.material)?b:b[0];});
+  return obj;}
+export {crayon,sbMat,storybook};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/synth.js">
@@ -6185,7 +6236,7 @@ function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.68:1.8*.62,b=ne
   const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.75}));h.scale.set(1.2,1.2,1);h.position.y=.25;b.add(h);
   // 드는 모양: 옆구리 쪽 손에 늘어뜨려(팔을 바깥으로 조금 벌려 몸 밖에 매달림 — 뒤에서 봐도 갓·불빛이 보임). show = 얻는 순간 번쩍 들어 보이기
   if(held){g.userData.carry={ax:-.35,az:-1.0,ex:-.25};g.userData.show={ax:-1.45,az:-.42,ex:-.1};g.userData.showLift=.16;g.userData.hang=true;}
-  g.userData.setOn=on=>{bulbMat.emissiveIntensity=on?1.1:.05;capMat.emissiveIntensity=on?.35:0;h.visible=on;};return g;}
+  g.userData.setOn=on=>{(bulbMat.userData.sb||bulbMat).emissiveIntensity=on?1.1:.05;(capMat.userData.sb||capMat).emissiveIntensity=on?.35:0;h.visible=on;};return g;} // 재질은 game/storybook이 손그림 재질로 바꿔 끼움(켜고 끄기는 userData.sb에)
 /* 큰 획득 선물 — 더듬이 나침반(개미굴 원본 makeCompass 모양: 금빛 테·크림 판·빨강/파랑 바늘·위 고리). 원점 = 가운데, 판이 +z(카메라)를 본다. userData.needle = 빙글 도는 바늘 */
 function compassGift(THREE){const g=new THREE.Group(),gold=new THREE.MeshStandardMaterial({color:'#f2c14e',emissive:'#a8701e',emissiveIntensity:.35,roughness:.5,metalness:.2});
   const rim=new THREE.Mesh(new THREE.TorusGeometry(.26,.045,10,28),gold);g.add(rim);
