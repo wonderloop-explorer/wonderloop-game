@@ -16,6 +16,7 @@
       'YouTube @wonderloop_world', 단추 '▶ 원더룹 채널 보러 가기'(새 창)·'인증서 보기'(세계 cert가 있을 때)·'처음부터 다시 하기' + '가방 보기'(모은 아이템·카드 다시 구경 — game/front 가방).
       배경은 세계 finale.endBackdrop(없으면 backdrop)을 시작 타이틀처럼 천천히 도는 카메라 루프. 조작·화면 구석 표시는 숨긴다.
    흐름(엔딩 순서): bigGet → flight → miniature → ending. 시험: 톱니 메뉴 '큰 획득 시험'·'귀환 비행 시험'·'미니어처 시험'·'엔딩 화면 시험'·'엔딩 순서 시험'(game/devstory). */
+import {storybook} from './storybook.js';
 import * as THREE from 'three';
 import {block,cue} from './core.js';
 import {sfx,zoneMusic,songs} from './sound.js';
@@ -67,7 +68,7 @@ function bigGet({from=null,giver=null,giverH=1.6,model,card={},to='bag',held=nul
   const camFor=q=>{const h=new THREE.Vector3(P.x,P.y+1.1,P.z),mid=h.clone().add(q).multiplyScalar(.5),D=h.distanceTo(q),k=D*1.15+2.2;return new THREE.Vector3(mid.x+(-fx*.45+rx)*k,mid.y+.35+D*.15,mid.z+(-fz*.45+rz)*k);};
   let spot=base.clone(),cam=camFor(spot);
   for(const o of [[0,0,0],[0,.7,0],[rx*1.3,.3,rz*1.3],[-rx*1.3,.3,-rz*1.3],[0,1.4,0],[rx*2.2,.9,rz*2.2]]){const q=base.clone().add(new THREE.Vector3(...o)),c=camFor(q);if(clearView(c,q,giver)){spot=q;cam=c;break;}}
-  const g=model(THREE);g.scale.multiplyScalar(.01);C.scene.add(g);const s0=g.scale.clone().multiplyScalar(100);
+  const g=storybook(model(THREE));g.scale.multiplyScalar(.01);C.scene.add(g);const s0=g.scale.clone().multiplyScalar(100);
   const rays=new THREE.Sprite(add(RAYS));rays.material.opacity=0;rays.scale.setScalar(2.6);rays.renderOrder=-1;g.add(rays);rays.position.z=-.1;
   const halo=new THREE.Sprite(add(HALO));halo.scale.setScalar(1.6);g.add(halo);
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.55,.75,8,24,1,true),new THREE.MeshBasicMaterial({color:'#ffe9a0',transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,fog:false}));
@@ -104,7 +105,7 @@ function endBig(ok=false){const B=BG;if(!B)return;BG=null;removeEventListener('p
 /* ---------- ② 귀환 비행 ---------- */
 let FL=null;
 function flight({vehicle,path,speed=3,seat=.35,onEnd=null,view=null}){if(!C)return Promise.resolve(false);
-  if(!vehicle.parent)C.scene.add(vehicle);sfx('event-whoosh');cue({kind:'flight',who:'귀환 비행',text:'',dur:0});
+  storybook(vehicle);if(!vehicle.parent)C.scene.add(vehicle);sfx('event-whoosh');cue({kind:'flight',who:'귀환 비행',text:'',dur:0});
   if(C.view){const p=path[0],q=path[Math.min(2,path.length-1)],dx=q[0]-p[0],dz=q[2]-p[2],L=Math.hypot(dx,dz)||1;C.view.start(view||{from:[p[0]-dz/L*6-dx/L*3,p[1]+3,p[2]+dx/L*6-dz/L*3]});} // 처음 각도만(옆 비스듬히) — 그 뒤는 플레이어 카메라
   return new Promise(res=>{FL={vehicle,res,onEnd};ride({vehicle,path,speed,seat,pose:'앉기',onEnd:()=>{const f=FL;FL=null;sfx('land');if(f&&f.onEnd)try{f.onEnd();}catch(e){console.error(e);}res(true);}});});}
 function tickFlight(dt){if(FL&&FL.vehicle.userData.tick)FL.vehicle.userData.tick(dt);}

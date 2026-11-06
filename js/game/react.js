@@ -73,7 +73,7 @@ function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
     case 'tilt':{const k=ease(Math.min(1,t/.35))*ease(Math.min(1,(s-t)/.4));neck.rotation.z+=.32*k;neck.rotation.y+=.12*k;break;}
     case 'hop':{const H=.45,i=Math.floor(t/H),u=(t-i*H)/H;if(i<2){if(i>=R.hops){R.hops=i+1;if(i>0)sfx('jump');}const j=Math.sin(u*Math.PI);WL.position.y+=.28*j;
         if(u>.85||u<.08)spine.position.y-=.03;}
-      const a=env*2;arms[0].rotation.z-=a;arms[1].rotation.z+=a;break;}
+      const a=env*1.7,f=env*.55;arms[0].rotation.z-=a;arms[1].rotation.z+=a;arms[0].rotation.x+=f;arms[1].rotation.x+=f;break;} // 두 팔을 앞쪽 비스듬히 위로(곧게 위로 들면 큰 탈 뒤에 숨어 앞에서 안 보였다, 2026-11-06)
     case 'sigh':{let up=0,dn=0;if(t<.5)up=ease(t/.5);else{up=1-ease((t-.5)/.35);dn=ease(Math.min(1,(t-.5)/.6))*ease(Math.min(1,(s-t)/.45));}
       spine.position.y+=.025*up-.045*dn;neck.rotation.x+=-.1*up+.18*dn;arms[0].rotation.z+=-.12*up+.24*dn;arms[1].rotation.z-=-.12*up+.24*dn;break;}
     case 'pale':{const k=ease(Math.min(1,t/.3))*ease(Math.min(1,(s-t)/.4));spine.position.y-=.025*k;arms[0].rotation.z+=.15*k;arms[1].rotation.z-=.15*k;neck.rotation.z+=Math.sin(T*42)*.012*k;break;} // 움츠러들며 아주 작게 떨림

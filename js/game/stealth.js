@@ -9,10 +9,11 @@
       처음 보이면 머리 위 '?'(크림색 동그라미, 크기 0.35+0.35·sus) + guard-notice(작게) → sus가 1이 되면 '!'(노란 동그라미) + guard-alert + 원더룹 후덜덜(얼굴빛 하얗게)
       → 0.35초 guard-windup(덤비기 전) → 0.55초 뒤 guard-caught + 짧은 흔들림 + 화면 전환(0.35초 어두워졌다 0.5초에 밝아짐 — 뚝 끊기지 않게)과 함께 safe 자리로.
       '?' 단계에서 멀어지거나 숨으면 sus가 줄어 원래대로. 원본은 '!' 뒤 쫓아와 잡았지만 시리즈는 달리지 않으니 쫓지 않고 바로 옮긴다(원본과 다른 점).
-   safe: [x,z,바라볼 각도] 또는 ()=>[x,z,ry] (세계 설정에서 채움 — 입구 쪽). lines: {notice:['…'], alert:['거기 누구냐!'], back:['…']} — 그 단계에서 한 줄(game/dialog say).
+   safe: [x,z,바라볼 각도] 또는 ()=>[x,z,ry] (세계 설정에서 채움 — 입구 쪽). lines: {notice:['…'], alert:['거기 누구냐!'], back:['…']} — 그 단계에서 한 줄(game/dialog say — notice·alert는 그 존재가, back은 원더룹 혼잣말).
    소리 이름은 효과음 공통 묶음(guard-notice·guard-alert·guard-windup·guard-caught) — 개미굴은 세계 설정 sfx로 원본 ant-alert·ant-windup·ant-caught를 끼운다.
    세계 설정 stages[구역 id].stealth = {hides:[…], pass:[…], guards:[…]} (모델은 함수 — (THREE)=>Object3D)도 08이 구역에 들어올 때 setStealthZone이 만든다.
    alertLevel() = 가장 높은 알아차림(0~1) — game/stage 긴장 구역 카메라 떨림이 그만큼 커진다(원본 보육실). 시험: 톱니 메뉴 '지나가는 큰 존재 시험'·'경비 영역 시험'(game/devstory). */
+import {storybook} from './storybook.js';
 import * as THREE from 'three';
 import {block,blocking,cue} from './core.js';
 import {sfx} from './sound.js';
@@ -54,7 +55,7 @@ function caught(e){if(busy)return;busy=e;block('caught',true);const U=C.WL.userD
   setTimeout(()=>{if(busy===e)sfx('guard-windup');},350);
   setTimeout(()=>{if(busy!==e)return;sfx('guard-caught');react('shake',{preset:'caught',sound:null});
     transition(()=>{const s=typeof e.safe==='function'?e.safe():e.safe;if(s){const W=C.WL;W.position.set(s[0],C.ground?C.ground(s[0],s[1]):W.position.y,s[1]);if(s[2]!=null)W.rotation.y=s[2];}
-      EYES.forEach(x=>{x.sus=0;x.st='calm';x.sp.visible=false;});},{out:.35,hold:.15,in:.5}).then(()=>{block('caught',false);busy=null;const b=pick(e.lines&&e.lines.back);if(b)say(who(e),b,2);});},900);}
+      EYES.forEach(x=>{x.sus=0;x.st='calm';x.sp.visible=false;});},{out:.35,hold:.15,in:.5}).then(()=>{block('caught',false);busy=null;const b=pick(e.lines&&e.lines.back);if(b)say('원더룹',b,2);});},900);}
 function tickStealth(dt){if(!C)return;const P=C.WL.position;
   for(const e of EYES){const moving=e.kind==='pass'&&!busy&&!blocking('talk')?walk(e,dt):false;if(e.model&&e.model.userData.tick)e.model.userData.tick(dt,moving);
     if(e.st==='alert')continue;const v=busy||blocking('itemget')||blocking('front')?0:sees(e);
@@ -70,9 +71,9 @@ function remove(o){HIDES=HIDES.filter(h=>h!==o);EYES=EYES.filter(e=>{if(e!==o)re
 /* 세계 설정 stages[구역].stealth로 만들기 (08 구역에 들어올 때) */
 function setStealthZone(z,W){clearStealth();const s=(z&&z.stealth)||(W&&W.stages&&z&&W.stages[z.id]&&W.stages[z.id].stealth);if(!s)return;
   (s.hides||[]).forEach(h=>hide({...h,obj:h.model?addModel(h.model,h.at):h.obj}));
-  (s.pass||[]).forEach(p=>pass({...p,model:p.model?p.model(THREE):null,ownModel:true}));
+  (s.pass||[]).forEach(p=>pass({...p,model:p.model?storybook(p.model(THREE)):null,ownModel:true}));
   (s.guards||[]).forEach(g=>guard({...g,obj:g.model?addModel(g.model,g.at,g.heading):g.obj}));}
-function addModel(f,at,ry=0){const m=f(THREE);m.position.set(at[0],C.ground?C.ground(at[0],at[1]):0,at[1]);m.rotation.y=ry;C.scene.add(m);return m;}
+function addModel(f,at,ry=0){const m=storybook(f(THREE));m.position.set(at[0],C.ground?C.ground(at[0],at[1]):0,at[1]);m.rotation.y=ry;C.scene.add(m);return m;}
 function clearStealth(){EYES.forEach(e=>{e.sp.removeFromParent();e.sp.material.dispose();if(e.ownModel&&e.model)e.model.removeFromParent();});EYES=[];HIDES=[];if(busy){block('caught',false);busy=null;}}
 const stealthState=()=>EYES.map(e=>({kind:e.kind,st:e.st,sus:+e.sus.toFixed(2),pos:eyePos(e).map(v=>+(+v).toFixed(2))}));
 export {alertLevel,clearStealth,guard,hidden,hide,initStealth,pass,remove,setStealthZone,stealthState,tickStealth};

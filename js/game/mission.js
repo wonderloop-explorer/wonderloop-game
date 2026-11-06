@@ -6,6 +6,7 @@
            세계 도구 단추(controls.setTool — 개미굴 랜턴 켜고 끄기)·다음 할 일(next).
    시간 제한·실패·점수 없음. 받았는지 = flags['have:<세계 id>:<물건 id>'] (저장) — 받았으면 미션 없이 손에 쥔 채로 시작한다.
    startMission(W)는 game/front가 게임을 시작할 때(조작법 창이 열려 있으면 닫힌 뒤) 부른다. 구역을 떠나면 game/index가 clearMission(). */
+import {storybook} from './storybook.js';
 import * as THREE from 'three';
 import {notice,itemCard,setQuest,cardShown} from './ui.js';
 import {set as setGoal} from './goal.js';
@@ -31,12 +32,12 @@ function tickLamp(dt){if(!light)return;const want=lampOn&&!!(ctx.WL.userData.hel
 function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,kind:'narration'});return tok;}
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
-function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=it.model(THREE,{held:true});h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
+function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=storybook(it.model(THREE,{held:true}));h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
   if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('ui-click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use,on});};setTool({label:lab(),use,on});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
   M={W,F,it,got:false,at:F.goal&&F.goal.at||it.at};t=0;
-  if(it.model){obj=it.model(THREE,{held:false});obj.position.set(it.at[0],(ctx.ground?ctx.ground(it.at[0],it.at[1]):0)+(it.y??1.1),it.at[1]);obj.userData.y0=obj.position.y;ctx.scene.add(obj);}
+  if(it.model){obj=storybook(it.model(THREE,{held:false}));obj.position.set(it.at[0],(ctx.ground?ctx.ground(it.at[0],it.at[1]):0)+(it.y??1.1),it.at[1]);obj.userData.y0=obj.position.y;ctx.scene.add(obj);}
   setQuest(F.quest||'');
   setGoal({at:M.at,label:F.goal&&F.goal.label||it.name,style:'ant',h:3.4});
   const P=F.popup||{};

@@ -6,6 +6,7 @@
    ⑤ 스테이지 빛: 끔 → 세계 설정 stages의 빛(개미굴 꿀 저장소·보육실·지네 동굴) 차례로.
    ⑥ 큰 획득 시험: 앞 3m 큰 주민(가리개) 위로 세계 finale.gift. ⑦ 귀환 비행 시험: 세계 finale.vehicle을 타고 둘레를 날아 한 바퀴. ⑧ 미니어처 시험(세계 finale.miniature — 없으면 구역 크기로 다섯 자리).
    ⑨ 엔딩 화면 시험 · ⑩ 엔딩 순서 시험(큰 획득 → 귀환 비행 → 미니어처 → 엔딩 화면) · 미니어처 경로 저장(JSON 내려받기 — 유튜브 앰비언스 영상용). */
+import {sbMat} from './storybook.js';
 import * as THREE from 'three';
 import {addEmotion,addTension,setTestLight} from './stage.js';
 import {guard,hide,pass,remove} from './stealth.js';
@@ -20,7 +21,7 @@ const gy=(x,z)=>C.groundY?C.groundY(x,z)||0:0;
 function faceOpen(){if(!C.blocked)return;const p=P();let best=ry(),bn=-1;for(let i=0;i<16;i++){const a=i/16*Math.PI*2;let n=0;
     for(let f=1;f<=7;f+=1)for(let r=-6;r<=6;r+=1.5){const x=p.x+Math.sin(a)*f+Math.cos(a)*r,z=p.z+Math.cos(a)*f-Math.sin(a)*r;if(!C.blocked(x,z))n++;}if(n>bn){bn=n;best=a;}}
   C.WL.rotation.y=best;}
-const mat=(c,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:.85,...o});
+const mat=(c,o={})=>sbMat(c,{...o,ei:o.emissiveIntensity}); // 시험 모형도 동화책 손그림 재질(game/storybook)
 function ring(c,r,col){const m=new THREE.Mesh(new THREE.RingGeometry(r-.08,r,48),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.6,depthWrite:false,side:THREE.DoubleSide}));
   m.rotation.x=-Math.PI/2;m.position.set(c[0],gy(c[0],c[1])+.04,c[1]);C.scene.add(m);hint(m);return m;}
 const drop=o=>{if(!o)return;o.removeFromParent();o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>m.dispose());});};
@@ -51,7 +52,7 @@ function guardFig(){const g=new THREE.Group(),b=mat('#7e4229'),d=mat('#3e2834');
   [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),mat('#fff6e6'));e.position.set(s*.15,1.48,.45);g.add(e);});
   const sp=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2,6),mat('#c8a070'));sp.position.set(.5,1,0);g.add(sp);return g;}
 function stealthGuard(){toggle('guard',()=>{faceOpen();const p=at(6.5),home=[P().x,P().z,ry()],m=guardFig(),h=Math.atan2(P().x-p[0],P().z-p[1]);m.position.set(p[0],gy(p[0],p[1]),p[1]);m.rotation.y=h;C.scene.add(m);
-  const e=guard({obj:m,heading:h,range:5,cone:.58,height:2.2,who:'경비',safe:home,lines:{alert:['거기 누구냐!'],back:['휴, 입구로 돌아왔어요']}});
+  const e=guard({obj:m,heading:h,range:4,cone:.58,height:2.2,who:'경비',safe:home,lines:{alert:['거기 누구냐!'],back:['휴, 입구로 돌아왔어요']}});
   SPOTS.guard=p;const bc=at(3.2,1.3);SPOTS.box=bc;const box=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.4),mat('#c99d5c'));box.position.set(bc[0],gy(bc[0],bc[1])+.6,bc[1]);C.scene.add(box);const hh=hide({at:bc,r:.95});
   const rg=ring(p,5,'#ffd23f');toast('경비 영역(노란 고리)에 들어가면 ? → ! — 나무 상자 뒤에 숨으면 안 보여요');
   return ()=>{remove(e);remove(hh);drop(m);drop(box);drop(rg);};});}

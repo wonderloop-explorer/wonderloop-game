@@ -73,7 +73,7 @@ function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.68:1.8*.62,b=ne
   const h=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.75}));h.scale.set(1.2,1.2,1);h.position.y=.25;b.add(h);
   // 드는 모양: 옆구리 쪽 손에 늘어뜨려(팔을 바깥으로 조금 벌려 몸 밖에 매달림 — 뒤에서 봐도 갓·불빛이 보임). show = 얻는 순간 번쩍 들어 보이기
   if(held){g.userData.carry={ax:-.35,az:-1.0,ex:-.25};g.userData.show={ax:-1.45,az:-.42,ex:-.1};g.userData.showLift=.16;g.userData.hang=true;}
-  g.userData.setOn=on=>{bulbMat.emissiveIntensity=on?1.1:.05;capMat.emissiveIntensity=on?.35:0;h.visible=on;};return g;}
+  g.userData.setOn=on=>{(bulbMat.userData.sb||bulbMat).emissiveIntensity=on?1.1:.05;(capMat.userData.sb||capMat).emissiveIntensity=on?.35:0;h.visible=on;};return g;} // 재질은 game/storybook이 손그림 재질로 바꿔 끼움(켜고 끄기는 userData.sb에)
 /* 큰 획득 선물 — 더듬이 나침반(개미굴 원본 makeCompass 모양: 금빛 테·크림 판·빨강/파랑 바늘·위 고리). 원점 = 가운데, 판이 +z(카메라)를 본다. userData.needle = 빙글 도는 바늘 */
 function compassGift(THREE){const g=new THREE.Group(),gold=new THREE.MeshStandardMaterial({color:'#f2c14e',emissive:'#a8701e',emissiveIntensity:.35,roughness:.5,metalness:.2});
   const rim=new THREE.Mesh(new THREE.TorusGeometry(.26,.045,10,28),gold);g.add(rim);
