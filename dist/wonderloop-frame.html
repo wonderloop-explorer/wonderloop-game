@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="d3954724db";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="0eb8ad7891";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 7cc3f70, 버전 eeeb1477c7, 2026-11-06)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 0c0c021, 버전 1cb118af8b, 2026-11-06)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -347,8 +347,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="eeeb1477c7";
-window.WL_BUILD={"commit":"7cc3f70","date":"2026-11-06","stage":"basecamp"};
+window.WL_V="1cb118af8b";
+window.WL_BUILD={"commit":"0c0c021","date":"2026-11-06","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -3206,6 +3206,7 @@ import {openBag,playerName} from './front.js';
 import {resetAll} from './state.js';
 let C=null,BG=null,MINI=null,END=null,STAR=null,RAYS=null,HALO=null;
 const _v=new THREE.Vector3(),_w=new THREE.Vector3();
+const narrowK=()=>{const a=C&&C.camera&&C.camera.aspect||1.6;return a<1.25?Math.min(2,1.25/a):1;};
 function initFinale(c){C=c;}
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 function canvasTex(f,n=128){const c=document.createElement('canvas');c.width=c.height=n;f(c.getContext('2d'),n);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
@@ -3232,9 +3233,10 @@ function revealCard({kicker='',title='',text='',img=null,btn='받았어요'}){if
     const b=el.querySelector('button');b.textContent=btn;const done=()=>{el.remove();sfx('ui-click');cue({kind:'card',who:'큰 획득',text:'닫힘',dur:0});res();};b.addEventListener('click',done);
     (document.querySelector('.wlg')||document.body).appendChild(el);b.focus({preventScroll:true});sfx('item-get');cue({kind:'card',who:'큰 획득',text:title,sub:text,dur:0});
     if(SHOT)setTimeout(done,3500);});}
-function clearView(cam,p,skip){const ray=new THREE.Raycaster(),d=_v.copy(p).sub(cam),L=d.length();ray.set(cam,d.normalize());ray.far=L-.3;ray.layers.enableAll();
-  const objs=[];C.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false)){for(let q=o;q;q=q.parent)if(q===skip||q===C.WL)return;objs.push(o);}});
-  return !ray.intersectObjects(objs,false).length;}
+function clearView(cam,p,skip){const objs=[];C.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false)){for(let q=o;q;q=q.parent)if(q===skip||q===C.WL)return;objs.push(o);}});
+  // 양쪽으로 쏜다: 방 벽은 한쪽 면이라 벽 밖 카메라에서 안으로 쏘면 뒷면이라 안 맞는다(세로 화면에서 물러난 카메라가 방 밖으로 나가 까맣게 보였다)
+  const hit=(a,b)=>{const d=new THREE.Vector3().subVectors(b,a),L=d.length(),ray=new THREE.Raycaster(a,d.normalize(),.3,Math.max(.31,L-.3));ray.layers.enableAll();return ray.intersectObjects(objs,false).length>0;};
+  return !hit(cam,p)&&!hit(p,cam);}
 const PH=[.7,1.6,2.6,4.5,5.6]; // 빛기둥 · 튀어나옴 · 떠올라 돌기 · 내려옴 · 머묾 → 창
 function bigGet({from=null,giver=null,giverH=1.6,model,card={},to='bag',held=null,onDone=null}){if(!C)return Promise.resolve(false);if(BG)endBig();texs();
   const W=C.WL,P=W.position,U=W.userData;if(U.stopWalk)U.stopWalk();block('bigget',true);
@@ -3243,9 +3245,11 @@ function bigGet({from=null,giver=null,giverH=1.6,model,card={},to='bag',held=nul
   W.rotation.y=Math.atan2(base.x-P.x,base.z-P.z); // 원본: 선물 쪽을 본다
   const ry=W.rotation.y,fx=Math.sin(ry),fz=Math.cos(ry),rx=Math.cos(ry),rz=-Math.sin(ry);
   // 카메라: 원본 QCAM처럼 원더룹 뒤 비스듬히(뒤 0.5 : 옆 1) — 원더룹 머리와 선물 사이 거리에 맞춰 물러나 둘 다 화면 안에(원본 거리 그대로면 선물이 위로 잘렸다)
-  const camFor=q=>{const h=new THREE.Vector3(P.x,P.y+1.1,P.z),mid=h.clone().add(q).multiplyScalar(.5),D=h.distanceTo(q),k=D*1.15+2.2;return new THREE.Vector3(mid.x+(-fx*.45+rx)*k,mid.y+.35+D*.15,mid.z+(-fz*.45+rz)*k);};
+  // 세로 화면(휴대폰)은 따라가기 카메라와 같은 배율(1.25/화면비, 최대 2)로 물러난다 — 가로 기준 거리 그대로면 주는 이와 선물이 반쯤 잘렸다(2026-11-06 아이폰)
+  const camFor=(q,m=narrowK())=>{const h=new THREE.Vector3(P.x,P.y+1.1,P.z),mid=h.clone().add(q).multiplyScalar(.5),D=h.distanceTo(q),k=(D*1.15+2.2)*m;return new THREE.Vector3(mid.x+(-fx*.45+rx)*k,mid.y+.35+D*.15,mid.z+(-fz*.45+rz)*k);};
   let spot=base.clone(),cam=camFor(spot);
-  for(const o of [[0,0,0],[0,.7,0],[rx*1.3,.3,rz*1.3],[-rx*1.3,.3,-rz*1.3],[0,1.4,0],[rx*2.2,.9,rz*2.2]]){const q=base.clone().add(new THREE.Vector3(...o)),c=camFor(q);if(clearView(c,q,giver)){spot=q;cam=c;break;}}
+  const head=new THREE.Vector3(P.x,P.y+1.1,P.z),nk=narrowK(),ms=[...new Set([nk,(nk+1)/2,1])]; // 세로 화면에서 물러나다 벽에 막히면 덜 물러남
+  find:for(const m of ms)for(const o of [[0,0,0],[0,.7,0],[rx*1.3,.3,rz*1.3],[-rx*1.3,.3,-rz*1.3],[0,1.4,0],[rx*2.2,.9,rz*2.2]]){const q=base.clone().add(new THREE.Vector3(...o)),c=camFor(q,m);if(clearView(c,q,giver)&&clearView(c,head,giver)){spot=q;cam=c;break find;}}
   const g=storybook(model(THREE));g.scale.multiplyScalar(.01);C.scene.add(g);const s0=g.scale.clone().multiplyScalar(100);
   const rays=new THREE.Sprite(add(RAYS));rays.material.opacity=0;rays.scale.setScalar(2.6);rays.renderOrder=-1;g.add(rays);rays.position.z=-.1;
   const halo=new THREE.Sprite(add(HALO));halo.scale.setScalar(1.6);g.add(halo);
@@ -3283,6 +3287,7 @@ function endBig(ok=false){const B=BG;if(!B)return;BG=null;removeEventListener('p
 /* ---------- ② 귀환 비행 ---------- */
 let FL=null;
 function flight({vehicle,path,speed=3,seat=.35,onEnd=null,view=null}){if(!C)return Promise.resolve(false);
+  if(FL){const f=FL;FL=null;f.res(false);} // 앞 비행이 끝나기 전에 새로 타면 앞 비행을 끝냄(부른 쪽이 그 탈것을 치움 — 시험 단추를 거듭 누르면 날개개미가 쌓였다)
   storybook(vehicle);if(!vehicle.parent)C.scene.add(vehicle);sfx('event-whoosh');cue({kind:'flight',who:'귀환 비행',text:'',dur:0});
   if(C.view){const p=path[0],q=path[Math.min(2,path.length-1)],dx=q[0]-p[0],dz=q[2]-p[2],L=Math.hypot(dx,dz)||1;C.view.start(view||{from:[p[0]-dz/L*6-dx/L*3,p[1]+3,p[2]+dx/L*6-dz/L*3]});} // 처음 각도만(옆 비스듬히) — 그 뒤는 플레이어 카메라
   return new Promise(res=>{FL={vehicle,res,onEnd};ride({vehicle,path,speed,seat,pose:'앉기',onEnd:()=>{const f=FL;FL=null;sfx('land');if(f&&f.onEnd)try{f.onEnd();}catch(e){console.error(e);}res(true);}});});}
@@ -3384,7 +3389,7 @@ function cert(W){const c=W.cert||{},el=document.createElement('div');el.id='wlCe
   const cols=['#f2c14e','#ef8fae','#7fe0d8','#8f7fd8','#ff9f5a'];for(let i=0;i<40;i++){const f=document.createElement('i');f.className='confetti';f.style.left=Math.random()*100+'%';f.style.background=cols[i%5];f.style.animationDuration=(2.2+Math.random()*2)+'s';f.style.animationDelay=(Math.random()*.8)+'s';el.appendChild(f);}
   q('button').addEventListener('click',()=>{sfx('ui-click');el.remove();});(document.querySelector('.wlg')||document.body).appendChild(el);sfx('mission-clear');q('button').focus({preventScroll:true});}
 function tickFinale(dt){tickBig(dt);tickFlight(dt);}
-function clearFinale(){endBig(false);endMini(false);closeEnding();FL=null;}
+function clearFinale(){endBig(false);endMini(false);closeEnding();if(FL){const f=FL;FL=null;f.res(false);}}
 const finaleState=()=>({big:BG?{t:+BG.t.toFixed(2),revealed:!!BG.revealed}:null,mini:!!MINI,ending:!!END,flight:!!FL});
 export {bigGet,cert,clearFinale,closeEnding,ending,finaleState,flight,initFinale,miniature,miniatureAt,miniaturePath,tickFinale};
 
@@ -4128,7 +4133,7 @@ const view={camera:null,aim:null,
   focus({at,from=null,dist=7,sec=2}){return new Promise(done=>{view.req={at,from,dist,sec,t:0,done};});},
   hold(fn,o){view.req=fn?{fn,t:0,snap:!!(o&&o.snap)}:null;}}; // snap: fn이 지금 카메라 자리에서 시작할 때 — 섞지 않고 바로 그 길로(섞으면 곧은 선으로 질러가 원더룹 머리를 뚫었다, 2026-11-05)
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet(c);initStage(c);initStealth(c);initFinale({...c,view});}
+function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);}
 function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
@@ -4219,7 +4224,8 @@ export {act,add,busy,clearInteract,click,initInteract,prompt,remove,start,tickIn
       도착 순간 반짝이 열넷이 흩어지고(원본 burstSparkles — 별 그림, 더하기 섞기) 아래 획득 카드(ui.itemCard — 아이콘·제목·한 줄, item-get 소리).
       원더룹은 카메라 쪽으로 돌아서서 웃는다(game/react 'joy' — 몸통 통통 없이, 원본 hold: 카메라 방향으로 초당 8 + happy 얼굴).
    ③ 넣기 0.38초: to='bag'이면 배낭 쪽으로 작아지며 들어가 사라지고(원본 stow), to='hand'면 오른손 자리로 내려오며 작아져 held()가 만든 물체를 쥔다(07 setHeld).
-   카메라는 움직이지 않는다(원본과 같다 — 예전 버섯 랜턴은 카메라가 원더룹 둘레를 돌아 앞으로 갔는데 휴대폰에서 버벅였다, 2026-11-05).
+   카메라: 지금 방향 그대로 원더룹 쪽으로 살짝 다가간다(zoom, 기본 켜짐 — 거리 ×0.7, 최소 2.7m, 방 소품이 가리면 좌우로 조금(최대 ±0.9라디안) 돌며, 보는 점은 가슴 → 머리 위 물건 사이, 0.6초에 들어가 넣기가 끝나면 — 손에 쥐면 쥔 모습을 1.3초 더 보여 주고 — 0.6초에 돌아옴).
+   예전 버섯 랜턴은 카메라가 원더룹 둘레를 돌아 앞으로 갔는데 휴대폰에서 버벅였다(2026-11-05) → 다가가기만 한다(2026-11-06 — 휴대폰에서 랜턴 드는 동작이 작아 잘 안 보였다).
    촬영 모드에서도 같은 순서(게임 시간). 구역을 떠나면 clearItemGet(). */
 import * as THREE from 'three';
 import {block,cue} from './core.js';
@@ -4232,11 +4238,24 @@ function initItemGet(c){C=c;}
 function star(){if(STAR)return STAR;const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#fff3c0';g.beginPath(); // 원본 STAR 그대로
   for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?7:30;g.lineTo(32+Math.cos(a)*r,32+Math.sin(a)*r);}g.fill();STAR=new THREE.CanvasTexture(c);STAR.colorSpace=THREE.SRGBColorSpace;return STAR;}
 let seed=777;const rnd=()=>((seed=(seed*1103515245+12345)&0x7fffffff)/0x7fffffff),rr=(a,b)=>a+(b-a)*rnd();
-function itemGet({obj,to='bag',held=null,card=null,scale=1.55,top=1.95,onDone=null}){if(!C||!obj)return Promise.resolve(false);clearItemGet();
+function itemGet({obj,to='bag',held=null,card=null,scale=1.55,top=1.95,onDone=null,zoom=true}){if(!C||!obj)return Promise.resolve(false);clearItemGet();
   const U=C.WL.userData;if(U.stopWalk)U.stopWalk();block('itemget',true);
   obj.updateWorldMatrix(true,false);const from=obj.getWorldPosition(new THREE.Vector3());C.scene.attach(obj);
   const s0=obj.scale.clone();sfx('item-pickup');cue({kind:'itemget',who:'아이템',text:card&&card.title||'',dur:3.13});
-  return new Promise(res=>{cur={obj,to,held,card,scale,top,onDone,res,ph:'fly',t:0,from,s0,sp:[]};});}
+  return new Promise(res=>{cur={obj,to,held,card,scale,top,onDone,res,ph:'fly',t:0,from,s0,sp:[]};if(zoom)dolly(cur);});}
+/* 살짝 다가가기: 지금 카메라 방향 그대로 거리만 줄인다(돌지 않음 — 머리를 뚫지 않고 휴대폰도 가볍다). 끝(R.zoomOut)이면 0.6초에 돌아간 뒤 놓아 준다 */
+function dolly(R){const V=C.view;if(!V||!V.hold)return;const W=C.WL,P=W.position,c=C.camera.position,y0=.85,yT=R.top*.75;
+  const a0=Math.atan2(c.x-P.x,c.z-P.z),h0=Math.hypot(c.x-P.x,c.z-P.z),v0=c.y-P.y-y0;if(h0<.5)return;const e=k=>k*k*(3-2*k);let t=0,last=performance.now();
+  // 다가간 자리에서 원더룹 머리·물건이 가리지 않는 자리: 지금 방향부터 좌우로 조금씩(최대 ±0.9라디안) — 방 소품(지구본 등) 뒤면 옆으로 살짝 돌며 다가간다. 다 막히면 그대로
+  const pos=(a,h,v)=>new THREE.Vector3(P.x+Math.sin(a)*h,P.y+y0+v+(yT-y0),P.z+Math.cos(a)*h);let pick=null;
+  for(const da of [0,.35,-.35,.7,-.7,.9,-.9]){for(const r of [.7,.8,.9,1]){const h=Math.max(2.7,Math.min(h0,h0*r)),v=v0*h/h0,cp=pos(a0+da,h,v);
+      if([.55,.9,1.2,R.top].every(y=>seen(cp,new THREE.Vector3(P.x,P.y+y,P.z),R.obj))){pick={a:a0+da,h,v};break;}}if(pick)break;} // 가슴·얼굴·탈·물건이 모두 보이는 자리
+  if(!pick||(Math.abs(pick.a-a0)<.01&&pick.h>=h0-.05))return;
+  const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;let k=e(Math.min(1,t/.6));
+    if(R.zoomOut!=null){const u=Math.min(1,(t-R.zoomOut)/.6);k*=1-e(u);if(u>=1){setTimeout(()=>{if(V.req&&V.req.fn===fn)V.hold(null);},0);return null;}}
+    const a=a0+(pick.a-a0)*k,h=h0+(pick.h-h0)*k,v=v0+(pick.v-v0)*k,ay=y0+(yT-y0)*k;
+    return {from:[P.x+Math.sin(a)*h,P.y+ay+v,P.z+Math.cos(a)*h],at:[P.x,P.y+ay,P.z]};};
+  R.zoomFn=fn;R.zoomT=()=>t;V.hold(fn,{snap:true});}
 function burst(p){const tx=star();for(let i=0;i<14;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
   sp.position.copy(p);const a=rnd()*6.28,e=rr(-.3,1),life=rr(.6,1.1);C.scene.add(sp);cur.sp.push({sp,t:life,life,v:new THREE.Vector3(Math.cos(a)*rr(1,2.2),e*1.8+.6,Math.sin(a)*rr(1,2.2))});}}
 function tickItemGet(dt){if(!cur)return;const R=cur,o=R.obj,W=C.WL,P=W.position;R.t+=dt;
@@ -4253,8 +4272,12 @@ function tickItemGet(dt){if(!cur)return;const R=cur,o=R.obj,W=C.WL,P=W.position;
     if(R.to==='hand'){W.updateWorldMatrix(true,true);U_hand(_w);}else W.localToWorld(_w.set(0,.75,-.3)); // 손(07 held 뼈) 또는 배낭
     o.position.lerpVectors(R.top0,_w,k);o.scale.copy(R.s0).multiplyScalar(R.scale*(1-k*(R.to==='hand'?.6:.94)));o.rotation.y+=dt*2.5;
     if(k>=1)finish(true);}}
+function seen(cam,p,skip){const ray=new THREE.Raycaster(),d=p.clone().sub(cam),L=d.length();ray.set(cam,d.normalize());ray.far=Math.max(.1,L-.35);ray.layers.enableAll();
+  const objs=[];C.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false)){for(let q=o;q;q=q.parent)if(q===skip||q===C.WL)return;objs.push(o);}});
+  return !ray.intersectObjects(objs,false).length;}
 function U_hand(v){const U=C.WL.userData;if(U.heldBone)U.heldBone.getWorldPosition(v);else C.WL.localToWorld(v.set(-.3,.6,.2));return v;}
 function finish(ok){const R=cur;if(!R||R.ph==='done')return;R.ph='done';block('itemget',false);
+  if(R.zoomFn){if(ok)R.zoomOut=R.zoomT()+(R.to==='hand'?1.3:.3);else if(C.view&&C.view.req&&C.view.req.fn===R.zoomFn)C.view.hold(null);}
   R.obj.removeFromParent();R.obj.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map&&m.map!==STAR)m.map.dispose();m.dispose();});});
   if(R.to==='hand'&&R.held){const U=C.WL.userData;const h=R.held();if(h&&U.setHeld)U.setHeld(h);}
   if(R.onDone)try{R.onDone(ok);}catch(e){console.error(e);}R.res(ok);}
@@ -4742,6 +4765,7 @@ export {cards,clearProfile,found,initProfile,meet,pic,portrait,seen,setup,spinFr
    그리기: 07 updateWL 뒤(game updateGame — tickReact)에 뼈(neck·spine·팔)와 원더룹 높이에 더하기만 한다 — 07이 매 프레임 다시 정하므로 끝나면 저절로 원래대로.
    카메라 흔들림·시야는 08이 그리기 바로 앞뒤로 camPre/camPost(그린 뒤 되돌려 따라가기 카메라에 흔들림이 쌓이지 않게 — 원본도 카메라 자리를 매 프레임 새로 썼다).
    촬영 모드에서도 같은 그림이 나오게 흔들림 난수는 시드 고정. 시험: 톱니 메뉴 '리액션: …' 단추(game/devcheck). */
+import * as THREE from 'three';
 import {cue} from './core.js';
 import {sfx} from './sound.js';
 let C=null,cur=null,shk=null,punch=0,T=0,seed=12345,camSave=null,sway=0,swayK=0,paleK=0,paleStep=0,paleWant=0;
@@ -4769,10 +4793,18 @@ function react(name,o={}){if(!C)return Promise.resolve(false);
    0.45초에 다가가 sec초 머문 뒤 0.45초에 원래 자리로 돌아온다(game view.hold — 화면을 만지면 끝). */
 function closeUp(sec=1.1){if(!C||!C.view)return Promise.resolve();const W=C.WL,P=W.position,cam=C.camera.position;
   const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y;let a1=W.rotation.y+.35,d=a1-a0;d=Math.atan2(Math.sin(d),Math.cos(d));a1=a0+d;
+  const asp=C.camera.aspect||1.6,RW=2.4*(asp<1.25?Math.min(1.8,1.25/asp):1); // 세로 화면은 물러나서(얼굴만 화면 가득 차지 않게 — 2026-11-06 아이폰)
+  // 도는 길(네 칸)과 끝 자리가 모두 트인 가장 먼 거리 — 벽 밖·벽 속을 지나면 덜 물러남(세로 화면에서 물러난 길이 방 벽을 뚫었다)
+  const face=new THREE.Vector3(P.x,P.y+1.05,P.z),pathOk=(r,A)=>[.125,.25,.375,.5,.625,.75,.875,1].every(k=>{const a=a0+(A-a0)*k,rr=r0+(r-r0)*k,y=y0+(1.3-y0)*k;return clearPath(new THREE.Vector3(P.x+Math.sin(a)*rr,P.y+y,P.z+Math.cos(a)*rr),face);});
+  let R1=null;for(const r of [RW,(RW+2.4)/2,2.4])if(pathOk(r,a1)){R1=r;break;}
+  if(R1==null){a1=a0;R1=Math.min(r0,RW);for(const r of [RW,(RW+2.4)/2,2.4])if(pathOk(r,a0)){R1=r;break;}} // 도는 길이 막히면 돌지 않고 지금 방향 그대로 다가가기만
   const IN=.45,OUT=.45,e=k=>k*k*(3-2*k);let t=0,last=performance.now();
   return new Promise(res=>{const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;if(t>IN+sec+OUT){setTimeout(()=>{if(C.view.req&&C.view.req.fn===fn)C.view.hold(null);res();},0);return null;}
-      const k=e(Math.min(1,t/IN))*e(Math.min(1,(IN+sec+OUT-t)/OUT)),a=a0+(a1-a0)*k,r=r0+(2.4-r0)*k,y=y0+(1.3-y0)*k,hy=P.y+.85+.2*k;
+      const k=e(Math.min(1,t/IN))*e(Math.min(1,(IN+sec+OUT-t)/OUT)),a=a0+(a1-a0)*k,r=r0+(R1-r0)*k,y=y0+(1.3-y0)*k,hy=P.y+.85+.2*k;
       return {from:[P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r],at:[P.x,hy,P.z]};};C.view.hold(fn,{snap:true});});}
+/* 두 점 사이가 트였는지(양쪽으로 — 방 벽은 한쪽 면이라 바깥에서 쏘면 안 맞는다). 원더룹·안내 표시·빛 효과는 빼고 */
+function clearPath(a,b){const objs=[];C.scene.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.wlHint&&!(o.material&&o.material.transparent&&o.material.depthWrite===false)){for(let q=o;q;q=q.parent)if(q===C.WL)return;objs.push(o);}});
+  const hit=(p,q)=>{const d=new THREE.Vector3().subVectors(q,p),L=d.length(),ray=new THREE.Raycaster(p,d.normalize(),0,Math.max(.01,L-.3));ray.layers.enableAll();return ray.intersectObjects(objs,false).length>0;};return !hit(a,b)&&!hit(b,a);}
 /* 긴장 구역 카메라 일렁임(game/stage가 매 프레임 k를 준다, 0~1): 개미굴 보육실 — 보모개미가 깨어날수록 카메라가 sin(31t)·sin(43t+1) × k × 0.05 떨렸다(원본 그대로) */
 function setSway(k){sway=k;}
 const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
@@ -5572,7 +5604,7 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
 @media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast{transition:none}#wlProf .dcard{animation:none}#wlNotice:not(.on),#wlGet:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
 @media (max-width:600px){#wlDlg .line{font-size:1.06rem;line-height:1.55}#wlDlg{padding:1.15rem 1.05rem .75rem}#wlDlg .who{font-size:.95rem}}
-@media (pointer:coarse){#wlDlg,#wlGet{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}} /* 터치 화면: 조이스틱·단추 위로 */
+@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}#wlGet{bottom:calc(env(safe-area-inset-bottom,0px) + 152px)}} /* 터치 화면: 대화창은 조이스틱·단추 위로, 아이템 획득 카드는 조이스틱(위끝 142px)에 걸치지 않을 만큼만 낮게 — 원더룹을 가리지 않게(2026-11-06 아이폰) */
 #wlBadge{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 11vh);width:min(560px,calc(100vw - 20px));transform:translate(-50%,0);z-index:21;pointer-events:none;display:none}
 #wlBadge.on{display:block;animation:wlbIn .7s cubic-bezier(.25,1.6,.45,1) both}#wlBadge.out{animation:wlbOut .45s ease-in both}
 #wlBadge .bg{position:relative;display:block;width:100%;height:auto;filter:drop-shadow(0 8px 14px rgba(30,14,36,.35))}
