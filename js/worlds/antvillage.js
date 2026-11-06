@@ -37,6 +37,8 @@
      옷 조합(윗옷·바지 색 + 목도리 색)은 원더룹 자신의 옷이라 세계 설정이 아니라 06 outfitCombos 한 목록·한 저장값(세계가 바뀌어도 그대로)
      sfx           효과음 바꿔 끼우기(선택) {종류 이름: '다른 소리 이름' 또는 'assets/sfx/<세계>/<이름>.mp3'} — 없으면 공통 묶음 그대로(docs/sfx-list.md).
                    그 세계 전용 소리는 js/sfx/<세계>.js(세계 id로 저절로 켜짐 — js/sfx/index.js 목록)
+     name          세계 이름(한국어 — 엔딩 큰 제목 '{name} 탐방 끝')
+     stages·finale·cert  공통 틀 8단계(아래 맨 끝 칸의 주석 — game/stage·stealth·finale)
      controlsNote  조작법 창(공통 틀) 안의 세계 전용 글 — 없으면 그 칸이 빠진다
                    { keys: [[키, 설명]…] (키보드 표의 E 다음에 들어감), talk: 터치 '말 걸기' 설명, touch: [[이름, 설명]…] (터치 표 끝),
                      play: '이렇게 놀아요' 한 단락, heatBefore·heatAfter: '휴대폰이 따뜻해질 때' 목록의 앞·뒤 항목(HTML) }
@@ -72,10 +74,34 @@ function lantern(THREE,{held}){const g=new THREE.Group(),S=held?.68:1.8*.62,b=ne
   // 드는 모양: 옆구리 쪽 손에 늘어뜨려(팔을 바깥으로 조금 벌려 몸 밖에 매달림 — 뒤에서 봐도 갓·불빛이 보임). show = 얻는 순간 번쩍 들어 보이기
   if(held){g.userData.carry={ax:-.35,az:-1.0,ex:-.25};g.userData.show={ax:-1.45,az:-.42,ex:-.1};g.userData.showLift=.16;g.userData.hang=true;}
   g.userData.setOn=on=>{bulbMat.emissiveIntensity=on?1.1:.05;capMat.emissiveIntensity=on?.35:0;h.visible=on;};return g;}
+/* 큰 획득 선물 — 더듬이 나침반(개미굴 원본 makeCompass 모양: 금빛 테·크림 판·빨강/파랑 바늘·위 고리). 원점 = 가운데, 판이 +z(카메라)를 본다. userData.needle = 빙글 도는 바늘 */
+function compassGift(THREE){const g=new THREE.Group(),gold=new THREE.MeshStandardMaterial({color:'#f2c14e',emissive:'#a8701e',emissiveIntensity:.35,roughness:.5,metalness:.2});
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.26,.045,10,28),gold);g.add(rim);
+  const face=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.04,28),new THREE.MeshLambertMaterial({color:'#fff6e6'}));face.rotation.x=Math.PI/2;g.add(face);
+  const back=new THREE.Mesh(new THREE.CylinderGeometry(.26,.26,.06,28),gold);back.rotation.x=Math.PI/2;back.position.z=-.04;g.add(back);
+  const loop=new THREE.Mesh(new THREE.TorusGeometry(.06,.018,8,14),gold);loop.position.y=.33;g.add(loop);
+  [0,1,2,3].forEach(i=>{const d=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),new THREE.MeshLambertMaterial({color:'#a8603f'}));const a=i*Math.PI/2;d.position.set(Math.sin(a)*.19,Math.cos(a)*.19,.03);g.add(d);});
+  const nd=new THREE.Group();nd.position.z=.035;g.add(nd);
+  const tri=(c,up)=>{const s=new THREE.Shape();s.moveTo(-.035,0);s.lineTo(0,up*.19);s.lineTo(.035,0);s.closePath();return new THREE.Mesh(new THREE.ShapeGeometry(s),new THREE.MeshLambertMaterial({color:c,side:THREE.DoubleSide}));};
+  nd.add(tri('#e05a4a',1),tri('#4a7cc8',-1));const hub=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),gold);hub.position.z=.01;nd.add(hub);g.userData.needle=nd;return g;}
+/* 귀환 비행 탈것 — 날개개미(개미굴 원본 WINGED: 갈색 세 마디 몸·큰 눈·더듬이·여섯 다리·반투명 날개 두 쌍). 진행 방향 +z, 등(가슴 마디) 위에 원더룹이 앉는다. userData.tick = 날갯짓 */
+function wingedAnt(THREE){const g=new THREE.Group(),b=new THREE.Group();b.scale.setScalar(1.25);g.add(b);
+  const m=c=>new THREE.MeshStandardMaterial({color:c,roughness:.8}),body=m('#8a4a2a'),dark=m('#5e2e18');
+  const ab=new THREE.Mesh(new THREE.SphereGeometry(.55,18,14),body);ab.scale.set(.9,.8,1.15);ab.position.set(0,.55,-.75);b.add(ab);
+  const th=new THREE.Mesh(new THREE.SphereGeometry(.36,16,12),body);th.scale.set(.95,.8,1.2);th.position.set(0,.6,0);b.add(th);
+  const hd=new THREE.Mesh(new THREE.SphereGeometry(.38,16,12),body);hd.position.set(0,.78,.62);b.add(hd);
+  [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),new THREE.MeshLambertMaterial({color:'#2a1a24'}));e.position.set(s*.2,.88,.9);b.add(e);
+    const hl=new THREE.Mesh(new THREE.SphereGeometry(.035,6,5),new THREE.MeshBasicMaterial({color:'#ffffff'}));hl.position.set(s*.2-.03,.94,1.0);b.add(hl);
+    const an=new THREE.Mesh(new THREE.CylinderGeometry(.02,.025,.6,6),dark);an.position.set(s*.16,1.2,.85);an.rotation.set(.5,0,-s*.4);b.add(an);
+    for(let k=0;k<3;k++){const l=new THREE.Mesh(new THREE.CylinderGeometry(.03,.035,.7,6),dark);l.position.set(s*.42,.32,.2-k*.3);l.rotation.set(0,0,s*.9);b.add(l);}});
+  const wm=new THREE.MeshLambertMaterial({color:'#f4f8ff',transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false}),W=[];
+  [[-1,.05,1.25],[1,.05,1.25],[-1,-.3,.95],[1,-.3,.95]].forEach(([s,z,L])=>{const p=new THREE.Group();p.position.set(s*.25,.9,z);const w=new THREE.Mesh(new THREE.CircleGeometry(.5,18),wm);w.scale.set(L,.42,1);w.rotation.x=-Math.PI/2;w.position.x=s*L*.5;p.add(w);b.add(p);W.push({p,s});});
+  let t=0;g.userData.tick=dt=>{t+=dt;W.forEach(({p,s},i)=>{p.rotation.z=s*(.35+.45*Math.sin(t*22+i*.6));});b.position.y=Math.sin(t*3)*.06;};return g;}
 const ANT_SVG='<svg viewBox="0 0 40 22"><g fill="currentColor"><ellipse cx="9" cy="13" rx="6.5" ry="4.8"/><circle cx="19" cy="12.5" r="3.2"/><circle cx="28.5" cy="11.5" r="4.6"/></g><g stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M30 7.5q2-6 7-5.5M27.5 7.5q0-6 4-7"/><path d="M15.5 15l-3 6M19 15.5v6M22.5 15l3 6"/></g></svg>';
 export default {
   id:'antvillage',
   title:'앤트빌리지',
+  name:'개미굴', // 엔딩 큰 제목 '{name} 탐방 끝'(game/finale)
   letterColors:['#ffd46a','#ffb86b','#8fe0c8','#f7a8c0','#ffd46a'],
   titleDeco:{at:0,
     svg:'<svg class="antn" viewBox="0 0 120 80"><g fill="none" stroke="#4a2a2a" stroke-width="7" stroke-linecap="round"><path class="al" d="M44 78 C40 50 22 34 10 22"/><path class="ar" d="M70 78 C76 50 96 34 110 20"/></g><circle class="al" cx="10" cy="20" r="11" fill="#ffd46a" stroke="#4a2a2a" stroke-width="6"/><circle class="ar" cx="110" cy="18" r="11" fill="#ffd46a" stroke="#4a2a2a" stroke-width="6"/></svg>',
@@ -127,5 +153,22 @@ export default {
     touch:[['도감','왼쪽 위 노란 버튼'],['랜턴','왼쪽 위 버튼'],['메뉴','오른쪽 위 버튼을 누르면 소리, 읽어주기, 옷 갈아입기 버튼이 나와요']],
     play:'바닥에 반짝이는 점선, 개미들의 냄새 길을 따라가면 다음 목표가 나와요. 둥둥 뜬 돋보기를 살펴보면 자연 도감 카드가 모여요. 개미들과 이야기하며 단서를 모으고, 위험할 땐 대쉬로 피하세요. 경비개미 발밑의 노란 시야에 들어가면 들키니까, 씨앗 더미 뒤에 숨어서 지나가요.',
     heatBefore:['휴대폰에서는 <b>절전 모드</b>가 처음부터 켜져 있어요. 오른쪽 위 메뉴에서 켜짐인지 확인해 주세요.'],
-    heatAfter:['손에 뜨겁게 느껴지면 잠시 쉬어 주세요. 다른 앱에 다녀와도 탐험은 그대로 이어지고, 페이지를 닫아도 <b>도감과 비밀 카드</b>는 남아 있어요.']}
+    heatAfter:['손에 뜨겁게 느껴지면 잠시 쉬어 주세요. 다른 앱에 다녀와도 탐험은 그대로 이어지고, 페이지를 닫아도 <b>도감과 비밀 카드</b>는 남아 있어요.']},
+  /* ── 공통 틀 8단계 (2026-11-06 — game/stage·stealth·finale, 규칙 docs/series-rules.md) ──
+     stages   스테이지 구역마다 {light:{hemi, ground, level, k} 스테이지 빛 색, tension:[{c,r,k}] 긴장 구역, emotion:[{c,r,react,pale,closeup}] 감정 구역,
+              stealth:{hides, pass, guards} 숨바꼭질} — 열쇠 = 구역 id. 개미굴 스테이지 구역은 아직 없어(로드맵 7 이식) 원본 빛 값만 미리 둔다(label = 톱니 메뉴 '스테이지 빛' 이름).
+     finale   세계의 끝 {gift:{model, card:{kicker,title,text,btn}, to} 큰 획득, vehicle 귀환 비행 탈것, miniature:{fov, keys:[{label,at,from,sec}]} 미니어처 하이라이트(없으면 시험이 구역 크기로 만듦), endBackdrop 엔딩 배경 루프}
+     cert     엔딩 '인증서 보기' {kicker, title, body, gift(HTML), when:()=>보일 조건} */
+  stages:{
+    'ant-store':{label:'꿀 저장소(주황)',light:{hemi:'#ffd29a',ground:'#5a3020',level:.89,screen:['#ffb060',.16]}},   // 원본 storeLight: hemi .55 ÷ 우리 낮 .62
+    'ant-nursery':{label:'보육실(분홍)',light:{hemi:'#ffd6e4',ground:'#4a3350',level:.89,screen:['#ffa0c8',.14]}},   // 원본 nurseryLight
+    'ant-tunnel':{label:'지네 동굴(푸른 어둠)',light:{hemi:'#a8b8ff',ground:'#2a2040',level:.81,screen:['#4058c0',.3]}}},  // 원본 tunnelLight(빛나는 버섯이 따로 빛남)
+  sfx:{'guard-alert':'ant-alert','guard-windup':'ant-windup','guard-caught':'ant-caught'}, // 경비 알아차림 소리는 원본 개미굴 소리로
+  finale:{
+    gift:{model:compassGift,to:'charm',card:{kicker:'여왕개미의 보물',title:'더듬이 나침반을 받았어요!',text:'새로운 세계로 가는 문을 가리키는 신기한 나침반이에요. 바늘이 파르르 떨리면 가까이에 새로운 세계의 문이 있어요.',btn:'목에 걸기'}},
+    vehicle:wingedAnt,
+    miniature:null,
+    endBackdrop:null},
+  cert:{kicker:'자연 도감 완성',title:'개미굴 곤충 박사',body:'개미굴의 자연 도감을 모두 모았어요. 곤충과 곤충이 아닌 친구들을 척척 구별하는 멋진 탐험가임을 여왕개미의 이름으로 인정합니다.',
+    gift:'선물: 옷 갈아입기에서 <b>반짝 왕관</b>과 <b>별 핀</b>을 쓸 수 있어요!'},
 };

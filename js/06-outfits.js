@@ -210,7 +210,7 @@ function wlMerge(list){
       같은 방식(기본 재질에 색 배율만 곱한 재질로 바꿔 끼움) — 기준 촬영은 부르지 않으니 그대로 */
    const [hM,hD]=WL.userData.hoodMats||[];
    const AM=WL.userData.antMats||{};
-   const BASE={top:[[AM.top,'#4a7cc8']],pants:[[AM.pants,'#2e3c6a']],antScarf:[[AM.scarf,'#36aaa0']],hood:[[hM,'#a8603f'],[hD,'#7e4229']],vest:[[vestM,VEST[0][1]],[vestD,VEST[0][2]]],scarf:[[nkM,SCARF[0][1]],[bandM,SCARF[0][1]]]};
+   const BASE={top:[[AM.top,'#4a7cc8']],pants:[[AM.pants,'#2e3c6a']],antScarf:[[AM.scarf,'#36aaa0']],hood:[[hM,'#a8603f'],[hD,'#7e4229']],vest:[[vestM,VEST[0][1]],[vestD,VEST[0][2]]],scarf:[[nkM,SCARF[0][1]],[bandM,SCARF[0][1]]],skin:[[skin,'#ffc9a0']]}; // skin: 겁먹어 얼굴빛이 하얗게 질릴 때(game/react pale, 2026-11-06)
    WL.userData.setTint=(part,c)=>{const B=BASE[part];if(!B||!B[0][0])return;const L=c==null?B.map(b=>b[1]):Array.isArray(c)?c:[c,c];
      swap(B.map(([m,from],i)=>[m,pick(m,from,L[Math.min(i,L.length-1)]||from)]));};
    /* 옷 조합(앤트빌리지 차림): 윗옷·바지의 파란 부분 색 + 목도리 색 — 원더룹 자신의 옷이라 세계와 상관없이 하나(game/front가 저장). 옷 색과 목도리 색이 같은 조합은 두지 않는다 */

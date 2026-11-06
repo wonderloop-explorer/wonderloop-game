@@ -4,6 +4,9 @@
    구역을 떠날 때 clearZoneGame()이 그 구역의 NPC·트리거·이벤트 줄을 비우고 배경음을 서서히 멈춘다(02 unloadZone). */
 import {clearReact,initReact,tickReact} from './react.js';
 import {clearItemGet,initItemGet,tickItemGet} from './itemget.js';
+import {clearStage,initStage,setStageZone,tickStage} from './stage.js';
+import {clearStealth,initStealth,setStealthZone,tickStealth} from './stealth.js';
+import {clearFinale,initFinale,tickFinale} from './finale.js';
 import {clock,cues,tickCore} from './core.js';
 import {bed,stopAll,tickBed,tickNarration} from './sound.js';
 import {clearDialog,clickNPC,initDialog,setDialogZone,tickDialog} from './dialog.js';
@@ -39,16 +42,21 @@ const view={camera:null,aim:null,
   focus({at,from=null,dist=7,sec=2}){return new Promise(done=>{view.req={at,from,dist,sec,t:0,done};});},
   hold(fn,o){view.req=fn?{fn,t:0,snap:!!(o&&o.snap)}:null;}}; // snap: fn이 지금 카메라 자리에서 시작할 때 — 섞지 않고 바로 그 길로(섞으면 곧은 선으로 질러가 원더룹 머리를 뚫었다, 2026-11-05)
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact(c);initItemGet(c);}
-function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);}
-function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();setQuest('');setPrompt('');}
+function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet(c);initStage(c);initStealth(c);initFinale({...c,view});}
+function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);}
+function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)
-export {clickNPC,clearZoneGame,clock,cues,initGame,startFront,steps,updateGame,view};
+export {enterZone,clickNPC,clearZoneGame,clock,cues,initGame,startFront,steps,updateGame,view};
 export * as core from './core.js';
 export * as sound from './sound.js';
 export * as react from './react.js';
 export * as itemget from './itemget.js';
+export * as stage from './stage.js';
+export * as stealth from './stealth.js';
+export * as finale from './finale.js';
+/* 구역에 들어온 뒤(08 — 처음 구역은 initGame 뒤, 그다음은 goZone에서 zoneLook 뒤): 세계 설정 stages[구역 id]의 긴장·감정 구역·스테이지 빛·숨바꼭질을 깐다 */
+function enterZone(z,W){setStageZone(z,W);setStealthZone(z,W);}
 export * as controls from './controls.js';
 export * as ui from './ui.js';
 export * as dialog from './dialog.js';

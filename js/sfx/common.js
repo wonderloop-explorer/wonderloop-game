@@ -99,6 +99,11 @@ const KINDS={
   'event-pop':['사건','pop','퐁(탈것에 올라탐 · 무언가 튀어나옴)'],
   'event-whoosh':['사건','whoosh','휙(굴러옴 · 물 가르기)'],
   'event-tremble':['사건','tremble','파르르(나침반 바늘 떨림)'],
+  'guard-notice':['사건','sus','알아차림 ?(갸웃 — game/stealth가 작게 틂, 원본 경비개미 sus)'],
+  'guard-alert':['사건','pop','들킴 !(세계 설정으로 바꿔 끼움 — 개미굴 ant-alert)'],
+  'guard-windup':['사건','whoosh','덤비기 전(세계 설정으로 — 개미굴 ant-windup)'],
+  'guard-caught':['사건','whoosh','안전한 곳으로 옮겨짐(세계 설정으로 — 개미굴 ant-caught)'],
+  'big-get':['사건','success','큰 획득 — 선물이 원더룹 앞에 닿는 순간(원본 나침반 success)'],
   'weather-thunder':['날씨','thunder','천둥'],
   'weather-drip':['날씨','drip','물방울 똑'],
 };

@@ -10,7 +10,8 @@ import {DRV,GAIT,SPEED,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from
 import * as GAME from './game/index.js';
 import {CURRENT as WORLD} from './worlds/index.js'; // 지금 세계 설정(시리즈 공통 틀 — 타이틀 화면)
 import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
-import {clearDevcheck,initDevcheck,rollTest,toggleBounds,toggleMeasure,toggleSize} from './game/devcheck.js'; // 톱니 메뉴: 경계 보기·걷는 시간 재기·크기 확인·굴러가는 물건 시험
+import {clearDevcheck,initDevcheck,rollTest,toggleBounds,toggleMeasure,toggleSize} from './game/devcheck.js';
+import {clearDevstory,devStory,initDevstory} from './game/devstory.js'; // 톱니 메뉴: 공통 틀 8단계 시험 장면(긴장·숨바꼭질·감정·스테이지 빛·큰 획득·귀환 비행·미니어처·엔딩) // 톱니 메뉴: 경계 보기·걷는 시간 재기·크기 확인·굴러가는 물건 시험
 /* ---------- 상호작용 ---------- */
 let cave=0,caveTarget=0,lightState=0,emph='auto',night=0,nightTarget=0,spin=false,spinDir=1;
 const dayBtn=document.getElementById('dayBtn'),spinBtn=document.getElementById('spinBtn');
@@ -41,7 +42,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
 const _kf=new THREE.Vector3(),_ct=new THREE.Vector3(),_cw=new THREE.Vector3();
 let shotDrive=null; // 촬영 모드: 직접 조작 대신 wlShot.drive({x,z,run})로 미는 값(끼임 시험) — 평소 null
 function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=shotDrive;return;}
-  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward')||GAME.core.blocking('itemget'); // 아이템 획득 연출 동안도(game/itemget — 원본 ctrlLock). 첫 화면·옷 갈아입기 동안은 서 있는다
+  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward')||GAME.core.blocking('itemget')||GAME.core.blocking('caught')||GAME.core.blocking('bigget')||GAME.core.blocking('finale'); // 아이템 획득 연출 동안도(game/itemget — 원본 ctrlLock). 첫 화면·옷 갈아입기 동안은 서 있는다
   camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
   const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,k:a.k};
   if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}
@@ -51,12 +52,12 @@ GAME.controls.controlHooks.onWardrobe=()=>GAME.front.toggleWardrobe(); // C: 옷
    goZone(이름, 자리): 새 구역을 만들고 → 지금 구역을 비우고 → 원더룹을 자리에 세우고 → 해·카메라·병합을 맞춘다.
    문(doors)을 밟으면 저절로 부른다. 들어온 문 위에 서 있는 동안은 다시 넘어가지 않는다. 탈 교체 영역(아틀라스)은 새로 채운다 */
 let zoneBusy=false,doorLock=true;
-async function goZone(id,spawn){clearDevcheck();
+async function goZone(id,spawn){clearDevcheck();clearDevstory();
   if(zoneBusy||!ZONES[id])return false;zoneBusy=true;
   try{const nz=await loadZone(id),old=zone.cur;unloadZone(old);zone.cur=nz;
     const sp=spawn||nz.spawn;stopWalk();WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;
     zone.area=areaAt(sp.x,sp.z)||Object.keys(nz.areas)[0];setupView(nz,zone.area);
-    WL.userData.atlas.clear('swap');zoneLook(nz);if(PERF.level&&nz.quality)nz.quality(PERF.level);doorLock=true;GAME.sound.sfx('zone-enter'); // 구역에 들어갈 때 (개미굴 enter)
+    WL.userData.atlas.clear('swap');zoneLook(nz);GAME.enterZone(nz,nz.world||WORLD);if(PERF.level&&nz.quality)nz.quality(PERF.level);doorLock=true;GAME.sound.sfx('zone-enter'); // 구역에 들어갈 때 (개미굴 enter)
     const zb=document.getElementById('zoneBtn');if(zb)zb.textContent='구역: '+nz.name;
   }finally{zoneBusy=false;}
   return true;}
@@ -70,7 +71,7 @@ function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥�
   GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
-GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z),rig:{neck,spine,arms}});window.wlGame=GAME; // 콘솔·시험 도구용
+GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z),rig:{neck,spine,arms}});window.wlGame=GAME;GAME.enterZone(zone.cur,zone.cur.world||WORLD); // 콘솔·시험 도구용
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
@@ -101,15 +102,16 @@ function bendBtn(){const b=document.getElementById('bendBtn');if(!b)return;const
 {const b=document.getElementById('bendBtn');if(b)b.addEventListener('click',()=>{const I=bendInfo();if(!I.on)return;setLevel((I.level+1)%4);bendBtn();});}
 /* 진행 초기화(시험용, 톱니 메뉴): 저장된 진행(flags — 우산·완료·소개 카드)·도감을 지우고 다시 연다. 실수로 눌리지 않게 3초 안에 한 번 더 눌러야 */
 /* 세계 만들기 도구(시험용, 톱니 메뉴 — game/devcheck): 경계 보기 · 걷는 시간 재기(바닥 두 곳) · 크기 확인(주민·생물 키 / 원더룹 키) */
-initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),walk:()=>[+DRV.walk.toFixed(2),DRV.dash],zone:()=>zone.cur});
+initDevcheck({scene,camera,renderer,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),walk:()=>[+DRV.walk.toFixed(2),DRV.dash],zone:()=>zone.cur});initDevstory({scene,camera,WL,blocked:(x,z)=>blocked(x,z),groundY:(x,z)=>floorAt(x,z,.5),zone:()=>zone.cur,world:WORLD});
 [['boundsBtn',()=>toggleBounds(),on=>`경계 보기: ${on?'켜짐':'끔'}`],['measBtn',()=>toggleMeasure(),on=>`걷는 시간 재기: ${on?'켜짐':'끔'}`],['sizeBtn',()=>!!toggleSize(),on=>`크기 확인: ${on?'켜짐':'끔'}`]]
   .forEach(([id,f,lab])=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>{b.textContent=lab(f());});});
-{const b=document.getElementById('rollBtn');if(b)b.addEventListener('click',()=>rollTest());} document.querySelectorAll('.reactBtn').forEach(b=>b.addEventListener('click',()=>GAME.react.react(b.dataset.react))); // 리액션 모음 하나씩(game/react) // 굴러가는 물건 시험(game/incident — 사건 순간 카메라 + 공 셋)
+{const b=document.getElementById('rollBtn');if(b)b.addEventListener('click',()=>rollTest());} document.querySelectorAll('.reactBtn').forEach(b=>b.addEventListener('click',()=>GAME.react.react(b.dataset.react))); document.querySelectorAll('.storyBtn').forEach(b=>b.addEventListener('click',()=>{const f=devStory[b.dataset.story];if(f)f(b);})); window.wlStory=devStory; // 공통 틀 8단계 시험(game/devstory) // 리액션 모음 하나씩(game/react) // 굴러가는 물건 시험(game/incident — 사건 순간 카메라 + 공 셋)
 {const b=document.getElementById('resetBtn');let armT=0;if(b)b.addEventListener('click',()=>{const now=performance.now();
    if(now-armT<3000){GAME.state.resetProgress();location.reload();return;}armT=now;b.textContent='한 번 더 누르면 처음부터';setTimeout(()=>{if(performance.now()-armT>=2900)b.textContent='진행 초기화';},3000);});}
 
 /* ---------- 애니메이션 ---------- */
 const INL={hemi,sun,fill};
+const SLC=new Map(),slCol=h=>{let c=SLC.get(h);if(!c){c=rawLin(typeof h==='string'?parseInt(h.replace('#',''),16):h);SLC.set(h,c);}return c;}; // 스테이지 빛 색 '#hex' → 원본(r128)처럼 값 그대로
 const cDaySky=rawLin(0xfff3dc),cNightSky=rawLin(0x8b92c8),cDayG=rawLin(0xd2ab88),cNightG=rawLin(0x5a4a5e);
 /* 안개: 처음부터 늘 켜 두고 하늘 없는 구역에서는 아주 멀리 밀어 둔다(그림은 그대로) — 구역마다 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다 */
 const FOG_OFF=1e4;scene.fog=new THREE.Fog(0xffffff,FOG_OFF,FOG_OFF*2);
@@ -195,6 +197,8 @@ function tickBody(){
   const env={night:n,cave,flick,reduce,weather:GAME.weather.weather(),rain:wx.rain,deep:wx.night};WL.userData.nightK=SK?Math.min(1,SK.t/2*1.3):n; // 탈 효과(화관 별가루)가 해 질 녘·밤에 더 또렷하게
   if(Z.mood){const m=Z.mood;hemi.intensity*=m.hemi??1;sun.intensity*=m.sun??1;fill.intensity*=m.fill??1; // 구역 분위기(땅속 등): 하늘빛·해를 줄이고 색을 물들인다 — 없으면 예전과 같다
     if(m.sky!=null){hemi.color.lerp(rawLin(m.sky),m.tint??.5);hemi.groundColor.lerp(rawLin(m.ground??m.sky),m.tint??.5);}}
+  {const L=GAME.stage.stageLight();if(L){const k=L.k??.8;if(L.hemi)hemi.color.lerp(slCol(L.hemi),k);if(L.ground)hemi.groundColor.lerp(slCol(L.ground),k); // 스테이지 빛 색(game/stage — 세계 설정 stages[구역].light): 날씨·시간대 위에 바탕으로 깔고, 날씨가 어둡게·푸르게 한 것은 그대로 남는다
+    hemi.intensity*=L.level??1;fill.intensity*=L.fill??L.level??1;sun.intensity*=L.sun??.25;if(L.fog&&scene.fog)scene.fog.color.lerp(slCol(L.fog),k);}} // 원본 굴 스테이지는 해가 없다(sun 0) — 기본 0.25만 남김(야외 스테이지는 sun:1)
   if(Z.light)Z.light(env,dt); // 구역 조명(램프·등불 등)과 효과의 밝기
   {const dark=Math.min(1,Math.max(0,1-hemi.intensity/.62));const U=WL.userData;const a=emph==='on'?1:emph==='off'?0:Math.min(1,Math.max(0,(dark-.25)/.25)); // 자동: 어두움 .25부터 켜지기 시작해 .5 이상(저녁·굴·땅속)이면 예전 세기 그대로
    if(U.rimU){U.rimU.value=a*(.08+.45*dark);U.liftU.value=a*(.02+.17*dark);}}

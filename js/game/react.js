@@ -14,18 +14,23 @@
      hop     기뻐서 폴짝: 두 팔을 번쩍 들고 0.28m 두 번 폴짝(한 번 0.45초, 내려앉을 때 살짝 찌그러짐), 04 '신남'. 1.1초, 뛸 때마다 jump
      sigh    안도의 한숨: 0.5초 숨을 들이쉬며 어깨·고개가 살짝 올라갔다가 → 1.5초 내쉬며 어깨가 내려앉고(팔이 몸 쪽으로, 몸통 0.045 내려감) 고개가 앞으로 툭, 04 '기쁨'(눈 감은 웃음). 2초, 소리 event-whoosh(작게)
    공통: 원더룹이 걷거나 대쉬하면 몸 리액션의 자세는 그대로 겹쳐질 뿐 이동을 막지 않는다(갇히지 않게). 표정은 끝나면 리액션 전 표정으로(그동안 다른 코드가 표정을 바꿨으면 그대로 둠).
-   옵션: {sec, sound(null이면 소리 없음), face:false(joy가 카메라로 돌지 않게), bounce:false(joy 몸통 통통 없이), punch:false(시야 좁힘 끔)}.
+   더한 둘 (2026-11-06, 공통 틀 8단계): pale 얼굴빛 하얗게(살색이 0.3초에 하얗게 질렸다 천천히 돌아옴 + 움츠림, 04 '걱정') · awe 감탄(고개를 들어 바라보고 두 팔이 살짝 벌어짐, 04 '신남', event-sparkle 작게).
+     개미굴 원본에는 얼굴빛을 바꾸는 코드가 없다 — 지네 동굴에서 얼굴이 하얗게 보인 건 빛나는 버섯의 푸른 빛 때문이라, 얼굴빛은 06 setTint('skin')으로 새로 만들었다.
+   옵션: {sec, sound(null이면 소리 없음), face:false(joy가 카메라로 돌지 않게), bounce:false(joy 몸통 통통 없이), punch:false(시야 좁힘 끔),
+          pale:true(어느 리액션이든 얼굴빛 하얗게 — 예: react('shiver',{pale:true})), closeup:true(얼굴 클로즈업 — closeSec초, 기본 1.1)}.
    그리기: 07 updateWL 뒤(game updateGame — tickReact)에 뼈(neck·spine·팔)와 원더룹 높이에 더하기만 한다 — 07이 매 프레임 다시 정하므로 끝나면 저절로 원래대로.
    카메라 흔들림·시야는 08이 그리기 바로 앞뒤로 camPre/camPost(그린 뒤 되돌려 따라가기 카메라에 흔들림이 쌓이지 않게 — 원본도 카메라 자리를 매 프레임 새로 썼다).
    촬영 모드에서도 같은 그림이 나오게 흔들림 난수는 시드 고정. 시험: 톱니 메뉴 '리액션: …' 단추(game/devcheck). */
 import {cue} from './core.js';
 import {sfx} from './sound.js';
-let C=null,cur=null,shk=null,punch=0,T=0,seed=12345,camSave=null;
+let C=null,cur=null,shk=null,punch=0,T=0,seed=12345,camSave=null,sway=0,swayK=0,paleK=0,paleStep=0,paleWant=0;
 const rnd=()=>((seed=(seed*1103515245+12345)&0x7fffffff)/0x7fffffff); // 흔들림 난수(시드 고정 — 촬영 모드에서도 같게)
 const SHAKE={bump:[.55,.4,'event-clunk',[90,40,160]],collapse:[.6,.45,'event-clunk',[80,30,120,30,80]],caught:[.4,.25,null,240],warn:[.35,.12,null,null],rumble:[.8,.08,'event-roll',[30,30,30,30,30]]};
 const DEF={shiver:{sec:2.2,expr:'걱정',sound:'event-tremble',punch:true},joy:{sec:1.8,expr:'기쁨',sound:'event-sparkle',punch:true},
-  startle:{sec:1,expr:'놀람',sound:'event-pop',punch:true},tilt:{sec:1.6,expr:'궁금',sound:'talk-bubble'},hop:{sec:1.1,expr:'신남',sound:'jump'},sigh:{sec:2,expr:'기쁨',sound:'event-whoosh',gain:.45}};
-const NAMES={shiver:'후덜덜',shake:'화면 흔들림',joy:'기쁨',startle:'깜짝 놀람',tilt:'갸웃',hop:'기뻐서 폴짝',sigh:'안도의 한숨'};
+  startle:{sec:1,expr:'놀람',sound:'event-pop',punch:true},tilt:{sec:1.6,expr:'궁금',sound:'talk-bubble'},hop:{sec:1.1,expr:'신남',sound:'jump'},sigh:{sec:2,expr:'기쁨',sound:'event-whoosh',gain:.45},
+  pale:{sec:2.2,expr:'걱정',sound:null,pale:true},awe:{sec:2,expr:'신남',sound:'event-sparkle',gain:.7}};
+const NAMES={shiver:'후덜덜',shake:'화면 흔들림',joy:'기쁨',startle:'깜짝 놀람',tilt:'갸웃',hop:'기뻐서 폴짝',sigh:'안도의 한숨',pale:'얼굴빛 하얗게',awe:'감탄'};
+const SKIN=[255,201,160],PALE=[240,242,228]; // 얼굴빛: 살색 #ffc9a0 → 하얗게 질린 색(아주 옅은 푸른 기) — 06 setTint('skin')
 function initReact(c){C=c;}
 const vib=p=>{try{if(p&&navigator.vibrate&&!window.wlShot)navigator.vibrate(p);}catch(e){}};
 function endBody(ok){if(!cur)return;const U=C.WL.userData;if(cur.expr&&U.exprName===cur.expr&&U.setExpr)U.setExpr(cur.prev||'기본');const r=cur.res;cur=null;r(ok);}
@@ -37,9 +42,23 @@ function react(name,o={}){if(!C)return Promise.resolve(false);
   if(snd)sfx(snd,D.gain?{gain:D.gain}:{});if((o.punch??D.punch))punch=.9;
   const prev=U.exprName;if(U.setExpr&&D.expr)U.setExpr(D.expr);
   cue({kind:'react',id:name,who:NAMES[name],text:'',dur:sec});
-  return new Promise(res=>{cur={name,t:0,sec,expr:D.expr,prev,res,face:o.face!==false,bounce:o.bounce!==false,hops:0};});}
+  if(o.closeup)closeUp(o.closeSec||1.1);
+  return new Promise(res=>{cur={name,t:0,sec,expr:D.expr,prev,res,face:o.face!==false,bounce:o.bounce!==false,hops:0,pale:o.pale??!!D.pale};});}
+/* 얼굴 클로즈업(2026-11-06): 카메라가 원더룹 둘레를 둥글게 돌아(곧게 가면 머리를 뚫는다 — 아이템 얻는 장면과 같은 교훈) 얼굴 앞 비스듬히 2.4m·눈높이로
+   0.45초에 다가가 sec초 머문 뒤 0.45초에 원래 자리로 돌아온다(game view.hold — 화면을 만지면 끝). */
+function closeUp(sec=1.1){if(!C||!C.view)return Promise.resolve();const W=C.WL,P=W.position,cam=C.camera.position;
+  const a0=Math.atan2(cam.x-P.x,cam.z-P.z),r0=Math.hypot(cam.x-P.x,cam.z-P.z),y0=cam.y-P.y;let a1=W.rotation.y+.35,d=a1-a0;d=Math.atan2(Math.sin(d),Math.cos(d));a1=a0+d;
+  const IN=.45,OUT=.45,e=k=>k*k*(3-2*k);let t=0,last=performance.now();
+  return new Promise(res=>{const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;if(t>IN+sec+OUT){setTimeout(()=>{if(C.view.req&&C.view.req.fn===fn)C.view.hold(null);res();},0);return null;}
+      const k=e(Math.min(1,t/IN))*e(Math.min(1,(IN+sec+OUT-t)/OUT)),a=a0+(a1-a0)*k,r=r0+(2.4-r0)*k,y=y0+(1.3-y0)*k,hy=P.y+.85+.2*k;
+      return {from:[P.x+Math.sin(a)*r,P.y+y,P.z+Math.cos(a)*r],at:[P.x,hy,P.z]};};C.view.hold(fn,{snap:true});});}
+/* 긴장 구역 카메라 일렁임(game/stage가 매 프레임 k를 준다, 0~1): 개미굴 보육실 — 보모개미가 깨어날수록 카메라가 sin(31t)·sin(43t+1) × k × 0.05 떨렸다(원본 그대로) */
+function setSway(k){sway=k;}
 const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
+  swayK+=(sway-swayK)*Math.min(1,dt*2.5);
+  {const want=cur&&cur.pale&&cur.t<cur.sec-.4?1:0;paleK+=(want-paleK)*Math.min(1,dt*(want?4:2.2));const st=Math.round(paleK*4); // 얼굴빛 다섯 단계(재질 바꿔 끼우기라 단계마다 한 번)
+    if(st!==paleStep&&C.WL.userData.setTint){paleStep=st;const k=st/4;C.WL.userData.setTint('skin',k?'#'+SKIN.map((v,i)=>Math.round(v+(PALE[i]-v)*k).toString(16).padStart(2,'0')).join(''):null);}}
   if(!cur)return;const R=cur,{WL}=C,{neck,spine,arms}=C.rig,U=WL.userData;R.t+=dt;const t=R.t,s=R.sec;
   if(t>=s){endBody(true);return;}
   const env=Math.min(1,t/.15,(s-t)/.25); // 새 리액션은 부드럽게 들어가고 나옴
@@ -57,13 +76,17 @@ function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
       const a=env*2;arms[0].rotation.z-=a;arms[1].rotation.z+=a;break;}
     case 'sigh':{let up=0,dn=0;if(t<.5)up=ease(t/.5);else{up=1-ease((t-.5)/.35);dn=ease(Math.min(1,(t-.5)/.6))*ease(Math.min(1,(s-t)/.45));}
       spine.position.y+=.025*up-.045*dn;neck.rotation.x+=-.1*up+.18*dn;arms[0].rotation.z+=-.12*up+.24*dn;arms[1].rotation.z-=-.12*up+.24*dn;break;}
+    case 'pale':{const k=ease(Math.min(1,t/.3))*ease(Math.min(1,(s-t)/.4));spine.position.y-=.025*k;arms[0].rotation.z+=.15*k;arms[1].rotation.z-=.15*k;neck.rotation.z+=Math.sin(T*42)*.012*k;break;} // 움츠러들며 아주 작게 떨림
+    case 'awe':{const k=ease(Math.min(1,t/.4))*ease(Math.min(1,(s-t)/.5));neck.rotation.x-=.16*k;arms[0].rotation.z-=.35*k;arms[1].rotation.z+=.35*k;spine.position.y+=.015*k;break;} // 고개를 들어 바라보고 두 팔이 살짝 벌어짐
   }}
 /* 08: 그리기 바로 앞(camPre)·뒤(camPost) — 흔들림·시야를 그 한 장에만 */
 function camPre(camera,dt){let on=false;
   if(punch>0){punch-=dt;const k=Math.sin(Math.min(1,Math.max(0,punch)/.9)*Math.PI);camSave=camSave||{};camSave.fov=camera.fov;camera.fov=camera.fov-5*k;camera.updateProjectionMatrix();on=true;}
-  if(shk){const k=shk.amp*Math.min(1,shk.t*3);camSave=camSave||{};camSave.p=camera.position.clone();camera.position.x+=(rnd()-.5)*k;camera.position.y+=(rnd()-.5)*k;on=true;}
+  if(shk||swayK>.002){camSave=camSave||{};camSave.p=camera.position.clone();on=true;
+    if(shk){const k=shk.amp*Math.min(1,shk.t*3);camera.position.x+=(rnd()-.5)*k;camera.position.y+=(rnd()-.5)*k;}
+    if(swayK>.002){camera.position.x+=Math.sin(T*31)*swayK*.05;camera.position.y+=Math.sin(T*43+1)*swayK*.05;}}
   return on;}
 function camPost(camera){if(!camSave)return;if(camSave.fov!=null){camera.fov=camSave.fov;camera.updateProjectionMatrix();}if(camSave.p)camera.position.copy(camSave.p);camSave=null;}
-function clearReact(){if(cur)endBody(false);shk=null;punch=0;}
-const reactNames=()=>['shiver','shake','joy','startle','tilt','hop','sigh'].map(id=>({id,name:NAMES[id]}));
-export {camPost,camPre,clearReact,initReact,react,reactNames,tickReact};
+function clearReact(){if(cur)endBody(false);shk=null;punch=0;sway=0;}
+const reactNames=()=>['shiver','shake','joy','startle','tilt','hop','sigh','pale','awe'].map(id=>({id,name:NAMES[id]}));
+export {camPost,camPre,clearReact,closeUp,initReact,react,reactNames,setSway,tickReact};

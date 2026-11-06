@@ -91,7 +91,7 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `talk-next` | 원본 `blip` | 대사 넘김 · 이야기 소개 다음 · 표정 미리보기 | 대사 한 줄·혼잣말·이야기 넘김·표정 고르기 | game/dialog.js, game/front.js | 0.11 | -41.1 |
 | `talk-bubble` | **새로 만듦** | 말풍선 뜸(아직 아무 데도 안 씀 — 원본에 없던 소리) | — | — | 0.12 | -40.8 |
 
-### 사건 — 8개
+### 사건 — 13개
 
 | 종류 이름 | 소리 | 설명 | 그 원본 소리가 개미굴에서 쓰인 곳 | 새 엔진에서 쓰는 곳 | 길이(초) | 크기(dBFS) |
 |---|---|---|---|---|---|---|
@@ -102,7 +102,12 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `event-open` | **새로 만듦** | 길 열림 | — | — | 1.5 | -29.7 |
 | `event-pop` | 원본 `pop` | 퐁(탈것에 올라탐 · 무언가 튀어나옴) | 흙더미 뒤집기·아기 개미 합류·지네 도감·날개 개미·나침반 | zones/fairy/dock.js | 0.5 | -26.2 |
 | `event-whoosh` | 원본 `whoosh` | 휙(굴러옴 · 물 가르기) | 경비개미 덤빔 | zones/fairy/dock.js | 0.36 | -29.8 |
-| `event-tremble` | 원본 `tremble` | 파르르(나침반 바늘 떨림) | 나침반 바늘 떨림 | — | 1.02 | -29.9 |
+| `event-tremble` | 원본 `tremble` | 파르르(나침반 바늘 떨림) | 나침반 바늘 떨림 | game/react.js (후덜덜) | 1.02 | -29.9 |
+| `guard-notice` | 원본 `sus` | 알아차림 ?(작게) | 경비개미가 수상하게 봄 | game/stealth.js | — | 원본과 같음(작게 틂) |
+| `guard-alert` | 원본 `pop` | 들킴 ! — 개미굴은 세계 설정으로 `ant-alert` | 경비개미 들킴 | game/stealth.js | — | 원본과 같음 |
+| `guard-windup` | 원본 `whoosh` | 덤비기 전 — 개미굴은 `ant-windup` | 경비개미 덤비기 전 | game/stealth.js | — | 원본과 같음 |
+| `guard-caught` | 원본 `whoosh` | 안전한 곳으로 옮겨짐 — 개미굴은 `ant-caught` | 잡힘·쫓겨남 | game/stealth.js | — | 원본과 같음 |
+| `big-get` | 원본 `success` | 큰 획득 — 선물이 원더룹 앞에 닿는 순간 | 여왕개미 나침반 | game/finale.js | — | 원본과 같음 |
 
 ### 날씨 — 2개
 
@@ -130,9 +135,10 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | 화면 | 12 | 0 |
 | 움직임 | 9 | 4 |
 | 대화 | 3 | 1 |
-| 사건 | 8 | 1 |
+| 사건 | 13 | 1 |
 | 날씨 | 2 | 0 |
 | 개미굴 | 7 | 0 |
 
+- 2026-11-06(공통 틀 8단계): 사건에 종류 이름 다섯(`guard-notice`·`guard-alert`·`guard-windup`·`guard-caught`·`big-get`)을 더했다 — 새 소리는 없고 원본 소리를 가리킨다. 공통 묶음에는 들킴·잡힘 소리가 없어 가까운 원본 소리를 두고, 개미굴은 세계 설정 `sfx`로 원본 `ant-alert`·`ant-windup`·`ant-caught`를 끼운다.
 - 원본 소리 하나를 여러 종류가 가리킬 수 있다. 원본이 그렇게 썼기 때문이다(`pickup` = 창 열기·물건 줍기·톡 돌아감, `blip` = 말 걸기·대사 넘김, `click` = 단추·창 닫기, `dex` = 카드·가방).
 - 원본 발소리 `step`(-54.5)과 마른 잎 `crunch`(-43.5)는 원래 11dB 차이가 난다. 원본 그대로 두었고, 새 바닥 발소리 넷은 `step`에 맞췄다.
