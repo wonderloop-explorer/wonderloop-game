@@ -57,6 +57,19 @@ const css=`
 @keyframes wtStep{50%{transform:translateY(-2px)}}
 @media (prefers-reduced-motion: reduce){#wlTitle .titlebox,#wlTitle .logo2>span,#wlTitle .march,#wlTitle .march i,#wlTitle .ribbon,#wlTitle .wt-deco *{animation:none!important}}`;
 let cssDone=null,decoDone=new Set();
+/* 글자 그림(세계 titleGlyph — 2026-11-07 무한 우주 '우'의 ㅇ을 토성으로): 로고의 그 글자(처음 하나) 칸에서 위쪽 일부(cut, em)를 잘라 숨기고
+   그 자리에 세계 그림(svg(uid) — 같은 테두리·그림자는 그림 쪽에서)을 얹는다. 아래 획은 글자 그대로(같은 글꼴·색·테두리·입체 그림자 — 글자 칸의 text-shadow를 물려받음).
+   글자를 읽어 주는 기능은 로고 h1/h2의 aria-label(글자 그대로), 칸은 aria-hidden. 시작 타이틀과 엔딩 큰 글자(game/finale endLogo)가 함께 쓴다 */
+let glyphN=0;
+function glyphize(spans,TG){if(!TG||!TG.ch)return;const s=spans.find(e=>e.textContent===TG.ch);if(!s)return;
+  if(!document.querySelector('style[data-wl="glyph"]'))addCss('glyph',`.logo2>span.wt-glyph{position:relative}
+.logo2>span.wt-glyph>b{position:relative;z-index:1;display:inline-block;font-weight:inherit;clip-path:inset(var(--cut,.5em) -.5em -.6em -.5em)}
+.logo2>span.wt-glyph>.wt-gimg{position:absolute;left:var(--gx,50%);top:var(--gy,.28em);width:var(--gw,.9em);height:var(--gh,.62em);transform:translate(-50%,-50%);z-index:0;pointer-events:none;overflow:visible;filter:drop-shadow(0 .2em .28em rgba(30,14,36,.55))}
+.logo2>span.wt-glyph>.wt-gimg svg{width:100%;height:100%;overflow:visible;display:block}`+(TG.css||''));
+  s.textContent='';s.classList.add('wt-glyph');const b=document.createElement('b');b.textContent=TG.ch;s.appendChild(b);
+  for(const k of ['cut','gx','gy','gw','gh'])if(TG[k]!=null)s.style.setProperty('--'+k,TG[k]);
+  const d=document.createElement('span');d.className='wt-gimg';d.innerHTML=TG.svg('wlg'+(++glyphN));s.appendChild(d);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)d.querySelectorAll('animate,animateTransform').forEach(a=>a.remove());}
 function addCss(id,text){const st=document.createElement('style');st.dataset.wl=id;st.textContent=text;document.head.appendChild(st);}
 function btn(cls,text,on){const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=text;b.addEventListener('click',on);return b;}
 /* 세계 설정 W로 첫 화면을 만든다 */
@@ -72,6 +85,7 @@ function render(W,o={}){
   const cols=W.letterColors&&W.letterColors.length?W.letterColors:['#ffd46a'];let ci=0,gap=false;const spans=[];
   for(const ch of [...W.title]){if(ch===' '){gap=true;continue;}const s=document.createElement('span');s.setAttribute('aria-hidden','true');s.textContent=ch;
     s.style.cssText=`--i:${ci};--c:${cols[ci%cols.length]};--r:${TILT[ci%TILT.length]}deg`;if(gap)s.className='gap';gap=false;h.appendChild(s);spans.push(s);ci++;}
+  glyphize(spans,W.titleGlyph);
   if(W.titleDeco&&W.titleDeco.svg){const d=document.createElement('div');d.className='wt-deco';d.setAttribute('aria-hidden','true');d.innerHTML=W.titleDeco.svg;h.insertBefore(d,h.firstChild);
     // 리본 문구가 길어져(공통 '탐험가 원더룹의 대모험') 좁은 화면에서 장식이 리본 글자를 덮으면 그때만 리본을 그만큼 위로(넓은 화면은 개미굴 그대로)
     const at=Math.max(0,Math.min(spans.length-1,W.titleDeco.at|0)),place=()=>{d.style.setProperty('--dx',spans[at].offsetLeft+'px');if(!el.isConnected)return;
@@ -104,4 +118,4 @@ function backdropAt(B,t){const sp=B.speed||.07;let a;
   const at=B.at||[0,1,0],r=B.r||20,bob=B.bob?B.bob[0]*Math.sin(t*B.bob[1]):0;
   const look=[at[0],at[1]+(B.lookUp?Math.max(0,Math.sin(t*B.lookUp[1]+B.lookUp[2]))*B.lookUp[0]:0),at[2]];
   return {from:[at[0]+Math.sin(a)*r,(B.h||8)+bob,at[2]+Math.cos(a)*(B.rz||r)],at:look};}
-export {RIBBON,backdropAt,render};
+export {RIBBON,backdropAt,glyphize,render};

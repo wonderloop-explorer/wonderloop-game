@@ -23,7 +23,7 @@ import {sfx,zoneMusic,songs} from './sound.js';
 import {itemCard} from './ui.js';
 import {react} from './react.js';
 import {ride} from './ride.js';
-import {backdropAt,RIBBON} from './titlescreen.js';
+import {backdropAt,glyphize,RIBBON} from './titlescreen.js';
 import {openBag,playerName} from './front.js';
 import {resetAll} from './state.js';
 let C=null,BG=null,MINI=null,END=null,STAR=null,RAYS=null,HALO=null;
@@ -187,6 +187,7 @@ const TILT=[-6,4,-3,5,-4];
 function endLogo(W,text){const h=document.createElement('h2');h.className='logo2';h.setAttribute('aria-label',text);const cols=W.letterColors&&W.letterColors.length?W.letterColors:['#ffd46a'];
   let ci=0,gap=false;const spans=[];for(const ch of [...text]){if(ch===' '){gap=true;continue;}const s=document.createElement('span');s.setAttribute('aria-hidden','true');s.textContent=ch;
     s.style.cssText=`--i:${ci};--c:${cols[ci%cols.length]};--r:${TILT[ci%TILT.length]}deg`;if(gap)s.className='gap';gap=false;h.appendChild(s);spans.push(s);ci++;}
+  glyphize(spans,W.titleGlyph); // 세계 글자 그림(무한 우주 '우'의 ㅇ = 토성) — 시작 타이틀과 같게
   if(W.titleDeco&&W.titleDeco.svg){const d=document.createElement('div');d.className='wt-deco';d.setAttribute('aria-hidden','true');d.innerHTML=W.titleDeco.svg;h.insertBefore(d,h.firstChild);
     const at=Math.max(0,Math.min(spans.length-1,W.titleDeco.at|0)),place=()=>d.style.setProperty('--dx',spans[at].offsetLeft+'px');requestAnimationFrame(place);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(place);}
   return h;}

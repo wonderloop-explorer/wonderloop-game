@@ -33,17 +33,25 @@ export default {
   title:'무한 우주',
   name:'무한 우주', // 엔딩 큰 제목 '무한 우주 탐방 끝'(game/finale — '{name} 탐방 끝')
   letterColors:['#BFC3CC','#D9704A','#7FB6E8','#C9A6E0','#9BD46B'],
-  /* 상징 장식: '우'(글자 차례 2 — 띄어쓰기는 세지 않음) 위에 작은 토성 — 비스듬한 고리가 천천히 돈다(고리 앞쪽 반이 행성 앞을 지남) */
-  titleDeco:{at:2,
-    svg:'<svg class="sat" viewBox="0 0 120 80"><g class="tilt"><ellipse class="rb" cx="60" cy="40" rx="50" ry="13" fill="none" stroke="#4a2a2a" stroke-width="9"/><ellipse class="rb" cx="60" cy="40" rx="50" ry="13" fill="none" stroke="#e9c97a" stroke-width="4.5"/>'+
-      '<circle cx="60" cy="40" r="21" fill="#e9c97a" stroke="#4a2a2a" stroke-width="5.5"/><path d="M42 34q18 5 36 0M41 45q19 4 38 0" stroke="#c99a4e" stroke-width="3" fill="none" stroke-linecap="round"/>'+
-      '<path class="rf" d="M10 40a50 13 0 0 0 100 0" fill="none" stroke="#4a2a2a" stroke-width="9"/><path class="rf" d="M10 40a50 13 0 0 0 100 0" fill="none" stroke="#e9c97a" stroke-width="4.5"/></g></svg>',
-    css:`#wlTitle .wt-deco .sat{position:absolute;left:-.02em;top:-.66em;width:1.05em;height:.7em;overflow:visible;pointer-events:none;animation:wtDrop .6s .9s cubic-bezier(.2,1.6,.4,1) both}
-#wlTitle .wt-deco .sat .tilt{transform-origin:60px 40px;transform:rotate(-18deg);animation:satTilt 7s ease-in-out infinite}
-#wlTitle .wt-deco .sat .rb,#wlTitle .wt-deco .sat .rf{transform-origin:60px 40px;animation:satSpin 4.8s ease-in-out infinite}
-@keyframes satTilt{50%{transform:rotate(-10deg) translateY(-3px)}}
-@keyframes satSpin{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
-#wlTitle .march i{animation:none!important}
+  /* '우'의 ㅇ = 고리 달린 작은 토성(2026-11-07 — 따로 떠 있던 토성 장식 대신, 글자 장식은 하나): game/titlescreen glyphize가 '우' 칸의 위쪽(ㅇ)을 잘라 숨기고
+     아래 ㅜ 획은 글자 그대로 두며 이 그림을 ㅇ 자리에 얹는다. 금빛 몸통 + 비스듬한 고리(뒤 반은 몸통 뒤, 앞 반은 앞), 글자와 같은 갈색 테두리(#4a2a2a, .045em)·
+     아래로 밀린 입체 그림자(.085~.13em)·흐린 그림자. 천천히 돎(고리가 눕혔다 세웠다 + 몸통 줄무늬가 흐름), 고리에 가끔 빛이 스치고 작은 반짝이.
+     엔딩 큰 글자 '무한 우주 탐방 끝'도 같은 방식(game/finale). 읽어 주기·페이지 제목은 '무한 우주' 그대로 */
+  titleGlyph:{ch:'우',cut:'.52em',gx:'50%',gy:'.278em',gw:'.92em',gh:'.63em',svg:id=>{
+    const INK='#4a2a2a',spin=`<animateTransform attributeName="transform" type="scale" values="1 1;1 .68;1 1" dur="7s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>`;
+    const ring=(half,body)=>`<g transform="translate(66 45) rotate(-17)"><g>${spin}${body(half?'M-66 0A66 17 0 0 0 66 0':'M-66 0A66 17 0 0 1 66 0')}</g></g>`;
+    const inkRing=w=>d=>`<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round"/>`;
+    const goldRing=d=>`<path d="${d}" fill="none" stroke="${INK}" stroke-width="13" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#ffe08a" stroke-width="6.4" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#d6a744" stroke-width="1.8" transform="scale(.9)"/>`;
+    const shadow=dy=>`<g transform="translate(0 ${dy})">${ring(0,inkRing(13))}<circle cx="66" cy="45" r="37.6" fill="${INK}"/>${ring(1,inkRing(13))}</g>`;
+    return `<svg viewBox="0 0 132 90" aria-hidden="true"><defs><clipPath id="${id}c"><circle cx="66" cy="45" r="31"/></clipPath></defs>`+shadow(19)+shadow(12.5)+
+      ring(0,goldRing)+`<circle cx="66" cy="45" r="37.6" fill="${INK}"/><circle cx="66" cy="45" r="31" fill="#f2c24f"/><g clip-path="url(#${id}c)"><g><animateTransform attributeName="transform" type="translate" values="-7 0;7 0;-7 0" dur="9s" repeatCount="indefinite"/>`+
+      `<path d="M26 33q40 7 80 0M24 49q42 6 84 0M30 62q36 5 72 0" stroke="#d29a35" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M28 41q38 4 76 0" stroke="#ffe7a6" stroke-width="3.2" fill="none" stroke-linecap="round"/></g>`+
+      `<ellipse cx="53" cy="29" rx="14" ry="7.5" fill="#fff6d6" opacity=".55" transform="rotate(-25 53 29)"/></g>`+
+      ring(1,d=>goldRing(d)+`<path d="${d}" fill="none" stroke="#fffbe8" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="12 260" opacity="0"><animate attributeName="stroke-dashoffset" values="40;-200" dur="4.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.95;0" keyTimes="0;.55;.7;1" dur="4.6s" repeatCount="indefinite"/></path>`)+
+      `<g transform="translate(116 56)"><g opacity="0"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.8;.88;1" dur="4.6s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="scale" values=".3;.3;1.15;.4" keyTimes="0;.8;.88;1" dur="4.6s" repeatCount="indefinite"/>`+
+      `<path d="M0-11L2.4-2.4 11 0 2.4 2.4 0 11-2.4 2.4-11 0-2.4-2.4Z" fill="#fff4b8" stroke="${INK}" stroke-width="1.6"/></g></g></svg>`;}},
+  /* 행렬 행성 굴리기(장식 그림 없이 css만 — titleDeco는 css만 씀) */
+  titleDeco:{css:`#wlTitle .march i{animation:none!important}
 #wlTitle .march i svg{animation:spRoll 1.9s linear infinite}
 @keyframes spRoll{to{transform:rotate(360deg)}}`},
   /* 점선 위 행렬: 작은 행성 다섯(회색 달·주황 화성·연보라 금성·금빛·줄무늬)이 차례로 데굴데굴 */

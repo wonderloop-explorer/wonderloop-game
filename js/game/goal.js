@@ -9,7 +9,7 @@
    ground(x,z): 동그라미를 놓을 땅 높이(08이 02 groundY를 넘겨준다). 구역을 떠나면 game/index가 clearGoal(). */
 import * as THREE from 'three';
 import {hint,hintsVisible} from './ui.js';
-let ctx=null,G=null,beam=null,tag=null,dots=null,beamA=null,dotsA=null,cur=null,tagKey='',arrow=null,t0=0;
+let tagA=1,ctx=null,G=null,beam=null,tag=null,dots=null,beamA=null,dotsA=null,cur=null,tagKey='',arrow=null,t0=0;
 const N=8,GAP=1.05,NA=30,GAPA=1.15,_m=new THREE.Matrix4(),_q=new THREE.Quaternion(),_s=new THREE.Vector3(),_p=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
 function initGoal(c){ctx=c;}
 function geoBeam(r,h,col,ringCol='#fff4c8'){const c=new THREE.Color(col),pos=[],cl=[],idx=[];const S=28,HS=6;
@@ -60,7 +60,13 @@ function avoidHud(gy,dt){const cam=ctx.camera;if(!cam||!cam.isPerspectiveCamera)
   let need=0;for(const r of hudRects()){if(cx+hw<r.left||cx-hw>r.right||top>r.bottom+6||top+tag.scale.y*ppm<r.top)continue;need=Math.max(need,(r.bottom+8-top)/ppm);}
   need=Math.min(need,Math.max(0,base-gy-1.2));tagDrop+=(need-tagDrop)*Math.min(1,dt*6);tag.position.y=base-tagDrop;}
 function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hintsVisible()){G.visible=false;setArrow(null);return;}G.visible=true;t0+=dt;
-  const gy=P.y??cur.y??(ctx.ground?ctx.ground(P.x,P.z):0);beam.position.set(P.x,gy,P.z);beamA.position.set(P.x,gy,P.z);tag.position.set(P.x,gy+(cur.h||2.7)+Math.sin(t0*3)*.08,P.z);avoidHud(gy,dt);
+  const gy=P.y??cur.y??(ctx.ground?ctx.ground(P.x,P.z):0);beam.position.set(P.x,gy,P.z);beamA.position.set(P.x,gy,P.z);tag.position.set(P.x,gy+(cur.h||2.7)+Math.sin(t0*3)*.08,P.z);
+  /* 이름표·노란 세모 크기 상한(2026-11-07 — 카메라 가까이 오면 화면을 크게 가렸다): 화면 높이의 11%(최대 96px)보다 커지지 않게 줄이고,
+     원더룹이 목표 1.6m 안이면 0.3초에 걸쳐 숨김(2.6m부터 옅어짐) */
+  {const cam=ctx.camera;let k=1;if(cam&&cam.isPerspectiveCamera){const depth=Math.max(.1,cam.position.distanceTo(tag.position)),ppm=innerHeight/(2*Math.tan(cam.fov*Math.PI/360)*depth),cap=Math.min(96,innerHeight*.11);k=Math.min(1,cap/(1.44*ppm));}
+   tag.scale.set(2.3*k,1.44*k,1);const W0=ctx.WL,dl=W0?Math.hypot(P.x-W0.position.x,P.z-W0.position.z):9,want=Math.min(1,Math.max(0,(dl-1.6)/1));
+   tagA+=(want-tagA)*Math.min(1,dt*6);tag.material.opacity=tagA;}
+  avoidHud(gy,dt);
   // 동그라미 길: 원더룹 앞 0.9m부터 목표 쪽으로 GAP마다, 목표 1.1m 앞까지(가까운 N개만)
   const w=W.position,dx=P.x-w.x,dz=P.z-w.z,L=Math.hypot(dx,dz),ux=dx/(L||1),uz=dz/(L||1);let n=0;
   for(let i=0;i<N;i++){const d=.9+i*GAP;if(d>L-1.1)break;const x=w.x+ux*d,z=w.z+uz*d,y=Math.max(ctx.ground?ctx.ground(x,z):0,-.05)+.03;
