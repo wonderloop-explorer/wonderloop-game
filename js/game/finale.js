@@ -164,7 +164,8 @@ body.wl-finale #wlJoy,body.wl-finale #wlJump,body.wl-finale #wlDash,body.wl-fina
 #wlEnding .march i{display:block;width:var(--w);height:var(--h);animation:wtStep var(--hop) steps(2) infinite}#wlEnding .march svg,#wlEnding .march img{width:100%;height:100%;display:block}
 #wlEnding .es{margin:0 0 1.6rem;font-size:1.15rem;letter-spacing:.04em;opacity:0;animation:endIn 2.4s ease 2.2s forwards}
 #wlEnding .eh{display:block;margin-top:.35rem;font-size:.9rem;letter-spacing:.06em;opacity:.85}
-#wlEnding .eb{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;opacity:0;animation:endIn 1.6s ease 7s forwards}
+#wlEnding .eb{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;width:min(22rem,calc(100vw - 40px));margin:0 auto;opacity:0;animation:endIn 1.6s ease 7s forwards} /* 단추 정렬(2026-11-07): 채널 단추는 한 줄 전체, 나머지는 같은 너비 두 칸 — 홀수로 남은 마지막 단추도 한 줄 전체 */
+#wlEnding .eb>*{box-sizing:border-box;width:100%;text-align:center;white-space:nowrap;box-shadow:none;margin:0}#wlEnding .eb>.pri,#wlEnding .eb>:last-child:nth-child(even){grid-column:1/-1}
 #wlEnding .eb button{pointer-events:auto;border:0;border-radius:999px;padding:.6rem 1.2rem;font:inherit;font-size:.95rem;cursor:pointer;background:rgba(30,18,30,.55);color:#fff4e4;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 #wlEnding .eb a{pointer-events:auto;border-radius:999px;padding:.6rem 1.2rem;font-size:.95rem;text-decoration:none;text-shadow:none;background:#f2b63c;color:#1e1418;font-weight:700}
 #wlEnding .eb button:focus-visible,#wlEnding .eb a:focus-visible{outline:3px solid #fff4e4;outline-offset:3px}
@@ -198,8 +199,8 @@ function ending(W,{bag=true}={}){if(!C)return;closeEnding();if(!END_CSS){END_CSS
   const eb=document.createElement('div');eb.className='eb';const a=document.createElement('a');a.className='pri';a.href=YT;a.target='_blank';a.rel='noopener';a.textContent='▶ 원더룹 채널 보러 가기';eb.appendChild(a);
   const b=(txt,f)=>{const x=document.createElement('button');x.type='button';x.textContent=txt;x.addEventListener('click',()=>{sfx('ui-click');f();});eb.appendChild(x);return x;};
   if(W.cert&&(!W.cert.when||W.cert.when()))b('인증서 보기',()=>cert(W));
-  b('처음부터 다시 하기',()=>{try{resetAll();}catch(e){}location.reload();});
   if(bag)b('가방 보기',()=>openBag());
+  b('처음부터 다시 하기',()=>{try{resetAll();}catch(e){}location.reload();});
   el.appendChild(eb);document.body.appendChild(el);document.body.classList.add('wl-ending');block('finale',true);
   const B=F.endBackdrop||W.backdrop;let t=0,last=performance.now();const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;return backdropAt(B,t);};
   END={el,fn};if(C.view)C.view.hold(fn);if(W.music)playSong(W.music);cue({kind:'ending',who:'엔딩',text:name+' 탐방 끝',dur:0});}

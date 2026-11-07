@@ -44,16 +44,16 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
 /* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
-const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.15; // 걷기 속도(설정값 — 아래 SPEED). 기본 3.15 = 개미굴 원본 걷기(초당 5)의 0.63배(2026-11-05 — 0.9배 4.5가 빠르다고 해서 30% 더 줄임). 기준·동작 촬영은 예전 1.5
+const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.78; // 걷기 속도(설정값 — 아래 SPEED). 기본 3.78 = 개미굴 원본 걷기(초당 5)의 0.76배(2026-11-05 0.9배 4.5 → 30% 줄여 3.15 → 2026-11-07 느리다고 해서 20% 빠르게). 기준·동작 촬영은 예전 1.5
 const DRV={walk:WALK,run:WALK*8/5,dash:SHOTM?WALK*17/5:17,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
 const LEG_A=SHOTM?.5:.75; // (기준·동작 촬영의 예전 걷기 — 다리를 엉덩이에서 흔들기만)
-/* 걷기 속도 설정값(2026-11-05): 걷기 = 3.15(개미굴 원본 5의 0.63배 — 처음 0.9배 4.5에서 30% 줄임), 대쉬 = 원본 17 그대로, 달리기 없음(DRV.run은 촬영 모드 shotDrive용). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed3' —
+/* 걷기 속도 설정값(2026-11-05, 2026-11-07 고침): 걷기 = 3.78(개미굴 원본 5의 0.76배 — 처음 0.9배 4.5에서 30% 줄여 3.15, 다시 20% 빠르게), 대쉬 = 원본 17 그대로, 달리기 없음(DRV.run은 촬영 모드 shotDrive용). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed4' —
    예전 'wl-speed'·'wl-speed2'에 남은 막대 값은 쓰지 않는다).
    기준·동작 촬영(SHOTM)은 예전 1.5 그대로 */
-const SPEED={def:{walk:3.15},H:1.38,
-  set(w){if(SHOTM)return;if(w)DRV.walk=+w;try{localStorage.setItem('wl-speed3',JSON.stringify({walk:DRV.walk}));}catch(e){}},
-  reset(){SPEED.set(SPEED.def.walk);try{localStorage.removeItem('wl-speed3');}catch(e){}}};
-if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed3')||'null');if(o&&o.walk)DRV.walk=+o.walk;}catch(e){}
+const SPEED={def:{walk:3.78},H:1.38,
+  set(w){if(SHOTM)return;if(w)DRV.walk=+w;try{localStorage.setItem('wl-speed4',JSON.stringify({walk:DRV.walk}));}catch(e){}},
+  reset(){SPEED.set(SPEED.def.walk);try{localStorage.removeItem('wl-speed4');}catch(e){}}};
+if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed4')||'null');if(o&&o.walk)DRV.walk=+o.walk;}catch(e){}
 const GT={f:0,w:0,DROP:.018}; // (시험 도구 호환 — 걸음 계산은 없음)
 if(!SHOTM)hips.position.y=HIP-GT.DROP; // 서 있을 때 장화 바닥이 바닥에 닿게(2026-11-04 — 예전엔 1.8cm 떠 있었다)
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */

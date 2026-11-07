@@ -34,7 +34,7 @@ function dolly(R){const V=C.view;if(!V||!V.hold)return;const W=C.WL,P=W.position
       if([.55,.9,1.2,R.top].every(y=>seen(cp,new THREE.Vector3(P.x,P.y+y,P.z),R.obj))){pick={a:a0+da,h,v};break;}}if(pick)break;} // 가슴·얼굴·탈·물건이 모두 보이는 자리
   if(!pick||(Math.abs(pick.a-a0)<.01&&pick.h>=h0-.05))return;
   const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;let k=e(Math.min(1,t/.6));
-    if(R.zoomOut!=null){const u=Math.min(1,(t-R.zoomOut)/.6);k*=1-e(u);if(u>=1){setTimeout(()=>{if(V.req&&V.req.fn===fn)V.hold(null);},0);return null;}}
+    if(R.zoomOut!=null){const u=Math.min(1,Math.max(0,(t-R.zoomOut)/.6)); /* 기다리는 동안 음수 — 그대로 넣으면 다가간 거리가 거꾸로 커져 카메라가 130m 밖으로 튀었다(2026-11-07 아이폰) */k*=1-e(u);if(u>=1){setTimeout(()=>{if(V.req&&V.req.fn===fn)V.hold(null);},0);return null;}}
     const a=a0+(pick.a-a0)*k,h=h0+(pick.h-h0)*k,v=v0+(pick.v-v0)*k,ay=y0+(yT-y0)*k;
     return {from:[P.x+Math.sin(a)*h,P.y+ay+v,P.z+Math.cos(a)*h],at:[P.x,P.y+ay,P.z]};};
   R.zoomFn=fn;R.zoomT=()=>t;V.hold(fn,{snap:true});}
