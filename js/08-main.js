@@ -201,7 +201,7 @@ function tickBody(){
     hemi.intensity*=L.level??1;fill.intensity*=L.fill??L.level??1;sun.intensity*=L.sun??.25;if(L.fog&&scene.fog)scene.fog.color.lerp(slCol(L.fog),k);}} // 원본 굴 스테이지는 해가 없다(sun 0) — 기본 0.25만 남김(야외 스테이지는 sun:1)
   if(Z.light)Z.light(env,dt); // 구역 조명(램프·등불 등)과 효과의 밝기
   {const dark=Math.min(1,Math.max(0,1-hemi.intensity/.62));const U=WL.userData;const a=emph==='on'?1:emph==='off'?0:Math.min(1,Math.max(0,(dark-.25)/.25)); // 자동: 어두움 .25부터 켜지기 시작해 .5 이상(저녁·굴·땅속)이면 예전 세기 그대로
-   if(U.rimU){U.rimU.value=a*(.08+.45*dark);U.liftU.value=a*(.02+.17*dark);}}
+   if(U.rimU){U.rimU.value=a*(.08+.45*dark);U.liftU.value=a*(.02+.17*dark);if(Z.rim&&emph!=='off')U.rimU.value=Math.max(U.rimU.value,Z.rim);}} // 구역 정보 rim(선택): 밝은 곳에서도 원더룹 둘레 빛 테두리(무한 우주 회색 정원 — 까만 하늘 앞)
   // 위 세기는 r128 옛 조명 단위 → 물리 단위로 (옛 방식은 셰이더에서 π를 곱했다)
   [hemi,sun,fill,...Z.lights].forEach(l=>l.intensity*=PI);
   GAME.weather.tickWeather(dt,Z,camera); // 빗줄기·공간음

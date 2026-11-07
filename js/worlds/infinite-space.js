@@ -93,8 +93,8 @@ export default {
     talk:'보름 할아버지 가까이에서 나타나요',
     touch:[['점프','둥실 뛰기 — 높이 떠올라 천천히 내려와요']],
     play:'바람이 없는 행성이라 걸은 발자국이 그대로 남아요. 할아버지의 오래된 발자국 길을 따라가면 다음 목표가 나와요. 그늘 분화구 깊은 곳에는 아무도 모르는 비밀이 숨어 있대요.'},
-  /* 스테이지 빛(game/stage): 회색 정원 — 우주 하늘빛은 차갑고, 해는 강하게(공기가 없어 그림자가 또렷) */
-  stages:{'space-garden':{label:'회색 정원(우주)',light:{hemi:'#c9cbe6',ground:'#4a4668',level:1,sun:1.15,k:.7}}},
+  /* 스테이지 빛(game/stage): 회색 정원 — 연보라 하늘빛·연보라 땅 반사(그늘이 연보라), 해는 따뜻하고 강하게(공기가 없어 그림자가 또렷) */
+  stages:{'space-garden':{label:'회색 정원(우주)',light:{hemi:'#d2c6ea',ground:'#7a64a2',level:.82,sun:1.1,k:.7}}},
   finale:{gift:null,vehicle:null,miniature:null,endBackdrop:null},
   cert:null,
   icons:{map:ICON_MAP,necklace:ICON_NECK},
