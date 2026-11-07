@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="0eb8ad7891";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="82405fdcd9";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 0c0c021, 버전 1cb118af8b, 2026-11-06)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 00c31d2, 버전 e6df8958e3, 2026-11-07)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -347,8 +347,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="1cb118af8b";
-window.WL_BUILD={"commit":"0c0c021","date":"2026-11-06","stage":"basecamp"};
+window.WL_V="e6df8958e3";
+window.WL_BUILD={"commit":"00c31d2","date":"2026-11-07","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -1410,16 +1410,16 @@ WL.userData.stopWalk=stopWalk; // 구역 연출이 원더룹을 멈춰 세울 �
      공중 — 두 팔을 들고 다리를 앞뒤로(-0.6·0.4), 올라갈 때 세로 1.08·가로 0.95로 늘고 내려올 때 1.02·0.99 · 착지 — 0.22초 동안 세로 0.84·가로 1.09까지 찌그러졌다 돌아옴.
      크기는 초당 22로 따라간다. 모두 원더룹이 뛰거나 대쉬할 때만이라 기준 화면에는 나오지 않는다. */
 /* 걷기 빠르기(2026-11-03 — 개미굴 편 영상만큼: 개미굴 걷기 5·달리기 8을 키 비율로 줄여 3.4). 기준·동작 촬영(?shot, 영상 캡처 빼고)은 예전 1.5 그대로(기준 화면이 바뀌지 않게) */
-const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.15; // 걷기 속도(설정값 — 아래 SPEED). 기본 3.15 = 개미굴 원본 걷기(초당 5)의 0.63배(2026-11-05 — 0.9배 4.5가 빠르다고 해서 30% 더 줄임). 기준·동작 촬영은 예전 1.5
+const SHOTM=(()=>{const q=new URLSearchParams(location.search);return q.has('shot')&&!q.has('capture');})(),WALK=SHOTM?1.5:3.78; // 걷기 속도(설정값 — 아래 SPEED). 기본 3.78 = 개미굴 원본 걷기(초당 5)의 0.76배(2026-11-05 0.9배 4.5 → 30% 줄여 3.15 → 2026-11-07 느리다고 해서 20% 빠르게). 기준·동작 촬영은 예전 1.5
 const DRV={walk:WALK,run:WALK*8/5,dash:SHOTM?WALK*17/5:17,dashT:.24,dashCd:.75,jumpVy:4.7},D={spd:0,dashT:0,cd:0,dx:0,dz:1,landT:0,lean:0,puffT:0,sy:1,sxz:1};
 const LEG_A=SHOTM?.5:.75; // (기준·동작 촬영의 예전 걷기 — 다리를 엉덩이에서 흔들기만)
-/* 걷기 속도 설정값(2026-11-05): 걷기 = 3.15(개미굴 원본 5의 0.63배 — 처음 0.9배 4.5에서 30% 줄임), 대쉬 = 원본 17 그대로, 달리기 없음(DRV.run은 촬영 모드 shotDrive용). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed3' —
+/* 걷기 속도 설정값(2026-11-05, 2026-11-07 고침): 걷기 = 3.78(개미굴 원본 5의 0.76배 — 처음 0.9배 4.5에서 30% 줄여 3.15, 다시 20% 빠르게), 대쉬 = 원본 17 그대로, 달리기 없음(DRV.run은 촬영 모드 shotDrive용). 톱니 메뉴 막대로 바로 바꾸고 이 기기에 기억('wl-speed4' —
    예전 'wl-speed'·'wl-speed2'에 남은 막대 값은 쓰지 않는다).
    기준·동작 촬영(SHOTM)은 예전 1.5 그대로 */
-const SPEED={def:{walk:3.15},H:1.38,
-  set(w){if(SHOTM)return;if(w)DRV.walk=+w;try{localStorage.setItem('wl-speed3',JSON.stringify({walk:DRV.walk}));}catch(e){}},
-  reset(){SPEED.set(SPEED.def.walk);try{localStorage.removeItem('wl-speed3');}catch(e){}}};
-if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed3')||'null');if(o&&o.walk)DRV.walk=+o.walk;}catch(e){}
+const SPEED={def:{walk:3.78},H:1.38,
+  set(w){if(SHOTM)return;if(w)DRV.walk=+w;try{localStorage.setItem('wl-speed4',JSON.stringify({walk:DRV.walk}));}catch(e){}},
+  reset(){SPEED.set(SPEED.def.walk);try{localStorage.removeItem('wl-speed4');}catch(e){}}};
+if(!SHOTM)try{const o=JSON.parse(localStorage.getItem('wl-speed4')||'null');if(o&&o.walk)DRV.walk=+o.walk;}catch(e){}
 const GT={f:0,w:0,DROP:.018}; // (시험 도구 호환 — 걸음 계산은 없음)
 if(!SHOTM)hips.position.y=HIP-GT.DROP; // 서 있을 때 장화 바닥이 바닥에 닿게(2026-11-04 — 예전엔 1.8cm 떠 있었다)
 /* 대쉬 먼지 (개미굴 puffs: 16개를 돌려 씀, 부드러운 둥근 빛 #f6e2cc) — 원더룹 크기에 맞춰 개미굴의 0.6배 */
@@ -2783,7 +2783,7 @@ export {clearCourse,initCourse,passedCount,ring,tickCourse};
    ㉠ 경계 보기: 지금 구역 걷기 판정(02 blocked)을 0.2m 칸으로 훑어 바닥에 색으로 겹친다 — 걸을 수 있는 곳 연두, 경계(막힌 곳과 맞닿은 칸) 노랑, 막힌 곳 빨강.
       땅 높이를 따라 1m 칸 판에 붙인다(야외 언덕도). 그림만 겹칠 뿐 걷기·카메라는 그대로.
    ㉡ 걷는 시간 재기: 켜면 바닥 두 곳을 차례로 누른다 → 직선 거리와 장애물을 돌아가는 길(0.25m 칸 A* — 원더룹이 실제로 지나갈 수 있는 칸)을 그리고,
-      원더룹 걸음(07 DRV.walk, 게임 3.15m/초)으로 몇 초인지 보여 준다. 세 번째 누르면 새로 시작.
+      원더룹 걸음(07 DRV.walk, 게임 3.78m/초)으로 몇 초인지 보여 준다. 세 번째 누르면 새로 시작.
    ㉢ 크기 확인: 지금 구역의 주민·생물(대화 상대 NPC + 구역이 userData.wlCreature='이름'을 붙인 물체)의 키를 원더룹 키(탈 더듬이를 뺀 머리 꼭대기까지 = 1) 대비 비율로 목록 —
       0.6보다 작거나 1.5보다 크면 '!' 표시. 배경·건물·식물 같은 공간 요소는 넣지 않는다(이름표를 붙이지 않으니 저절로 빠짐).
    ㉣ 굴러가는 물건 시험(2026-11-05, game/incident): 원더룹 앞에 바구니 하나와 공 셋 — 바구니가 덜컹(event-clunk) 하며 사건 순간 카메라(show, 1.1초)가 비추고,
@@ -3342,7 +3342,8 @@ body.wl-finale #wlJoy,body.wl-finale #wlJump,body.wl-finale #wlDash,body.wl-fina
 #wlEnding .march i{display:block;width:var(--w);height:var(--h);animation:wtStep var(--hop) steps(2) infinite}#wlEnding .march svg,#wlEnding .march img{width:100%;height:100%;display:block}
 #wlEnding .es{margin:0 0 1.6rem;font-size:1.15rem;letter-spacing:.04em;opacity:0;animation:endIn 2.4s ease 2.2s forwards}
 #wlEnding .eh{display:block;margin-top:.35rem;font-size:.9rem;letter-spacing:.06em;opacity:.85}
-#wlEnding .eb{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;opacity:0;animation:endIn 1.6s ease 7s forwards}
+#wlEnding .eb{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;width:min(22rem,calc(100vw - 40px));margin:0 auto;opacity:0;animation:endIn 1.6s ease 7s forwards} /* 단추 정렬(2026-11-07): 채널 단추는 한 줄 전체, 나머지는 같은 너비 두 칸 — 홀수로 남은 마지막 단추도 한 줄 전체 */
+#wlEnding .eb>*{box-sizing:border-box;width:100%;text-align:center;white-space:nowrap;box-shadow:none;margin:0}#wlEnding .eb>.pri,#wlEnding .eb>:last-child:nth-child(even){grid-column:1/-1}
 #wlEnding .eb button{pointer-events:auto;border:0;border-radius:999px;padding:.6rem 1.2rem;font:inherit;font-size:.95rem;cursor:pointer;background:rgba(30,18,30,.55);color:#fff4e4;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 #wlEnding .eb a{pointer-events:auto;border-radius:999px;padding:.6rem 1.2rem;font-size:.95rem;text-decoration:none;text-shadow:none;background:#f2b63c;color:#1e1418;font-weight:700}
 #wlEnding .eb button:focus-visible,#wlEnding .eb a:focus-visible{outline:3px solid #fff4e4;outline-offset:3px}
@@ -3376,8 +3377,8 @@ function ending(W,{bag=true}={}){if(!C)return;closeEnding();if(!END_CSS){END_CSS
   const eb=document.createElement('div');eb.className='eb';const a=document.createElement('a');a.className='pri';a.href=YT;a.target='_blank';a.rel='noopener';a.textContent='▶ 원더룹 채널 보러 가기';eb.appendChild(a);
   const b=(txt,f)=>{const x=document.createElement('button');x.type='button';x.textContent=txt;x.addEventListener('click',()=>{sfx('ui-click');f();});eb.appendChild(x);return x;};
   if(W.cert&&(!W.cert.when||W.cert.when()))b('인증서 보기',()=>cert(W));
-  b('처음부터 다시 하기',()=>{try{resetAll();}catch(e){}location.reload();});
   if(bag)b('가방 보기',()=>openBag());
+  b('처음부터 다시 하기',()=>{try{resetAll();}catch(e){}location.reload();});
   el.appendChild(eb);document.body.appendChild(el);document.body.classList.add('wl-ending');block('finale',true);
   const B=F.endBackdrop||W.backdrop;let t=0,last=performance.now();const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;return backdropAt(B,t);};
   END={el,fn};if(C.view)C.view.hold(fn);if(W.music)playSong(W.music);cue({kind:'ending',who:'엔딩',text:name+' 탐방 끝',dur:0});}
@@ -4033,7 +4034,7 @@ export {counter,dotIcon};
       (game view.focus — 들어갈 때·돌아올 때 0.45초씩 섞음, 플레이어가 화면을 만지면 바로 끝남). sound가 있으면 그 순간 효과음. Promise(돌아오면 끝).
    ② scatter({items, center:[x,z], dir, spread, dist:[가까이,멀리], speed, radius, lift, touchR, sound, onBack(i,모은 수,전체), onDone}) — 굴러가는 물건
       items(이미 장면에 있는 물체들)가 제자리에서 톡 튀어나와(0.7초, 원본 그대로) 서로 다른 방향으로 천천히 구르다 멈춘다.
-        방향: dir(라디안, 0 = +z) 둘레로 spread(부채꼴 전체 각도, 없으면 한 바퀴를 고르게). 거리: dist 사이(최대 5m로 자름). 처음 빠르기 speed(기본 1.1m/초 — 걷기 3.15의 1/3)에서 점점 느려짐.
+        방향: dir(라디안, 0 = +z) 둘레로 spread(부채꼴 전체 각도, 없으면 한 바퀴를 고르게). 거리: dist 사이(최대 5m로 자름). 처음 빠르기 speed(기본 1.1m/초 — 걷기 3.78의 약 1/3)에서 점점 느려짐.
         벽·막힌 곳(02 blocked)에 닿으면 옆으로 꺾고, 그래도 막히면 그 자리에 선다. 대화·카드가 열려 있으면 멈춰 기다린다.
       원더룹이 touchR(원본 1.4) 안에 오면 sound('event-tok' = 원본 줍기 소리)와 함께 포물선을 그리며 제자리(처음 부모 안 그 자리)로 날아간다(0.6초, 원본 그대로).
       멈춘 물건 둘레에는 노란 고리(원본 #ffe08a, 안내 표시 — 영상에서는 숨김). 실패·시간 제한 없음 — 다 모을 때까지 기다린다. 다 모으면 onDone.
@@ -4252,7 +4253,7 @@ function dolly(R){const V=C.view;if(!V||!V.hold)return;const W=C.WL,P=W.position
       if([.55,.9,1.2,R.top].every(y=>seen(cp,new THREE.Vector3(P.x,P.y+y,P.z),R.obj))){pick={a:a0+da,h,v};break;}}if(pick)break;} // 가슴·얼굴·탈·물건이 모두 보이는 자리
   if(!pick||(Math.abs(pick.a-a0)<.01&&pick.h>=h0-.05))return;
   const fn=()=>{const now=performance.now();t+=Math.min(.1,(now-last)/1000);last=now;let k=e(Math.min(1,t/.6));
-    if(R.zoomOut!=null){const u=Math.min(1,(t-R.zoomOut)/.6);k*=1-e(u);if(u>=1){setTimeout(()=>{if(V.req&&V.req.fn===fn)V.hold(null);},0);return null;}}
+    if(R.zoomOut!=null){const u=Math.min(1,Math.max(0,(t-R.zoomOut)/.6)); /* 기다리는 동안 음수 — 그대로 넣으면 다가간 거리가 거꾸로 커져 카메라가 130m 밖으로 튀었다(2026-11-07 아이폰) */k*=1-e(u);if(u>=1){setTimeout(()=>{if(V.req&&V.req.fn===fn)V.hold(null);},0);return null;}}
     const a=a0+(pick.a-a0)*k,h=h0+(pick.h-h0)*k,v=v0+(pick.v-v0)*k,ay=y0+(yT-y0)*k;
     return {from:[P.x+Math.sin(a)*h,P.y+ay+v,P.z+Math.cos(a)*h],at:[P.x,P.y+ay,P.z]};};
   R.zoomFn=fn;R.zoomT=()=>t;V.hold(fn,{snap:true});}
