@@ -26,10 +26,10 @@ let wlTarget=null,wlHop=0,wlPhase=0,blinkT=2.5,markerA=0;
    y 발 높이, vy 위아래 속도, air 공중, jump 튀는 발판이 정한 날아가기(가로 속도), glide 활공 정도(0~1).
    튀는 발판(버섯 갓)을 밟으면 정해진 꼭대기(top+height)까지 튀어 to에 내려앉는다 — 조작은 밟기만(어렵지 않게).
    발판 가장자리를 걸어 나가면 떨어지고, 구역 정보 glide:true인 곳에서는 떨어질 때 활공 물건(06 setGlideProp, 세계마다)을 머리 위로 펼쳐 천천히 내려온다. */
-const GRAV=14,GLIDE=.9,V={y:0,vy:0,air:false,jump:null,lastB:null,glide:0,px:0,pz:0,sw:0,swX:0};WL.userData.vert=V;
-function launch(b){const x=WL.position.x,z=WL.position.z,apex=b.top+b.height,vy0=Math.sqrt(2*GRAV*Math.max(.2,apex-V.y));
+const GRAV0=14,grav=()=>GRAV0*(zone.cur&&zone.cur.gravity||1),GLIDE=.9,V={y:0,vy:0,air:false,jump:null,lastB:null,glide:0,px:0,pz:0,sw:0,swX:0};WL.userData.vert=V;
+function launch(b){const x=WL.position.x,z=WL.position.z,apex=b.top+b.height,vy0=Math.sqrt(2*grav()*Math.max(.2,apex-V.y));
   V.lastB=b;V.vy=vy0;V.air=true;V.jump={vx:0,vz:0};wlTarget=null;markerA=0;sfx('jump');
-  if(b.to){const yl=floorAt(b.to[0],b.to[1]),T=(vy0+Math.sqrt(2*GRAV*Math.max(0,apex-yl)))/GRAV;V.jump.vx=(b.to[0]-x)/T;V.jump.vz=(b.to[1]-z)/T;if(Math.hypot(V.jump.vx,V.jump.vz)>.01)WL.rotation.y=Math.atan2(V.jump.vx,V.jump.vz);}
+  if(b.to){const yl=floorAt(b.to[0],b.to[1]),T=(vy0+Math.sqrt(2*grav()*Math.max(0,apex-yl)))/grav();V.jump.vx=(b.to[0]-x)/T;V.jump.vz=(b.to[1]-z)/T;if(Math.hypot(V.jump.vx,V.jump.vz)>.01)WL.rotation.y=Math.atan2(V.jump.vx,V.jump.vz);}
   if(zone.cur.bounce)zone.cur.bounce(b);}
 // 걸을 수 있는 곳·장애물·땅 높이는 지금 구역이 정한다 (02 blocked·groundY)
 function hopWL(){if(wlHop<=0)wlHop=1;}
@@ -251,7 +251,7 @@ function updateWL(dt,t){
   {const U=WL.userData,dv=U.riding?null:U.drive,ml=dv?Math.hypot(dv.x,dv.z):0;if(D.cd>0)D.cd-=dt;if(SL.t>0)SL.t-=dt; // 직접 조작 (위 "직접 조작")
    let mx=Math.sin(WL.rotation.y),mz=Math.cos(WL.rotation.y);if(ml>.08){mx=dv.x/ml;mz=dv.z/ml;wlTarget=null;markerA=0;}
    if(U.dashReq){U.dashReq=false;if(D.cd<=0&&!U.riding&&!V.jump){sfx('dash');D.dashT=DRV.dashT;D.cd=DRV.dashCd;D.dx=mx;D.dz=mz;WL.rotation.y=Math.atan2(mx,mz);wlTarget=null;}}
-   if(U.jumpReq){U.jumpReq=false;if(!V.air&&!V.jump&&!U.riding){V.vy=DRV.jumpVy;V.air=true;V.jumpT=0;sfx('jump');}}
+   if(U.jumpReq){U.jumpReq=false;if(!V.air&&!V.jump&&!U.riding){V.vy=DRV.jumpVy*(zone.cur&&zone.cur.jumpK||1);V.air=true;V.jumpT=0;sfx('jump');}}
    if(!wlTarget){D.spd+=((ml>.08?(SHOTM&&dv.run?DRV.run:DRV.walk*(dv.k??1)):0)-D.spd)*Math.min(1,dt*8); // 조이스틱은 미는 만큼 걷기(dv.k, controls JOY)
      if(ml>.08){let diff=Math.atan2(mx,mz)-WL.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));WL.rotation.y+=diff*Math.min(1,dt*10);}
      if(D.dashT>0){D.dashT-=dt;mx=D.dx;mz=D.dz;D.spd=DRV.dash;if(D.dashT<=0)D.spd=ml>.08?(SHOTM?DRV.run:DRV.walk):(SHOTM?DRV.walk*.4:2);}
@@ -270,12 +270,12 @@ function updateWL(dt,t){
       else wlTarget=null;}}
   let GY;const X=WL.position.x,Z=WL.position.z;
   if(WL.userData.riding){GY=WL.userData.riding.y;V.y=GY;V.vy=0;V.air=false;V.jump=null;V.glide=0;V.swX=0;WL.rotation.z=0;wlTarget=null;} // 탈것(game/ride)이 자리를 정하는 동안: 걷기·높이 계산 쉼
-  else if(!H){GY=groundY(X,Z);if(V.air){V.vy-=GRAV*dt;V.y+=V.vy*dt;if(V.y<=GY){V.y=GY;V.air=false;V.vy=0;sfx('land');D.landT=.22;}GY=V.y;}else{V.y=GY;V.vy=0;} // 땅 높이 (평평한 방은 0), 점프 중이면 떨어지는 중
+  else if(!H){GY=groundY(X,Z);if(V.air){V.vy-=grav()*dt;V.y+=V.vy*dt;if(V.y<=GY){V.y=GY;V.air=false;V.vy=0;sfx('land');D.landT=.22;}GY=V.y;}else{V.y=GY;V.vy=0;} // 땅 높이 (평평한 방은 0), 점프 중이면 떨어지는 중
     V.jump=null;V.glide=0;if(V.swX){V.swX=0;WL.rotation.z=0;}}
   else{if(Math.hypot(X-V.px,Z-V.pz)>.5&&!V.jump){V.y=floorAt(X,Z);V.air=false;V.vy=0;} // 자리를 옮겼으면(구역 오가기·촬영) 그 자리 가장 높은 바닥에
     if(!V.air){const f=floorAt(X,Z,V.y);if(V.y-f>.3){V.air=true;V.vy=0;}else V.y=f; // 가장자리를 걸어 나가면 떨어짐
       const b=!V.air&&bouncerAt(X,Z);if(b&&b!==V.lastB)launch(b);else if(!b)V.lastB=null;}
-    if(V.air){const prev=V.y;V.vy-=GRAV*dt;const w=windAt(X,Z,V.y);const gl=(zone.cur.glide===true||(zone.cur.glide!==false&&canGlide()))&&!V.jump&&(V.vy<-.5||(!!w&&!!w.up&&V.glide>.4));V.glide+=((gl?1:0)-V.glide)*Math.min(1,dt*8);
+    if(V.air){const prev=V.y;V.vy-=grav()*dt;const w=windAt(X,Z,V.y);const gl=(zone.cur.glide===true||(zone.cur.glide!==false&&canGlide()))&&!V.jump&&(V.vy<-.5||(!!w&&!!w.up&&V.glide>.4));V.glide+=((gl?1:0)-V.glide)*Math.min(1,dt*8);
       if(gl){V.sw+=dt*2.6;V.vy=Math.max(V.vy,-GLIDE*(1+.45*Math.sin(V.sw*2)));} // 활공: 떨어지는 속도를 GLIDE(초당 0.9) 언저리로 — 둥실둥실 빨라졌다 느려졌다
       // 바람 구역(02 winds): 공중에서 dir 쪽으로 밀고(활공 중이면 온 힘, 아니면 절반), 바람길(up)은 활공 중 위로 띄운다. 막힌 곳으로는 밀지 않는다
       if(w&&!V.jump){const k=w.strength*(gl?1:.5)*dt,nx=WL.position.x+w.dir[0]*k,nz=WL.position.z+w.dir[1]*k;if(!blocked(nx,nz,V.y)){WL.position.x=nx;WL.position.z=nz;}

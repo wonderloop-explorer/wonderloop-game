@@ -12,15 +12,17 @@
 import * as THREE from 'three';
 import {ambience} from './sound.js';
 const Q=new URLSearchParams(location.search),SHOT=Q.has('shot');
-const ALL=['day','night','rain','sunset'],NAME={day:'낮',night:'밤',rain:'비 오는 날',sunset:'노을 진 저녁'};
-const TIME={day:0,sunset:1,night:2,rain:0}; // 하늘 시간 값(game/sky)
+/* 우주 날씨(2026-11-07, 무한 우주 — 세계 설정 weathers): 맑은 별빛·유성우·오로라·성운 노을. 하늘 시간은 늘 0(우주 하늘은 구역 sky keys가 셋 다 까만 우주),
+   그림(유성·오로라 띠·성운 빛)은 구역이 env.weather로 그린다. 비·천둥 없음. 공간음 space(잔잔한 웅웅거림)·meteor(+ 먼 쉬익) */
+const ALL=['day','night','rain','sunset','starlight','meteor','aurora','nebula'],NAME={day:'낮',night:'밤',rain:'비 오는 날',sunset:'노을 진 저녁',starlight:'맑은 별빛',meteor:'유성우',aurora:'오로라',nebula:'성운 노을'};
+const TIME={day:0,sunset:1,night:2,rain:0,starlight:0,meteor:0,aurora:0,nebula:0}; // 하늘 시간 값(game/sky)
 const coarse=matchMedia('(pointer:coarse)').matches;
 let list=ALL,cur=null,ctx=null,rainK=0,rain=null,rainN=0,amb=null,ambKey='',indoorK=0;
 function pick(W){list=(W&&W.weathers&&W.weathers.length?W.weathers:ALL).filter(w=>ALL.includes(w));if(!list.length)list=ALL;
   const qw=Q.get('weather'),qt=Q.get('time');
   if(qw&&ALL.includes(qw))return qw;
-  if(qt!==null&&qt!=='')return ['day','sunset','night'][Math.max(0,Math.min(2,+qt|0))];
-  if(SHOT)return 'day';
+  if(qt!==null&&qt!==''&&list.includes('day'))return ['day','sunset','night'][Math.max(0,Math.min(2,+qt|0))];
+  if(SHOT)return list.includes('day')?'day':list[0];
   return list[Math.floor(Math.random()*list.length)];}
 /* 08이 처음에 한 번(세계 설정을 넘김). 고른 날씨는 weather()로 */
 function initWeather(c,W){ctx=c;cur=pick(W);ctx.world=W||null;return cur;}
@@ -76,6 +78,14 @@ function startAmb(key,indoor){stopAmb();const A=ambience();if(!A||!key)return;co
     const thunder=()=>{const t=c.currentTime+.1,s=c.createBufferSource();s.buffer=NB;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=110;const g=c.createGain();
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.16,t+1.4);g.gain.exponentialRampToValueAtTime(.0001,t+6);s.connect(f);f.connect(g);g.connect(root);s.start(t);s.stop(t+6.2); // 멀고 낮게: 천천히 커졌다 길게 사라짐
       later(thunder,35000+Math.random()*45000);};later(thunder,20000+Math.random()*25000);}
+  else if(key==='space'||key==='meteor'){ // 우주: 아주 낮고 잔잔한 웅웅거림(사인 두 개가 천천히 맥놀이) + 옅은 바람결 — 유성우면 가끔 먼 쉬익
+    const hum=(f,g0,pan)=>{const o=c.createOscillator(),g=c.createGain(),p=c.createStereoPanner?c.createStereoPanner():null;o.type='sine';o.frequency.value=f;g.gain.value=g0;o.connect(g);if(p){p.pan.value=pan;g.connect(p);p.connect(root);nodes.push(p);}else g.connect(root);o.start();nodes.push(o,g);return g;};
+    const a=hum(55,.05,-.3),b=hum(55.6,.045,.3),hi=hum(220.4,.008,0);loopNoise('lowpass',180,.4,.02);
+    const swell=()=>{const t=c.currentTime;a.gain.setTargetAtTime(.03+Math.random()*.04,t,3);b.gain.setTargetAtTime(.03+Math.random()*.04,t,3);hi.gain.setTargetAtTime(.004+Math.random()*.008,t,4);later(swell,5000+Math.random()*4000);};swell();
+    if(key==='meteor'){const whoosh=()=>{const t=c.currentTime+.05,s=c.createBufferSource();s.buffer=NB;const f=c.createBiquadFilter();f.type='bandpass';f.Q.value=1.4;f.frequency.setValueAtTime(2400,t);f.frequency.exponentialRampToValueAtTime(500,t+1.6);
+        const g=c.createGain(),p=c.createStereoPanner?c.createStereoPanner():null;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.035,t+.35);g.gain.exponentialRampToValueAtTime(.0001,t+1.8);s.connect(f);f.connect(g);
+        if(p){p.pan.setValueAtTime(Math.random()*1.6-.8,t);p.pan.linearRampToValueAtTime(Math.random()*1.6-.8,t+1.8);g.connect(p);p.connect(root);}else g.connect(root);s.start(t);s.stop(t+1.9); // 멀리서 쉬익(작게)
+        later(whoosh,3500+Math.random()*7000);};later(whoosh,2500);}}
   else if(key==='wind'){const g=loopNoise('bandpass',480,.7,.08);const sway=()=>{g.gain.setTargetAtTime(.05+Math.random()*.1,c.currentTime,1.6);later(sway,2500+Math.random()*3000);};sway();loopNoise('lowpass',220,.5,.03);}
   amb={stop(){live=false;timers.forEach(clearTimeout);const t=c.currentTime;root.gain.setTargetAtTime(0,t,.4);setTimeout(()=>nodes.forEach(n=>{try{n.stop&&n.stop();}catch(e){}try{n.disconnect();}catch(e){}}),2000);}};}
 function stopAmb(){if(amb){amb.stop();amb=null;}}

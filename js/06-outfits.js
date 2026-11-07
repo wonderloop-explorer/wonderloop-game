@@ -3,15 +3,17 @@ import * as THREE from 'three';
 import {PI,lathe,lin,pencil} from './01-textures.js';
 import {SM,TM,WL,head,hoodParts,legs,roundBox,shorts,skin,tunic,wlBase,wlBody,wm,wmList} from './04-character.js';
 import {CROWN,CROWN_BLOOM} from './hoods/crown.js';
+import {ALIEN} from './hoods/alien.js';
 /* 탈 교체 (세계마다 탈 하나) — 탈 번호 hw: 0 없음 · 1 개미탈(04) · 2 탐험 모자(아래)
    새 세계 탈: js/hoods/<이름>.js 의 build({head,wm,TM,SM}) → {g, profile, top}을 만들어 import하고 HOODS 끝에 {key,name,mod}로 더한다.
    여기서 hoodParts(아틀라스 교체 영역)에 넣고 userData.hw로 번호를 붙인다(05 applyLook이 그 번호일 때만 보임).
    머리 처리: 개미탈은 탈 아래 앞머리(05), 모자형 탈은 안쪽 머리만 눌러 넣기(pressHair, 탈의 profile·top). 구역 정보 hood:'<key>' → 들어올 때 그 탈(08).
    번호 0~2는 기준 촬영·영상 대본(setup({hood}))이 쓰므로 바꾸지 않고 뒤에 붙인다. */
 const HOODS=[{key:'none',name:'없음'},{key:'ant',name:'개미탈'},{key:'hat',name:'탐험 모자'},
-  {key:'crown',name:'화관(봉오리)',mod:CROWN},{key:'crownBloom',name:'화관(핌)',mod:CROWN_BLOOM}]; // 요정의 숲: 봉오리 화관 → 클라이맥스에 별꽃 보석이 들어가면 핀 화관(morphHood('crownBloom')) + 별가루
+  {key:'crown',name:'화관(봉오리)',mod:CROWN},{key:'crownBloom',name:'화관(핌)',mod:CROWN_BLOOM},
+  {key:'alien',name:'외계인 탈',mod:ALIEN,face:true}]; // 무한 우주: 개미탈과 같은 얼굴 구멍 탈(더듬이 없음·아몬드 눈) — face = 얼굴 구멍 탈(05가 안쪽 머리를 숨기고 탈 아래 앞머리를 보임) // 요정의 숲: 봉오리 화관 → 클라이맥스에 별꽃 보석이 들어가면 핀 화관(morphHood('crownBloom')) + 별가루
 HOODS.forEach((h,i)=>{if(!h.mod)return;const r=h.mod.build({head,wm,TM,SM});r.g.userData.hw=i;hoodParts.push(r.g);h.press=r;});
-WL.userData.hoods=HOODS;
+WL.userData.hoods=HOODS;WL.userData.faceHoods=[1,...HOODS.map((h,i)=>h.face?i:-1).filter(i=>i>0)];
 /* 디테일: 옷 구조 + 탐험대 패치 */
 {
   const cream=SM('#f3ead6');

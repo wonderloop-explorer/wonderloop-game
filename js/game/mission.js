@@ -32,7 +32,7 @@ function tickLamp(dt){if(!light)return;const want=lampOn&&!!(ctx.WL.userData.hel
 function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,kind:'narration'});return tok;}
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
-function giveHeld(W,it){const U=ctx.WL.userData;if(!it.model||!U.setHeld)return;const h=storybook(it.model(THREE,{held:true}));h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
+function giveHeld(W,it){const U=ctx.WL.userData;if(it.wear){it.wear(ctx.WL,THREE);return;} /* 몸에 다는 물건(무한 우주 숨방울 목걸이 — 세계 설정 item.wear(WL,THREE)): 손에 쥐지 않고 세계 쪽이 단다 */if(!it.model||!U.setHeld)return;const h=storybook(it.model(THREE,{held:true}));h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
   if(it.tool){let on=true;const lab=()=>on?it.tool.on:it.tool.off;const use=()=>{on=!on;lampOn=on&&!!it.light;sfx('ui-click');if(h.userData.setOn)h.userData.setOn(on);setTool({label:lab(),use,on});};setTool({label:lab(),use,on});}}
 function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;const it=F.item;clearMission();
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
@@ -54,7 +54,7 @@ function pick(){const {W,F,it}=M;M.got=true;const o=obj;obj=null;
   setQuest(F.next||'');
   /* 아이템 획득 공통 연출(game/itemget — 개미굴 꿀방울 그대로): 떠 있던 물건이 머리 위로 날아와 잠시 떠 있고, 원더룹은 카메라를 보며 웃고, 아래 획득 카드 → 오른손에 쥠 */
   const card={title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,sec:3.2};
-  if(o)itemGet({obj:o,to:'hand',held:()=>{giveHeld(W,it);return null;},card,scale:it.getScale||1.1,top:it.getTop||1.72});
+  if(o)itemGet({obj:o,to:it.wear?'bag':'hand',onDone:it.wear?()=>giveHeld(W,it):null,held:()=>{giveHeld(W,it);return null;},card,scale:it.getScale||1.1,top:it.getTop||1.72});
   else{giveHeld(W,it);itemCard({...card,who:'아이템'});}}
 function dispose(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)[].concat(c.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});});}
 function clearMission(){lampOn=false;{const U=ctx&&ctx.WL&&ctx.WL.userData;if(U&&U.heldObj&&U.heldObj.userData.missionItem&&U.setHeld)U.setHeld(null);} // 처음부터 하기: 쥐고 있던 미션 물건도 내려놓음

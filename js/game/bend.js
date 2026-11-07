@@ -6,14 +6,23 @@
      uniform wlBend(vec4: x = k, y·z = 카메라 x·z, w = d0) 하나를 모든 재질이 같이 쓴다(Material.onBeforeCompile에 끼워 넣음 — 구역 코드가 재질에 붙이는 onBeforeCompile은 그대로 불린다).
      k가 0이면 셰이더가 예전 계산을 그대로 탄다(베이스캠프·실내·기준 촬영 화면 그대로).
    직접 쓴 셰이더(ShaderMaterial)는 #include <common> 뒤 정점 위치에 wlBent(modelMatrix*…)를 써야 한다(crown.js 별가루 견본). 휘면 안 되는 것(하늘 지붕·별)은 material.userData.noBend=true.
-   매 프레임 자바스크립트 일은 08이 setBend(카메라 x·z)로 uniform 값 셋만 바꾸는 것뿐. 세기는 구역 정보 bend:{k,d0}(없으면 끔) × 톱니 메뉴 단계(끔·약·중·강). */
+   매 프레임 자바스크립트 일은 08이 setBend(카메라 x·z)로 uniform 값 셋만 바꾸는 것뿐. 세기는 구역 정보 bend:{k,d0}(없으면 끔) × 톱니 메뉴 단계(끔·약·중·강).
+   ── 작은 행성(2026-11-07, 무한 우주 STAGE 1): 구역 정보 bend:{sphere:R, wrap:L} ──
+   판정은 여전히 평평한 땅(x·z)이고, 땅은 L(= 2πR) 간격으로 이어진다(08이 원더룹을 L만큼 옮겨 이어 붙임 — 한 방향으로 L을 걸으면 제자리).
+   그릴 때만 원더룹 자리를 꼭대기로 하는 반지름 R 공 위로 감는다: 원더룹에서 평평한 거리 r(L 주기로 가장 가까운 쪽)·방향 → 공 중심에서 각도 r/R,
+   높이 y는 공 표면에서 바깥으로. 원더룹 둘레는 거의 그대로, 멀수록 지평선 아래로 넘어가 공 모양 행성으로 보인다(카메라 위쪽 = 원더룹이 선 자리의 표면 방향).
+   wlSph(vec4: x = R(0이면 끔), y·z = 원더룹 x·z, w = L). 둥근 땅 단계(끔·약·중·강)와 상관없이 늘 켜짐. 구역 물체는 평평한 자리로 화면 밖 판정을 하면 안 되므로 frustumCulled=false(구역 쪽 몫). */
 import * as THREE from 'three';
-const BEND = { value: new THREE.Vector4(0, 0, 0, 8) }, NONE = { value: new THREE.Vector4(0, 0, 0, 8) };
+const BEND = { value: new THREE.Vector4(0, 0, 0, 8) }, NONE = { value: new THREE.Vector4(0, 0, 0, 8) }, SPH = { value: new THREE.Vector4(0, 0, 0, 1) }, SNONE = { value: new THREE.Vector4(0, 0, 0, 1) };
 const C = THREE.ShaderChunk;
 if (!C.common.includes('wlBend')) {
   C.common += `
 uniform vec4 wlBend; // 둥근 땅(game/bend.js): x 세기 k, yz 카메라 x·z, w 평평하게 둘 거리 d0
-vec4 wlBent( vec4 w ) { vec2 d = w.xz - wlBend.yz; float r = max( 0.0, length( d ) - wlBend.w ); w.y -= wlBend.x * r * r; return w; }`;
+uniform vec4 wlSph; // 작은 행성(game/bend.js): x 반지름 R(0이면 끔), yz 원더룹 x·z, w 이어지는 간격 L
+vec4 wlBent( vec4 w ) {
+  if ( wlSph.x > 0.0 ) { vec2 d = mod( w.xz - wlSph.yz + 0.5 * wlSph.w, wlSph.w ) - 0.5 * wlSph.w; float r = length( d ), th = r / wlSph.x, rr = wlSph.x + w.y;
+    vec2 dir = r > 1e-5 ? d / r : vec2( 0.0 ); w.xz = wlSph.yz + dir * rr * sin( th ); w.y = rr * cos( th ) - wlSph.x; return w; }
+  vec2 d = w.xz - wlBend.yz; float r = max( 0.0, length( d ) - wlBend.w ); w.y -= wlBend.x * r * r; return w; }`;
   const pv = 'mvPosition = modelViewMatrix * mvPosition;';
   if (!C.project_vertex.includes(pv)) console.warn('원더룹: 둥근 땅 패치 실패(project_vertex)');
   C.project_vertex = C.project_vertex.replace(pv, 'if ( wlBend.x > 0.0 ) mvPosition = viewMatrix * wlBent( modelMatrix * mvPosition ); else mvPosition = modelViewMatrix * mvPosition;');
@@ -25,7 +34,7 @@ vec4 wlBent( vec4 w ) { vec2 d = w.xz - wlBend.yz; float r = max( 0.0, length( d
   S.vertexShader = S.vertexShader.replace(sp, 'vec4 mvPosition = wlBend.x > 0.0 ? viewMatrix * wlBent( modelMatrix[ 3 ] ) : modelViewMatrix[ 3 ];');
 }
 // 모든 재질에 uniform 끼워 넣기: onBeforeCompile을 바꿔 단 재질도 그 함수 뒤에 wlBend가 붙는다
-{ const P = THREE.Material.prototype, add = (m, sh) => { sh.uniforms.wlBend = m.userData && m.userData.noBend ? NONE : BEND; };
+{ const P = THREE.Material.prototype, add = (m, sh) => { const no = m.userData && m.userData.noBend; sh.uniforms.wlBend = no ? NONE : BEND; sh.uniforms.wlSph = no ? SNONE : SPH; };
   if (!Object.getOwnPropertyDescriptor(P, 'onBeforeCompile') || !P.__wlBend) {
     P.__wlBend = true;
     Object.defineProperty(P, 'onBeforeCompile', { configurable: true,
@@ -39,14 +48,20 @@ vec4 wlBent( vec4 w ) { vec2 d = w.xz - wlBend.yz; float r = max( 0.0, length( d
 const LEVELS = ['끔', '약', '중', '강'], MUL = [0, .5, 1, 2];
 let zoneBend = null, level = 2, paused = 0;
 try { const v = localStorage.getItem('wl-bend'); if (v != null && v !== '') level = Math.max(0, Math.min(3, +v)); } catch (e) {}
-function setZoneBend(b) { zoneBend = b && b.k > 0 ? { k: b.k, d0: b.d0 ?? 8 } : null; }
+let sphere = null;
+function setZoneBend(b) { zoneBend = b && b.k > 0 ? { k: b.k, d0: b.d0 ?? 8 } : null; sphere = b && b.sphere > 0 ? { R: b.sphere, L: b.wrap || 2 * Math.PI * b.sphere } : null; }
 function setLevel(l) { level = l; try { localStorage.setItem('wl-bend', String(l)); } catch (e) {} }
 const bendK = () => (zoneBend && !paused ? zoneBend.k * MUL[level] : 0);
 /* 08이 그리기 직전에(카메라가 움직인 뒤) */
-function setBend(cam) { const v = BEND.value; v.x = bendK(); v.y = cam.position.x; v.z = cam.position.z; v.w = zoneBend ? zoneBend.d0 : 8; }
+function setBend(cam, hero) { const v = BEND.value; v.x = bendK(); v.y = cam.position.x; v.z = cam.position.z; v.w = zoneBend ? zoneBend.d0 : 8;
+  const s = SPH.value; if (sphere && !paused) { s.x = sphere.R; s.w = sphere.L; if (hero) { s.y = hero.x; s.z = hero.z; } if (!(v.x > 0)) v.x = 1e-6; } else s.x = 0; } // 행성이면 셰이더가 wlBent를 타도록 wlBend.x를 아주 작게
+const sphereInfo = () => sphere;
 /* 잠깐 끄기(소개 카드 초상 찍기 등): const resume = bendPaused(); … resume(); */
-function bendPaused() { paused++; const x = BEND.value.x; BEND.value.x = 0; return () => { paused--; BEND.value.x = paused ? 0 : x; }; }
+function bendPaused() { paused++; const x = BEND.value.x, sx = SPH.value.x; BEND.value.x = 0; SPH.value.x = 0; return () => { paused--; BEND.value.x = paused ? 0 : x; SPH.value.x = paused ? 0 : sx; }; }
 /* 그림 위치 계산(자바스크립트 쪽 — 화면 위 안내를 3D 자리에 맞출 때): 평평한 자리 p를 휜 자리로 */
-function bentY(x, z, y) { const v = BEND.value; if (!(v.x > 0)) return y; const r = Math.max(0, Math.hypot(x - v.y, z - v.z) - v.w); return y - v.x * r * r; }
+function bentPos(p) { const s = SPH.value; if (!(s.x > 0)) { p.y = bentY(p.x, p.z, p.y); return p; } const L = s.w, w = q => ((q % L) + 1.5 * L) % L - .5 * L;
+  const dx = w(p.x - s.y), dz = w(p.z - s.z), r = Math.hypot(dx, dz), th = r / s.x, rr = s.x + p.y, k = r > 1e-5 ? rr * Math.sin(th) / r : 1;
+  p.x = s.y + dx * k; p.z = s.z + dz * k; p.y = rr * Math.cos(th) - s.x; return p; }
+function bentY(x, z, y) { const s = SPH.value; if (s.x > 0) return bentPos({ x, y, z }).y; const v = BEND.value; if (!(v.x > 0)) return y; const r = Math.max(0, Math.hypot(x - v.y, z - v.z) - v.w); return y - v.x * r * r; }
 const bendInfo = () => ({ on: !!zoneBend, level, label: LEVELS[level], k: bendK(), d0: zoneBend ? zoneBend.d0 : null });
-export { BEND, LEVELS, bendInfo, bendK, bendPaused, bentY, setBend, setLevel, setZoneBend };
+export { BEND, LEVELS, bendInfo, bendK, bendPaused, bentPos, bentY, setBend, setLevel, setZoneBend, sphereInfo };

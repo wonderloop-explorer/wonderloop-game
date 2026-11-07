@@ -82,9 +82,9 @@ function render(W,o={}){
     el._place=place;if(document.fonts&&document.fonts.ready)document.fonts.ready.then(place);addEventListener('resize',place);el._unplace=()=>removeEventListener('resize',place);}
   box.append(rb,h);
   // 점선 위 행렬 (세계 parade) — 화면 폭의 두 배만큼 늘어놓고 반만큼 흘려 끊김 없이
-  if(W.parade&&W.parade.svg){const P=W.parade,t=document.createElement('div');t.className='trail';t.setAttribute('aria-hidden','true');
+  if(W.parade&&(W.parade.svg||W.parade.svgs)){const P=W.parade,t=document.createElement('div');t.className='trail';t.setAttribute('aria-hidden','true');
     const m=document.createElement('div');m.className='march';m.style.cssText=`--gap:${P.gap||'2.6rem'};--sec:${P.sec||9}s;--pc:${P.color||'#ffe9c2'};--w:${P.w||30}px;--h:${P.h||17}px;--hop:${P.hop||.35}s`;
-    for(let i=0;i<(P.n||6);i++){const it=document.createElement('i');it.innerHTML=P.svg;m.appendChild(it);}t.appendChild(m);box.appendChild(t);}
+    for(let i=0;i<(P.n||6);i++){const it=document.createElement('i');it.innerHTML=P.svgs?P.svgs[i%P.svgs.length]:P.svg;m.appendChild(it);} /* svgs: 아이콘 여러 개를 차례로(무한 우주 행성 다섯) */t.appendChild(m);box.appendChild(t);}
   const sub=document.createElement('p');sub.className='sub';(W.intro||[]).forEach((line,i)=>{if(i)sub.appendChild(document.createElement('br'));sub.append(line);});box.appendChild(sub);
   const B=document.createElement('div');B.className='tbtns';
   if(o.progress){B.append(btn('go','이어서 하기',()=>o.onContinue&&o.onContinue()),

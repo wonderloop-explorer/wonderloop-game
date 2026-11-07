@@ -18,7 +18,7 @@ const DEFAULT_KEYS=[
 const RAIN_KEY={top:'#8c98a8',horizon:'#c4c9cd',hemi:'#c9d0d8',ground:'#8d8c82',hemiI:.5,sun:'#d4dae2',sunI:.16,sunDir:[3,-12,4],fill:.2,fog:'#b8bfc5',fogNear:14,fogFar:58,stars:0,milky:0};
 const CKEYS=['top','horizon','hemi','ground','sun','fog'],NKEYS=['hemiI','sunI','fill','fogNear','fogFar','stars','milky'];
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
-function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey=null}={}){
+function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey=null,space=false}={}){ // space: 우주(공기가 없어 낮에도 별·은하수 — 시간과 상관없이 keys의 stars·milky 그대로, 2026-11-07 무한 우주)
   const RK=Object.assign({},RAIN_KEY,rainKey||{}),RC={};CKEYS.forEach(c=>RC[c]=new THREE.Color(RK[c]));RC.dir=new THREE.Vector3(...RK.sunDir).normalize();
   const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
@@ -65,7 +65,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
       const clr=1-R; // 비: 달·별·첫별·은하수는 안 보임(맑은 밤에만), 하늘은 구름(밤이면 어둡게)
       uni.cloud.value=R;uni.cloudK.value=1-.62*ss(.6,2,S.t);
-      smat.opacity=st*ss(1.75,2,S.t)*clr;uni.milky.value=num('milky')*ss(1.7,2,S.t)*clr;fmat.opacity=ss(1.55,1.8,S.t)*tw*clr;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
+      smat.opacity=st*(space?1:ss(1.75,2,S.t))*clr;uni.milky.value=num('milky')*(space?1:ss(1.7,2,S.t))*clr;fmat.opacity=(space?st:ss(1.55,1.8,S.t))*tw*clr;stars.visible=smat.opacity>.003;first.visible=fmat.opacity>.003; // 안 보일 때는 그리지 않는다(드로우콜)
       if(camera){g.position.copy(camera.position);g.scale.setScalar(Math.min(1,camera.far*.9/radius));}},  // 08이 카메라 먼 거리를 안개 끝으로 당기면 하늘도 그 안으로
     dispose(){dot.dispose();}};
   return S;}

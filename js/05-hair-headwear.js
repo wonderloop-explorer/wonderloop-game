@@ -80,7 +80,7 @@ import {WL,hairParts,head,hoodParts,wm} from './04-character.js';
    const hb=wm(g,bangM);head.add(hb);hb.visible=false;hoodBangs.push(hb);}
   let hoodOn=false;const hoodBtn=document.getElementById('hoodBtn');
   const hairStyles=[hairParts.slice(),hairB,hairD];WL.userData.hairMeshes=hairParts.concat(hairB,hairD).filter(o=>o.isMesh);WL.userData.noMerge=hoodBangs.slice();hairC.forEach(o=>o.parent&&o.parent.remove(o));hairC.forEach(o=>o.visible=false);let hairIdx=2;
-  function applyLook(){const hw=WL.userData.hw||0;hoodParts.forEach(o=>o.visible=(o.userData.hw??1)===hw);/* 개미탈 부품은 번호 없음 = 1, 다른 탈은 06이 붙인 번호 */hairStyles.forEach((arr,i)=>arr.forEach(o=>o.visible=hw!==1&&i===hairIdx));hoodBangs.forEach(b=>b.visible=hw===(WL.userData.faceHole?WL.userData.faceHole.hw:1));}
+  function applyLook(){const hw=WL.userData.hw||0;hoodParts.forEach(o=>o.visible=(o.userData.hw??1)===hw);/* 개미탈 부품은 번호 없음 = 1, 다른 탈은 06이 붙인 번호 */const face=(WL.userData.faceHoods||[1]).includes(hw);/* 얼굴 구멍 탈(개미탈·외계인 탈 — 06 faceHoods) */hairStyles.forEach((arr,i)=>arr.forEach(o=>o.visible=!face&&i===hairIdx));hoodBangs.forEach(b=>b.visible=face);}
   WL.userData.applyLook=applyLook;applyLook();
   const HNAMES=['지그재그 앞머리','둥근 단발','지그재그 단발'];const hairBtn=document.getElementById('hairBtn');
   hairBtn.addEventListener('click',()=>{hairIdx=(hairIdx+1)%hairStyles.length;applyLook();hairBtn.textContent='머리: '+HNAMES[hairIdx];});

@@ -9,7 +9,7 @@
                    { at: 몇 번째 글자(0부터), svg: '<svg …>' (그 글자 왼쪽 끝이 원점), css: '장식 모양·자리·모션 CSS' }
                    css는 '#wlTitle .wt-deco …'로 시작해 쓴다. 등장은 공통 키프레임 wtDrop을 써도 된다(개미굴 더듬이처럼).
      parade        타이틀 아래 점선 위를 지나가는 작은 상징 아이콘
-                   { svg: 아이콘 하나(색은 currentColor), n: 개수, w·h: 크기(px), gap: 사이(CSS 길이), color: 색, sec: 한 번 흐르는 초, hop: 통통 걸음 초 }
+                   { svg: 아이콘 하나(색은 currentColor) 또는 svgs: [아이콘…](차례로 되풀이 — 무한 우주), n: 개수, w·h: 크기(px), gap: 사이(CSS 길이), color: 색, sec: 한 번 흐르는 초, hop: 통통 걸음 초 }
      intro         설명 두 줄 [1줄 = 무슨 탈을 쓰고 들어왔는지, 2줄 = 어디를 향해 가는지]
      startColor    시작 단추 색 (글씨는 진갈색 #3e2834 고정 — 밝은 색으로)
      backdrop      배경 루프 — { zone: 시작 공간 구역 이름(js/zones), at: 보는 점 [x,y,z], r: 반지름(rz: 앞뒤 반지름), h: 카메라 높이,

@@ -179,7 +179,7 @@ if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
 /* 한 화면 그리기: 보통 그리기 + 흐려 보기 덧그리기(game/occlude — 세계 구역에서 원더룹을 가리는 조각만). 화면 통계는 둘을 합친 값 */
 renderer.info.autoReset=false;
 /* 둥근 땅(game/bend): 그리기 직전 카메라 자리를 넣는다(그림자 그리기도 같은 값) */
-function renderFrame(){setBend(camera);renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
+function renderFrame(){setBend(camera,WL.position);renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
 function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
   try{renderFrame();}catch(e2){}}if(!ok)nextFrame();}
 function tickBody(){
@@ -208,6 +208,9 @@ function tickBody(){
   if(Z.update)Z.update(dt,t,env); // 구역 움직임 (베이스캠프: 먼지·김·시계)
   driveInput();GAME.controls.tickControls(dt,WL.userData.dashCool());
   updateWL(dt,t);
+  /* 이어지는 땅(작은 행성 — 구역 정보 bend.wrap, game/bend.js): 원더룹이 L/2 밖으로 나가면 원더룹·카메라·보는 점을 함께 L만큼 옮긴다(그림은 원더룹 기준으로 감으니 화면은 그대로) */
+  {const B=Z.bend,L=B&&B.sphere?(B.wrap||2*PI*B.sphere):0;if(L){const P=WL.position,V=WL.userData.vert;for(const k of ['x','z']){const sh=P[k]>L/2?-L:P[k]<-L/2?L:0;if(!sh)continue;
+     P[k]+=sh;camera.position[k]+=sh;controls.target[k]+=sh;if(V)V[k==='x'?'px':'pz']+=sh;if(WL.userData.wrapShift)WL.userData.wrapShift(k,sh);}}}
   GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩, 영상 캡처 중에는 1/72초씩)
   // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
   {const a=areaAt(WL.position.x,WL.position.z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(Z.areas[a].camera,false);}
