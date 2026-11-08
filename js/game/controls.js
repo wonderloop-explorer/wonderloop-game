@@ -1,6 +1,6 @@
 /* 원더룹 — 조작 (개미굴 편 index.html의 keydown·pointer·wheel·joy를 엔진 공통으로 옮긴 것)
    키보드: WASD 이동(카메라가 보는 쪽이 앞) · 방향키 카메라 돌리기(←→ 초당 2.3, ↑↓ 초당 1.3) · Space 점프 · Shift 대쉬(원더룹은 달리지 않는다 — 2026-11-05) · E 말 걸기·손 상호작용(dialog) ·
-     F 세계 도구(setTool) · M 소리(sound) · H 조작 도움말 · C 옷장(hooks.onWardrobe) · Esc 창 닫기 · -/+ 카메라 거리
+     F 세계 도구(setTool) · M 소리(sound) · H 조작 도움말 · C 사진 모드(game/photo — hooks.photoKey가 먼저 받음, 2026-11-08) · O 옷장(hooks.onWardrobe — 예전 C) · Esc 창 닫기 · -/+ 카메라 거리
    마우스: 화면을 끌면 카메라가 원더룹 둘레로 돈다(가로 0.006·세로 0.004 라디안/픽셀, 위아래 -0.55~1.15) · 휠로 거리(×0.01, 4~13 — 가장 가까이는 08 CAM_MIN, 세로 화면은 배율을 곱한 뒤 4m)
    휴대폰: 왼쪽 아래 조이스틱(반지름 45px, 미는 만큼 걷기 — 아래 JOY, 끝까지 밀어도 걷기) · 오른쪽 점프·대쉬 단추(말 걸기 단추는 ui #wlAct) · 화면을 끌어 카메라
      · 두 손가락으로 벌리고 오므리면 카메라 거리(휠과 같은 3~13, 손가락 사이 거리에 반비례). 사파리가 페이지 자체를 확대하지 않게 막는다(gesture·두 손가락 touchmove·두 번 누르기)
@@ -26,7 +26,7 @@ const input={keys,jx:0,jy:0,jumpReq:false,dashReq:false,
     const f=(k.KeyW?1:0)-(k.KeyS?1:0)-jy,s=(k.KeyD?1:0)-(k.KeyA?1:0)+jx;
     return {f,s,k:kb||!jo?1:JOY.min+(1-JOY.min)*Math.min(1,(m-JOY.dead)/(JOY.full-JOY.dead))};}};
 const JOY={dead:.15,full:.75,min:.3};
-const hooks={onWardrobe:null};
+const hooks={onWardrobe:null,photoKey:null}; // photoKey(e): 사진 모드(game/photo)가 먼저 받는 키 — 소비하면 true
 let tool=null;
 const typing=t=>t&&(/INPUT|TEXTAREA|SELECT/.test(t.tagName)||t.isContentEditable);
 const css=`
@@ -64,8 +64,8 @@ const css=`
    세계에만 해당하는 글(개미굴의 도감·랜턴·읽어주기·냄새 길 등)은 세계 설정 controlsNote로 — setHelpNote(note): keys(키보드 표 E 다음), talk(터치 '말 걸기' 설명),
    touch(터치 표 끝), play(이렇게 놀아요), heatBefore·heatAfter(따뜻해질 때 목록 앞·뒤). 없는 칸은 빠진다. 예전 세계(요정의 숲)는 setHelpExtra(list, play) — play와 '이 세계에서' 표 */
 const KEYS_A=[['W A S D','걷기'],['Shift','순간 대쉬'],['스페이스','점프'],['방향키','시점 돌리기'],['+ −','카메라 거리'],['E','말 걸기, 살펴보기, 대화 넘기기']];
-const KEYS_B=[['M','소리 켜고 끄기'],['H','조작법 열고 닫기'],['C','옷 갈아입기']];
-const TOUCH_A=[['왼쪽 원','미는 만큼 걷기'],['드래그','시점 돌리기'],['점프','뛰어오르기'],['대쉬','순간 대쉬']];
+const KEYS_B=[['M','소리 켜고 끄기'],['H','조작법 열고 닫기'],['C','사진 찍기 (찍기는 스페이스)'],['O','옷 갈아입기']];
+const TOUCH_A=[['왼쪽 원','미는 만큼 걷기'],['드래그','시점 돌리기'],['점프','뛰어오르기'],['대쉬','순간 대쉬'],['사진','오른쪽 위 사진 단추 — 찍고 저장']];
 const SND_TIPS=['오른쪽 위 <b>메뉴</b>에서 <b>소리 켜짐</b>인지 확인해 주세요. 키보드는 M 키로 켜고 꺼요.','다른 앱이나 메시지에 다녀온 뒤 소리가 멈췄다면 <b>게임 화면을 한 번 눌러</b> 주세요. 소리가 다시 켜져요.',
   '아이폰은 옆면 <b>무음 모드</b>를 켜 두면 소리가 안 날 수 있어요. 무음 모드를 끄고 볼륨을 올려 주세요.','그래도 안 들리면 메뉴에서 소리를 껐다가 다시 켜거나, 페이지를 새로 고쳐 주세요.'];
 const HEAT_TIPS=['<b>충전하면서</b> 하면 더 뜨거워져요. 가능하면 충전기를 빼고 해 주세요.','화면 <b>밝기를 조금 낮추면</b> 발열이 줄어요.'];
@@ -117,13 +117,14 @@ function initControls(ctx){build();if(SHOT)return;
   window.addEventListener('keydown',e=>{if(typing(e.target)||e.metaKey||e.ctrlKey)return;
     if(e.target&&e.target.tagName==='BUTTON'&&(e.code==='Space'||e.code==='Enter'))return; // 단추에 초점: 그 단추를 누르는 키
     if(helpShown()){if(e.code==='Escape'||e.code==='KeyH'){e.preventDefault();showHelp(false);}return;}
+    if(hooks.photoKey&&hooks.photoKey(e)){e.preventDefault();return;} // 사진 모드: C 들어가고 나가기 · Space 셔터 · Esc 닫기 · 말 걸기·대쉬 등은 쉼
     if(MOVE.includes(e.code)||e.code==='Space')e.preventDefault();keys[e.code]=true;
     if(e.repeat)return;
     if(e.code==='Space')input.jumpReq=true;
     else if(e.code==='ShiftLeft'||e.code==='ShiftRight')input.dashReq=true;
     else if(e.code==='KeyF')useTool();
     else if(e.code==='KeyH')showHelp(true);
-    else if(e.code==='KeyC'&&hooks.onWardrobe)hooks.onWardrobe();
+    else if(e.code==='KeyO'&&hooks.onWardrobe)hooks.onWardrobe();
     else if(e.code==='KeyB'&&hooks.onBag)hooks.onBag();});
   window.addEventListener('keyup',e=>{keys[e.code]=false;});
   window.addEventListener('blur',releaseAll);

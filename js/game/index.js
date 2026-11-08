@@ -78,5 +78,6 @@ export * as companion from './companion.js';
 export * as front from './front.js';
 export * as goal from './goal.js';
 export * as mission from './mission.js';
+export * as photo from './photo.js'; // 사진 모드(시리즈 공통 — 08이 initPhoto·cameraTick·render)
 export * as weather from './weather.js';
 export * as incident from './incident.js'; // 사건 연출 공통 처리 — 사건 순간 카메라 show · 굴러가는 물건 scatter

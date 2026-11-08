@@ -30,9 +30,10 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6||GAME.controls.input.pinching)return; // 두 손가락 확대·축소는 누르기가 아니다
   const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
   ray.setFromCamera(ptr,camera);
-  if(GAME.clickNPC(ray))return; // 대화 중이면 다음 대사, NPC를 누르면 말 걸기
-  if(GAME.interact.click(ray))return; // 손으로 할 물건을 누르면 걸어가서 손 동작(game/interact)
-  if(zone.cur.click&&zone.cur.click(ray))return; // 구역의 클릭할 것 (베이스캠프: 버섯 램프)
+  const ph=GAME.photo.active(); // 사진 모드(game/photo): 누르면 걷기·깡충만(말 걸기·손 상호작용은 쉼)
+  if(!ph&&GAME.clickNPC(ray))return; // 대화 중이면 다음 대사, NPC를 누르면 말 걸기
+  if(!ph&&GAME.interact.click(ray))return; // 손으로 할 물건을 누르면 걸어가서 손 동작(game/interact)
+  if(!ph&&zone.cur.click&&zone.cur.click(ray))return; // 구역의 클릭할 것 (베이스캠프: 버섯 램프)
   if(ray.intersectObjects(wlHit,false).length){hopWL();return;}
   if(zone.cur.ground){const h=ray.intersectObjects(zone.cur.ground,false)[0];if(h)setWalkTarget(h.point.x,h.point.z);return;} // 높낮이 있는 땅
   const r0=ray.ray;if(r0.direction.y<-0.01){const tt=-r0.origin.y/r0.direction.y;setWalkTarget(r0.origin.x+r0.direction.x*tt,r0.origin.z+r0.direction.z*tt);}
@@ -47,7 +48,7 @@ function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive
   const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,k:a.k};
   if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}
   if(I.dashReq){U.dashReq=true;I.dashReq=false;if(GAME.dialog.talking())GAME.dialog.endTalk();}}
-GAME.controls.controlHooks.onWardrobe=()=>GAME.front.toggleWardrobe(); // C: 옷 갈아입기 창(game/front — 개미굴 옷장과 같은 방식)
+GAME.controls.controlHooks.onWardrobe=()=>GAME.front.toggleWardrobe(); // O(예전 C — C는 사진 모드, 2026-11-08): 옷 갈아입기 창(game/front — 개미굴 옷장과 같은 방식)
 /* ---------- 구역 오가기 ----------
    goZone(이름, 자리): 새 구역을 만들고 → 지금 구역을 비우고 → 원더룹을 자리에 세우고 → 해·카메라·병합을 맞춘다.
    문(doors)을 밟으면 저절로 부른다. 들어온 문 위에 서 있는 동안은 다시 넘어가지 않는다. 탈 교체 영역(아틀라스)은 새로 채운다 */
@@ -71,7 +72,8 @@ function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥�
   GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
-GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z),rig:{neck,spine,arms}});window.wlGame=GAME;GAME.enterZone(zone.cur,zone.cur.world||WORLD); // 콘솔·시험 도구용
+GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z),rig:{neck,spine,arms}});window.wlGame=GAME;if(!new URLSearchParams(location.search).has('shot'))GAME.photo.initPhoto({scene,camera,renderer,WL,controls,ui:GAME.ui,head:WL.getObjectByName('head'),mobile:QUALITY.tier==='mobile',groundY:(x,z)=>groundY(x,z),zone:()=>zone.cur,prerender:c=>setBend(c,WL.position)}); // 사진 모드(시리즈 공통)
+GAME.enterZone(zone.cur,zone.cur.world||WORLD); // 콘솔·시험 도구용
 GAME.front.applyLook(WL.userData);
 // 첫 화면(game/front): 세계 front가 있는 구역이면 그 위에 타이틀 — '처음부터'는 진행을 지우고 첫 구역을 다시 만든다
 GAME.weather.initWeather({scene,camera,zone:()=>zone.cur},WORLD); // 날씨·시간대(game/weather — 그 판 동안 하나)
@@ -179,7 +181,8 @@ if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
 /* 한 화면 그리기: 보통 그리기 + 흐려 보기 덧그리기(game/occlude — 세계 구역에서 원더룹을 가리는 조각만). 화면 통계는 둘을 합친 값 */
 renderer.info.autoReset=false;
 /* 둥근 땅(game/bend): 그리기 직전 카메라 자리를 넣는다(그림자 그리기도 같은 값) */
-function renderFrame(){setBend(camera,WL.position);renderer.info.reset();renderer.render(scene,camera);GAME.occlude.overlayPass(renderer,scene,camera);}
+function renderFrame(){setBend(camera,WL.position);renderer.info.reset();if(!GAME.photo.render(renderer,scene,camera))renderer.render(scene,camera); // 사진 모드 배경 흐림·미니어처(game/photo)면 후처리로
+  GAME.occlude.overlayPass(renderer,scene,camera);}
 function tick(){let ok=false;try{tickBody();ok=true;}catch(e){const k=String(e&&e.stack||e);if(!tickErrSeen.has(k)){tickErrSeen.add(k);console.error('원더룹: 프레임 오류 (계속 진행)',e);}
   try{renderFrame();}catch(e2){}}if(!ok)nextFrame();}
 function tickBody(){
@@ -210,7 +213,7 @@ function tickBody(){
   updateWL(dt,t);
   /* 이어지는 땅(작은 행성 — 구역 정보 bend.wrap, game/bend.js): 원더룹이 L/2 밖으로 나가면 원더룹·카메라·보는 점을 함께 L만큼 옮긴다(그림은 원더룹 기준으로 감으니 화면은 그대로) */
   {const B=Z.bend,L=B&&B.sphere?(B.wrap||2*PI*B.sphere):0;if(L){const P=WL.position,V=WL.userData.vert;for(const k of ['x','z']){const sh=P[k]>L/2?-L:P[k]<-L/2?L:0;if(!sh)continue;
-     P[k]+=sh;camera.position[k]+=sh;controls.target[k]+=sh;if(V)V[k==='x'?'px':'pz']+=sh;if(WL.userData.wrapShift)WL.userData.wrapShift(k,sh);}}}
+     P[k]+=sh;camera.position[k]+=sh;controls.target[k]+=sh;GAME.photo.shift(k,sh);if(V)V[k==='x'?'px':'pz']+=sh;if(WL.userData.wrapShift)WL.userData.wrapShift(k,sh);}}}
   if(Z.lateUpdate)Z.lateUpdate(dt,t,env); // 원더룹 뼈가 움직인 뒤 구역이 맞출 것(떡방아 떡메를 두 손 자리에 — 무한 우주 회색 정원)
   GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩, 영상 캡처 중에는 1/72초씩)
   // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
@@ -220,7 +223,7 @@ function tickBody(){
   if(Z.sun.follow){const s=Z.sun.shadow,st=2*s/sun.shadow.mapSize.x,cx=Math.round(WL.position.x/st)*st,cz=Math.round(WL.position.z/st)*st;
     sun.target.position.set(cx,0,cz);sun.position.set(cx,0,cz).sub(tmp.copy(Z.sun.dir).multiplyScalar(16));}
   // 천천히 둘러보기
-  const C=GAME.controls.input.cam,rig=!SHOT&&follow;C.on=rig;controls.enableRotate=controls.enableZoom=!rig; // 따라가기 카메라 = 개미굴 카메라(끌기·휠)
+  const C=GAME.controls.input.cam,rig=!SHOT&&follow,phOn=GAME.photo.active();C.on=rig&&!phOn;controls.enableRotate=controls.enableZoom=!rig; // 사진 모드 동안 따라가기 끌기·휠은 쉰다(사진 카메라가 받음) // 따라가기 카메라 = 개미굴 카메라(끌기·휠)
   if(spin&&!rig){const off=camera.position.clone().sub(controls.target);const s=new THREE.Spherical().setFromVector3(off);
     s.theta+=spinDir*dt*0.18;if(s.theta>controls.maxAzimuthAngle-0.02){spinDir=-1;}if(s.theta<controls.minAzimuthAngle+0.02){spinDir=1;}
     camera.position.copy(new THREE.Vector3().setFromSpherical(s).add(controls.target));}
@@ -269,7 +272,8 @@ function tickBody(){
     camera.position.lerp(_fv.set(...C.hv.from),k);controls.target.lerp(_fv.set(...C.hv.at),k);camera.lookAt(controls.target);}
   else{C.ready=false;C.hv=null;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
-  if(!rig&&!C.hv){controls.update();if(Z.camBox&&!GAME.view.req)clampBox(camera.position,Z.camBox);}GAME.occlude.prepCut();{const fx=GAME.react.camPre(camera,dt);renderFrame();if(fx)GAME.react.camPost(camera);} // 리액션 화면 흔들림·시야(game/react) — 그 한 장에만. 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
+  if(!rig&&!C.hv&&!phOn){controls.update();if(Z.camBox&&!GAME.view.req)clampBox(camera.position,Z.camBox);}if(phOn)GAME.photo.cameraTick(dt); // 사진 카메라가 마지막에 덮어씀(연출·따라가기는 밑에서 그대로 흐름)
+  GAME.occlude.prepCut();{const fx=GAME.react.camPre(camera,dt);renderFrame();if(fx)GAME.react.camPost(camera);} // 리액션 화면 흔들림·시야(game/react) — 그 한 장에만. 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}${window.WL_BUILD?' · 커밋 '+window.WL_BUILD.commit:''}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':

@@ -60,6 +60,7 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `ui-open` | 원본 `pickup` | 옷 갈아입기(탐험 준비) 창 열기 | 랜턴 줍기·꿀단지 줍기·비밀 자리·옷장 표정 | game/front.js | 0.46 | -28.6 |
 | `ui-close` | 원본 `click` | 창 닫기(가방 등) | 단추·옷장 고르기·메뉴 | game/front.js | 0.07 | -38.4 |
 | `ui-book` | 원더룹 `dex` | 가방·도감 창 열기 | — | game/front.js | 1.1 | -21.1 |
+| `photo-shutter` | **새로 만듦** | 사진 찍기 셔터 찰칵(사진 모드, 2026-11-08 — 높은 딸깍 두 번, 원본 `click`과 비슷한 크기) | — | game/photo.js | 0.2 | — |
 | `mission-start` | 원본 `sus` | 미션 카드(할 일이 생김) | 미션 카드·의심 게이지·퀴즈 틀림 | game/ui.js | 0.35 | -31.2 |
 | `mission-clear` | 원본 `success` | 통과·결과창·스테이지 완료 배지 | 통과(저장고·보육실·통로·여왕·비행) | game/ui.js (result·stageBadge 기본) | 2.2 | -22.1 |
 | `item-pickup` | 원본 `pickup` | 물건 줍기(첫 미션 물건) | 랜턴 줍기·꿀단지 줍기·비밀 자리·옷장 표정 | game/front.js (장식 고르기), game/mission.js | 0.46 | -28.6 |
