@@ -172,10 +172,12 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
 {const [hx,hz]=HUT,y=gy(hx,hz),face=Math.atan2(VIL[0]-hx,VIL[1]-hz);
   /* 벽(2026-11-08 다시): 매끈한 법선(면마다 평평하면 판 단위로 밝기가 끊겨 보였다), 원기둥의 시작·끝 이음매는 문 반대쪽 뒤로(WALL_T0 — 문이 벽 한 면 가운데),
      밑동은 땅 속 15cm까지(땅에 깔끔하게 박힘), 위·아래 뚜껑 없음(지붕이 덮음). 지붕·지붕 테두리도 매끈한 법선 */
-  const WALL_T0=face-15*PI/14,wallGeo=()=>new THREE.CylinderGeometry(1.45,1.5592,1.42,14,1,true,WALL_T0,PI*2); /* 아래 반지름 = 예전 기울기 그대로 15cm 더 내림 */
+  const WALL_T0=face-15*PI/14,wallGeo=()=>new THREE.CylinderGeometry(1.45,1.5592,1.42,14,10,true,WALL_T0,PI*2); /* 높이 10칸: 처마 밑 어두운 띠를 정점 색으로 */ /* 아래 반지름 = 예전 기울기 그대로 15cm 더 내림 */
   /* 벽은 따로 한 덩어리: 그림자를 받지도 드리우지도 않음 — 둥근 벽의 그림자 지도 자국(벽 면이 빛과 나란한 곳)이 컴퓨터에서 가는 세로선으로 보였다(입체감은 툰 음영이 맡음).
      땅에 지는 집 그림자는 벽보다 12cm 작은 보이지 않는 기둥이 대신(컴퓨터만 — 휴대폰은 진짜 그림자가 없음) */
-  {const wl=[];put(wallGeo(),'#d6d0d8',{pos:[hx,y+.56,hz],smooth:true},wl);const wm=new THREE.Mesh(mergeGeometries(wl),pMatW());wm.receiveShadow=false;wm.castShadow=false;wm.name='hut-wall';root.add(wm);keep.push(wm);
+  {const wl=[];put(wallGeo(),'#d6d0d8',{pos:[hx,y+.56,hz],smooth:true},wl);
+   /* 처마 그림자 느낌(2026-11-08): 그림자 계산 없이 처마 바로 아래 벽을 정점 색으로 은은하게 — 맨 위 24% 어둡게, 아래로 45cm에 걸쳐 옅어짐(컴퓨터·휴대폰 같음) */
+   {const g=wl[0],P=g.attributes.position,C=g.attributes.color,top=y+1.27;for(let i=0;i<P.count;i++){const d=top-P.getY(i),k=1-.24*(1-ss(0,.45,d));C.setXYZ(i,C.getX(i)*k,C.getY(i)*k,C.getZ(i)*k);}}const wm=new THREE.Mesh(mergeGeometries(wl),pMatW());wm.receiveShadow=false;wm.castShadow=false;wm.name='hut-wall';root.add(wm);keep.push(wm);
    if(!MOB){const sc=new THREE.Mesh(new THREE.CylinderGeometry(1.33,1.44,1.4,14,1).translate(hx,y+.56,hz),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));sc.castShadow=true;sc.name='hut-shadow';root.add(sc);keep.push(sc);}}
   put(new THREE.SphereGeometry(1.62,16,8,face+PI,PI*2,0,PI/2),'#a993c9',{pos:[hx,y+1.22,hz],s:[1,.78,1],smooth:true});
   put(new THREE.TorusGeometry(1.5,.08,6,24),'#8a74ad',{pos:[hx,y+1.24,hz],rot:[PI/2,0,0],smooth:true});
@@ -184,11 +186,11 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
      예전 평평한 문판은 벽 모서리가 뚫고 나와 아래 가운데가 V로 파여 보였고, 반원 조각이 따로 돌아가 부채꼴처럼 붙어 있었다. 창은 벽에서 떠 있었다.
      문 = 위가 둥근 아치 하나(네모 + 위 반원) + 테두리 한 줄 + 놋쇠 손잡이, 창 = 동그란 불빛 창 + 테두리 */
   const wallG=wallGeo().translate(hx,y+.56,hz),onWall=th=>(u,v)=>{const a=th+u/1.5;return [[hx+Math.sin(a)*3,y+v,hz+Math.cos(a)*3],[-Math.sin(a),0,-Math.cos(a)]];};
-  {const DW=.78,DH=.5,f=onWall(face);put(wrapOn(wallG,archShape(DW,DH,.0),f,.015),wood,{});
-    put(rimTube(wallG,f,archLine(DW,DH,.005,.014),.028,false,.03),woodD,{}); /* 문틀 = 문판과 같은 윤곽을 관 반지름 절반만큼 바깥으로 — 관이 문판 가장자리를 살짝 덮어 사이로 벽이 비치지 않음, 바닥까지 */
+  {const DW=.78,DH=.5,f=onWall(face);put(wrapOn(wallG,archShape(DW,DH,.0),f,.04),wood,{}); /* 판도 4cm — 테두리 관(2.2~7.8cm) 두께 안이라 비스듬히 봐도 사이로 벽이 비치지 않음 */
+    put(rimTube(wallG,f,archLine(DW,DH,.005,.014),.028,false,.05),woodD,{}); /* 관 가운데를 벽에서 5cm — 벽이 꺾이는 모서리에서도 관이 벽에 먹히지 않게 */ /* 문틀 = 문판과 같은 윤곽을 관 반지름 절반만큼 바깥으로 — 관이 문판 가장자리를 살짝 덮어 사이로 벽이 비치지 않음, 바닥까지 */
     put(new THREE.SphereGeometry(.045,8,6),brass,{pos:wallPt(wallG,f,.24,.4,.05)});}
-  {const WA=face-.565,f=onWall(WA),WR=.23,WY=.85;put(wrapOn(wallG,ellipseShape(0,WY,WR,WR),f,.015),'#ffd98a',{},glow);
-    put(rimTube(wallG,f,circleLine(0,WY,WR+.016),.032,true,.035),woodD,{});
+  {const WA=face-2*PI/14,f=onWall(WA),WR=.23,WY=.85;put(wrapOn(wallG,ellipseShape(0,WY,WR,WR),f,.04),'#ffd98a',{},glow); /* 창은 문 옆 벽 한 면의 가운데(예전엔 벽이 꺾이는 모서리에 걸쳐 비스듬히 보면 테두리 한쪽이 벽에 먹혔다) */
+    put(rimTube(wallG,f,circleLine(0,WY,WR+.016),.032,true,.05),woodD,{});
     const hp=wallPt(wallG,f,0,WY,.1);halos.push({x:hp[0],z:hp[2],y:hp[1],c:'#ffd98a',s:1.3});}
   rod([hx,y+2.4,hz],[hx,y+3.1,hz],.025,woodD);put(new THREE.OctahedronGeometry(.16,0),'#ffe59a',{pos:[hx,y+3.2,hz],s:[1,1,.35]},glow);
   // 문 앞 디딤돌
@@ -656,7 +658,7 @@ function wrapShift(k,sh){if(fpLast)fpLast[k]+=sh;
 }
 return {
   name:'회색 정원',kind:'outdoor',
-  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R,hut:[HUT[0],HUT[1],groundY(...HUT),Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])]},
+  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R,hut:[HUT[0],HUT[1],groundY(...HUT),Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])],win:Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])-2*PI/14},
   poundInfo:()=>({hits:PEST.hits,stand:MSTAND,d:+POUND_D.toFixed(3),cakeTop:+CAKE_TOP.toFixed(3),squish:+CSQ.x.toFixed(3),head:(()=>{pestle.updateMatrixWorld(true);const h=HEAD_C.clone().addScaledVector(HEAD_AX,-.12);pestle.localToWorld(h);return h.toArray().map(n=>+n.toFixed(3));})()}), /* 떡방아 확인(tools/space-pound-rec.py) */ // 시험 도구가 읽는 자리(tools/space-stage1-test.py)
 start:{compass:true},world:null,
   spawn:{x:SPAWN[0],z:SPAWN[1],ry:PI},
@@ -759,7 +761,7 @@ function archShape(w,hs,v0=0,rings=6,ny=6,seg=20){const nx=rings*2,pts=[],idx=[]
   for(let r=1;r<rings;r++){const b0=C+1+(r-1)*(seg+1),b1=C+1+r*(seg+1);for(let s=0;s<seg;s++)idx.push(b0+s,b1+s,b1+s+1,b0+s,b1+s+1,b0+s+1);}return {pts,idx};}
 function archLine(w,hs,v0,out=0){const r=w/2+out,L=[],n=Math.ceil((hs-v0)/.02); /* 점을 2cm마다 촘촘히 — 듬성하면 곡선이 옆선을 안쪽으로 휘게 했다 */
   for(let k=0;k<n;k++)L.push([-r,v0+(hs-v0)*k/n]);for(let s=0;s<=40;s++){const a=PI-s/40*PI;L.push([Math.cos(a)*r,hs+Math.sin(a)*r]);}for(let k=n-1;k>=0;k--)L.push([r,v0+(hs-v0)*k/n]);return L;}
-function circleLine(cx,cy,r){return Array.from({length:24},(_,s)=>[cx+Math.cos(s/24*PI*2)*r,cy+Math.sin(s/24*PI*2)*r]);}
+function circleLine(cx,cy,r){return Array.from({length:48},(_,s)=>[cx+Math.cos(s/48*PI*2)*r,cy+Math.sin(s/48*PI*2)*r]);}
 function pMatW(){if(pMatW.m)return pMatW.m;const m=sbMat('#ffffff');m.vertexColors=true;return pMatW.m=m;} /* 소품 공용 재질(정점 색) — 집 벽 덩어리도 같이 */
 /* 정점 색 덩어리 하나(부품 목록 → 한 메시) */
 function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);

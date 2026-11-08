@@ -27,7 +27,11 @@ with sync_playwright() as p:
         targets = pg.evaluate("""(()=>{const Z=wlZone.cur.root,bo=Z.getObjectByName('bobo');const T={};
           const hut=wlZone.cur.spots.hut;if(hut){const [x,z,y,f]=hut,fx=Math.sin(f),fz=Math.cos(f),sd=f-.62;
             T['house-front']={at:[x+fx*1.3,y+.7,z+fz*1.3],from:[x+fx*4.4,y+1.15,z+fz*4.4]};
-            T['house-side']={at:[x+Math.sin(sd)*1.4,y+.75,z+Math.cos(sd)*1.4],from:[x+Math.sin(sd+.45)*4.2,y+1.0,z+Math.cos(sd+.45)*4.2]};}
+            T['house-side']={at:[x+Math.sin(sd)*1.4,y+.75,z+Math.cos(sd)*1.4],from:[x+Math.sin(sd+.45)*4.2,y+1.0,z+Math.cos(sd+.45)*4.2]};
+            /* 창·문을 정면·왼쪽 비스듬히·오른쪽 비스듬히(벽 바깥 방향에서 ±55°) — 테두리가 벽에 먹히는지 */
+            const wa=wlZone.cur.spots.win!=null?wlZone.cur.spots.win:f-.565;
+            for(const [nm,a,h,d] of [['win',wa,.85,2.2],['door',f,.5,2.6]])for(const [sn,o] of [['front',0],['left',-.95],['right',.95]]){const px=x+Math.sin(a)*1.5,pz=z+Math.cos(a)*1.5,n=[Math.sin(a),Math.cos(a)],t=[Math.cos(a),-Math.sin(a)];
+              T[nm+'-'+sn]={at:[px,y+h,pz],from:[px+(n[0]*Math.cos(o)+t[0]*Math.sin(o))*d,y+h+.25,pz+(n[1]*Math.cos(o)+t[1]*Math.sin(o))*d]};}}
           const p=bo.position,r=bo.rotation.y;T['bobo-front']={at:[p.x,p.y+.6,p.z],from:[p.x+Math.sin(r)*1.9,p.y+.75,p.z+Math.cos(r)*1.9]};
           T['bobo-side']={at:[p.x,p.y+.6,p.z],from:[p.x+Math.sin(r-1.2)*1.9,p.y+.75,p.z+Math.cos(r-1.2)*1.9]};return T;})()""")
         for name, cam in targets.items():
