@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="9a95e27569";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="ffb126550d";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 4d3546e, 버전 62540b736b, 2026-11-08)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 57aeaff, 버전 e8695a9a5d, 2026-11-08)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -347,8 +347,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="62540b736b";
-window.WL_BUILD={"commit":"4d3546e","date":"2026-11-08","stage":"basecamp"};
+window.WL_V="e8695a9a5d";
+window.WL_BUILD={"commit":"57aeaff","date":"2026-11-08","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -2440,6 +2440,12 @@ vec4 wlBent( vec4 w ) {
   if (!S.vertexShader.includes(sp)) console.warn('원더룹: 둥근 땅 패치 실패(sprite)');
   S.vertexShader = S.vertexShader.replace(sp, 'vec4 mvPosition = wlBend.x > 0.0 ? viewMatrix * wlBent( modelMatrix[ 3 ] ) : modelViewMatrix[ 3 ];');
 }
+/* sRGB 바꾸기(three colorspace_pars_fragment)의 쓰지 않는 갈래 pow(0, 0.41666)이 이 GPU 경로(ANGLE·Metal)에서 NaN — mix가 그 NaN을 그대로 남긴다(2026-11-08).
+   캔버스(8비트)는 섞기 전에 0으로 잘려 안 보이지만 사진 모드 렌더 타깃(HalfFloat)에서는 NaN이 남아 더하기 섞기로 번져 까만 점이 됐다(회색 정원 집 둘레 빛 웅덩이 색 0인 곳).
+   pow 입력만 아주 작은 양수로 — 그 범위(≤0.0031308)는 늘 다른 갈래(×12.92)를 쓰므로 그림 값은 그대로(기준 촬영 바이트 그대로) */
+{ const o = 'pow( value.rgb, vec3( 0.41666 ) )';
+  if (C.colorspace_pars_fragment.includes(o)) C.colorspace_pars_fragment = C.colorspace_pars_fragment.replace(o, 'pow( max( value.rgb, vec3( 1e-7 ) ), vec3( 0.41666 ) )');
+  else if (!C.colorspace_pars_fragment.includes('1e-7')) console.warn('원더룹: sRGB NaN 패치 실패(colorspace_pars_fragment)'); }
 // 모든 재질에 uniform 끼워 넣기: onBeforeCompile을 바꿔 단 재질도 그 함수 뒤에 wlBend가 붙는다
 { const P = THREE.Material.prototype, add = (m, sh) => { const no = m.userData && m.userData.noBend; sh.uniforms.wlBend = no ? NONE : BEND; sh.uniforms.wlSph = no ? SNONE : SPH; };
   if (!Object.getOwnPropertyDescriptor(P, 'onBeforeCompile') || !P.__wlBend) {
@@ -4757,13 +4763,16 @@ float vz(vec2 uv){float d=texture2D(tDep,uv).x*2.-1.;return 2.*uNear*uFar/(uFar+
 float coc(float z,vec2 uv){float d=max(max(uZr.x-z,z-uZr.y),0.);vec2 o=max(uRect.xy-uv,uv-uRect.zw);float inR=1.-smoothstep(0.,.035,max(o.x,o.y));
   return uDof*clamp(max(uK*d/z,uSoft*(1.-inR)),0.,1.);}
 /* 물체가 있는 곳(깊이 < 1)은 불투명(1) — 그린 화면의 알파가 1보다 작은 곳이 있어(베이스캠프) 페이지 배경이 비쳐 뿌옜다. 빈 배경(하늘 없는 구역)은 (0,0,0,0)이라 섞어도 미리 곱한 알파 그대로 */
+/* 깨진 값 보호: NaN·무한·음수 화소(셰이더 계산이 깨진 점 하나)는 흐림이 크게 번지지 않게 — 표본에서 빼고(무게 0), 가운데 화소면 둘레 네 점 평균으로 */
+bool bad(vec4 c){return any(isnan(c))||any(isinf(c))||c.r<-.001||c.g<-.001||c.b<-.001;}
 vec4 col(vec2 uv){vec4 c=texture2D(tCol,uv);if(texture2D(tDep,uv).x<.99999)c.a=1.;return c;}
-void main(){float z=vz(vUv),tilt=uMini*smoothstep(.07,.42,abs(vUv.y-uMiniY));float r0=max(coc(z,vUv),tilt)*uMax;vec4 c=col(vUv);
+vec4 fix(vec2 uv){vec4 s=vec4(0.);float n=0.;for(int i=0;i<4;i++){vec2 o=vec2(i==0?1.:i==1?-1.:0.,i==2?1.:i==3?-1.:0.)/uRes;vec4 q=col(uv+o);if(!bad(q)){s+=q;n+=1.;}}return n>0.?s/n:vec4(0.,0.,0.,1.);}
+void main(){float z=vz(vUv),tilt=uMini*smoothstep(.07,.42,abs(vUv.y-uMiniY));float r0=max(coc(z,vUv),tilt)*uMax;vec4 c=col(vUv);if(bad(c))c=fix(vUv);
   if(r0>.6){vec4 acc=c;float ws=1.;for(int i=0;i<TAPS;i++){float fi=float(i),rr=sqrt(fi+.5)/sqrt(float(TAPS))*r0,a=fi*2.39996;vec2 uv=clamp(vUv+vec2(cos(a),sin(a))*rr/uRes,vec2(.0005),vec2(.9995));
-    float zt=vz(uv),rt=max(coc(zt,uv),tilt)*uMax,w=clamp(rt-rr+1.,0.,1.);if(zt<z-.3)w=max(w,clamp(rt-rr+1.,0.,1.));acc+=col(uv)*w;ws+=w;}c=acc/ws;}
+    float zt=vz(uv),rt=max(coc(zt,uv),tilt)*uMax,w=clamp(rt-rr+1.,0.,1.);if(zt<z-.3)w=max(w,clamp(rt-rr+1.,0.,1.));vec4 q=col(uv);if(!bad(q)){acc+=q*w;ws+=w;}}c=acc/ws;}
   if(uMini>0.){float l=dot(c.rgb,vec3(.299,.587,.114));c.rgb=mix(vec3(l),c.rgb,1.+.32*uMini);c.rgb=(c.rgb-.5)*(1.+.08*uMini)+.5+.02*uMini;
     float vg=smoothstep(1.2,.4,length(vUv-.5)*1.4);c.rgb*=mix(1.,.86+.14*vg,uMini);}
-  gl_FragColor=c;
+  gl_FragColor=clamp(c,0.,64.);
 }`;
 function postMat(taps){return new THREE.ShaderMaterial({defines:{TAPS:taps},uniforms:{tCol:{value:null},tDep:{value:null},uRes:{value:new THREE.Vector2(1,1)},uNear:{value:1},uFar:{value:100},
   uZr:{value:new THREE.Vector2(4,6)},uRect:{value:new THREE.Vector4(.4,.3,.6,.7)},uSoft:{value:.1},uK:{value:1},uMax:{value:10},uDof:{value:1},uMini:{value:0},uMiniY:{value:.45}},vertexShader:VS,fragmentShader:FS,depthTest:false,depthWrite:false,transparent:true,blending:THREE.NoBlending});}
