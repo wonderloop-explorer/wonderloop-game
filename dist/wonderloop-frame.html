@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="b56a964297";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="2261951af8";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 a0feb00, 버전 a8864dc31d, 2026-11-08)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 23a5ae4, 버전 c0bf647e89, 2026-11-08)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -347,8 +347,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="a8864dc31d";
-window.WL_BUILD={"commit":"a0feb00","date":"2026-11-08","stage":"basecamp"};
+window.WL_V="c0bf647e89";
+window.WL_BUILD={"commit":"23a5ae4","date":"2026-11-08","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -5703,8 +5703,10 @@ const coarse=matchMedia('(pointer:coarse)').matches,SHOT_UI=new URLSearchParams(
 const dlg=$('#wlDlg');
 /* 탐험가 이름(탐험가 소개 창에서 바꾼 이름 — localStorage 'wl-look2'.name): 대화창 이름표의 '원더룹'을 그 이름으로. 촬영 모드는 늘 '원더룹' */
 const heroName=()=>{if(SHOT_UI)return '원더룹';try{const n=(JSON.parse(localStorage.getItem('wl-look2')||'{}').name||'').trim();return n||'원더룹';}catch(e){return '원더룹';}};
-function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';}
-function hideDialog(){dlg.style.display='none';}
+function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';stackGet();}
+function hideDialog(){dlg.style.display='none';stackGet();}
+/* 아이템 획득 카드와 대화창이 함께 뜨면(2026-11-08 — 달떡 카드가 보름 할아버지 대화창 위에 겹쳤다) 카드를 대화창 위로 24px(이름표가 대화창 위로 튀어나온 만큼 더) 띄워 올림, 대화창이 닫히면 제자리 */
+function stackGet(){const gt=document.getElementById('wlGet');if(!gt)return;const on=gt.classList.contains('on')&&dlg.style.display==='block';gt.style.bottom=on?Math.round(innerHeight-dlg.getBoundingClientRect().top+24)+'px':'';}
 const dialogShown=()=>dlg.style.display==='block';
 /* 카드 자리 하나: 안내 카드·결과창·비밀 카드는 한 번에 하나만 보인다(줄 세우기 — 결과창과 비밀 카드가 겹치지 않게).
    열려 있는 동안 다른 카드를 부르면 줄을 섰다가, 앞 카드가 닫히는 즉시 들어온 순서로 열린다. 각 함수는 그 카드가 닫힐 때 resolve */
@@ -5759,8 +5761,8 @@ const gt=$('#wlGet');let gtDone=null,gtCue=null,gtEnd=0;
 /* 아이템 획득 카드 — 같은 모양으로 스테이지 완료 안내도(sound·who만 바꿔) */
 let gtSpin=0;
 function itemCard({title='',text='',icon=null,frames=null,sec=2.8,sound='item-get',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
-  const img=gt.querySelector('img');clearInterval(gtSpin);gt.classList.toggle('spin',!!(frames&&frames.length));if(frames&&frames.length){let k=0;img.src=frames[0];if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gtSpin=setInterval(()=>{k=(k+1)%frames.length;img.src=frames[k];},90);}else if(icon)img.src=icon;else img.removeAttribute('src'); /* frames: 도는 물건(game/profile spinFrames) — 아이콘 대신 */gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
-function closeItemCard(){if(cardOn!=='item')return;clearInterval(gtSpin);gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
+  const img=gt.querySelector('img');clearInterval(gtSpin);gt.classList.toggle('spin',!!(frames&&frames.length));if(frames&&frames.length){let k=0;img.src=frames[0];if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gtSpin=setInterval(()=>{k=(k+1)%frames.length;img.src=frames[k];},90);}else if(icon)img.src=icon;else img.removeAttribute('src'); /* frames: 도는 물건(game/profile spinFrames) — 아이콘 대신 */gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');stackGet();sfx(sound);});}
+function closeItemCard(){if(cardOn!=='item')return;clearInterval(gtSpin);gt.classList.remove('on');stackGet();endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
 /* 스테이지 완료 배지 (엔진 공통, 2026-11-03 — 요정의 숲부터): stageBadge({img, stage, next, title?, sub?, sec, sound, box, medal})
    세계 그림(투명 배지, 가운데 크림색 칸 = 글자 자리)에 큰 글자 "<stage> 탐험 완료!"(Jua·진갈색)와 작은 글자 "다음 목적지: <next>"(Gowun Dodum·연한 갈색)를 얹는다.
@@ -8753,10 +8755,10 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
      문 = 위가 둥근 아치 하나(네모 + 위 반원) + 테두리 한 줄 + 놋쇠 손잡이, 창 = 동그란 불빛 창 + 테두리 */
   const wallG=new THREE.CylinderGeometry(1.45,1.55,1.3,14,1).translate(hx,y+.62,hz),onWall=th=>(u,v)=>{const a=th+u/1.5;return [[hx+Math.sin(a)*3,y+v,hz+Math.cos(a)*3],[-Math.sin(a),0,-Math.cos(a)]];};
   {const DW=.78,DH=.5,f=onWall(face);put(wrapOn(wallG,archShape(DW,DH,.0),f,.015),wood,{});
-    put(rimTube(wallG,f,archLine(DW,DH,-.03),.028,false,.03),woodD,{});
+    put(rimTube(wallG,f,archLine(DW,DH,.005,.014),.028,false,.03),woodD,{}); /* 문틀 = 문판과 같은 윤곽을 관 반지름 절반만큼 바깥으로 — 관이 문판 가장자리를 살짝 덮어 사이로 벽이 비치지 않음, 바닥까지 */
     put(new THREE.SphereGeometry(.045,8,6),brass,{pos:wallPt(wallG,f,.24,.4,.05)});}
   {const WA=face-.565,f=onWall(WA),WR=.23,WY=.85;put(wrapOn(wallG,ellipseShape(0,WY,WR,WR),f,.015),'#ffd98a',{},glow);
-    put(rimTube(wallG,f,circleLine(0,WY,WR+.02),.032,true,.035),woodD,{});
+    put(rimTube(wallG,f,circleLine(0,WY,WR+.016),.032,true,.035),woodD,{});
     const hp=wallPt(wallG,f,0,WY,.1);halos.push({x:hp[0],z:hp[2],y:hp[1],c:'#ffd98a',s:1.3});}
   rod([hx,y+2.4,hz],[hx,y+3.1,hz],.025,woodD);put(new THREE.OctahedronGeometry(.16,0),'#ffe59a',{pos:[hx,y+3.2,hz],s:[1,1,.35]},glow);
   // 문 앞 디딤돌
@@ -9314,7 +9316,7 @@ function wrapOn(target,shape,frame,eps=.004,bulge=0,ell=null){const pos=[],nr=[]
   g.setAttribute('uv',new THREE.Float32BufferAttribute(shape.pts.flatMap(([u,v])=>[u*3,v*3]),2));return g;} /* uv = 모양 자리 — 크레용 결이 몸처럼 보이게 */
 function wallPt(target,frame,u,v,off){return surfHit(target,frame,u,v,off).toArray();}
 /* 테두리: 2D 선을 겉면에 붙여 그 위로 관(tube) */
-function rimTube(target,frame,line,r,closed,off){const pts=line.map(([u,v])=>surfHit(target,frame,u,v,off));return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,closed,'centripetal'),closed?48:56,r,6,closed);}
+function rimTube(target,frame,line,r,closed,off){const pts=line.map(([u,v])=>surfHit(target,frame,u,v,off));return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,closed,'centripetal'),Math.max(closed?48:56,pts.length*2),r,6,closed);}
 /* 2D 모양: 타원(가운데 + 고리), 아치(네모 격자 + 위 반원 — 맞닿는 줄의 점을 맞춤) */
 function ellipseShape(cx,cy,rx,ry,rings=7,seg=40){const pts=[[cx,cy,1]],idx=[];for(let r=1;r<=rings;r++){const f=r/rings;for(let s=0;s<seg;s++){const a=s/seg*PI*2;pts.push([cx+Math.cos(a)*rx*f,cy+Math.sin(a)*ry*f,1-f*f]);}}
   for(let s=0;s<seg;s++)idx.push(0,1+s,1+(s+1)%seg);
@@ -9325,7 +9327,8 @@ function archShape(w,hs,v0=0,rings=6,ny=6,seg=20){const nx=rings*2,pts=[],idx=[]
   const C=pts.length;pts.push([0,v0+hs]);for(let r=1;r<=rings;r++)for(let s=0;s<=seg;s++){const a=s/seg*PI,f=r/rings*w/2;pts.push([Math.cos(a)*f,v0+hs+Math.sin(a)*f]);}
   for(let s=0;s<seg;s++)idx.push(C,C+1+s,C+2+s);
   for(let r=1;r<rings;r++){const b0=C+1+(r-1)*(seg+1),b1=C+1+r*(seg+1);for(let s=0;s<seg;s++)idx.push(b0+s,b1+s,b1+s+1,b0+s,b1+s+1,b0+s+1);}return {pts,idx};}
-function archLine(w,hs,v0){const L=[[-w/2,v0],[-w/2,hs*.5],[-w/2,hs]];for(let s=1;s<20;s++){const a=PI-s/20*PI;L.push([Math.cos(a)*w/2,hs+Math.sin(a)*w/2]);}L.push([w/2,hs],[w/2,hs*.5],[w/2,v0]);return L;}
+function archLine(w,hs,v0,out=0){const r=w/2+out,L=[],n=Math.ceil((hs-v0)/.02); /* 점을 2cm마다 촘촘히 — 듬성하면 곡선이 옆선을 안쪽으로 휘게 했다 */
+  for(let k=0;k<n;k++)L.push([-r,v0+(hs-v0)*k/n]);for(let s=0;s<=40;s++){const a=PI-s/40*PI;L.push([Math.cos(a)*r,hs+Math.sin(a)*r]);}for(let k=n-1;k>=0;k--)L.push([r,v0+(hs-v0)*k/n]);return L;}
 function circleLine(cx,cy,r){return Array.from({length:24},(_,s)=>[cx+Math.cos(s/24*PI*2)*r,cy+Math.sin(s/24*PI*2)*r]);}
 /* 정점 색 덩어리 하나(부품 목록 → 한 메시) */
 function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);
