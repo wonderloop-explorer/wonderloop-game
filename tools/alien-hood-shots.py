@@ -4,7 +4,7 @@
 import os, base64, io
 from playwright.sync_api import sync_playwright
 from PIL import Image, ImageDraw, ImageFont
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')); OUT = os.path.join(ROOT, 'docs/compare/alien-hood'); os.makedirs(OUT, exist_ok=True)
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')); OUT = os.path.join(ROOT, os.environ.get('OUTDIR', 'docs/compare/alien-hood')); os.makedirs(OUT, exist_ok=True)
 try: FONT = ImageFont.truetype('/System/Library/Fonts/AppleSDGothicNeo.ttc', 26)
 except Exception: FONT = ImageFont.load_default()
 def png(u): return Image.open(io.BytesIO(base64.b64decode(u.split(',', 1)[1]))).convert('RGB')
@@ -27,6 +27,12 @@ with sync_playwright() as p:
     for n, c, d in COL:
         pg.evaluate("([c,d])=>{wlShot.WL.userData.setTint('hood',[c,d]);wlShot.step(2);}", [c, d]); cs.append(label(shot(.35, 1.47, 4.2, 1.2), n))
     row(cs, os.path.join(OUT, 'colors.png'))
+    # 뒤 가까이(탈 색 넷) — 구의 시작·끝이 만나는 이음매(뒤쪽 세로줄)가 보이지 않는지 (2026-11-08)
+    bs = []
+    for n, c, d in COL:
+        pg.evaluate("([c,d])=>{wlShot.WL.userData.setTint('hood',[c,d]);wlShot.step(2);}", [c, d])
+        for az in (2.2, 3.1416, -2.2, 1.5708, -1.5708): bs.append(label(shot(az, 1.52, 2.2, 1.55), f'{n} {az:+.1f}'))
+    [row(bs[i:i+5], os.path.join(OUT, os.environ.get('BACK', 'back-colors') + f'-{i//5}.png')) for i in range(0, len(bs), 5)]
     print(pg.evaluate("()=>wlShot.WL.userData.hw"))
     b.close()
 print('ok', OUT)

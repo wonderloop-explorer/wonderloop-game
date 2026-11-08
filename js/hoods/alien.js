@@ -13,7 +13,10 @@ function shell(){const g=new THREE.SphereGeometry(.5,80,60),p=g.attributes.posit
   for(let t=0;t<ix.length;t+=3){const a=ix[t],b=ix[t+1],c=ix[t+2];if(inHole(a)&&inHole(b)&&inHole(c))continue;keep.push(a,b,c);}
   const used=new Set(keep);for(const i of used){if(!inHole(i))continue;const x=p.getX(i)*2,y=p.getY(i)*2,ex=x/H.ax,ey=(y-H.cy)/H.ay,d=Math.hypot(ex,ey)||1e-6;
     const nx=H.ax*ex/d,ny=H.cy+H.ay*ey/d,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny));p.setXYZ(i,nx*.5,ny*.5,nz*.5);}
-  g.setIndex(keep);g.computeVertexNormals();return g;}
+  g.setIndex(keep);g.computeVertexNormals();
+  /* 구의 법선은 자리 그대로(중심에서 바깥) — computeVertexNormals는 구의 시작·끝이 만나는 이음매(뒤쪽 세로줄)의 겹친 꼭짓점을 따로 계산해 뒤에 세로선이 보였다(2026-11-08) */
+  {const n=g.attributes.normal,v=new THREE.Vector3();for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).normalize();n.setXYZ(i,v.x,v.y,v.z);}n.needsUpdate=true;}
+  return g;}
 /* 구 위 무늬: 접평면 좌표 (a,b)를 dir 둘레에서 구 반지름 r로 편다. rot = 접평면 안 회전(라디안) */
 function onSphere(g,dir,r,rot){const T=new THREE.Vector3(1,0,0).addScaledVector(dir,-dir.x).normalize(),B=dir.clone().cross(T).normalize() /* T = 탈 면 위 가로(세계 x를 접평면에 비춤 — 위·0·dir로 만들면 위쪽 눈의 긴 축이 앞뒤로 누웠다) */,p=g.attributes.position,v=new THREE.Vector3(),c=Math.cos(rot),s=Math.sin(rot);
   for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),a=x*c-y*s,b=x*s+y*c;v.copy(dir).addScaledVector(T,a).addScaledVector(B,b).normalize().multiplyScalar(r);p.setXYZ(i,v.x,v.y,v.z);}

@@ -26,7 +26,9 @@ function initOcclude(c){ctx=c;}
    roof(잎 지붕 높이, 선택): 카메라가 그 높이보다 위에서 내려다보는데 사이에 오면 아예 숨긴다. 여러 겹이 함께 흐려지면 겹친 막이 한 겹(0.3)보다 진해지지 않게
    겹마다 더 옅게(n겹이면 1−0.7^(1/n)). 바뀌는 값은 모두 같은 빠르기로 부드럽게 따라가 깜빡이지 않는다 */
 const A_SMALL=.3,A_BIG=.1;
-function add(root,r=.5,h=1,{near=false,speed=12,boxes=null,set=null,roof=null}={}){LIST.push({root,r,h,k:0,f:0,near,speed,boxes,set,roof,hold:0,holdF:0,a:A_SMALL});}
+/* strict(선택, 2026-11-08 — 미션 목표 물체: 높은 바위·출구 등): 몸 너비로 넓히지 않고, 시선이 상자를 지나는 자리가 원더룹보다 0.7m 넘게 앞일 때만 가린 것으로 —
+   원더룹이 바위에 바짝 붙어 서거나 바위 위에 서면 넓힌 상자에 시선이 걸려 PC에서 바위가 반쯤 투명해졌다(원더룹 뒤에 있을 때는 늘 또렷하게) */
+function add(root,r=.5,h=1,{near=false,speed=12,boxes=null,set=null,roof=null,strict=false}={}){LIST.push({root,r,h,k:0,f:0,near,speed,boxes,set,roof,strict,hold:0,holdF:0,a:A_SMALL});}
 // set(k,f,a): 재질을 직접 바꾸지 않고 구역 쪽이 흐림 값을 받는다(한 덩어리로 합쳐 그린 물체 — 부품마다 불투명도 표)
 // near: 카메라 바로 옆(가로 r+1.2m 안)에 걸려도 흐림 · speed: 흐려지는 빠르기(6 ≈ 0.2초)
 /* 한 겹만(2026-11-03): 흐려진 물체 안에서 앞면·뒷면·겹친 꽃잎이 0.3씩 여러 번 섞이면 한 물체가 진한 막이 된다(꽃지붕 집 — 벽 앞뒤 + 지붕 꽃잎 여섯).
@@ -43,9 +45,9 @@ const _ray=new THREE.Ray(),_bx=new THREE.Box3(),_pts=[.1,.45,.75,1.05],_fw=new T
    (몸 너비 0.22 → 0.42, 원더룹 앞 0.25 → 0.05, 바로 앞 0.9 → 1.3m), 마지막으로 걸린 뒤 0.35초는 그대로 흐림(tickOcclude) */
 function boxHit(o,W){let near=false,hit=false;const was=o.k>.5,wasF=o.f>.5;ctx.camera.getWorldDirection(_fw);for(const b of o.boxes){_bx.copy(b).expandByScalar(.06);
     if(_bx.distanceToPoint(_c)<(wasF?1.3:.9)||_bx.distanceToPoint(_q.copy(_c).addScaledVector(_fw,1))<(wasF?.85:.55)){near=true;break;} // 카메라 안·바로 옆·바로 앞(보는 쪽 1m) — 그보다 먼 것은 사이에 걸릴 때만 0.3
-    _bx.expandByScalar(was?.42:.22); // 시선은 원더룹 가운데 줄로만 보니, 몸 너비만큼 넓혀 가장자리에 걸친 줄기·잎도
+    if(!o.strict)_bx.expandByScalar(was?.42:.22); // 시선은 원더룹 가운데 줄로만 보니, 몸 너비만큼 넓혀 가장자리에 걸친 줄기·잎도(strict는 넓히지 않음)
     if(!hit)for(const y of _pts){_x.set(W.position.x,W.position.y+y,W.position.z).sub(_c);const L=_x.length();_ray.set(_c,_x.divideScalar(L));
-      if(_ray.intersectBox(_bx,_p)){const t=_p.distanceTo(_c);if(t<L-(was?.05:.25)){hit=true;break;}}}}
+      if(_ray.intersectBox(_bx,_p)){const t=_p.distanceTo(_c);if(t<L-(o.strict?(was?.45:.7):(was?.05:.25))){hit=true;break;}}}}
   return near?2:hit?1:0;}
 /* 화면을 얼마나 덮는지: 부품 상자마다 화면에 비춘 네모 넓이(화면 = 1)를 더한다 — 카메라 뒤로 넘어가는 상자는 화면을 다 덮는 것으로 */
 const _v=new THREE.Vector3(),_pm=new THREE.Matrix4();

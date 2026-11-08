@@ -28,30 +28,44 @@ import {PI,QUALITY,rng,blobMany} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {bentPos} from '../../game/bend.js';
+import {popShown} from '../../game/popup.js';
 import SPACE from '../../worlds/infinite-space.js';
-const WID=SPACE.id,R=17,L=2*PI*R,HALF=L/2,MOB=QUALITY.tier==='mobile';
+/* 행성 크기(2026-11-08 — 17m → 24m): 걷기 속도는 그대로 두고 행성을 키워 땅이 도는 속도를 약 30% 늦춤(땅 회전만 따로 늦추면 발이 미끄러져 보여서). 한 바퀴 2πR/3.78 ≈ 40초.
+   ?debug 톱니 메뉴 '행성 반지름' 막대(localStorage 'wl-space-R', 12~40 — 바꾸면 다시 연다) 또는 ?planetR=로 맞춰 볼 수 있다.
+   배치는 17m 때 자리를 기준으로 S = R/17배 펼친다: 멀리 있는 것(분화구·언덕·발자국 길·출구·따뜻한 땅·그늘 분화구 자리)은 S배,
+   마을(시작 지점 둘레)과 그늘 분화구 안쪽(얼음 결정·동굴·목걸이·높은 바위 — 분화구 가운데 기준)은 크기 그대로 */
+const WID=SPACE.id,R0=17,R=(()=>{try{const q=new URLSearchParams(location.search),v=+(q.get('planetR')||localStorage.getItem('wl-space-R')||0);return v>=12&&v<=40?v:24;}catch(e){return 24;}})(),S=R/R0;
+const L=2*PI*R,HALF=L/2,MOB=QUALITY.tier==='mobile';
 const wd=a=>((a%L)+1.5*L)%L-.5*L; // 이어지는 땅에서 가장 가까운 쪽 차이
 const dist=(x,z,c)=>Math.hypot(wd(x-c[0]),wd(z-c[1]));
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 const col=h=>new THREE.Color(h);
 const W2=k=>2*PI*k/L; // L 주기 무늬 주파수(이음매 없음)
+const sc=p=>[p[0]*S,p[1]*S]; // 17m 때 자리 → 지금 크기
 /* 자리 */
-const SPAWN=[0,9.5],BOBO=[2.1,5.4],SHADE={c:[-5,-15],r:6,d:1.3,rim:.5},ROCK={c:[-11.8,-13.5],r:1.65},CAVE=[-5,-19.7],EXIT=[6,-35],WARM=[16,8];
-const DEMO_LAND=[-2.8,-1.2]; // 둥실 뛰기 시범: 할아버지가 바위 쪽으로 한 번 크게 뛰어 내려앉는 곳(원더룹 뒤 카메라에 늘 들어오는 거리)
+const SPAWN=[0,9.5],BOBO=[2.1,5.4],SHADE={c:sc([-5,-15]),r:6,d:1.3,rim:.5},EXIT=sc([6,-35]),WARM=sc([16,8]);
+const shd=(x,z)=>[x+5+SHADE.c[0],z+15+SHADE.c[1]]; // 그늘 분화구 둘레 자리(17m 때 좌표 → 분화구 가운데 기준으로 옮김)
+const ROCK={c:shd(-11.8,-13.5),r:1.65},CAVE=shd(-5,-19.7),NECK=shd(-3.2,-15.2);
+SPACE.firstMission.item.at=NECK; // 첫 미션 목걸이 자리(세계 설정)도 새 크기에 맞춤
+/* 둥실 뛰기 시범: 할아버지가 바위 쪽으로 한 번 크게 뛰어(약 9m) 내려앉는 곳(원더룹 뒤 카메라에 늘 들어오는 거리) */
+const DEMO_LAND=(()=>{const dx=ROCK.c[0]-BOBO[0],dz=ROCK.c[1]-BOBO[1],d=Math.hypot(dx,dz);return [BOBO[0]+dx/d*9,BOBO[1]+dz/d*9];})();
 /* 마을(시작 지점 둘레) */
 const VIL=[1.4,6.2],HUT=[5.4,3.0],SCOPE=[-3.0,4.6],LINE=[[3.8,9.2],[7.0,7.2]],TABLE=[-1.7,2.4],MAIL=[-1.8,8.4],MORTAR=[7.2,10.4],POLE=[-3.6,1.2];
 /* 바위 아치: 첫 미션 길 위(지나가며 올려다봄) — 가운데·길 방향 */
-const ARCH={c:[-1.6,-7.9],dir:[-.37,-.93],half:1.7,h:2.2};
-const CRATERS=[SHADE,{c:[12,-4],r:4,d:.8,rim:.35},{c:[-14,6],r:3.5,d:.6,rim:.3},{c:[19,21],r:5,d:1,rim:.4},{c:[-26,-30],r:6,d:1,rim:.45},{c:[30,-28],r:4,d:.7,rim:.3},
-  {c:[-30,24],r:5,d:.9,rim:.4},{c:[8,30],r:3,d:.5,rim:.25},{c:[40,10],r:4,d:.8,rim:.35},{c:[-40,-6],r:4.5,d:.8,rim:.35},{c:[-18,-40],r:3.2,d:.5,rim:.25},{c:[24,-44],r:3.6,d:.6,rim:.3}];
-/* 완만한 언덕 [x,z,반지름,높이] — 마을·그늘 분화구·높은 바위·출구는 피함 */
-const HILLS=[[15,15,9,1.3],[-19,-3,8,1.1],[22,-15,9,1.4],[-14,25,9,1.2],[6,-23,6,.7],[-33,-37,9,1.1],[35,37,9,1.2],[41,-40,8,1],[-41,41,8,1],[31,3,7,.9],[-6,31,7,.9],[-28,11,6,.8],[13,-48,7,.9],[-47,-20,7,1]];
+const ARCH={c:sc([-1.6,-7.9]),dir:[-.37,-.93],half:1.7,h:2.2};
+const CRATERS=[SHADE,...[{c:[12,-4],r:4,d:.8,rim:.35},{c:[-14,6],r:3.5,d:.6,rim:.3},{c:[19,21],r:5,d:1,rim:.4},{c:[-26,-30],r:6,d:1,rim:.45},{c:[30,-28],r:4,d:.7,rim:.3},
+  {c:[-30,24],r:5,d:.9,rim:.4},{c:[8,30],r:3,d:.5,rim:.25},{c:[40,10],r:4,d:.8,rim:.35},{c:[-40,-6],r:4.5,d:.8,rim:.35},{c:[-18,-40],r:3.2,d:.5,rim:.25},{c:[24,-44],r:3.6,d:.6,rim:.3}].map(C=>({...C,c:sc(C.c)})),
+  // 넓어진 땅에 몇 개 더(17m 좌표 — 같이 펼침)
+  ...[{c:[0,-44],r:3.4,d:.6,rim:.3},{c:[42,-14],r:3.8,d:.7,rim:.32},{c:[-42,22],r:3.2,d:.55,rim:.28},{c:[33,40],r:3.6,d:.6,rim:.3},{c:[-14,42],r:3,d:.5,rim:.25}].map(C=>({...C,c:sc(C.c)}))].filter(C=>Math.abs(C.c[0])<HALF-4&&Math.abs(C.c[1])<HALF-4);
+/* 완만한 언덕 [x,z,반지름,높이] — 마을·그늘 분화구·높은 바위·출구는 피함 (자리 S배, 반지름 √S배) */
+const HILLS=[[15,15,9,1.3],[-19,-3,8,1.1],[22,-15,9,1.4],[-14,25,9,1.2],[6,-23,6,.7],[-33,-37,9,1.1],[35,37,9,1.2],[41,-40,8,1],[-41,41,8,1],[31,3,7,.9],[-6,31,7,.9],[-28,11,6,.8],[13,-48,7,.9],[-47,-20,7,1]]
+  .map(([x,z,r,h])=>[x*S,z*S,r*Math.sqrt(S),h]).filter(([x,z])=>Math.abs(x)<HALF-6&&Math.abs(z)<HALF-6);
 function groundY(x,z){let y=.16*Math.sin(W2(3)*x+.7)*Math.sin(W2(2)*z+1.3)+.1*Math.sin(W2(5)*(x+z)); // 아주 잔잔한 물결(L 주기)
   {const v=Math.max(0,1-dist(x,z,VIL)/8);y*=1-v*v*(3-2*v);} // 마을 마당은 평평하게
   for(const [hx,hz,hr,hh] of HILLS){const t=dist(x,z,[hx,hz])/hr;if(t<1)y+=hh*.5*(1+Math.cos(PI*t));}
   for(const C of CRATERS){const t=dist(x,z,C.c)/C.r;if(t<1)y+=-C.d*(1-t*t)+C.rim*ss(.55,1,t);else if(t<1.7)y+=C.rim*(1-(t-1)/.7)**2;}return y;}
 /* 할아버지의 오래된 발자국 길: 집 앞 → 그늘 분화구 → 행성을 크게 한 바퀴 → 출구 */
-const TRAIL=[[2.4,4.6],[1.6,0],[-.6,-5.5],[-2.6,-10.6],[-3.4,-14.2],[-8,-20],[-16,-24],[-26,-20],[-34,-8],[-40,6],[-36,20],[-24,30],[-8,36],[10,40],[26,34],[36,20],[40,4],[34,-12],[22,-26],[10,-32],[6,-35]];
+const TRAIL=[[2.4,4.6],[1.6,0],...[[-.6,-5.5],[-2.6,-10.6]].map(sc),shd(-3.4,-14.2),...[[-8,-20],[-16,-24],[-26,-20],[-34,-8],[-40,6],[-36,20],[-24,30],[-8,36],[10,40],[26,34],[36,20],[40,4],[34,-12],[22,-26],[10,-32],[6,-35]].map(sc)]; // 마을 앞 두 점은 그대로, 분화구 안 한 점은 분화구 기준, 나머지는 S배
 function trailPts(step){const out=[];for(let i=0;i<TRAIL.length-1;i++){const [ax,az]=TRAIL[i],[bx,bz]=TRAIL[i+1],P0=TRAIL[Math.max(0,i-1)],P3=TRAIL[Math.min(TRAIL.length-1,i+2)];
     const n=Math.ceil(Math.hypot(bx-ax,bz-az)/step);for(let k=0;k<n;k++){const t=k/n,t2=t*t,t3=t2*t,cr=(p0,p1,p2,p3)=>.5*(2*p1+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);
       out.push([cr(P0[0],ax,bx,P3[0]),cr(P0[1],az,bz,P3[1])]);}}return out;}
@@ -61,7 +75,7 @@ const rv=(()=>{const r=rng('space-garden:village');return (a,b)=>a+(b-a)*r();})(
 const keep=[],obstacles=[];
 /* ── 땅: L×L 한 장(1.1~1.3m 칸 — 꼭짓점마다 공 위로 감기므로 촘촘히), 정점 색, 크레용 결
    색연필 얼룩: 회색 바탕 + 연보라(그늘 쪽 비탈·분화구 안·얼룩) + 크림(햇빛 쪽 +x 비탈·따뜻한 땅·얼룩), 그늘 분화구는 푸른 서리 */
-const SEG=MOB?84:100,gGeo=new THREE.PlaneGeometry(L,L,SEG,SEG);gGeo.rotateX(-PI/2);
+const SEG=Math.ceil(L/(MOB?1.35:1.15)),gGeo=new THREE.PlaneGeometry(L,L,SEG,SEG);gGeo.rotateX(-PI/2);
 {const p=gGeo.attributes.position,uv=gGeo.attributes.uv;for(let i=0;i<p.count;i++){p.setY(i,groundY(p.getX(i),p.getZ(i)));uv.setXY(i,uv.getX(i)*34,uv.getY(i)*34);}gGeo.computeVertexNormals();
   const nr=gGeo.attributes.normal,c=new Float32Array(p.count*3),base=col('#aeacb0'),dark=col('#928d9a'),lav=col('#a088c2'),lavD=col('#7f6ba3'),cream=col('#dccdb0'),frost=col('#c4d2ec'),cold=col('#6a6c9a'),warm=col('#dcc29e'),tmp=new THREE.Color();
   for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);
@@ -91,7 +105,7 @@ function rod(a,b,r,color,into=parts,n=6){const A=new THREE.Vector3(...a),B=new T
   const geo=new THREE.CylinderGeometry(r,r,len,n);geo.translate(0,len/2,0);geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()));geo.translate(A.x,A.y,A.z);return put(geo,color,{},into);}
 const lumpy=(r,det=0,seed=0)=>{const g=new THREE.IcosahedronGeometry(r,det),p=g.attributes.position;for(let i=0;i<p.count;i++){const k=1+(Math.sin(p.getX(i)*9.1+p.getY(i)*3.7+seed)*.5+Math.sin(p.getZ(i)*7.3+seed*.7)*.5)*.16;p.setXYZ(i,p.getX(i)*k,p.getY(i)*k,p.getZ(i)*k);}return g;};
 const nearTrail=trailPts(1.2);
-const clearOf=(x,z,m)=>nearTrail.every(([a,b])=>Math.hypot(wd(x-a),wd(z-b))>m)&&[SPAWN,BOBO,ROCK.c,CAVE,EXIT,DEMO_LAND,[-3.2,-15.2]].every(c=>dist(x,z,c)>m+1.2)
+const clearOf=(x,z,m)=>nearTrail.every(([a,b])=>Math.hypot(wd(x-a),wd(z-b))>m)&&[SPAWN,BOBO,ROCK.c,CAVE,EXIT,DEMO_LAND,NECK].every(c=>dist(x,z,c)>m+1.2)
   &&dist(x,z,VIL)>8+m*.3&&dist(x,z,ARCH.c)>3.2&&Math.abs(wd(x))<HALF-3&&Math.abs(wd(z))<HALF-3;
 const rockCols=['#aeaaab','#a19ca3','#b7b2b1','#948f99','#a9a3b4'],warmCols=['#c9ae90','#bea183','#d3b899'];
 function rock(x,z,s,{solid=true,warmK=0,round=false}={}){const y=groundY(x,z),c=warmK>.4?warmCols[(rnd(0,3)|0)%3]:rockCols[(rnd(0,5)|0)%5];
@@ -99,18 +113,18 @@ function rock(x,z,s,{solid=true,warmK=0,round=false}={}){const y=groundY(x,z),c=
 // 분화구 테두리 돌
 for(const C of CRATERS){const n=Math.round(C.r*2.2);for(let i=0;i<n;i++){const a=i/n*PI*2+rnd(-.2,.2),d=C.r*rnd(.98,1.18),x=C.c[0]+Math.cos(a)*d,z=C.c[1]+Math.sin(a)*d;if(!clearOf(x,z,.9))continue;rock(x,z,rnd(.35,.8),{solid:false,warmK:dist(x,z,WARM)<10?1:0});}}
 // 흩어진 바위(크기 규칙: 원더룹보다 커도 됨)
-for(let i=0;i<70;i++){const x=rnd(-HALF+4,HALF-4),z=rnd(-HALF+4,HALF-4);if(!clearOf(x,z,1.8))continue;const big=rnd(0,1)<.18;rock(x,z,big?rnd(1.6,3):rnd(.5,1.2),{warmK:dist(x,z,WARM)<10?1:0});}
+for(let i=0;i<Math.round(70*S*S);i++){const x=rnd(-HALF+4,HALF-4),z=rnd(-HALF+4,HALF-4);if(!clearOf(x,z,1.8))continue;const big=rnd(0,1)<.18;rock(x,z,big?rnd(1.6,3):rnd(.5,1.2),{warmK:dist(x,z,WARM)<10?1:0});}
 // 채우기: 크기가 다양한 둥근 바위(언덕 기슭·길 가장자리 — 카메라 앞쪽 겹)·작은 돌무더기
 const RR=(a,b)=>rv(a,b);
-for(let i=0;i<46;i++){const x=RR(-HALF+4,HALF-4),z=RR(-HALF+4,HALF-4);if(!clearOf(x,z,1.5))continue;const s=[RR(.4,.7),RR(.8,1.3),RR(1.4,2.4)][i%3];
+for(let i=0;i<Math.round(46*S*S);i++){const x=RR(-HALF+4,HALF-4),z=RR(-HALF+4,HALF-4);if(!clearOf(x,z,1.5))continue;const s=[RR(.4,.7),RR(.8,1.3),RR(1.4,2.4)][i%3];
   const y=groundY(x,z);put(lumpy(.5*s,1,i),rockCols[i%5],{pos:[x,y+.2*s,z],rot:[RR(0,PI),RR(0,PI),0],s:[1,RR(.7,.95),RR(.9,1.1)]});if(s>.7)obstacles.push({c:[x,z,.42*s]});
   if(i%2)put(lumpy(.17*s,0,i+.5),rockCols[(i+2)%5],{pos:[x+.45*s,groundY(x+.45*s,z+.2)+.06,z+.2*s]});}
 // 길 가장자리 작은 돌(밟아도 되는 크기 — 충돌 없음): 발자국 길 양옆으로 드문드문
 nearTrail.forEach(([x,z],i)=>{if(i%5)return;const sd=(i%10?1:-1)*RR(.9,1.6),a=RR(0,PI*2),X=x+Math.cos(a)*sd,Z=z+Math.sin(a)*sd;
   if(dist(X,Z,VIL)<5||dist(X,Z,ARCH.c)<2.4||dist(X,Z,SHADE.c)<SHADE.r)return;put(lumpy(RR(.1,.22),0,i),rockCols[i%5],{pos:[X,groundY(X,Z)+.05,Z],rot:[RR(0,PI),RR(0,PI),0],s:[1,.6,1]});});
 function cairn(x,z,n,s=1){let y=groundY(x,z);for(let k=0;k<n;k++){const r=(.26-.035*k)*s*RR(.9,1.1);put(lumpy(r,1,k+x),rockCols[(k+3)%5],{pos:[x+RR(-.05,.05),y+r*.62,z+RR(-.05,.05)],rot:[0,RR(0,PI),0],s:[1,.62,1]});y+=r*1.12;}}
-for(let i=0;i<16;i++){const x=RR(-HALF+5,HALF-5),z=RR(-HALF+5,HALF-5);if(!clearOf(x,z,1))continue;cairn(x,z,(RR(3,6)|0),RR(.8,1.25));for(let k=0;k<3;k++)put(lumpy(RR(.1,.18),0,k+i),rockCols[k],{pos:[x+RR(-.6,.6),groundY(x,z)+.05,z+RR(-.6,.6)],s:[1,.6,1]});}
-cairn(-4.6,-2.6,5,1.1);cairn(4.6,-3.4,4,1);cairn(-6.2,-11.4,4,.9); // 길목 표지(카메라 앞쪽 겹)
+for(let i=0;i<Math.round(16*S*S);i++){const x=RR(-HALF+5,HALF-5),z=RR(-HALF+5,HALF-5);if(!clearOf(x,z,1))continue;cairn(x,z,(RR(3,6)|0),RR(.8,1.25));for(let k=0;k<3;k++)put(lumpy(RR(.1,.18),0,k+i),rockCols[k],{pos:[x+RR(-.6,.6),groundY(x,z)+.05,z+RR(-.6,.6)],s:[1,.6,1]});}
+cairn(-4.6,-2.6,5,1.1);cairn(4.6,-3.4,4,1);cairn(...shd(-6.2,-11.4),4,.9); // 길목 표지(카메라 앞쪽 겹)
 // 그늘 분화구: 서리 판
 for(let i=0;i<14;i++){const a=rnd(0,PI*2),d=rnd(0,SHADE.r*.85),x=SHADE.c[0]+Math.cos(a)*d,z=SHADE.c[1]+Math.sin(a)*d;
   put(new THREE.CircleGeometry(rnd(.35,.8),7),'#d4def0',{pos:[x,groundY(x,z)+.02,z],rot:[-PI/2,0,rnd(0,PI)]});}
@@ -119,8 +133,8 @@ const glow=[],halos=[];
 const iceCols=['#a9cdec','#93bde2','#c6e2f6'],pastel=['#ffb3c8','#a8d8ff','#ffe59a','#d9b8ff'];
 function crystals(x,z,n,s,cols,into=glow){const y=groundY(x,z);for(let i=0;i<n;i++){const h=rnd(.35,.9)*s,a=rnd(0,PI*2),d=rnd(0,.35*s);
   put(new THREE.ConeGeometry(rnd(.07,.14)*s,h,5),cols[i%cols.length],{pos:[x+Math.cos(a)*d,y+h*.42,z+Math.sin(a)*d],rot:[rnd(-.35,.35),rnd(0,PI),rnd(-.35,.35)]},into);}}
-crystals(-2.4,-14.4,7,1.2,iceCols);crystals(-3.9,-16.6,5,1,iceCols);crystals(-7.6,-13.2,6,1.1,iceCols);crystals(-6.8,-17.4,4,.9,iceCols);crystals(-1.6,-17.2,4,.8,iceCols);
-[[-2.4,-14.4],[-3.9,-16.6],[-7.6,-13.2],[-6.8,-17.4],[-1.6,-17.2]].forEach(([x,z])=>halos.push({x,z,y:groundY(x,z)+.45,c:'#9fd2ff',s:1.4}));
+const ICE=[[-2.4,-14.4,7,1.2],[-3.9,-16.6,5,1],[-7.6,-13.2,6,1.1],[-6.8,-17.4,4,.9],[-1.6,-17.2,4,.8]].map(([x,z,n,s])=>[...shd(x,z),n,s]);ICE.forEach(([x,z,n,s])=>crystals(x,z,n,s,iceCols));
+ICE.forEach(([x,z])=>halos.push({x,z,y:groundY(x,z)+.45,c:'#9fd2ff',s:1.4}));
 // 분화구 안쪽 가장자리 파스텔 수정(분홍·하늘·노랑) — 그늘 분화구 말고 모든 분화구에 2~4무더기
 CRATERS.forEach((C,ci)=>{if(C===SHADE)return;const n=2+(ci%3);for(let k=0;k<n;k++){const a=RR(0,PI*2),x=C.c[0]+Math.cos(a)*C.r*RR(.72,.86),z=C.c[1]+Math.sin(a)*C.r*RR(.72,.86);
   const cc=pastel[(ci+k)%4];const y=groundY(x,z);for(let i=0;i<4;i++){const h=RR(.22,.5),aa=RR(0,PI*2),d=RR(0,.18);put(new THREE.OctahedronGeometry(RR(.06,.11),0),cc,{pos:[x+Math.cos(aa)*d,y+h*.5,z+Math.sin(aa)*d],rot:[RR(-.3,.3),RR(0,PI),RR(-.3,.3)],s:[1,h/.12,1]},glow);}
@@ -134,14 +148,14 @@ const caveParts=[],caveBoxes=[];
   for(let i=0;i<6;i++){const a=PI*.78+i/5*PI*1.44,x=cx+Math.cos(a)*.95,z=cz+Math.sin(a)*.95;put(lumpy(.42,1),iceCols[(i+1)%3],{pos:[x,y+1.45,z],rot:[rnd(0,PI),0,rnd(0,PI)],s:[1.2,.7,1.2]},caveParts);
     caveBoxes.push(new THREE.Box3(new THREE.Vector3(x-.55,y+1.15,z-.55),new THREE.Vector3(x+.55,y+1.75,z+.55)));}
   put(new THREE.CircleGeometry(1.25,12),'#5a6f98',{pos:[cx,y+.025,cz],rot:[-PI/2,0,0]});crystals(cx-.5,cz-.6,5,.8,iceCols);crystals(cx+.6,cz-.4,4,.7,iceCols);halos.push({x:cx,z:cz,y:y+.6,c:'#a9d8ff',s:1.6});}
-function occMesh(list,boxes,name){const m=sbMat('#ffffff');m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(list),m);me.name=name;me.castShadow=me.receiveShadow=true;root.add(me);keep.push(me);
-  G.occlude.add(me,1.5,2.5,{near:true,speed:6,boxes});return me;}
+function occMesh(list,boxes,name,strict=false){const m=sbMat('#ffffff');m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(list),m);me.name=name;me.castShadow=me.receiveShadow=true;root.add(me);keep.push(me);
+  G.occlude.add(me,1.5,2.5,{near:true,speed:6,boxes,strict});return me;}
 occMesh(caveParts,caveBoxes,'icecave');
 /* ── 높은 바위(분화구 끝 — 둥실 뛰기로만): 위가 평평한 큰 바위 + 꼭대기 판. 따로 한 덩어리(가리면 흐려짐) */
 const ROCK_TOP=groundY(...ROCK.c)+1.85; // 둥실 뛰기(꼭대기 약 2.7m)로 넉넉히, 보통 점프(0.8m)로는 못 오름
 {const rp=[],[x,z]=ROCK.c,y=groundY(x,z);put(new THREE.CylinderGeometry(ROCK.r*.95,ROCK.r*1.18,ROCK_TOP-y+.4,7,2),'#a5a0a8',{pos:[x,(ROCK_TOP+y-.4)/2,z],rot:[0,.3,0]},rp);
   put(new THREE.CylinderGeometry(ROCK.r*1.0,ROCK.r*.95,.14,7),'#c4bfbe',{pos:[x,ROCK_TOP-.02,z],rot:[0,.3,0]},rp);
-  occMesh(rp,[new THREE.Box3(new THREE.Vector3(x-ROCK.r*1.15,y-.4,z-ROCK.r*1.15),new THREE.Vector3(x+ROCK.r*1.15,ROCK_TOP,z+ROCK.r*1.15))],'highrock');
+  occMesh(rp,[new THREE.Box3(new THREE.Vector3(x-ROCK.r*1.15,y-.4,z-ROCK.r*1.15),new THREE.Vector3(x+ROCK.r*1.15,ROCK_TOP-.3,z+ROCK.r*1.15))],'highrock',true); // 미션 목표(높은 바위): 실제로 원더룹 앞을 가릴 때만 흐려짐(strict), 위에 서 있으면 안 흐려지게 상자 꼭대기를 낮춤
   rock(x+1.3,z+.6,.7,{solid:false});rock(x-1.1,z-.9,.6,{solid:false});}
 /* ── 바위 아치(첫 미션 길 위): 길 양옆 두 기둥(쌓은 둥근 돌) + 위로 휘는 돌 다리. 기둥만 막힘, 가운데는 지나감. 따로 한 덩어리(가리면 흐려짐) */
 {const ap=[],ab=[],[ax,az]=ARCH.c,[dx,dz]=ARCH.dir,px=-dz,pz=dx,N=11;
@@ -224,7 +238,6 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
 {const [x,z]=MORTAR,y=gy(x,z);put(new THREE.CylinderGeometry(.3,.26,.24,12),wood,{pos:[x,y+.36,z]});put(new THREE.CylinderGeometry(.22,.3,.26,12),wood,{pos:[x,y+.13,z]});
   put(new THREE.TorusGeometry(.28,.035,5,16),woodD,{pos:[x,y+.48,z],rot:[PI/2,0,0]});put(new THREE.CircleGeometry(.24,14),'#f6f1e6',{pos:[x,y+.47,z],rot:[-PI/2,0,0]});
   put(new THREE.SphereGeometry(.12,10,6,0,PI*2,0,PI/2),'#fbf8f0',{pos:[x,y+.46,z],s:[1,.5,1]});
-  rod([x+.42,y,z+.18],[x+.2,y+.95,z+.1],.03,woodD);{const g=new THREE.CylinderGeometry(.09,.09,.34,10);g.rotateZ(PI/2);g.rotateY(.4);g.translate(x+.18,y+1.02,z+.1);put(g,wood);}
   const px=x-.62,pz=z+.22;put(new THREE.CylinderGeometry(.2,.17,.04,14),'#e8d6ea',{pos:[px,gy(px,pz)+.04,pz]});
   [[0,0],[.09,.06],[-.06,.08]].forEach(([dx,dz],k)=>put(new THREE.SphereGeometry(.07,10,6),k===1?'#f7e0e6':'#fbf8f0',{pos:[px+dx,gy(px,pz)+.1,pz+dz],s:[1,.7,1]}));}
 // 마을 돌담 몇(둥근 돌 낮게 줄지어 — 앞쪽 겹)
@@ -289,15 +302,19 @@ function tickSparks(t,P,cam){const cF=col('#cfe8ff'),cH=col('#ffd9a0'),cC=col('#
 const bobo=makeBobo();bobo.root.position.set(BOBO[0],groundY(...BOBO),BOBO[1]);bobo.root.rotation.y=Math.atan2(SPAWN[0]-BOBO[0],SPAWN[1]-BOBO[1]);root.add(bobo.root);keep.push(bobo.root);
 const boboOb={c:[BOBO[0],BOBO[1],.38]};obstacles.push(boboOb);
 /* ── 아기 토끼 이웃 셋(키 0.65 = 약 0.9m): 마을 둘레를 둥실둥실 뛰어다님(낮은 중력 — 한 번에 1.2~2.2m, 0.55m 높이, 1.1초), 원더룹이 2.4m 안이면 멈춰 바라봄, 가까이 가면 한마디 */
+const GATHER={on:false,until:0,spots:[[MORTAR[0]+.9,MORTAR[1]+.9],[MORTAR[0]+1.2,MORTAR[1]-.5],[MORTAR[0]-.2,MORTAR[1]+1.3]]};
 const BUN=[{id:'kongkong',name:'콩콩',fur:'#d8d8e0',scarf:'#ff9eb3',way:[[-.6,4.2],[1.0,1.8],[3.2,1.6],[2.6,3.4]],line:'할아버지 지도에 우리 집도 있어!'},
-  {id:'mongsil',name:'몽실',fur:'#ece4d8',scarf:'#9bd46b',way:[[4.6,8.0],[6.0,9.6],[4.2,11.0],[2.8,9.6]],line:'여기선 톡 뛰면 한참 동안 떠 있어. 같이 뛰어 볼래?'},
-  {id:'bosul',name:'보슬',fur:'#cdc6dc',scarf:'#7fb6e8',way:[[-3.4,7.2],[-1.0,6.0],[-2.4,3.0],[-4.4,4.4]],line:'할아버지 망원경으로 보면 목성 줄무늬가 다 보여!'}];
+  {id:'mongsil',name:'몽실',fur:'#ece4d8',scarf:'#9bd46b',way:[[3.0,11.8],[1.2,13.0],[-.6,12.0],[1.8,10.9]],line:'여기선 톡 뛰면 한참 동안 떠 있어. 같이 뛰어 볼래?'},
+  {id:'bosul',name:'보슬',fur:'#cdc6dc',scarf:'#7fb6e8',way:[[-5.6,8.6],[-4.2,10.8],[-1.8,12.2],[-6.4,11.2]],line:'할아버지 망원경으로 보면 목성 줄무늬가 다 보여!'}];
 const bunBlob=blobMany(BUN.length+1);if(bunBlob){bunBlob.frustumCulled=false;root.add(bunBlob);keep.push(bunBlob);}
 const bunnies=BUN.map((b,i)=>{const m=makeBunny(b.fur,b.scarf);const [x,z]=b.way[0];m.root.position.set(x,groundY(x,z),z);root.add(m.root);keep.push(m.root);
   const st={i:0,t:0,wait:RR(.5,2.5),from:[x,z],to:null,ry:0};
-  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:2.0,lines:[b.line]});return {...b,m,st};});
-function tickBunnies(dt,t,P){bunnies.forEach((b,i)=>{const s=b.st,r=b.m.root,near=P&&dist(P.x,P.z,[r.position.x,r.position.z])<2.4;
-  if(!s.to){if(near){const a=Math.atan2(wd(P.x-r.position.x),wd(P.z-r.position.z));s.ry+=Math.atan2(Math.sin(a-s.ry),Math.cos(a-s.ry))*Math.min(1,dt*4);}
+  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:1.4,variants:[{when:()=>!GATHER.on,lines:[b.line]}]}); /* 망원경·절구에서 조금 떨어져 뛰놀고(가까우면 E가 '말 걸기'로 먼저 가서 체험이 안 됐다), 떡방아 구경 중엔 말 걸 상대가 아님 */return {...b,m,st};});
+function tickBunnies(dt,t,P){bunnies.forEach((b,i)=>{const s=b.st,r=b.m.root,gs=GATHER.on&&GATHER.spots[i],near=!gs&&P&&dist(P.x,P.z,[r.position.x,r.position.z])<2.4;
+  if(!s.to&&gs){const dx=gs[0]-s.from[0],dz=gs[1]-s.from[1],d=Math.hypot(dx,dz); // 떡방아 구경: 절구 둘레 자리로 둥실둥실 모여 절구를 봄
+    if(d>.3){const n=Math.max(1,Math.ceil(d/2.1));s.to=[s.from[0]+dx/n,s.from[1]+dz/n];s.goal=gs;s.t=0;s.ry=Math.atan2(dx,dz);}
+    else{const a=Math.atan2(MORTAR[0]-s.from[0],MORTAR[1]-s.from[1]);s.ry+=Math.atan2(Math.sin(a-s.ry),Math.cos(a-s.ry))*Math.min(1,dt*4);r.position.set(s.from[0],groundY(...s.from)+Math.abs(Math.sin(t*5+i))*.06,s.from[1]);b.m.squash(0,t);}}
+  else if(!s.to){if(near){const a=Math.atan2(wd(P.x-r.position.x),wd(P.z-r.position.z));s.ry+=Math.atan2(Math.sin(a-s.ry),Math.cos(a-s.ry))*Math.min(1,dt*4);}
     else{s.wait-=dt;if(s.wait<0){s.i=(s.i+1)%b.way.length;const w=b.way[s.i],dx=w[0]-s.from[0],dz=w[1]-s.from[1],d=Math.hypot(dx,dz),n=Math.max(1,Math.ceil(d/2.1));
       s.to=[s.from[0]+dx/n,s.from[1]+dz/n];s.goal=w;s.t=0;s.ry=Math.atan2(dx,dz);}}
     r.position.set(s.from[0],groundY(...s.from)+Math.abs(Math.sin(t*2.2+i))*.02,s.from[1]);b.m.squash(0,t);}
@@ -305,6 +322,108 @@ function tickBunnies(dt,t,P){bunnies.forEach((b,i)=>{const s=b.st,r=b.m.root,nea
     if(u>=1){s.from=s.to;const g=s.goal,rem=Math.hypot(g[0]-s.from[0],g[1]-s.from[1]);if(rem>.2&&!near){const dx=g[0]-s.from[0],dz=g[1]-s.from[1],n=Math.max(1,Math.ceil(rem/2.1));s.to=[s.from[0]+dx/n,s.from[1]+dz/n];s.t=0;}else{s.to=null;s.wait=RR(1.2,3.4);}}}
   r.rotation.y=s.ry;if(bunBlob)bunBlob.set(i,r.position.x,groundY(r.position.x,r.position.z),r.position.z,.32);});
   if(bunBlob)bunBlob.set(BUN.length,bobo.root.position.x,groundY(bobo.root.position.x,bobo.root.position.z),bobo.root.position.z,.42);}
+/* ── 톱니 메뉴 '행성 반지름' 막대(?debug·한 파일 개발자판 — 걷기 속도 막대 옆, 2026-11-08): 12~40m, 놓으면 이 기기에 기억('wl-space-R')하고 다시 연다(배치를 새 크기로 다시 펼침).
+   한 바퀴 걸리는 시간(걷기 3.78m/초)을 같이 보여 줌 */
+const radBox=(()=>{const after=document.getElementById('spdBox');if(!after)return null;const d=document.createElement('div');d.className='spdBox';d.id='planetRBox';
+  d.innerHTML='<label>행성 반지름 <input type="range" min="12" max="40" step="1"></label><output></output><button type="button">기본값</button>';
+  const inp=d.querySelector('input'),out=d.querySelector('output'),show=v=>{out.textContent=`${v}m · 한 바퀴 약 ${Math.round(2*PI*v/3.78)}초`;};inp.value=R;show(R);
+  const go=v=>{try{if(v==null)localStorage.removeItem('wl-space-R');else localStorage.setItem('wl-space-R',String(v));}catch(e){}location.reload();};
+  inp.addEventListener('input',()=>show(+inp.value));inp.addEventListener('change',()=>go(+inp.value));d.querySelector('button').addEventListener('click',()=>go(null));
+  after.after(d);return d;})();
+/* ── 망원경 체험(마을의 작은 천문대 망원경, 2026-11-08): 망원경 앞에서 '살펴보기' → 화면이 동그란 망원경 시야로(HTML 캔버스 — 3D 그리기 0회),
+   목성이 크게: 줄무늬 그림(하늘 목성과 같은 jupiterMap)을 구처럼 감아 천천히 돌림(줄무늬가 흐름), 붉은 폭풍이 보이게 시작. 보름 할아버지 한마디(STAGE 4 복선).
+   화면을 누르거나 아무 키나 누르면 바로 나옴. 처음 한 번 보면 발견 +1(비밀 카드 — 지식 한 줄), 다시 볼 수 있음 */
+const SCOPE_EYE=[SCOPE[0]+.25,SCOPE[1]+.5];
+const scopeMark=new THREE.Object3D();scopeMark.position.set(SCOPE_EYE[0],groundY(...SCOPE_EYE)+.8,SCOPE_EYE[1]);root.add(scopeMark);
+const DISC={cave:'secret:'+WID+':icecave',scope:'secret:'+WID+':telescope'},discN=()=>Object.values(DISC).filter(k=>F[k]).length,DISC_TOTAL=Object.keys(DISC).length;
+let scopeEl=null;
+function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope',true);popShown('scope',true);G.sound.sfx('ui-open');
+  const el=document.createElement('div');el.id='wlScope';el.setAttribute('role','dialog');el.setAttribute('aria-label','망원경으로 본 목성');
+  el.innerHTML='<div class="lens"><canvas></canvas></div><div class="say"><b>보름 할아버지</b><p></p></div><p class="tip">화면을 누르면 망원경에서 나와요</p>';
+  if(!document.querySelector('style[data-wl="scope"]')){const st=document.createElement('style');st.dataset.wl='scope';st.textContent=`
+#wlScope{position:fixed;inset:0;z-index:40;background:radial-gradient(circle at 50% 46%,#120c26 0,#07050f 70%);display:grid;place-items:center;animation:wlScIn .5s ease both;touch-action:none;cursor:pointer}
+#wlScope .lens{width:min(84vw,70vh);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 10px #b8893e,0 0 0 16px #6e4630,0 0 60px 10px rgba(150,120,255,.25),inset 0 0 40px 18px rgba(8,4,20,.85);animation:wlScLens .7s cubic-bezier(.2,1.2,.4,1) both}
+#wlScope canvas{width:100%;height:100%;display:block}
+#wlScope .say{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 3.2rem);transform:translateX(-50%);width:min(92vw,560px);background:rgba(46,32,48,.96);color:#fbe9d8;border-radius:16px;padding:.9rem 1.1rem .8rem;font-family:"Gowun Dodum",sans-serif;font-size:1.02rem;line-height:1.5;box-sizing:border-box;word-break:keep-all}
+#wlScope .say b{position:absolute;top:-.8rem;left:1rem;background:#f2b63c;color:#3e2834;font-family:"Jua",sans-serif;font-weight:400;padding:.12rem .7rem;border-radius:999px;font-size:.92rem}
+#wlScope .say p{margin:.15rem 0 0}
+#wlScope .tip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + .8rem);left:0;right:0;text-align:center;color:rgba(251,233,216,.6);font:.85rem "Gowun Dodum",sans-serif;margin:0}
+@keyframes wlScIn{from{opacity:0}}@keyframes wlScLens{from{transform:scale(.6);opacity:0}}
+@media (prefers-reduced-motion: reduce){#wlScope,#wlScope .lens{animation:none}}`;document.head.appendChild(st);}
+  document.body.appendChild(el);scopeEl=el;const line='저 줄무늬 행성 보이지? 저기가 우리가 마지막에 갈 곳이란다.';
+  {const pEl=el.querySelector('.say p');let i=0;const iv=setInterval(()=>{i++;pEl.textContent=line.slice(0,i);if(i>=line.length)clearInterval(iv);},36);el._iv=iv;G.core.cue&&G.core.cue({kind:'line',who:'보름 할아버지',text:line,dur:4});}
+  const cv=el.querySelector('canvas'),g=cv.getContext('2d'),src=jup.U.uMap.value.image,stars=[];{const r=srand(77);for(let i=0;i<90;i++)stars.push([r(),r(),.4+r()*1.4,r()]);}
+  let u0=-.03,last=performance.now(),open=performance.now(); // 붉은 폭풍(그림 u .17)이 가운데 조금 왼쪽에서 시작
+  const draw=now=>{if(!scopeEl)return;const dt=Math.min(.05,(now-last)/1000);last=now;u0-=dt*.0045; // 천천히 돌아 줄무늬가 흐름
+    const W=cv.clientWidth*Math.min(2,devicePixelRatio||1)|0;if(cv.width!==W){cv.width=cv.height=W;}const n=cv.width,cx=n/2,cy=n/2,r=n*.43;
+    g.fillStyle='#0d0920';g.fillRect(0,0,n,n);stars.forEach(([x,y,s,ph])=>{g.globalAlpha=.35+.35*Math.sin(now/900+ph*9);g.fillStyle='#fff6e6';g.fillRect(x*n,y*n,s*n/400,s*n/400);});g.globalAlpha=1;
+    // 구처럼 감기: 줄마다(위도) 반폭을 줄이고, 경도 칸마다 그림을 sin으로 눌러 붙임
+    const SW=src.width,SH=src.height,rows=Math.max(80,r|0),cols=16;
+    for(let k=0;k<rows;k++){const y0=-r+2*r*k/rows,y1=-r+2*r*(k+1)/rows,ym=(y0+y1)/2,w=Math.sqrt(Math.max(0,r*r-ym*ym));if(w<1)continue;
+      const lat=Math.asin(Math.max(-1,Math.min(1,ym/r))),sy=(lat/PI+.5)*SH;
+      for(let c=0;c<cols;c++){const l0=-PI/2+PI*c/cols,l1=l0+PI/cols,x0=w*Math.sin(l0),x1=w*Math.sin(l1);let su=((u0+(l0+PI/2)/(2*PI))%1+1)%1*SW;const sw=SW/(2*cols);
+        if(su+sw>SW)su=SW-sw;g.drawImage(src,su,Math.max(0,Math.min(SH-1,sy-.5)),sw,1,cx+x0,cy+y0,x1-x0+.6,y1-y0+.6);}}
+    // 입체: 왼쪽 위 해 쪽 밝게, 가장자리 어둡게, 하늘과 만나는 경계 연보라(하늘 목성과 같은 원칙)
+    const hl=g.createRadialGradient(cx-r*.35,cy-r*.4,r*.1,cx-r*.2,cy-r*.2,r*1.15);hl.addColorStop(0,'rgba(255,248,230,.18)');hl.addColorStop(.55,'rgba(255,248,230,0)');hl.addColorStop(.85,'rgba(60,30,90,.22)');hl.addColorStop(1,'rgba(40,20,70,.55)');
+    g.fillStyle=hl;g.beginPath();g.arc(cx,cy,r,0,PI*2);g.fill();
+    g.strokeStyle='#0d0920';g.lineWidth=Math.max(3,n*.008);g.beginPath();g.arc(cx,cy,r+g.lineWidth*.45,0,PI*2);g.stroke(); // 줄마다 그린 가장자리 계단을 덮음
+    const rim=g.createRadialGradient(cx,cy,r*.92,cx,cy,r*1.12);rim.addColorStop(0,'rgba(190,170,255,0)');rim.addColorStop(.4,'rgba(190,170,255,.35)');rim.addColorStop(1,'rgba(190,170,255,0)');g.fillStyle=rim;g.fillRect(0,0,n,n);
+    requestAnimationFrame(draw);};
+  requestAnimationFrame(draw);
+  const close=e=>{if(performance.now()-open<350)return;if(e&&e.type==='keydown'&&e.repeat)return;scopeClose();};el.addEventListener('pointerdown',close);addEventListener('keydown',close,true);el._close=close;}
+function scopeClose(){const el=scopeEl;if(!el)return;scopeEl=null;clearInterval(el._iv);removeEventListener('keydown',el._close,true);el.remove();popShown('scope',false);G.core.block('scope',false);G.sound.sfx('ui-click');
+  if(!F[DISC.scope]){G.state.setFlag(DISC.scope,true);G.react.react('awe',{sound:'card-secret'});
+    G.ui.secret({kicker:'새 발견',title:'망원경으로 본 목성',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}}
+G.interact.add({root:scopeMark,at:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],face:SCOPE_EYE,label:'살펴보기',action:'들여다보기',dur:.9,near:1.8,once:false,onDone:()=>scopeOpen()});
+/* ── 떡방아 체험(마을 구석 절구, 2026-11-08): 절구 앞에서 '찧기' → 원더룹이 떡메로 콩 찧음(떡메는 따로 — 들어 올렸다 내려침), 세 번 찧으면 떡 완성.
+   찧을 때마다 떡 조각·가루가 둥실 떠올랐다가 아주 천천히 내려옴(낮은 중력 — 위로 0.8~1.4m/초, 중력 0.2m/초²: 몇 초 동안 떠 있음).
+   아기 토끼들이 절구 둘레로 모여 구경하고 한마디씩. 완성되면 가방에 '달떡'(세계 items — bagOnly), 보름 할아버지 한마디. 실패·서두름 없음, 다시 찧을 수 있음(달떡은 한 번) */
+const CAKE_KEY='item:'+WID+':dalddeok',MSTAND=[MORTAR[0]-.78,MORTAR[1]-.32];
+const pestle=new THREE.Group();{const m=sbMat('#ffffff');m.vertexColors=true;const ps=[];
+  put(new THREE.CylinderGeometry(.028,.032,1,8).translate(0,.5,0),woodD,{},ps);put(new THREE.CylinderGeometry(.09,.09,.34,10).rotateX(PI/2).translate(0,1.02,0),wood,{},ps);
+  put(new THREE.TorusGeometry(.09,.012,5,12).translate(0,1.02,.17),woodD,{},ps);put(new THREE.TorusGeometry(.09,.012,5,12).translate(0,1.02,-.17),woodD,{},ps);
+  const me=new THREE.Mesh(mergeGeometries(ps),m);me.castShadow=true;pestle.add(me);root.add(pestle);keep.push(pestle);}
+const PEST={rest:{p:new THREE.Vector3(MORTAR[0]+.42,groundY(...MORTAR),MORTAR[1]+.18),d:new THREE.Vector3(-.22,.95,-.08).normalize(),len:.97},k:0,t:9,hit:false,n:0,idle:9};
+const _pq=new THREE.Quaternion(),_pd=new THREE.Vector3(),_pp=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
+function tickPestle(dt){PEST.t+=dt;PEST.idle+=dt;const W=U0(),my=groundY(...MORTAR),mt=new THREE.Vector3(MORTAR[0],my+.47,MORTAR[1]);
+  if(!W)return;const P=W.position,fx=mt.x-P.x,fz=mt.z-P.z,fl=Math.hypot(fx,fz)||1,hand=new THREE.Vector3(P.x+fx/fl*.3,P.y+.55,P.z+fz/fl*.3);
+  // 찧는 자세: 손 → 위로 들어 올림(t .15~.55) → 내려침(.55~.68, 절구 속 떡) → 잠깐 머묾 → 다시 들어 올린 채(다음 찧기 기다림), 2초 쉬면 제자리에 기대 세움
+  const t=PEST.t,up=new THREE.Vector3(fx/fl*.35,1,fz/fl*.35).normalize(),down=mt.clone().sub(hand),dl=down.length();down.normalize();
+  let tgtD,len,base,w=PEST.idle<2.2?1:0;
+  if(t<.55){const u=ss(.05,.55,t);tgtD=up.clone().lerp(new THREE.Vector3(fx/fl*-.1,1,fz/fl*-.1).normalize(),u).normalize();}else if(t<.68){const u=(t-.55)/.13;tgtD=up.clone().lerp(down,u*u).normalize();}else if(t<1){tgtD=down;}else tgtD=up;
+  len=Math.min(.97,dl+.04);base=hand;
+  if(!PEST.hit&&t>=.68&&t<5){PEST.hit=true;pound();}
+  PEST.k+=(w-PEST.k)*Math.min(1,dt*6);const k=PEST.k;
+  _pp.copy(PEST.rest.p).lerp(base,k);_pd.copy(PEST.rest.d).lerp(tgtD,k).normalize();pestle.position.copy(_pp);pestle.quaternion.setFromUnitVectors(_up,_pd);pestle.scale.set(1,PEST.rest.len+(len-PEST.rest.len)*k,1);}
+/* 떡 조각(인스턴스 하나)·가루(점 하나): 찧을 때만 보임 */
+const BITS=14,FL=MOB?28:44;
+const bitIM=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.055,1),(()=>{const m=sbMat('#ffffff');return m;})(),BITS);bitIM.count=BITS;bitIM.visible=false;bitIM.frustumCulled=false;root.add(bitIM);keep.push(bitIM);
+{const c=new THREE.Color();for(let i=0;i<BITS;i++)bitIM.setColorAt(i,c.set(i%4===0?'#f7dbe4':i%5===0?'#e2efcf':'#fbf8f0'));}
+const flGeo=new THREE.BufferGeometry(),flPos=new Float32Array(FL*3),flCol=new Float32Array(FL*3);flGeo.setAttribute('position',new THREE.BufferAttribute(flPos,3));flGeo.setAttribute('color',new THREE.BufferAttribute(flCol,3));
+const flour=new THREE.Points(flGeo,new THREE.PointsMaterial({size:.13,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,map:dotTex})); // 더하기 섞기 + 동그란 점: 옅어지면 그냥 사라짐(보통 섞기는 까만 네모가 됐다)flour.visible=false;flour.frustumCulled=false;root.add(flour);keep.push(flour);
+const BIT=[],FLO=[];let bitHead=0,floHead=0;for(let i=0;i<BITS;i++)BIT.push({p:new THREE.Vector3(0,-9,0),v:new THREE.Vector3(),a:0,s:1,r:0});for(let i=0;i<FL;i++)FLO.push({p:new THREE.Vector3(0,-9,0),v:new THREE.Vector3(),a:0});
+function pound(){const my=groundY(...MORTAR),o=new THREE.Vector3(MORTAR[0],my+.5,MORTAR[1]);G.sound.sfx('event-tok');G.sound.sfx('step');
+  for(let k=0;k<5;k++){const b=BIT[bitHead++%BITS],a=Math.random()*PI*2,sp=.15+Math.random()*.35;b.p.copy(o);b.v.set(Math.cos(a)*sp,.8+Math.random()*.6,Math.sin(a)*sp);b.a=1;b.s=.7+Math.random()*.7;b.r=Math.random()*6;}
+  for(let k=0;k<(MOB?12:18);k++){const f=FLO[floHead++%FL],a=Math.random()*PI*2,sp=.1+Math.random()*.45;f.p.copy(o);f.v.set(Math.cos(a)*sp,.5+Math.random()*.7,Math.sin(a)*sp);f.a=1;}}
+const _bm=new THREE.Matrix4(),_bq=new THREE.Quaternion(),_be=new THREE.Euler(),_bs=new THREE.Vector3();
+function tickBits(dt){let any=false;const GR=.2; // 낮은 중력(지구 9.8의 약 2%) — 아주 천천히 내려옴
+  BIT.forEach((b,i)=>{if(b.a>0){b.v.y-=GR*dt;b.p.addScaledVector(b.v,dt);b.r+=dt*1.2;const gy=groundY(b.p.x,b.p.z)+.04;if(b.p.y<gy){b.p.y=gy;b.v.set(0,0,0);b.a-=dt*.5;}any=true;}
+    _be.set(b.r,b.r*.7,0);_bq.setFromEuler(_be);_bs.setScalar(b.a>0?b.s:0);_bm.compose(b.p,_bq,_bs);bitIM.setMatrixAt(i,_bm);});
+  FLO.forEach((f,i)=>{if(f.a>0){f.v.y-=GR*.6*dt;f.v.multiplyScalar(1-dt*.15);f.p.addScaledVector(f.v,dt);f.a-=dt*.11;if(f.p.y<groundY(f.p.x,f.p.z)+.03)f.a=0;any=true;}
+    flPos.set([f.p.x,f.p.y,f.p.z],i*3);const k=Math.max(0,f.a);flCol.set([k,k*.98,k*.94],i*3);});
+  bitIM.visible=flour.visible=any;if(any){bitIM.instanceMatrix.needsUpdate=true;flGeo.attributes.position.needsUpdate=true;flGeo.attributes.color.needsUpdate=true;}}
+const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(...MORTAR)+.5,MORTAR[1]);root.add(mortarMark);
+const BUN_SAY=[['콩콩','와, 떡이 날아다녀!'],['몽실','천천히 떨어져서 받아먹을 수도 있겠다!'],['보슬','콩! 하고 찧으니까 둥실 올라가!']];
+const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'돌리기',dur:1.25,near:1.9,once:false,
+  onStart:()=>{PEST.t=0;PEST.hit=false;PEST.idle=0;GATHER.on=true;GATHER.until=1e9;},
+  onDone:()=>{PEST.idle=0;PEST.n++;const n=PEST.n;const say=BUN_SAY[(n-1)%3];G.dialog.say('아기 토끼 '+say[0],say[1],2.6);
+    if(n<3){mortarIt.label=`찧기 (${n}/3)`;return;}
+    mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;}});
+function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return;st.cakeT=null;
+  if(!F[CAKE_KEY]){G.state.setFlag(CAKE_KEY,true);G.react.react('joy');const it=(SPACE.items||[]).find(i=>i.id==='dalddeok');
+    G.ui.itemCard({title:'달떡을 얻었어요!',text:'낮은 중력에서 찧은 쫀득한 달떡 — 가방에 넣었어요',icon:it&&it.icon?it.icon():null,sec:4,sound:'item-get'});}
+  setTimeout(()=>G.dialog.say('보름 할아버지','옛날엔 나도 이걸로 떡을 찧었단다. 여기선 떡도 둥실둥실 날아다니지.',5),F[CAKE_KEY]?400:4200);
+  setTimeout(()=>{GATHER.on=false;},9000);}
 /* ── 하늘: 남보라 우주(공기가 없어 낮에도 까맣고 별) + 은하수, 하늘 그림판(anchor — 카메라를 늦게 따라오며 늘 화면에): 해·토성·큰 목성·성운·은하수 띠·별똥별 */
 const key={top:'#151331',horizon:'#2b2560',hemi:'#c4c6e6',ground:'#56506e',hemiI:.52,sun:'#ffe8c4',sunI:.95,sunDir:[-6,-3.6,-9],fill:.24,fog:'#2e2a5c',fogNear:70,fogFar:150,stars:0,milky:1.1}; // 별은 아래 그림판 별(점 별·깜빡임·네 갈래 반짝이)이 맡는다 — 공용 하늘 별·첫별은 끔
 const SK=G.sky.sky({parent:root,keys:[key,key,key],t:0,nStars:MOB?220:340,starSize:3,space:true});
@@ -444,13 +563,13 @@ const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
-  bobo.tick(dt,t,st.hop);tickSparks(t,P,cam);tickBunnies(dt,t,P);
+  bobo.tick(dt,t,st.hop);tickSparks(t,P,cam);tickBunnies(dt,t,P);tickPestle(dt);tickBits(dt);tickCake(dt);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}
   if(!G.core||G.front.frontShown&&G.front.frontShown())return;
   /* 처음 조작을 넘겨받을 때 한 번: 카메라를 조금 낮춰 지평선이 화면 위쪽 3분의 1쯤(하늘 그림판이 원더룹 뒤로 보이게) — 1.2초에 걸쳐, 플레이어가 만지면 그만 */
-  {const C=G.controls.input.cam;if(st.cam<1.2&&C&&C.on&&C.ready&&!G.view.aim&&!G.view.req){if(st.cam===0)st.camUser=C.user;if(C.user!==st.camUser)st.cam=9;else{st.cam+=dt;const goal=cam.aspect<1?.58:.5;C.pitch+=(goal-C.pitch)*Math.min(1,dt*3);}}}
+  {const C=G.controls.input.cam;if(st.cam<1.2&&C&&C.on&&C.ready&&!G.view.aim&&!G.view.req){if(st.cam===0)st.camUser=C.user;if(C.user!==st.camUser)st.cam=9;else{st.cam+=dt;const goal=(cam.aspect<1?.58:.5)-(S-1)*.2; /* 지평선이 화면 위쪽 3분의 1(행성이 클수록 지평선이 덜 떨어져 조금 덜 내려다봄 — 24m: .42·세로 .5) */C.pitch+=(goal-C.pitch)*Math.min(1,dt*3);}}}
   // 할아버지 둥실 건너뛰기(시범)
   if(st.hop){const h=st.hop;h.t+=dt;const T=2.6,u=Math.min(1,h.t/T),x=h.from[0]+(h.to[0]-h.from[0])*u,z=h.from[1]+(h.to[1]-h.from[1])*u,y0=h.y0+(groundY(...h.to)-h.y0)*u;
     bobo.root.position.set(x,y0+Math.sin(u*PI)*3.2,z);bobo.root.rotation.y=Math.atan2(h.to[0]-h.from[0],h.to[1]-h.from[1]);boboOb.c[0]=x;boboOb.c[1]=z;
@@ -477,7 +596,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
 const ICON_MAP=()=>SPACE.icons.map();
 // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
 function caveSecret(){G.state.setFlag(K.cave,true);G.react.react('awe',{sound:'card-secret'});
-  G.ui.secret({kicker:'숨겨진 비밀',title:'그늘 분화구의 얼음 동굴',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 아주 오래오래 그대로 남은 곳이에요. 차갑게 반짝이는 얼음 결이 천장까지 자랐어요.',count:'발견한 비밀 1/1'});}
+  G.ui.secret({kicker:'숨겨진 비밀',title:'그늘 분화구의 얼음 동굴',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 아주 오래오래 그대로 남은 곳이에요. 차갑게 반짝이는 얼음 결이 천장까지 자랐어요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}
 function tickWeather(dt,t,w){const M=meteors,cam=G.view.camera;
   /* 별똥별: 그림판 좌표(화면 위쪽 하늘)에서 비스듬히 쉭 — 머리 반짝, 꼬리 어둡게. 유성우 날씨에만 */
   const tv=cam?Math.tan(cam.fov*PI/360):.27,th=cam?tv*cam.aspect:.48;
@@ -495,13 +614,15 @@ function wrapShift(k,sh){if(fpLast)fpLast[k]+=sh;
   // 아기 토끼·할아버지는 마을 자리 그대로(원더룹이 이어 붙는 선을 넘으면 같은 자리가 L만큼 옮겨진 쪽에 그려진다 — 평평한 좌표는 그대로 둬도 wd로 거리 계산)
 }
 return {
-  name:'회색 정원',kind:'outdoor',start:{compass:true},world:null,
+  name:'회색 정원',kind:'outdoor',
+  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R}, // 시험 도구가 읽는 자리(tools/space-stage1-test.py)
+start:{compass:true},world:null,
   spawn:{x:SPAWN[0],z:SPAWN[1],ry:PI},
   areas,platforms,
   sun:ZSUN,lights:[lav],light,rim:.32,
   sky:SK,bend:{sphere:R,wrap:L},gravity:.38,jumpK:1.15,
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
-  update,dispose(){const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
+  update,dispose(){scopeClose();if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
 function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
@@ -560,7 +681,9 @@ function sparkArt(g,n){const c=n/2;const gr=g.createRadialGradient(c,c,0,c,c,c);
   g.fillStyle='#fffbe6';g.beginPath();g.arc(c,c,n*.07,0,7);g.fill();}
 /* 성운: 연보라·분홍 위주(+ 살구·하늘 조금) 구름 얼룩 */
 function nebulaArt(g,n){let s=11;const R=()=>((s=(s*16807)%2147483647)/2147483647);const cols=['214,150,240','255,150,200','200,160,255','255,180,170','170,170,255'];
-  for(let i=0;i<60;i++){const x=n*(.12+R()*.76),y=n*(.25+R()*.5),r=n*(.07+R()*.2),c=cols[i%5],gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(${c},.075)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(0,0,n,n);}}
+  for(let i=0;i<60;i++){const x=n*(.12+R()*.76),y=n*(.25+R()*.5),r=n*(.07+R()*.2),c=cols[i%5],gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(${c},.075)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(0,0,n,n);}
+  /* 판 가장자리로 갈수록 0까지(2026-11-08 — 가장자리에서 잘린 구름 얼룩이 하늘에 밝기가 다른 세로 이음매로 보였다) */
+  const m=g.createRadialGradient(n/2,n/2,n*.22,n/2,n/2,n*.5);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(1,'rgba(0,0,0,0)');g.globalCompositeOperation='destination-in';g.fillStyle=m;g.fillRect(0,0,n,n);g.globalCompositeOperation='source-over';}
 /* 은하수 띠(가로로 긴 그림 — 판은 4:1): 가운데가 밝은 연보라·분홍 띠 + 작은 별 알갱이 */
 function milkyArt(g,n){const w=n,h=n;let s=23;const R=()=>((s=(s*16807)%2147483647)/2147483647);
   for(let i=0;i<70;i++){const x=w*R(),y=h*(.5+(R()-.5)*.36*Math.sin(x/w*PI)),r=h*(.08+R()*.16),c=['190,160,240','240,170,220','170,180,255'][i%3],gr=g.createRadialGradient(x,y,0,x,y,r);

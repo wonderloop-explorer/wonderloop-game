@@ -167,7 +167,7 @@ const curWorld=()=>WORLD&&WORLD.backdrop&&(WORLD.zones||[WORLD.backdrop.zone]).i
 const worldX=()=>{const W=curWorld();return W&&W.talColors?W:null;}; // 탐험 준비 창을 쓰는 세계(talColors가 있는 세계 설정)
 const wsave=()=>{const W=curWorld();look.w=look.w||{};return look.w[W.id]=look.w[W.id]||{tal:0,deco:0};}; // 탈 색·장식은 세계마다, 옷 조합(look.combo)·이름은 하나
 const itemFlag=(W,it)=>'item:'+W.id+':'+it.id,itemGot=(W,it)=>!!flags[itemFlag(W,it)];
-const decoList2=W=>[{name:'없음'},...(W.items||[])];
+const decoList2=W=>[{name:'없음'},...(W.items||[]).filter(i=>!i.bagOnly)]; // bagOnly: 가방에만 들어가는 물건(달떡 등) — 장식 목록에서 뺌
 function applyWorldLook(U,W){const S=wsave();
   if(U.setOutfit)U.setOutfit('ant');if(W.talModel&&U.setHood)U.setHood(W.talModel); // 시리즈 공통 원더룹(앤트빌리지 차림) + 그 세계 탈
   if(U.setTint){const h=W.talColors[S.tal|0]||W.talColors[0];U.setTint('hood',[h[1],h[2]]);}

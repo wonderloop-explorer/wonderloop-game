@@ -9,6 +9,9 @@ function canvasIcon(draw){const c=document.createElement('canvas');c.width=c.hei
 function ICON_NECK(){return ICON||(ICON=canvasIcon(g=>{g.strokeStyle='#8a8fa0';g.lineWidth=4;g.beginPath();g.ellipse(48,34,26,20,0,Math.PI*.1,Math.PI*.9,true);g.stroke();
   const gr=g.createRadialGradient(42,58,3,48,64,22);gr.addColorStop(0,'#ffffff');gr.addColorStop(.35,'#d6f3ff');gr.addColorStop(1,'#7fc4e8');g.fillStyle=gr;g.beginPath();g.arc(48,64,20,0,7);g.fill();
   g.strokeStyle='#4a7c9c';g.lineWidth=2.5;g.stroke();g.fillStyle='#fff';g.beginPath();g.ellipse(41,57,5,3.4,-.6,0,7);g.fill();g.fillStyle='#ffe9a0';g.beginPath();g.arc(52,68,3,0,7);g.fill();}));}
+/* 달떡 아이콘: 연보라 접시 위 하얀 떡 셋(하나는 연분홍) */
+let CAKEI=null;function ICON_CAKE(){return CAKEI||(CAKEI=canvasIcon(g=>{g.fillStyle='#e8d6ea';g.strokeStyle='#5a3826';g.lineWidth=3;g.beginPath();g.ellipse(48,64,34,12,0,0,7);g.fill();g.stroke();
+  [[36,52,'#fbf8f0'],[60,52,'#f7dbe4'],[48,40,'#fbf8f0']].forEach(([x,y,c])=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,14,11,0,0,7);g.fill();g.stroke();g.fillStyle='rgba(255,255,255,.8)';g.beginPath();g.ellipse(x-5,y-4,4,2.5,-.5,0,7);g.fill();});}));}
 function ICON_MAP(){return MAPI||(MAPI=canvasIcon(g=>{g.fillStyle='#f3e4c4';g.strokeStyle='#5a3826';g.lineWidth=3;g.beginPath();g.moveTo(16,22);g.lineTo(44,14);g.lineTo(80,24);g.lineTo(74,76);g.lineTo(46,82);g.lineTo(20,72);g.closePath();g.fill();g.stroke();
   g.setLineDash([4,5]);g.strokeStyle='#a8603f';g.beginPath();g.moveTo(26,62);g.quadraticCurveTo(40,40,62,44);g.stroke();g.setLineDash([]);
   g.fillStyle='#9bd46b';g.beginPath();g.arc(64,42,7,0,7);g.fill();g.strokeStyle='#4a2a2a';g.lineWidth=2;g.stroke();g.fillStyle='#bfc3cc';g.beginPath();g.arc(28,62,6,0,7);g.fill();g.stroke();}));}
@@ -73,7 +76,10 @@ export default {
   talModel:'alien',talLabel:'외계인 탈',
   talColors:[['연두 외계인','#9bd46b','#6f9e48'],['연보라 외계인','#c9a6e0','#9a78b4'],['하늘 외계인','#8cc8ec','#5f9cc4'],['회색 외계인','#bfc3cc','#868a96']],
   guide:{text:'여왕개미의 나침반 바늘이 하늘을 가리킨 밤, 외계인 탈을 쓰고 우주로 날아온 탐험가 원더룹이에요. 낯선 행성도 두 발로 걸어 보는 걸 좋아해요.',goal:'행성을 하나씩 걸어 빈 우주 지도를 채우고, 해 가까이까지 가 보기'},
-  items:[],
+  /* 세계 물건(가방): 달떡 — STAGE 1 떡방아(js/zones/space/garden.js). bagOnly: 탐험 준비 장식 목록에는 넣지 않음.
+     STAGE 4 연결 메모(share): 친구들이 모였을 때 나눠 먹는 장면에서 쓸 예정 — flags['item:infinite-space:dalddeok']로 가졌는지 본다 */
+  items:[{id:'dalddeok',name:'달떡',stage:1,bagOnly:true,share:'stage4-friends',where:'STAGE 1 떡방아',icon:()=>ICON_CAKE(),
+    desc:'낮은 중력에서 둥실둥실 찧은 쫀득한 달떡. 친구들이 모이면 나눠 먹어요.'}],
   map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:null},{name:'파란 노을',zone:null},{name:'금성 구름',zone:null}],
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,
