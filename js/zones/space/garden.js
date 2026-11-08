@@ -174,12 +174,16 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
   put(new THREE.SphereGeometry(1.62,16,8,0,PI*2,0,PI/2),'#a993c9',{pos:[hx,y+1.22,hz],s:[1,.78,1]});
   put(new THREE.TorusGeometry(1.5,.08,6,24),'#8a74ad',{pos:[hx,y+1.24,hz],rot:[PI/2,0,0]});
   const fx=Math.sin(face),fz=Math.cos(face),at=(d,h,side=0)=>[hx+fx*d+Math.cos(face)*side,y+h,hz+fz*d-Math.sin(face)*side];
-  put(new THREE.CylinderGeometry(.42,.42,.08,16,1,false,0,PI),woodD,{pos:at(1.5,.62),rot:[PI/2,face+PI/2,0],s:[1,1,1]});
-  put(new THREE.BoxGeometry(.84,.6,.08),wood,{pos:at(1.5,.32),rot:[0,face,0]});
-  put(new THREE.CylinderGeometry(.4,.4,.06,16,1,false,0,PI),wood,{pos:at(1.53,.62),rot:[PI/2,face+PI/2,0]});
-  put(new THREE.SphereGeometry(.04,6,4),brass,{pos:at(1.6,.45,.24)});
-  put(new THREE.CircleGeometry(.24,12),'#ffd98a',{pos:at(1.5,.85,-.95),rot:[0,face-.55,0]},glow);put(new THREE.TorusGeometry(.25,.035,5,14),woodD,{pos:at(1.51,.85,-.95),rot:[0,face-.55,0]});
-  halos.push({x:at(1.6,.85,-.95)[0],z:at(1.6,.85,-.95)[2],y:y+.85,c:'#ffd98a',s:1.3});
+  /* 문·창(2026-11-08 다시): 둥근 벽(14각 기둥)의 실제 겉면에 쏘아 붙인 판 — 벽이 꺾이는 대로 따라 휘고 겉면에서 1.5cm만 띄움(겹쳐 깜빡이지 않게).
+     예전 평평한 문판은 벽 모서리가 뚫고 나와 아래 가운데가 V로 파여 보였고, 반원 조각이 따로 돌아가 부채꼴처럼 붙어 있었다. 창은 벽에서 떠 있었다.
+     문 = 위가 둥근 아치 하나(네모 + 위 반원) + 테두리 한 줄 + 놋쇠 손잡이, 창 = 동그란 불빛 창 + 테두리 */
+  const wallG=new THREE.CylinderGeometry(1.45,1.55,1.3,14,1).translate(hx,y+.62,hz),onWall=th=>(u,v)=>{const a=th+u/1.5;return [[hx+Math.sin(a)*3,y+v,hz+Math.cos(a)*3],[-Math.sin(a),0,-Math.cos(a)]];};
+  {const DW=.78,DH=.5,f=onWall(face);put(wrapOn(wallG,archShape(DW,DH,.0),f,.015),wood,{});
+    put(rimTube(wallG,f,archLine(DW,DH,-.03),.028,false,.03),woodD,{});
+    put(new THREE.SphereGeometry(.045,8,6),brass,{pos:wallPt(wallG,f,.24,.4,.05)});}
+  {const WA=face-.565,f=onWall(WA),WR=.23,WY=.85;put(wrapOn(wallG,ellipseShape(0,WY,WR,WR),f,.015),'#ffd98a',{},glow);
+    put(rimTube(wallG,f,circleLine(0,WY,WR+.02),.032,true,.035),woodD,{});
+    const hp=wallPt(wallG,f,0,WY,.1);halos.push({x:hp[0],z:hp[2],y:hp[1],c:'#ffd98a',s:1.3});}
   rod([hx,y+2.4,hz],[hx,y+3.1,hz],.025,woodD);put(new THREE.OctahedronGeometry(.16,0),'#ffe59a',{pos:[hx,y+3.2,hz],s:[1,1,.35]},glow);
   // 문 앞 디딤돌
   for(let k=0;k<3;k++)put(new THREE.CylinderGeometry(.24,.26,.06,8),'#c7c0c6',{pos:at(2.0+k*.6,.03,(k%2?.12:-.12))});
@@ -646,7 +650,7 @@ function wrapShift(k,sh){if(fpLast)fpLast[k]+=sh;
 }
 return {
   name:'회색 정원',kind:'outdoor',
-  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R},
+  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R,hut:[HUT[0],HUT[1],groundY(...HUT),Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])]},
   poundInfo:()=>({hits:PEST.hits,stand:MSTAND,d:+POUND_D.toFixed(3),cakeTop:+CAKE_TOP.toFixed(3),squish:+CSQ.x.toFixed(3),head:(()=>{pestle.updateMatrixWorld(true);const h=HEAD_C.clone().addScaledVector(HEAD_AX,-.12);pestle.localToWorld(h);return h.toArray().map(n=>+n.toFixed(3));})()}), /* 떡방아 확인(tools/space-pound-rec.py) */ // 시험 도구가 읽는 자리(tools/space-stage1-test.py)
 start:{compass:true},world:null,
   spawn:{x:SPAWN[0],z:SPAWN[1],ry:PI},
@@ -722,6 +726,33 @@ function milkyArt(g,n){const w=n,h=n;let s=23;const R=()=>((s=(s*16807)%21474836
     gr.addColorStop(0,`rgba(${c},.07)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(0,0,w,h);}
   const fade=g.createLinearGradient(0,0,w,0);fade.addColorStop(0,'rgba(0,0,0,1)');fade.addColorStop(.15,'rgba(0,0,0,0)');fade.addColorStop(.85,'rgba(0,0,0,0)');fade.addColorStop(1,'rgba(0,0,0,1)');
   g.globalCompositeOperation='destination-out';g.fillStyle=fade;g.fillRect(0,0,w,h);const fv=g.createLinearGradient(0,0,0,h);fv.addColorStop(0,'rgba(0,0,0,1)');fv.addColorStop(.3,'rgba(0,0,0,0)');fv.addColorStop(.7,'rgba(0,0,0,0)');fv.addColorStop(1,'rgba(0,0,0,1)');g.fillStyle=fv;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
+/* 겉면에 딱 붙는 무늬·문·창(2026-11-08): 2D 모양(u,v)의 점마다 frame(u,v) → [원점, 겉면 쪽 방향]으로 실제 겉면(로우폴리 그대로)에 쏘아 맞은 자리에 붙이고 eps만큼 바깥으로 띄움.
+   경계는 모양 그대로 매끈한 선, 겉면이 꺾이면 같이 꺾임(겹쳐 깜빡이지 않음). bulge: 가운데로 갈수록 더 볼록(점의 세 번째 값 w — 가운데 1, 가장자리 0) */
+/* (함수 선언만 — 구역 코드 위쪽(집)에서 먼저 불러도 되게) */
+function FRONT(u,v){return [[u,v,5],[0,0,-1]];}
+function surfHit(target,frame,u,v,off){const T=surfHit.T||(surfHit.T={rc:new THREE.Raycaster(),o:new THREE.Vector3(),d:new THREE.Vector3(),m:new THREE.MeshBasicMaterial({side:THREE.DoubleSide})});
+  const [O,D]=frame(u,v);T.o.set(...O);T.d.set(...D).normalize();T.rc.set(T.o,T.d);const h=T.rc.intersectObject(target.userData.rm||(target.userData.rm=new THREE.Mesh(target,T.m)),false)[0];
+  const p=h?h.point.clone():T.o.clone().addScaledVector(T.d,5);return p.addScaledVector(T.d,-off);}
+function wrapOn(target,shape,frame,eps=.004,bulge=0,ell=null){const pos=[],nr=[];for(const [u,v,w=0] of shape.pts){const p=surfHit(target,frame,u,v,eps+bulge*w);pos.push(p.x,p.y,p.z);
+    if(ell){const [cx,cy,cz,a,b,c]=ell,n=new THREE.Vector3((p.x-cx)/(a*a),(p.y-cy)/(b*b),(p.z-cz)/(c*c)).normalize();nr.push(n.x,n.y,n.z);}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(shape.idx);
+  if(ell)g.setAttribute('normal',new THREE.Float32BufferAttribute(nr,3));else g.computeVertexNormals(); /* ell = 몸 타원(가운데·반지름): 그 매끈한 법선 — 면에 맞은 자리로 계산하면 툰 음영이 얼룩졌다 */
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(shape.pts.flatMap(([u,v])=>[u*3,v*3]),2));return g;} /* uv = 모양 자리 — 크레용 결이 몸처럼 보이게 */
+function wallPt(target,frame,u,v,off){return surfHit(target,frame,u,v,off).toArray();}
+/* 테두리: 2D 선을 겉면에 붙여 그 위로 관(tube) */
+function rimTube(target,frame,line,r,closed,off){const pts=line.map(([u,v])=>surfHit(target,frame,u,v,off));return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,closed,'centripetal'),closed?48:56,r,6,closed);}
+/* 2D 모양: 타원(가운데 + 고리), 아치(네모 격자 + 위 반원 — 맞닿는 줄의 점을 맞춤) */
+function ellipseShape(cx,cy,rx,ry,rings=7,seg=40){const pts=[[cx,cy,1]],idx=[];for(let r=1;r<=rings;r++){const f=r/rings;for(let s=0;s<seg;s++){const a=s/seg*PI*2;pts.push([cx+Math.cos(a)*rx*f,cy+Math.sin(a)*ry*f,1-f*f]);}}
+  for(let s=0;s<seg;s++)idx.push(0,1+s,1+(s+1)%seg);
+  for(let r=1;r<rings;r++){const b0=1+(r-1)*seg,b1=1+r*seg;for(let s=0;s<seg;s++){const s1=(s+1)%seg;idx.push(b0+s,b1+s,b1+s1,b0+s,b1+s1,b0+s1);}}return {pts,idx};}
+function archShape(w,hs,v0=0,rings=6,ny=6,seg=20){const nx=rings*2,pts=[],idx=[];
+  for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)pts.push([-w/2+w*i/nx,v0+hs*j/ny]);
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+2,d=a+nx+1;idx.push(a,b,c,a,c,d);}
+  const C=pts.length;pts.push([0,v0+hs]);for(let r=1;r<=rings;r++)for(let s=0;s<=seg;s++){const a=s/seg*PI,f=r/rings*w/2;pts.push([Math.cos(a)*f,v0+hs+Math.sin(a)*f]);}
+  for(let s=0;s<seg;s++)idx.push(C,C+1+s,C+2+s);
+  for(let r=1;r<rings;r++){const b0=C+1+(r-1)*(seg+1),b1=C+1+r*(seg+1);for(let s=0;s<seg;s++)idx.push(b0+s,b1+s,b1+s+1,b0+s,b1+s+1,b0+s+1);}return {pts,idx};}
+function archLine(w,hs,v0){const L=[[-w/2,v0],[-w/2,hs*.5],[-w/2,hs]];for(let s=1;s<20;s++){const a=PI-s/20*PI;L.push([Math.cos(a)*w/2,hs+Math.sin(a)*w/2]);}L.push([w/2,hs],[w/2,hs*.5],[w/2,v0]);return L;}
+function circleLine(cx,cy,r){return Array.from({length:24},(_,s)=>[cx+Math.cos(s/24*PI*2)*r,cy+Math.sin(s/24*PI*2)*r]);}
 /* 정점 색 덩어리 하나(부품 목록 → 한 메시) */
 function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);
     g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...(pos||[0,0,0])),new THREE.Quaternion().setFromEuler(new THREE.Euler(...(rot||[0,0,0]))),new THREE.Vector3(...(s||[1,1,1]))));
@@ -730,9 +761,10 @@ function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?
 /* 아기 토끼(키 약 0.9m — 원더룹의 0.65): 둥근 몸·큰 머리·쫑긋한 두 귀·목도리·흰 꼬리 — 한 덩어리(그리기 1번). squash(u): 뛰는 동안 늘었다 줄었다 */
 function makeBunny(fur,scarf){const root=new THREE.Group();const S=(r,w=12,h=9)=>new THREE.SphereGeometry(r,w,h);
   const furD=new THREE.Color(fur).multiplyScalar(.86).getStyle(),cream='#f3ebe0',pink='#f2a7b4',dark='#2a2633';
-  const me=lumpMesh([[S(.2),fur,[0,.24,0],0,[1,1.05,.95]],[S(.12),cream,[0,.22,.13],0,[1,1.2,.5]],[S(.08,8,6),fur,[-.1,.04,.06],0,[1,.55,1.5]],[S(.08,8,6),fur,[.1,.04,.06],0,[1,.55,1.5]],
+  const bodyG=S(.2).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.24,0),new THREE.Quaternion(),new THREE.Vector3(1,1.05,.95))),headG=S(.21).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.6,0),new THREE.Quaternion(),new THREE.Vector3(1.05,.95,1)));
+  const me=lumpMesh([[S(.2),fur,[0,.24,0],0,[1,1.05,.95]],[wrapOn(bodyG,ellipseShape(0,.21,.095,.125),FRONT,.003,.004,[0,.24,0,.2,.21,.19]),cream],[S(.08,8,6),fur,[-.1,.04,.06],0,[1,.55,1.5]],[S(.08,8,6),fur,[.1,.04,.06],0,[1,.55,1.5]],
     [S(.07,8,6),'#ffffff',[0,.18,-.19]],[new THREE.TorusGeometry(.13,.04,6,16),scarf,[0,.4,0],[PI/2,0,0],[1,1,.9]],[S(.05,8,6),scarf,[.06,.36,.14]],
-    [S(.21),fur,[0,.6,0],0,[1.05,.95,1]],[S(.09,8,6),cream,[0,.53,.16],0,[1.3,.8,.7]],[S(.025,6,5),pink,[0,.58,.21]],
+    [S(.21),fur,[0,.6,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.535,.105,.06),FRONT,.003,.02,[0,.6,0,.2205,.1995,.21]),cream],[S(.025,6,5),pink,[0,.58,.21]],
     [S(.032,6,5),dark,[-.08,.63,.18],0,[.8,1.2,.5]],[S(.032,6,5),dark,[.08,.63,.18],0,[.8,1.2,.5]],[S(.035,6,5),'#f6a0ac',[-.14,.55,.15],0,[1,.6,.4]],[S(.035,6,5),'#f6a0ac',[.14,.55,.15],0,[1,.6,.4]],
     [S(.055,8,6),fur,[-.08,.9,-.02],[0,0,.18],[1,2.9,.7]],[S(.032,6,5),pink,[-.08,.9,.012],[0,0,.18],[1,2.6,.5]],[S(.055,8,6),fur,[.08,.9,-.02],[0,0,-.18],[1,2.9,.7]],[S(.032,6,5),pink,[.08,.9,.012],[0,0,-.18],[1,2.6,.5]],
     [S(.05,8,6),furD,[-.15,.3,.06]],[S(.05,8,6),furD,[.15,.3,.06]]]);
@@ -744,13 +776,15 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
   const lump=lumpMesh;
   const S=(r,w=14,h=10)=>new THREE.SphereGeometry(r,w,h),Cy=(a,b,h,n=12)=>new THREE.CylinderGeometry(a,b,h,n);
   const fur='#c3c4cc',cream='#efe6d6',pink='#f2a7b4',dark='#2a2633',red='#c8463c',brass='#d8a24a',paper='#f3e4c4',strap='#7a4e32';
-  const body=lump([[S(.34),fur,[0,.42,0],0,[1,1.08,.92]],[S(.2),cream,[0,.4,.2],0,[1,1.2,.5]],[S(.13,10,8),fur,[-.15,.07,.08],0,[1,.55,1.5]],[S(.13,10,8),fur,[.15,.07,.08],0,[1,.55,1.5]],
+  const bodyG=S(.34).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.42,0),new THREE.Quaternion(),new THREE.Vector3(1,1.08,.92))),headG=S(.29).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.12,0),new THREE.Quaternion(),new THREE.Vector3(1.05,.95,1)));
+  /* 배·입 둘레 크림 무늬(2026-11-08 다시): 몸·머리 겉면에 붙인 매끈한 타원 하나(wrapOn — 예전엔 크림 구를 몸에 박아 넣어 로우폴리 두 구가 만나는 경계가 들쭉날쭉했다) */
+  const body=lump([[S(.34),fur,[0,.42,0],0,[1,1.08,.92]],[wrapOn(bodyG,ellipseShape(0,.4,.155,.2),FRONT,.004,.006,[0,.42,0,.34,.3672,.3128]),cream],[S(.13,10,8),fur,[-.15,.07,.08],0,[1,.55,1.5]],[S(.13,10,8),fur,[.15,.07,.08],0,[1,.55,1.5]],
     [S(.1,10,8),'#ffffff',[0,.3,-.31]],[Cy(.075,.075,.56),paper,[0,.62,-.3],[0,0,PI/2]],[Cy(.08,.08,.04),strap,[.12,.62,-.3],[0,0,PI/2]],[Cy(.08,.08,.04),strap,[-.12,.62,-.3],[0,0,PI/2]],
     [new THREE.TorusGeometry(.345,.024,6,28),strap,[0,.5,-.01],[PI/2,0,.75],[1,1,.9]]]); // 등의 지도를 맨 끈: 몸을 한 바퀴 감는 띠(예전 반 바퀴 끈은 끝이 허공에 떠 '검은 막대'처럼 보였다)
   root.add(body);
   const head=new THREE.Group();head.position.set(0,.84,0);root.add(head);
   const earBent=new THREE.Group();
-  head.add(lump([[S(.29),fur,[0,.12,0],0,[1.05,.95,1]],[S(.13,10,8),cream,[0,.03,.22],0,[1.25,.8,.7]],[S(.035,8,6),pink,[0,.08,.29]],
+  head.add(lump([[S(.29),fur,[0,.12,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.02,.15,.085),FRONT,.004,.03,[0,.12,0,.3045,.2755,.29]),cream],[S(.035,8,6),pink,[0,.08,.29]],
     [S(.04,8,6),dark,[-.1,.15,.25],0,[.8,1.2,.5]],[S(.045,8,6),'#f6a0ac',[-.18,.04,.21],0,[1,.6,.4]],[S(.045,8,6),'#f6a0ac',[.18,.04,.21],0,[1,.6,.4]],
     // 오른쪽 눈(원더룹을 보는 쪽 +x) 망원경 안경: 놋쇠 테 + 짧은 통 + 렌즈
     [new THREE.TorusGeometry(.06,.014,6,16),brass,[.1,.15,.27]],[Cy(.045,.05,.12,10),brass,[.1,.15,.33],[PI/2,0,0]],[Cy(.04,.04,.01,10),'#bfe0f0',[.1,.15,.395],[PI/2,0,0]],[S(.02,6,5),dark,[.1,.15,.25]],

@@ -39,8 +39,11 @@ const css=`
 #wlGet .t{margin:0;font-size:1.2rem;font-family:"Jua",sans-serif}
 #wlGet .s{margin:.2rem 0 0;font-size:.9rem;color:var(--ink-soft)}
 /* 안내 문구: 개미굴 #toast처럼 어두운 반투명 알약 + 크림색 Gowun Dodum(2026-11-03 — 펠트 테두리는 너무 튀었다) */
-#wlToast{font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translate(-50%,-10px);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:22;
-  background:rgba(46,28,44,.72);color:#fff4e4;border-radius:999px;padding:.5rem 1.15rem;font-size:1rem;margin:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap;box-shadow:none}
+/* 자리(2026-11-08): 맨 위 단추 줄(할 일 안내·가방·메뉴) 아래 — 가방 칩 위치(14 + max(58, 할 일 높이 --qh)) + 칩 높이 40 + 틈 10, 노치(안전 영역) 포함.
+   좁은 화면에서는 줄바꿈해 화면 폭(양옆 14px·안전 영역) 안에(예전엔 한 줄로 넘쳐 아이폰에서 가방·메뉴 단추 밑에 깔리고 화면 밖으로 나갔다) */
+#wlToast{font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)) + 50px);width:max-content;max-width:calc(100vw - 28px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));box-sizing:border-box;text-align:center;line-height:1.4;transform:translate(-50%,-10px);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:22;
+  background:rgba(46,28,44,.72);color:#fff4e4;border-radius:999px;padding:.5rem 1.15rem;font-size:1rem;margin:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:normal;word-break:keep-all;box-shadow:none}
+@media (max-width:700px){#wlToast{border-radius:18px;font-size:.95rem}} /* 두 줄이 되면 알약보다 둥근 네모가 자연스럽게 */
 #wlToast.on{opacity:1;transform:translate(-50%,0)}
 #wlNotice .s{margin:0;color:var(--ink-soft);line-height:1.55;font-size:.95rem}
 #wlNotice .h{margin:.5rem 0 0;font-size:.8rem;color:var(--ink-soft)}
@@ -235,7 +238,10 @@ window.addEventListener('keydown',e=>{if(cardOn!=='profile'||performance.now()-c
 pf.addEventListener('pointerdown',e=>{if(e.target===pf&&performance.now()-cardOpenT>600)closeProfile();});
 /* 안내 문구 (개미굴 #toast): toast('…') — 위 가운데 칩, 2.8초(게임 시간). 안내 표시라 영상에는 안 나온다 */
 const ts=$('#wlToast');let tsEnd=0;
-function toast(msg,sec=2.8){ts.textContent=msg;ts.classList.add('on');tsEnd=clock.t+sec;}
+/* 띄울 때 맨 위 단추 줄(할 일 안내·가방 칸(아래 도구 단추 포함)·메뉴 단추)의 실제 아래 끝을 재서 그 밑 10px에 — 세계마다 단추 수가 달라도 겹치지 않게(CSS 자리는 기본값) */
+function toastTop(){let b=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBtn']){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;
+  const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)b=Math.max(b,r.bottom);}ts.style.top=b?Math.round(b+10)+'px':'';}
+function toast(msg,sec=2.8){ts.textContent=msg;toastTop();ts.classList.add('on');tsEnd=clock.t+sec;}
 const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
   if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;}tickFade();};
 cardCloser('cut',closeCut);
