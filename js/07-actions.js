@@ -71,7 +71,23 @@ function steerWalk(x,z){wlTarget={x,z};} // 키보드 이동: 목표 표시 없�
 const ACTIONS=['서기','걷기','뛰기','두리번','들여다보기','기어오르기','멈칫','나침반 보기','손 흔들기'];
 const ACT_FACE={'뛰기':'신남','두리번':'궁금','들여다보기':'궁금','멈칫':'놀람','나침반 보기':'궁금','손 흔들기':'기쁨','머리 만져 보기':'놀람'};
 function runPose(ph){const s=Math.sin(ph);return{kx0:Math.max(0,-s)*1.2+.15,kx1:Math.max(0,s)*1.2+.15,lx0:s*.85-.15,lx1:-s*.85-.15,ly0:.3+Math.max(0,s)*.13,ly1:.3+Math.max(0,-s)*.13,ax0:-s*1.1,ax1:s*1.1,az0:-.45,az1:.45,bx:.14,bz:s*.05,by:Math.abs(Math.cos(ph))*.09,hx:-.12,wy:Math.abs(s)*.05};}
+/* 떡메 찧기·떡메 들기(게임 로직 전용 — 무한 우주 떡방아, 2026-11-08): 절구를 마주 보고 떡메 자루를 가슴 앞에서 두 손으로 잡음(오른손 = 자루 끝, 왼손 = 10cm 앞).
+   팔 각도는 손 자리 목표(원더룹 기준: 오른손 가운데 x0 · 높이 .45 · 앞 .14, 자루 기울기)에 맞춰 실제 뼈로 찾은 값 — 팔이 몸·목도리·탈을 뚫지 않는 자리.
+   H0 잡기(자루 25° 위로) → H1 짧게 들기(손은 가슴~턱 .52까지만, 자루 42° — 떡메 머리가 살짝 뒤로) → H2 내려친 순간(몸 숙임 .2, 자루 20° — 머리가 떡을 위에서 똑바로 누름).
+   리듬: 잡기 .22초 · 들기 .26초(짧게) · 내려치기 .12초(빠르게) · 멈춤 .18초(무릎 살짝 굽혔다 폄) · 원래 자세로 .37초. 떡메는 구역이 두 손 자리에 맞춰 둔다(zones/space/garden.js) */
+const POUND={H0:{bx:.05,ax0:-.028,az0:.513,ex0:-.962,ez0:.764,ax1:-1.159,az1:-.44,ex1:-.153,ez1:-.487,hx:.08},
+  H1:{bx:-.03,ax0:-.234,az0:.503,ex0:-1.135,ez0:.907,ax1:-1.186,az1:-.551,ex1:-.542,ez1:-.432,hx:-.02},
+  H2:{bx:.2,ax0:-.107,az0:.505,ex0:-.981,ez0:.787,ax1:-1.146,az1:-.488,ex1:-.275,ez1:-.426,hx:.16}};
+const mixP=(a,b,u)=>{const o={};for(const k in a)o[k]=a[k]+(b[k]-a[k])*u;return o;},sst=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
+function poundPose(A,t){const P=POUND;let o,kr=10;
+  if(A==='떡메 들기')o=Object.assign({},P.H0,{bx:P.H0.bx+Math.sin(t*2)*.012});
+  else if(t<.22)o=Object.assign({},P.H0);
+  else{kr=30;if(t<.48)o=mixP(P.H0,P.H1,sst(.22,.48,t));else if(t<.6){const u=(t-.48)/.12;o=mixP(P.H1,P.H2,u*u);}else if(t<.78)o=Object.assign({},P.H2);else o=mixP(P.H2,P.H0,sst(.78,1.15,t));
+    const k=t<.56?0:t<.66?sst(.56,.66,t):1-sst(.7,.92,t); /* 내려치는 순간 무릎을 살짝 굽혔다 폄(발은 바닥에) */
+    o.lx0=o.lx1=-.34*k;o.kx0=o.kx1=.68*k;o.wy=-.011*k;} /* 내려앉는 깊이 약 1.1cm = 떡이 눌리는 만큼(더 깊으면 떡메 머리가 떡 속으로 들어갔다) */
+  o._kr=kr;return o;}
 function actionPose(A,t){
+ if(A==='떡메 찧기'||A==='떡메 들기')return poundPose(A,t);
  if(A==='걷기'){const ph=t*8,s=Math.sin(ph);return{lx0:s*.5,lx1:-s*.5,ly0:.3+Math.max(0,s)*.08,ly1:.3+Math.max(0,-s)*.08,ax0:-s*.6,ax1:s*.6,az0:-.32,az1:.32,bx:.04,bz:s*.06,by:Math.abs(Math.cos(ph))*.05};}
  if(A==='뛰기')return runPose(t*13);
  if(A==='두리번'){const k=t*1.1,sk=Math.sin(k);return{hy:sk*.75*(.6+.4*Math.abs(Math.sin(k*.5))),hx:-.06,hz:sk*.06,bz:sk*.03,az0:-.38,az1:.38,ax0:.1*sk,ax1:-.1*sk};}
@@ -331,7 +347,7 @@ function updateWL(dt,t){
    let T=null;if(moving){if(SHOTM&&(A==='뛰기'||(!wlTarget&&D.spd>DRV.walk*1.2)))T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at); /* 촬영 모드가 아니면 걷기·달리기는 아래 gait */
    U.aw=Math.max(0,Math.min(1,(U.aw||0)+(T?1:-1)*dt*6));
    const base={ex0:-.12,ex1:-.12,ez0:0,ez1:0,kx0:0,kx1:0,lx0:legs[0].rotation.x,lx1:legs[1].rotation.x,ly0:legs[0].position.y,ly1:legs[1].position.y,ax0:arms[0].rotation.x,ax1:arms[1].rotation.x,az0:arms[0].rotation.z,az1:arms[1].rotation.z,bx:0,bz:body.rotation.z,by:body.position.y,hx:0,hy:0,hz:neck.rotation.z,wy:WL.position.y/WLS};
-   if(!U.pc)U.pc=Object.assign({},base);const tg=T?Object.assign({},base,T):base;for(const k in tg)U.pc[k]+=(tg[k]-U.pc[k])*Math.min(1,dt*10);
+   if(!U.pc)U.pc=Object.assign({},base);const kr=T&&T._kr||10;if(T)delete T._kr;const tg=T?Object.assign({},base,T):base;for(const k in tg)U.pc[k]+=(tg[k]-U.pc[k])*Math.min(1,dt*kr); /* kr: 떡메 내려치기처럼 빠른 동작만 더 빨리 따라감 */
    const w=U.aw;
    if(w>0){const P=U.pc,L=k=>base[k]+(P[k]-base[k])*w;
      legs[0].rotation.x=L('lx0');legs[1].rotation.x=L('lx1');legs.forEach((lg,i)=>{const k=L(i?'kx1':'kx0');lg.userData.knee.rotation.x=k;lg.userData.boot.rotation.x=-(lg.rotation.x+k)*.85;});legs[0].position.y=L('ly0');legs[1].position.y=L('ly1');
@@ -343,7 +359,7 @@ function updateWL(dt,t){
    /* (2026-11-04~05의 '발을 디디는 걸음' gait·legIK는 2026-11-05 사용자 요청으로 빼고 개미굴 원본 걷기로 되돌림 — 위 '걷기·달리기') */
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
-   if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
+   if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||((A==='떡메 찧기'||A==='떡메 들기')&&!moving)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
    /* 들고 다니는 물건(2026-11-04 — 버섯 랜턴): setHeld 물건에 userData.carry={ax,az,ex}가 있으면 서 있거나 걸을 때 오른팔을 그 각도로(앞으로 내밀어 듦, 걸으면 살짝 흔들림),
       userData.hang이면 물건이 팔 각도와 상관없이 늘 똑바로(손잡이에 매달린 채) — 다른 동작 중에는 그 동작 팔 그대로 */
    {const H=U.heldObj;if(U.showT>0)U.showT-=dt;const c=H&&(U.showT>0&&H.userData.show||H.userData.carry); // showT: 얻는 순간 번쩍 들어 보이기(game/mission — 물건 userData.show 자세)

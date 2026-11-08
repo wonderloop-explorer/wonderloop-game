@@ -237,7 +237,6 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
 // 구석의 떡방아 절구(숨은 재미): 나무 절구 + 기대 세운 떡메 + 접시에 하얀 떡 셋
 {const [x,z]=MORTAR,y=gy(x,z);put(new THREE.CylinderGeometry(.3,.26,.24,12),wood,{pos:[x,y+.36,z]});put(new THREE.CylinderGeometry(.22,.3,.26,12),wood,{pos:[x,y+.13,z]});
   put(new THREE.TorusGeometry(.28,.035,5,16),woodD,{pos:[x,y+.48,z],rot:[PI/2,0,0]});put(new THREE.CircleGeometry(.24,14),'#f6f1e6',{pos:[x,y+.47,z],rot:[-PI/2,0,0]});
-  put(new THREE.SphereGeometry(.12,10,6,0,PI*2,0,PI/2),'#fbf8f0',{pos:[x,y+.46,z],s:[1,.5,1]});
   const px=x-.62,pz=z+.22;put(new THREE.CylinderGeometry(.2,.17,.04,14),'#e8d6ea',{pos:[px,gy(px,pz)+.04,pz]});
   [[0,0],[.09,.06],[-.06,.08]].forEach(([dx,dz],k)=>put(new THREE.SphereGeometry(.07,10,6),k===1?'#f7e0e6':'#fbf8f0',{pos:[px+dx,gy(px,pz)+.1,pz+dz],s:[1,.7,1]}));}
 // 마을 돌담 몇(둥근 돌 낮게 줄지어 — 앞쪽 겹)
@@ -302,7 +301,7 @@ function tickSparks(t,P,cam){const cF=col('#cfe8ff'),cH=col('#ffd9a0'),cC=col('#
 const bobo=makeBobo();bobo.root.position.set(BOBO[0],groundY(...BOBO),BOBO[1]);bobo.root.rotation.y=Math.atan2(SPAWN[0]-BOBO[0],SPAWN[1]-BOBO[1]);root.add(bobo.root);keep.push(bobo.root);
 const boboOb={c:[BOBO[0],BOBO[1],.38]};obstacles.push(boboOb);
 /* ── 아기 토끼 이웃 셋(키 0.65 = 약 0.9m): 마을 둘레를 둥실둥실 뛰어다님(낮은 중력 — 한 번에 1.2~2.2m, 0.55m 높이, 1.1초), 원더룹이 2.4m 안이면 멈춰 바라봄, 가까이 가면 한마디 */
-const GATHER={on:false,until:0,spots:[[MORTAR[0]+.9,MORTAR[1]+.9],[MORTAR[0]+1.2,MORTAR[1]-.5],[MORTAR[0]-.2,MORTAR[1]+1.3]]};
+const GATHER={on:false,until:0,spots:[[MORTAR[0]+.55,MORTAR[1]+1.05],[MORTAR[0]+1.2,MORTAR[1]-.15],[MORTAR[0]+.95,MORTAR[1]+.75]]}; /* 절구 건너편(원더룹 맞은편) — 찧는 동안 사선 카메라 앞을 가리지 않게 */
 const BUN=[{id:'kongkong',name:'콩콩',fur:'#d8d8e0',scarf:'#ff9eb3',way:[[-.6,4.2],[1.0,1.8],[3.2,1.6],[2.6,3.4]],line:'할아버지 지도에 우리 집도 있어!'},
   {id:'mongsil',name:'몽실',fur:'#ece4d8',scarf:'#9bd46b',way:[[3.0,11.8],[1.2,13.0],[-.6,12.0],[1.8,10.9]],line:'여기선 톡 뛰면 한참 동안 떠 있어. 같이 뛰어 볼래?'},
   {id:'bosul',name:'보슬',fur:'#cdc6dc',scarf:'#7fb6e8',way:[[-5.6,8.6],[-4.2,10.8],[-1.8,12.2],[-6.4,11.2]],line:'할아버지 망원경으로 보면 목성 줄무늬가 다 보여!'}];
@@ -375,32 +374,64 @@ function scopeClose(){const el=scopeEl;if(!el)return;scopeEl=null;clearInterval(
   if(!F[DISC.scope]){G.state.setFlag(DISC.scope,true);G.react.react('awe',{sound:'card-secret'});
     G.ui.secret({kicker:'새 발견',title:'망원경으로 본 목성',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}}
 G.interact.add({root:scopeMark,at:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],face:SCOPE_EYE,label:'살펴보기',action:'들여다보기',dur:.9,near:1.8,once:false,onDone:()=>scopeOpen()});
-/* ── 떡방아 체험(마을 구석 절구, 2026-11-08): 절구 앞에서 '찧기' → 원더룹이 떡메로 콩 찧음(떡메는 따로 — 들어 올렸다 내려침), 세 번 찧으면 떡 완성.
+/* ── 떡방아 체험(마을 구석 절구, 2026-11-08): 절구 앞에서 '찧기' → 원더룹이 두 손으로 떡메를 작게 들어 각도로 내려침(아래 '떡메 찧기'), 맞으면 떡이 말랑하게 눌렸다 출렁, 세 번 찧으면 떡 완성.
    찧을 때마다 떡 조각·가루가 둥실 떠올랐다가 아주 천천히 내려옴(낮은 중력 — 위로 0.8~1.4m/초, 중력 0.2m/초²: 몇 초 동안 떠 있음).
    아기 토끼들이 절구 둘레로 모여 구경하고 한마디씩. 완성되면 가방에 '달떡'(세계 items — bagOnly), 보름 할아버지 한마디. 실패·서두름 없음, 다시 찧을 수 있음(달떡은 한 번) */
-const CAKE_KEY='item:'+WID+':dalddeok',MSTAND=[MORTAR[0]-.78,MORTAR[1]-.32];
+/* 떡메 찧기(2026-11-08 다시 — 두 손으로 작게 들어 각도로 내려침): 원더룹 동작은 07 '떡메 찧기'(잡기 → 짧게 들기 → 빠르게 내려침 → 잠깐 멈춤 → 원래 자세),
+   떡메는 매 프레임 원더룹 뼈가 움직인 뒤(lateUpdate) 두 손 자리에 맞춤: 원점 = 오른손(자루 끝), 자루 방향 = 오른손 → 왼손.
+   떡메 머리는 자루에 비스듬히 붙어 있어(PHI) 내려친 순간(자루가 약 20° 위로) 머리 아랫면이 떡을 위에서 똑바로 누름. 원더룹이 선 자리 POUND_D = 그 순간 머리가 떡 위에 오는 거리.
+   찧기 사이에는 잡은 채 기다림(07 '떡메 들기'), 2.4초 쉬거나 걸으면 내려놓음(절구 옆에 기대 세움). 찧는 동안 카메라는 원더룹 앞쪽 45° 사선(view.hold) → 끝나면 원래 카메라 */
+const POUND_LH=.56,POUND_PHI=Math.asin((.63-.44)/.56),POUND_D=.17+.56*Math.cos(POUND_PHI); /* 07 POUND H2: 오른손 높이 .44 · 앞 .17, 머리 가운데 높이 .63(떡 꼭대기 .52 + 머리 반 .12 − 눌림 .01) */
+const CAKE_KEY='item:'+WID+':dalddeok',MSTAND=(()=>{const dx=-.78,dz=-.32,l=Math.hypot(dx,dz);return [MORTAR[0]+dx/l*POUND_D,MORTAR[1]+dz/l*POUND_D];})();
+const HEAD_AX=new THREE.Vector3(0,Math.sin(POUND_PHI),Math.cos(POUND_PHI)),HEAD_C=new THREE.Vector3(0,POUND_LH,0);
 const pestle=new THREE.Group();{const m=sbMat('#ffffff');m.vertexColors=true;const ps=[];
-  put(new THREE.CylinderGeometry(.028,.032,1,8).translate(0,.5,0),woodD,{},ps);put(new THREE.CylinderGeometry(.09,.09,.34,10).rotateX(PI/2).translate(0,1.02,0),wood,{},ps);
-  put(new THREE.TorusGeometry(.09,.012,5,12).translate(0,1.02,.17),woodD,{},ps);put(new THREE.TorusGeometry(.09,.012,5,12).translate(0,1.02,-.17),woodD,{},ps);
+  put(new THREE.CylinderGeometry(.022,.026,POUND_LH+.08,8).translate(0,(POUND_LH-.08)/2,0),woodD,{},ps);
+  put(new THREE.CylinderGeometry(.075,.075,.24,12).rotateX(PI/2-POUND_PHI).translate(0,POUND_LH,0),wood,{},ps);
+  [-.105,.105].forEach(e=>put(new THREE.TorusGeometry(.075,.011,5,14).rotateX(-POUND_PHI).translate(0,POUND_LH+e*HEAD_AX.y,e*HEAD_AX.z),woodD,{},ps));
   const me=new THREE.Mesh(mergeGeometries(ps),m);me.castShadow=true;pestle.add(me);root.add(pestle);keep.push(pestle);}
-const PEST={rest:{p:new THREE.Vector3(MORTAR[0]+.42,groundY(...MORTAR),MORTAR[1]+.18),d:new THREE.Vector3(-.22,.95,-.08).normalize(),len:.97},k:0,t:9,hit:false,n:0,idle:9};
-const _pq=new THREE.Quaternion(),_pd=new THREE.Vector3(),_pp=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
-function tickPestle(dt){PEST.t+=dt;PEST.idle+=dt;const W=U0(),my=groundY(...MORTAR),mt=new THREE.Vector3(MORTAR[0],my+.47,MORTAR[1]);
-  if(!W)return;const P=W.position,fx=mt.x-P.x,fz=mt.z-P.z,fl=Math.hypot(fx,fz)||1,hand=new THREE.Vector3(P.x+fx/fl*.3,P.y+.55,P.z+fz/fl*.3);
-  // 찧는 자세: 손 → 위로 들어 올림(t .15~.55) → 내려침(.55~.68, 절구 속 떡) → 잠깐 머묾 → 다시 들어 올린 채(다음 찧기 기다림), 2초 쉬면 제자리에 기대 세움
-  const t=PEST.t,up=new THREE.Vector3(fx/fl*.35,1,fz/fl*.35).normalize(),down=mt.clone().sub(hand),dl=down.length();down.normalize();
-  let tgtD,len,base,w=PEST.idle<2.2?1:0;
-  if(t<.55){const u=ss(.05,.55,t);tgtD=up.clone().lerp(new THREE.Vector3(fx/fl*-.1,1,fz/fl*-.1).normalize(),u).normalize();}else if(t<.68){const u=(t-.55)/.13;tgtD=up.clone().lerp(down,u*u).normalize();}else if(t<1){tgtD=down;}else tgtD=up;
-  len=Math.min(.97,dl+.04);base=hand;
-  if(!PEST.hit&&t>=.68&&t<5){PEST.hit=true;pound();}
-  PEST.k+=(w-PEST.k)*Math.min(1,dt*6);const k=PEST.k;
-  _pp.copy(PEST.rest.p).lerp(base,k);_pd.copy(PEST.rest.d).lerp(tgtD,k).normalize();pestle.position.copy(_pp);pestle.quaternion.setFromUnitVectors(_up,_pd);pestle.scale.set(1,PEST.rest.len+(len-PEST.rest.len)*k,1);}
+/* 절구 속 떡: 따로 한 덩어리 — 맞으면 말랑하게 눌렸다가 출렁이며 돌아옴(용수철, tech-lab squishy-test 방식: 세기 160·감쇠 7, 눌리면 옆으로 퍼짐 xz = 1/√y) */
+const CAKE_Y=groundY(...MORTAR)+.46,CAKE_TOP=CAKE_Y+.06;
+const cake=new THREE.Mesh(new THREE.SphereGeometry(.12,12,7,0,PI*2,0,PI/2),sbMat('#fbf8f0'));cake.position.set(MORTAR[0],CAKE_Y,MORTAR[1]);cake.scale.set(1,.5,1);cake.castShadow=cake.receiveShadow=true;root.add(cake);keep.push(cake);
+const CSQ={x:0,v:0,k:160,c:7,tx:0,tv:0,tz:0,tzv:0};
+function tickCakeSquish(dt){for(let s=0;s<2;s++){const h=dt/2;CSQ.v+=(-CSQ.k*CSQ.x-CSQ.c*CSQ.v)*h;CSQ.x+=CSQ.v*h;CSQ.tv+=(-90*CSQ.tx-5*CSQ.tv)*h;CSQ.tx+=CSQ.tv*h;CSQ.tzv+=(-90*CSQ.tz-5*CSQ.tzv)*h;CSQ.tz+=CSQ.tzv*h;}
+  const q=Math.max(-.35,Math.min(.45,CSQ.x)),y=1-q,xz=1/Math.sqrt(Math.max(.3,y));cake.scale.set(xz,.5*y,xz);cake.rotation.set(CSQ.tz,0,-CSQ.tx);}
+const PEST={rest:{p:new THREE.Vector3(MORTAR[0]+.42,groundY(...MORTAR),MORTAR[1]+.18),d:new THREE.Vector3(-.22,.95,-.08).normalize()},k:0,hit:false,n:0,idle:9,hits:[],last:null};
+PEST.rest.q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),PEST.rest.d);PEST.rest.o=PEST.rest.p.clone().addScaledVector(PEST.rest.d,.08); /* 자루 끝이 땅에 닿게 */
+const _hR=new THREE.Vector3(),_hL=new THREE.Vector3(),_px=new THREE.Vector3(),_py=new THREE.Vector3(),_pz=new THREE.Vector3(),_pm=new THREE.Matrix4(),_pqH=new THREE.Quaternion(),_ph=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
+let foreR=null,foreL=null;
+function poundingNow(W){const A=W&&W.userData.action;return A==='떡메 찧기'||A==='떡메 들기';}
+function lateUpdate(dt){const W=U0();if(!W)return;const U=W.userData;
+  if(!foreR){foreR=W.getObjectByName('forearm.R');foreL=W.getObjectByName('forearm.L');}
+  PEST.idle+=dt;
+  // 찧기 사이 잡고 기다리다가 — 2.4초 쉬거나 걷기 시작하면 내려놓음
+  if(U.action==='떡메 들기'){const P=W.position,lp=PEST.last;if(PEST.idle>2.4||(lp&&Math.hypot(P.x-lp.x,P.z-lp.z)>.02)||(U.isWalking&&U.isWalking())){U.action='서기';U.at=0;}}
+  if(PEST.last)PEST.last.copy(W.position);else PEST.last=W.position.clone();
+  const on=poundingNow(W);PEST.k+=((on?1:0)-PEST.k)*Math.min(1,dt*(on?9:7));const k=PEST.k;
+  if(k>.001&&foreR){W.updateMatrixWorld(true);foreR.localToWorld(_hR.set(0,-.19,.03));foreL.localToWorld(_hL.set(0,-.19,.03));
+    _py.subVectors(_hL,_hR).normalize();_pz.copy(_up).addScaledVector(_py,-_py.dot(_up)).normalize();_px.crossVectors(_py,_pz);_pm.makeBasis(_px,_py,_pz);_pqH.setFromRotationMatrix(_pm);
+    pestle.position.copy(PEST.rest.o).lerp(_hR,k);pestle.quaternion.copy(PEST.rest.q).slerp(_pqH,k);}
+  else{pestle.position.copy(PEST.rest.o);pestle.quaternion.copy(PEST.rest.q);}
+  // 내려친 순간: 떡메 머리 아랫면이 떡 꼭대기에 닿으면(또는 동작이 그 순간을 지나면) 한 번 — 떡이 눌리고 조각·가루가 둥실
+  if(U.action==='떡메 찧기'&&!PEST.hit&&U.at>.5&&U.at<.95&&k>.9){pestle.updateMatrixWorld(true);_ph.copy(HEAD_C).addScaledVector(HEAD_AX,-.12);pestle.localToWorld(_ph);
+    if(_ph.y<=CAKE_TOP+.012||U.at>.68){PEST.hit=true;PEST.hits.push({dy:+(_ph.y-CAKE_TOP).toFixed(3),dxz:+Math.hypot(_ph.x-MORTAR[0],_ph.z-MORTAR[1]).toFixed(3),at:+U.at.toFixed(2)});
+      CSQ.v+=4.2;CSQ.tv+=(Math.random()-.5)*1.2;CSQ.tzv+=(Math.random()-.5)*1.2;pound();}}
+  tickCakeSquish(dt);}
+/* 찧는 동안 카메라: 원더룹 앞쪽 45° 사선(지금 카메라에 가까운 쪽)으로 부드럽게 — 원더룹 얼굴 3/4와 떡메·절구가 함께 보임. 찧기를 마치고 떡메를 내려놓으면 원래 카메라로(view.hold — 화면을 만지면 바로 플레이어 것) */
+let poundCam=null;
+function poundCamStart(){const W=U0(),cam=G.view.camera;if(!W||!cam)return;if(poundCam&&G.view.req&&G.view.req.fn===poundCam.fn)return;
+  const P=W.position,ry=W.rotation.y,cp=cam.position,side=[1,-1].map(s=>{const a=ry+s*PI/4;return {a,d:Math.hypot(P.x+Math.sin(a)*3-cp.x,P.z+Math.cos(a)*3-cp.z)};}).sort((p,q)=>p.d-q.d)[0];
+  const pc={a:side.a,end:0};pc.fn=()=>{const W=U0();if(!W)return null;if(!poundingNow(W)){pc.end+=1/60;if(pc.end>.1){if(poundCam===pc)poundCam=null;return null;}}else pc.end=0;
+    const k=cam.aspect<1?Math.min(2,1.25/cam.aspect):1,P=W.position,mx=(P.x+MORTAR[0])/2,mz=(P.z+MORTAR[1])/2,d=3.5*k;
+    const at=bentPos({x:mx*.7+P.x*.3,y:P.y+.68-.32*(k-1),z:mz*.7+P.z*.3}) /* 세로 화면은 보는 점을 낮춰 원더룹·절구를 화면 위쪽에(아래는 대사창·조이스틱) */,from=bentPos({x:P.x+Math.sin(pc.a)*d,y:P.y+1.3+.4*(k-1),z:P.z+Math.cos(pc.a)*d});
+    return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};};
+  poundCam=pc;G.view.hold(pc.fn);}
 /* 떡 조각(인스턴스 하나)·가루(점 하나): 찧을 때만 보임 */
 const BITS=14,FL=MOB?28:44;
 const bitIM=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.055,1),(()=>{const m=sbMat('#ffffff');return m;})(),BITS);bitIM.count=BITS;bitIM.visible=false;bitIM.frustumCulled=false;root.add(bitIM);keep.push(bitIM);
 {const c=new THREE.Color();for(let i=0;i<BITS;i++)bitIM.setColorAt(i,c.set(i%4===0?'#f7dbe4':i%5===0?'#e2efcf':'#fbf8f0'));}
 const flGeo=new THREE.BufferGeometry(),flPos=new Float32Array(FL*3),flCol=new Float32Array(FL*3);flGeo.setAttribute('position',new THREE.BufferAttribute(flPos,3));flGeo.setAttribute('color',new THREE.BufferAttribute(flCol,3));
-const flour=new THREE.Points(flGeo,new THREE.PointsMaterial({size:.13,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,map:dotTex})); // 더하기 섞기 + 동그란 점: 옅어지면 그냥 사라짐(보통 섞기는 까만 네모가 됐다)flour.visible=false;flour.frustumCulled=false;root.add(flour);keep.push(flour);
+const flour=new THREE.Points(flGeo,new THREE.PointsMaterial({size:.13,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,map:dotTex})); /* 더하기 섞기 + 동그란 점: 옅어지면 그냥 사라짐(보통 섞기는 까만 네모가 됐다) */
+flour.visible=false;flour.frustumCulled=false;root.add(flour);keep.push(flour);
 const BIT=[],FLO=[];let bitHead=0,floHead=0;for(let i=0;i<BITS;i++)BIT.push({p:new THREE.Vector3(0,-9,0),v:new THREE.Vector3(),a:0,s:1,r:0});for(let i=0;i<FL;i++)FLO.push({p:new THREE.Vector3(0,-9,0),v:new THREE.Vector3(),a:0});
 function pound(){const my=groundY(...MORTAR),o=new THREE.Vector3(MORTAR[0],my+.5,MORTAR[1]);G.sound.sfx('event-tok');G.sound.sfx('step');
   for(let k=0;k<5;k++){const b=BIT[bitHead++%BITS],a=Math.random()*PI*2,sp=.15+Math.random()*.35;b.p.copy(o);b.v.set(Math.cos(a)*sp,.8+Math.random()*.6,Math.sin(a)*sp);b.a=1;b.s=.7+Math.random()*.7;b.r=Math.random()*6;}
@@ -414,9 +445,9 @@ function tickBits(dt){let any=false;const GR=.2; // 낮은 중력(지구 9.8의 
   bitIM.visible=flour.visible=any;if(any){bitIM.instanceMatrix.needsUpdate=true;flGeo.attributes.position.needsUpdate=true;flGeo.attributes.color.needsUpdate=true;}}
 const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(...MORTAR)+.5,MORTAR[1]);root.add(mortarMark);
 const BUN_SAY=[['콩콩','와, 떡이 날아다녀!'],['몽실','천천히 떨어져서 받아먹을 수도 있겠다!'],['보슬','콩! 하고 찧으니까 둥실 올라가!']];
-const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'돌리기',dur:1.25,near:1.9,once:false,
-  onStart:()=>{PEST.t=0;PEST.hit=false;PEST.idle=0;GATHER.on=true;GATHER.until=1e9;},
-  onDone:()=>{PEST.idle=0;PEST.n++;const n=PEST.n;const say=BUN_SAY[(n-1)%3];G.dialog.say('아기 토끼 '+say[0],say[1],2.6);
+const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
+  onStart:()=>{PEST.hit=false;PEST.idle=0;GATHER.on=true;GATHER.until=1e9;poundCamStart();},
+  onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;const say=BUN_SAY[(n-1)%3];G.dialog.say('아기 토끼 '+say[0],say[1],2.6);
     if(n<3){mortarIt.label=`찧기 (${n}/3)`;return;}
     mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;}});
 function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return;st.cakeT=null;
@@ -563,7 +594,7 @@ const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
-  bobo.tick(dt,t,st.hop);tickSparks(t,P,cam);tickBunnies(dt,t,P);tickPestle(dt);tickBits(dt);tickCake(dt);
+  bobo.tick(dt,t,st.hop);tickSparks(t,P,cam);tickBunnies(dt,t,P);tickBits(dt);tickCake(dt);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}
@@ -615,14 +646,15 @@ function wrapShift(k,sh){if(fpLast)fpLast[k]+=sh;
 }
 return {
   name:'회색 정원',kind:'outdoor',
-  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R}, // 시험 도구가 읽는 자리(tools/space-stage1-test.py)
+  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R},
+  poundInfo:()=>({hits:PEST.hits,stand:MSTAND,d:+POUND_D.toFixed(3),cakeTop:+CAKE_TOP.toFixed(3),squish:+CSQ.x.toFixed(3),head:(()=>{pestle.updateMatrixWorld(true);const h=HEAD_C.clone().addScaledVector(HEAD_AX,-.12);pestle.localToWorld(h);return h.toArray().map(n=>+n.toFixed(3));})()}), /* 떡방아 확인(tools/space-pound-rec.py) */ // 시험 도구가 읽는 자리(tools/space-stage1-test.py)
 start:{compass:true},world:null,
   spawn:{x:SPAWN[0],z:SPAWN[1],ry:PI},
   areas,platforms,
   sun:ZSUN,lights:[lav],light,rim:.32,
   sky:SK,bend:{sphere:R,wrap:L},gravity:.38,jumpK:1.15,
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
-  update,dispose(){scopeClose();if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
+  update,lateUpdate,dispose(){scopeClose();if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
 function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}

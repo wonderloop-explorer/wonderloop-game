@@ -15,6 +15,7 @@
      mood: {hemi, sun, fill, sky, ground, tint}  (선택) 구역 분위기 — 하늘빛·해·보조광 세기 배율과 하늘빛 물들일 색(땅속은 호박색). 낮·저녁·굴 단계 위에 곱한다
      groundY(x,z), ground: [메시]          (선택) 땅 높이, 클릭해서 걸을 때 맞힐 땅
      lights: [점광원]  light(env,dt)  update(dt,t,env)  click(ray)  keepOut: [병합에서 뺄 것]  dispose()
+     lateUpdate(dt,t,env)                (선택) 원더룹 뼈가 움직인 뒤 맞출 것(08 — 두 손에 쥔 떡메처럼 손 자리를 따라가는 물건)
      start: {compass:true}               들어올 때 이미 그런 진행 상태(game/state)
      hood: 'ant'                         들어올 때 쓰는 탈(06 탈 목록의 key) — 세계마다 탈 하나. hood가 있으면 옷은 탐험복(08 zoneLook)
      platforms: [{r:[x0,x1,z0,z1]|c:[x,z,반지름], top}]   높은 발판(버섯 갓·가지 등): 위에 서고, 아래에서 걸어 들어가면 막힘(STEP보다 높으면)

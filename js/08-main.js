@@ -211,6 +211,7 @@ function tickBody(){
   /* 이어지는 땅(작은 행성 — 구역 정보 bend.wrap, game/bend.js): 원더룹이 L/2 밖으로 나가면 원더룹·카메라·보는 점을 함께 L만큼 옮긴다(그림은 원더룹 기준으로 감으니 화면은 그대로) */
   {const B=Z.bend,L=B&&B.sphere?(B.wrap||2*PI*B.sphere):0;if(L){const P=WL.position,V=WL.userData.vert;for(const k of ['x','z']){const sh=P[k]>L/2?-L:P[k]<-L/2?L:0;if(!sh)continue;
      P[k]+=sh;camera.position[k]+=sh;controls.target[k]+=sh;if(V)V[k==='x'?'px':'pz']+=sh;if(WL.userData.wrapShift)WL.userData.wrapShift(k,sh);}}}
+  if(Z.lateUpdate)Z.lateUpdate(dt,t,env); // 원더룹 뼈가 움직인 뒤 구역이 맞출 것(떡방아 떡메를 두 손 자리에 — 무한 우주 회색 정원)
   GAME.updateGame(dt); // 대화·이벤트·나레이션 (게임 시간 = 촬영 모드에서는 1/60초씩, 영상 캡처 중에는 1/72초씩)
   // 방(영역)이 바뀌면 그 방 카메라로, 문을 밟으면 다른 구역으로
   {const a=areaAt(WL.position.x,WL.position.z);if(a&&a!==zone.area){zone.area=a;setAreaCamera(Z.areas[a].camera,false);}
