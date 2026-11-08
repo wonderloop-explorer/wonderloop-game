@@ -16,7 +16,8 @@
    — 그 안은 또렷, 밖은 벗어난 거리 × K/z(K = 2.6·초점거리^-0.6, 줌인할수록 셈). 같은 깊이라도 원더룹 화면 자리 밖(옆 토끼 등)은 살짝(uSoft).
    점마다 자기 흐림 반지름이 그 거리를 덮을 때만 섞어서 또렷한 원더룹이 뒤 배경으로 번지지 않는다. 하늘(깊이 끝)은 가장 흐림.
    '배경 흐림' 단추로 켜고 끔(기본 켬). 휴대폰은 가벼운 방식 — 표본 12개(컴퓨터 24, 저장 40), 다중 표본(MSAA) 없이.
-   '미니어처' 필터(tech-lab/squishy-test.html 틸트시프트 그대로): 원더룹 높이의 가로 띠만 또렷, 위아래로 갈수록 흐림 + 장난감처럼 색을 진하게·가장자리 살짝 어둡게.
+   '미니어처' 필터(tech-lab/squishy-test.html 틸트시프트): 원더룹 화면 자리(탈 꼭대기~발끝 — 초점 범위와 같은 공들)를 다 담는 가로 띠만 또렷, 위아래로 갈수록 흐림 —
+   원더룹 자리는 어떤 필터든 흐림 0, 같은 깊이 옆 주민은 살짝(2026-11-08) + 장난감처럼 색을 진하게·가장자리 살짝 어둡게.
    ── 찍기와 저장 ──
    셔터(아래 가운데 둥근 단추 · 컴퓨터 Space): 하얀 번쩍임 + 찰칵(효과음 'photo-shutter') + 오른쪽 아래 작은 미리보기(누르면 크게 보기·휴대폰은 저장).
    비율 1:1 · 4:5 · 9:16 — 화면에 안내 틀(바깥은 어둡게)을 보이고 그 틀 그대로 저장(카메라 setViewOffset — 틀이 가운데가 아니어도 똑같이).
@@ -39,26 +40,30 @@ const PH={yaw:0,pitch:.3,d:6,dGoal:6,tgt:new THREE.Vector3(),ready:false,blur:tr
 const _v=new THREE.Vector3(),_h=new THREE.Vector3(),_p=new THREE.Vector3();
 /* ---------- 후처리 셰이더(배경 흐림 + 미니어처) ---------- */
 const VS=`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
-const FS=`varying vec2 vUv;uniform sampler2D tCol,tDep;uniform vec2 uRes;uniform float uNear,uFar,uK,uMax,uDof,uMini,uMiniY,uSoft;uniform vec2 uZr;uniform vec4 uRect;
+const FS=`varying vec2 vUv;uniform sampler2D tCol,tDep;uniform vec2 uRes;uniform float uNear,uFar,uK,uMax,uDof,uMini,uSoft;uniform vec2 uBand;uniform vec2 uZr;uniform vec4 uRect;
 float vz(vec2 uv){float d=texture2D(tDep,uv).x*2.-1.;return 2.*uNear*uFar/(uFar+uNear-d*(uFar-uNear));}
 /* 초점 범위 = 원더룹 몸 전체(탈 꼭대기~발끝, 앞뒤 두께)를 감싸는 깊이 [uZr.x, uZr.y] — 그 안은 흐림 0, 밖은 벗어난 거리만큼(렌즈처럼 /z).
    같은 깊이라도 원더룹 화면 자리(uRect, 가장자리 부드럽게) 밖이면 uSoft만큼 살짝(옆에 선 토끼 등 — 원더룹이 가장 또렷하게) */
 float coc(float z,vec2 uv){float d=max(max(uZr.x-z,z-uZr.y),0.);vec2 o=max(uRect.xy-uv,uv-uRect.zw);float inR=1.-smoothstep(0.,.035,max(o.x,o.y));
-  return uDof*clamp(max(uK*d/z,uSoft*(1.-inR)),0.,1.);}
+  return clamp(max(uDof*uK*d/z,max(uDof,uMini)*uSoft*(1.-inR)),0.,1.);}
+/* 미니어처 띠(2026-11-08): 가운데·폭 = 원더룹 화면 자리(탈 꼭대기~발끝) 위아래 + 여유 — 띠 안은 흐림 0, 밖으로 갈수록 흐림. 원더룹 자리(uRect 안·초점 깊이 안)는 어떤 필터든 0 */
+float tilt(float z,vec2 uv){float t=uMini*smoothstep(uBand.y,uBand.y+.33,abs(uv.y-uBand.x));vec2 o=max(uRect.xy-uv,uv-uRect.zw);
+  float inR=1.-smoothstep(0.,.035,max(o.x,o.y)),inZ=1.-smoothstep(0.,.15,max(uZr.x-z,z-uZr.y));return t*(1.-inR*inZ);}
+float rad(float z,vec2 uv){return max(coc(z,uv),tilt(z,uv));}
 /* 물체가 있는 곳(깊이 < 1)은 불투명(1) — 그린 화면의 알파가 1보다 작은 곳이 있어(베이스캠프) 페이지 배경이 비쳐 뿌옜다. 빈 배경(하늘 없는 구역)은 (0,0,0,0)이라 섞어도 미리 곱한 알파 그대로 */
 /* 깨진 값 보호: NaN·무한·음수 화소(셰이더 계산이 깨진 점 하나)는 흐림이 크게 번지지 않게 — 표본에서 빼고(무게 0), 가운데 화소면 둘레 네 점 평균으로 */
 bool bad(vec4 c){return any(isnan(c))||any(isinf(c))||c.r<-.001||c.g<-.001||c.b<-.001;}
 vec4 col(vec2 uv){vec4 c=texture2D(tCol,uv);if(texture2D(tDep,uv).x<.99999)c.a=1.;return c;}
 vec4 fix(vec2 uv){vec4 s=vec4(0.);float n=0.;for(int i=0;i<4;i++){vec2 o=vec2(i==0?1.:i==1?-1.:0.,i==2?1.:i==3?-1.:0.)/uRes;vec4 q=col(uv+o);if(!bad(q)){s+=q;n+=1.;}}return n>0.?s/n:vec4(0.,0.,0.,1.);}
-void main(){float z=vz(vUv),tilt=uMini*smoothstep(.07,.42,abs(vUv.y-uMiniY));float r0=max(coc(z,vUv),tilt)*uMax;vec4 c=col(vUv);if(bad(c))c=fix(vUv);
+void main(){float z=vz(vUv);float r0=rad(z,vUv)*uMax;vec4 c=col(vUv);if(bad(c))c=fix(vUv);
   if(r0>.6){vec4 acc=c;float ws=1.;for(int i=0;i<TAPS;i++){float fi=float(i),rr=sqrt(fi+.5)/sqrt(float(TAPS))*r0,a=fi*2.39996;vec2 uv=clamp(vUv+vec2(cos(a),sin(a))*rr/uRes,vec2(.0005),vec2(.9995));
-    float zt=vz(uv),rt=max(coc(zt,uv),tilt)*uMax,w=clamp(rt-rr+1.,0.,1.);if(zt<z-.3)w=max(w,clamp(rt-rr+1.,0.,1.));vec4 q=col(uv);if(!bad(q)){acc+=q*w;ws+=w;}}c=acc/ws;}
+    float zt=vz(uv),rt=rad(zt,uv)*uMax,w=clamp(rt-rr+1.,0.,1.);if(zt<z-.3)w=max(w,clamp(rt-rr+1.,0.,1.));vec4 q=col(uv);if(!bad(q)){acc+=q*w;ws+=w;}}c=acc/ws;}
   if(uMini>0.){float l=dot(c.rgb,vec3(.299,.587,.114));c.rgb=mix(vec3(l),c.rgb,1.+.32*uMini);c.rgb=(c.rgb-.5)*(1.+.08*uMini)+.5+.02*uMini;
     float vg=smoothstep(1.2,.4,length(vUv-.5)*1.4);c.rgb*=mix(1.,.86+.14*vg,uMini);}
   gl_FragColor=clamp(c,0.,64.);
 }`;
 function postMat(taps){return new THREE.ShaderMaterial({defines:{TAPS:taps},uniforms:{tCol:{value:null},tDep:{value:null},uRes:{value:new THREE.Vector2(1,1)},uNear:{value:1},uFar:{value:100},
-  uZr:{value:new THREE.Vector2(4,6)},uRect:{value:new THREE.Vector4(.4,.3,.6,.7)},uSoft:{value:.1},uK:{value:1},uMax:{value:10},uDof:{value:1},uMini:{value:0},uMiniY:{value:.45}},vertexShader:VS,fragmentShader:FS,depthTest:false,depthWrite:false,transparent:true,blending:THREE.NoBlending});}
+  uZr:{value:new THREE.Vector2(4,6)},uRect:{value:new THREE.Vector4(.4,.3,.6,.7)},uSoft:{value:.1},uK:{value:1},uMax:{value:10},uDof:{value:1},uMini:{value:0},uBand:{value:new THREE.Vector2(.45,.1)}},vertexShader:VS,fragmentShader:FS,depthTest:false,depthWrite:false,transparent:true,blending:THREE.NoBlending});}
 let live=null,shotMat=null,quad=null,qScene=null,qCam=null;const RT={rt:null,w:0,h:0};
 /* 장면을 담는 렌더 타깃: 캔버스와 똑같이 그려지게 — 재질 셰이더가 sRGB로 바꾼 뒤 섞기(반투명 빛기둥·빛 웅덩이 등이 캔버스처럼 sRGB 값 위에서 섞임).
    three는 보통 렌더 타깃에 선형으로 그려 섞기가 선형 공간에서 일어나 베이스캠프 화면이 뿌옇게 밝아졌다 → texture.colorSpace sRGB + isXRRenderTarget(출력 색 공간을 타깃 것으로 쓰게 하는 three의 표시 — r186 WebGLPrograms·getOutputColorSpace만 봄),
@@ -80,7 +85,7 @@ function bodyRange(cam){if(!bones)bones=BODY.map(([n,r,up])=>[ctx.WL.getObjectBy
   return {z0:Math.max(.05,z0-.08),z1:z1+.08,rect:[(x0+1)/2-.015,(y0+1)/2-.015,(x1+1)/2+.015,(y1+1)/2+.015]};}
 function setFocus(m,cam,W,H){const U=m.uniforms,B=bodyRange(cam),zf=Math.max(.5,(B.z0+B.z1)/2);U.uNear.value=cam.near;U.uFar.value=cam.far;
   U.uZr.value.set(B.z0,B.z1);U.uRect.value.set(...B.rect);U.uK.value=2.6*Math.pow(zf,-.6);U.uSoft.value=.12*Math.min(1,U.uK.value);U.uMax.value=.022*H;U.uRes.value.set(W,H);U.uDof.value=PH.blur?1:0;U.uMini.value=PH.mini?1:0;
-  _v.copy(focusPt(_p));_v.project(cam);U.uMiniY.value=Math.min(.8,Math.max(.2,(_v.y+1)/2));}
+  const [,ry0,,ry1]=B.rect;U.uBand.value.set((ry0+ry1)/2,(ry1-ry0)/2+.03);} // 미니어처 띠 = 원더룹 화면 위아래 + 여유
 const focusPt=v=>{const W=ctx.WL;return v.set(W.position.x,W.position.y+.7,W.position.z);};
 /* ---------- 입장·퇴장 ---------- */
 function blockedNow(){const b=document.body.classList;if(b.contains('wl-front-on')||b.contains('wl-pop-on')||b.contains('wl-ward-on')||b.contains('wl-bag-on'))return true;
