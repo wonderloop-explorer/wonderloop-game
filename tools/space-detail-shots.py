@@ -16,7 +16,7 @@ with sync_playwright() as p:
     o = dict(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True) if PHONE else dict(viewport={'width': 1280, 'height': 720})
     pg = b.new_page(**o); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
-    pg.goto('http://localhost:8000/?world=infinite-space&zone=space-garden&notitle' + ('&quality=mobile' if PHONE else '')); pg.evaluate('localStorage.clear()'); pg.reload()
+    pg.goto('http://localhost:8000/?world=infinite-space&zone=space-garden&notitle' + ('&quality=mobile' if PHONE or os.environ.get('MQ') else '')); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots', timeout=120000); pg.wait_for_timeout(2500)
     if not PHONE:
         # 원더룹은 멀리(비켜 서 있게), 카메라는 window._cam이 주는 자리 그대로(snap)

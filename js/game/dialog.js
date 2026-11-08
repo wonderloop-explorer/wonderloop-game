@@ -16,6 +16,7 @@ import {block,blocking,clock} from './core.js';
 import {sfx,voice} from './sound.js';
 import {hideDialog,hint,hintsVisible,setPrompt,showDialog} from './ui.js';
 import {flags,setFlag} from './state.js';
+import {bentPos} from './bend.js';
 import {act as handAct,prompt as handPrompt} from './interact.js'; // 말 걸 상대가 없으면 손으로 하는 상호작용(E·터치 단추)
 const coarse=matchMedia('(pointer:coarse)').matches,reduce=matchMedia('(prefers-reduced-motion: reduce)');
 const NPCS=[];let talk=null,near=null,ctx=null;const sayQ=[];let saying=null;
@@ -71,6 +72,7 @@ function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
   near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=talk.L;setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
   else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
+  placePrompt(talk?null:near);
   // 말풍선: 9m 안 가까운 주민들 위에 늘(대화 중인 상대는 빼고) — 아직 끝까지 이야기하지 않은 주민은 '…', 이야기한 주민은 작은 하트(조금 작게)
   const L=[];if(hintsVisible()&&!(blocking()&&!talk)){for(const n of NPCS){if(!talkable(n)||(talk&&talk.n===n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<9)L.push([d,n]);}L.sort((a,b)=>a[0]-b[0]);}
   for(let i=0;i<BUBS.length;i++){const b=BUBS[i],e=L[i];if(!e){if(b.visible){b.visible=false;if(b.parent)b.parent.remove(b);}continue;}const [wd,who]=e,hm=met(who);
@@ -81,6 +83,16 @@ function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
 /* 입력: E(또는 말 걸기 단추) — 대화 중이면 다음, 아니면 가까운 NPC와 대화 */
 function act(){if(talk)return advance();if(near)return startTalk(near);return handAct();}
 function clickNPC(ray){if(talk){advance();return true;}const hits=ray.intersectObjects(NPCS.filter(talkable).map(n=>n.root),true);if(hits.length){let o=hits[0].object;const n=NPCS.find(n=>{let q=o;while(q){if(q===n.root)return true;q=q.parent;}return false;});if(n&&startTalk(n))return true;}return false;}
+/* 'E 말 걸기'는 말 걸 상대 머리 위(말풍선 위)에 띄운다(2026-11-08 — 화면 아래 가운데에 뜨면 문·절구 같은 물건 앞에 섰을 때 누구에게 말을 거는지 몰랐다).
+   컴퓨터만(휴대폰은 오른쪽 말 걸기 단추). 상대가 화면 밖·카메라 뒤면 원래 자리(아래 가운데). 손으로 하는 상호작용 안내는 그대로 아래 가운데 */
+const _pp=new THREE.Vector3();
+function placePrompt(n){const el=document.getElementById('wlPrompt');if(!el)return;const cam=ctx&&ctx.camera;
+  if(!n||coarse||!cam){if(el.dataset.at){el.style.left=el.style.top=el.style.bottom=el.style.transform='';delete el.dataset.at;}return;}
+  n.root.getWorldPosition(_pp);_pp.y+=(n.bubbleY||1.4);const b=bentPos({x:_pp.x,y:_pp.y,z:_pp.z});_pp.set(b.x,b.y,b.z).project(cam);
+  if(_pp.z>1||Math.abs(_pp.x)>.95||_pp.y>.95||_pp.y<-.9){if(el.dataset.at){el.style.left=el.style.top=el.style.bottom=el.style.transform='';delete el.dataset.at;}
+    if(n.name)el.textContent='E '+n.name+'에게 말 걸기';return;} /* 상대가 화면 밖이면 아래 가운데에 누구인지 이름을 붙여서 */
+  const x=(_pp.x+1)/2*innerWidth,y=(1-_pp.y)/2*innerHeight-innerHeight*.11;el.dataset.at='1';
+  el.style.left=Math.round(Math.min(innerWidth-90,Math.max(90,x)))+'px';el.style.top=Math.round(Math.max(130,y))+'px';el.style.bottom='auto';el.style.transform='translate(-50%,-100%)';}
 function initDialog(c){ctx=c;makeBubble(c.scene);
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});
   document.getElementById('wlAct').addEventListener('pointerdown',e=>{e.preventDefault();act();});

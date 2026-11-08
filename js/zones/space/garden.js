@@ -95,9 +95,9 @@ const gMat=sbMat('#ffffff',{map:(()=>{const t=canvasTex(256,crayonGround);t.wrap
 const ground=new THREE.Mesh(gGeo,gMat);ground.receiveShadow=true;root.add(ground);keep.push(ground);
 /* ── 정점 색 덩어리 만들기: put(geo, 색, 자리) → 목록에 쌓았다가 한 덩어리로 */
 let parts=[];
-function put(geo,color,{pos=[0,0,0],rot=[0,0,0],s=[1,1,1]}={},into=parts){let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);
+function put(geo,color,{pos=[0,0,0],rot=[0,0,0],s=[1,1,1],smooth=false}={},into=parts){ /* smooth: 원래 매끈한 법선 그대로(집 벽·지붕 — 면마다 평평하면 판 단위로 밝기가 끊겼다) */let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);
   if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));
-  g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...pos),new THREE.Quaternion().setFromEuler(new THREE.Euler(...rot)),new THREE.Vector3(...s)));g.computeVertexNormals();
+  g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...pos),new THREE.Quaternion().setFromEuler(new THREE.Euler(...rot)),new THREE.Vector3(...s)));if(!smooth)g.computeVertexNormals();
   const n=g.attributes.position.count,cc=new Float32Array(n*3),C=col(color);for(let i=0;i<n;i++){cc[i*3]=C.r;cc[i*3+1]=C.g;cc[i*3+2]=C.b;}g.setAttribute('color',new THREE.BufferAttribute(cc,3));
   const u=g.attributes.uv;for(let i=0;i<n;i++)u.setXY(i,u.getX(i)*2,u.getY(i)*2);into.push(g);return g;}
 /* 두 점 사이 막대(줄·다리·끈) */
@@ -170,14 +170,20 @@ const ROCK_TOP=groundY(...ROCK.c)+1.85; // 둥실 뛰기(꼭대기 약 2.7m)로 
 const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',paper='#f3e4c4',ink='#a8603f';
 // 둥근 돌집(할아버지 집): 낮은 돌담 둥근 벽 + 동그란 지붕 + 둥근 문(마을 쪽) + 동그란 창(따뜻한 불빛) + 지붕 위 작은 별 바람개비
 {const [hx,hz]=HUT,y=gy(hx,hz),face=Math.atan2(VIL[0]-hx,VIL[1]-hz);
-  put(new THREE.CylinderGeometry(1.45,1.55,1.3,14,1),'#d6d0d8',{pos:[hx,y+.62,hz]});
-  put(new THREE.SphereGeometry(1.62,16,8,0,PI*2,0,PI/2),'#a993c9',{pos:[hx,y+1.22,hz],s:[1,.78,1]});
-  put(new THREE.TorusGeometry(1.5,.08,6,24),'#8a74ad',{pos:[hx,y+1.24,hz],rot:[PI/2,0,0]});
+  /* 벽(2026-11-08 다시): 매끈한 법선(면마다 평평하면 판 단위로 밝기가 끊겨 보였다), 원기둥의 시작·끝 이음매는 문 반대쪽 뒤로(WALL_T0 — 문이 벽 한 면 가운데),
+     밑동은 땅 속 15cm까지(땅에 깔끔하게 박힘), 위·아래 뚜껑 없음(지붕이 덮음). 지붕·지붕 테두리도 매끈한 법선 */
+  const WALL_T0=face-15*PI/14,wallGeo=()=>new THREE.CylinderGeometry(1.45,1.5592,1.42,14,1,true,WALL_T0,PI*2); /* 아래 반지름 = 예전 기울기 그대로 15cm 더 내림 */
+  /* 벽은 따로 한 덩어리: 그림자를 받지도 드리우지도 않음 — 둥근 벽의 그림자 지도 자국(벽 면이 빛과 나란한 곳)이 컴퓨터에서 가는 세로선으로 보였다(입체감은 툰 음영이 맡음).
+     땅에 지는 집 그림자는 벽보다 12cm 작은 보이지 않는 기둥이 대신(컴퓨터만 — 휴대폰은 진짜 그림자가 없음) */
+  {const wl=[];put(wallGeo(),'#d6d0d8',{pos:[hx,y+.56,hz],smooth:true},wl);const wm=new THREE.Mesh(mergeGeometries(wl),pMatW());wm.receiveShadow=false;wm.castShadow=false;wm.name='hut-wall';root.add(wm);keep.push(wm);
+   if(!MOB){const sc=new THREE.Mesh(new THREE.CylinderGeometry(1.33,1.44,1.4,14,1).translate(hx,y+.56,hz),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));sc.castShadow=true;sc.name='hut-shadow';root.add(sc);keep.push(sc);}}
+  put(new THREE.SphereGeometry(1.62,16,8,face+PI,PI*2,0,PI/2),'#a993c9',{pos:[hx,y+1.22,hz],s:[1,.78,1],smooth:true});
+  put(new THREE.TorusGeometry(1.5,.08,6,24),'#8a74ad',{pos:[hx,y+1.24,hz],rot:[PI/2,0,0],smooth:true});
   const fx=Math.sin(face),fz=Math.cos(face),at=(d,h,side=0)=>[hx+fx*d+Math.cos(face)*side,y+h,hz+fz*d-Math.sin(face)*side];
   /* 문·창(2026-11-08 다시): 둥근 벽(14각 기둥)의 실제 겉면에 쏘아 붙인 판 — 벽이 꺾이는 대로 따라 휘고 겉면에서 1.5cm만 띄움(겹쳐 깜빡이지 않게).
      예전 평평한 문판은 벽 모서리가 뚫고 나와 아래 가운데가 V로 파여 보였고, 반원 조각이 따로 돌아가 부채꼴처럼 붙어 있었다. 창은 벽에서 떠 있었다.
      문 = 위가 둥근 아치 하나(네모 + 위 반원) + 테두리 한 줄 + 놋쇠 손잡이, 창 = 동그란 불빛 창 + 테두리 */
-  const wallG=new THREE.CylinderGeometry(1.45,1.55,1.3,14,1).translate(hx,y+.62,hz),onWall=th=>(u,v)=>{const a=th+u/1.5;return [[hx+Math.sin(a)*3,y+v,hz+Math.cos(a)*3],[-Math.sin(a),0,-Math.cos(a)]];};
+  const wallG=wallGeo().translate(hx,y+.56,hz),onWall=th=>(u,v)=>{const a=th+u/1.5;return [[hx+Math.sin(a)*3,y+v,hz+Math.cos(a)*3],[-Math.sin(a),0,-Math.cos(a)]];};
   {const DW=.78,DH=.5,f=onWall(face);put(wrapOn(wallG,archShape(DW,DH,.0),f,.015),wood,{});
     put(rimTube(wallG,f,archLine(DW,DH,.005,.014),.028,false,.03),woodD,{}); /* 문틀 = 문판과 같은 윤곽을 관 반지름 절반만큼 바깥으로 — 관이 문판 가장자리를 살짝 덮어 사이로 벽이 비치지 않음, 바닥까지 */
     put(new THREE.SphereGeometry(.045,8,6),brass,{pos:wallPt(wallG,f,.24,.4,.05)});}
@@ -245,15 +251,15 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
   [[0,0],[.09,.06],[-.06,.08]].forEach(([dx,dz],k)=>put(new THREE.SphereGeometry(.07,10,6),k===1?'#f7e0e6':'#fbf8f0',{pos:[px+dx,gy(px,pz)+.1,pz+dz],s:[1,.7,1]}));}
 // 마을 돌담 몇(둥근 돌 낮게 줄지어 — 앞쪽 겹)
 [[[-4.4,9.6],[-4.8,7.2]],[[8.2,5.2],[8.4,2.6]],[[2.6,12.4],[5.4,12.0]]].forEach(([a,b],w)=>{for(let k=0;k<=5;k++){const u=k/5,x=a[0]+(b[0]-a[0])*u+RR(-.1,.1),z=a[1]+(b[1]-a[1])*u+RR(-.1,.1),s=RR(.26,.36);put(lumpy(s,1,k+w*7),rockCols[(k+w)%5],{pos:[x,gy(x,z)+s*.55,z],rot:[0,RR(0,PI),0],s:[1,.75,1]});}});
-const pMat=sbMat('#ffffff');pMat.vertexColors=true;
+const pMat=pMatW();
 const props=new THREE.Mesh(mergeGeometries(parts),pMat);props.castShadow=props.receiveShadow=true;root.add(props);keep.push(props);parts=[];
 /* 빛나는 덩어리: 툰 + 흰 발광(파스텔이 스스로 빛나 보임) */
 {const m=sbMat('#ffffff',{emissive:'#ffffff',ei:.5});m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(glow),m);root.add(me);keep.push(me);}
 /* ── 빛 웅덩이(땅에 붙은 은은한 빛, 더하기 섞기 — 그리기 1번): 그늘 분화구 푸른 빛·마을 줄 조명 아래 따뜻한 빛·출구 노란 빛·망원경 단 */
 const dotTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.7)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
 {const pools=[[SHADE.c[0],SHADE.c[1],5.6,'#3e6aa8',.85],[CAVE[0],CAVE[1],2.4,'#5d8ed0',.9],[ (HUT[0]+POLE[0])/2,(HUT[1]+POLE[1])/2+.4,4.8,'#8a5a1e',.9],[EXIT[0],EXIT[1],2.8,'#8a7420',.9],[SCOPE[0]+.2,SCOPE[1]+.9,1.6,'#7a4e18',.7]];
-  const gs=pools.map(([x,z,r,c,k])=>{const g=new THREE.PlaneGeometry(2*r,2*r,8,8);g.rotateX(-PI/2);const p=g.attributes.position,cc=new Float32Array(p.count*3),C=col(c).multiplyScalar(k);
-    for(let i=0;i<p.count;i++){const X=p.getX(i)+x,Z=p.getZ(i)+z;p.setXYZ(i,X,groundY(X,Z)+.04,Z);cc[i*3]=C.r;cc[i*3+1]=C.g;cc[i*3+2]=C.b;}g.setAttribute('color',new THREE.BufferAttribute(cc,3));return g;});
+  const gs=pools.map(([x,z,r,c,k])=>{const g=new THREE.PlaneGeometry(2*r,2*r,24,24);g.rotateX(-PI/2);const p=g.attributes.position,cc=new Float32Array(p.count*3),C=col(c).multiplyScalar(k);
+    for(let i=0;i<p.count;i++){const X=p.getX(i)+x,Z=p.getZ(i)+z,hk=ss(1.6,2.3,dist(X,Z,HUT));p.setXYZ(i,X,groundY(X,Z)+.04,Z);cc[i*3]=C.r*hk;cc[i*3+1]=C.g*hk;cc[i*3+2]=C.b*hk;} /* 집 벽 둘레는 비움(hk) — 땅 위 4cm 더하기 판이 벽 밑동을 밝게 칠해 띠가 튀어나와 보였다 */g.setAttribute('color',new THREE.BufferAttribute(cc,3));return g;});
   const m=new THREE.MeshBasicMaterial({map:dotTex,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3});
   const me=new THREE.Mesh(mergeGeometries(gs),m);me.renderOrder=1;root.add(me);keep.push(me);}
 /* ── 발자국: 보름 할아버지의 오래된 발자국 길(토끼 발 — 긴 타원 둘이 나란히, 바닥보다 또렷하게 진한 연보라 회색) + 원더룹 발자국(걸은 만큼 계속 남음, 최대 개수를 넘치면 가장 오래된 것부터 아주 천천히 흐려짐) */
@@ -754,6 +760,7 @@ function archShape(w,hs,v0=0,rings=6,ny=6,seg=20){const nx=rings*2,pts=[],idx=[]
 function archLine(w,hs,v0,out=0){const r=w/2+out,L=[],n=Math.ceil((hs-v0)/.02); /* 점을 2cm마다 촘촘히 — 듬성하면 곡선이 옆선을 안쪽으로 휘게 했다 */
   for(let k=0;k<n;k++)L.push([-r,v0+(hs-v0)*k/n]);for(let s=0;s<=40;s++){const a=PI-s/40*PI;L.push([Math.cos(a)*r,hs+Math.sin(a)*r]);}for(let k=n-1;k>=0;k--)L.push([r,v0+(hs-v0)*k/n]);return L;}
 function circleLine(cx,cy,r){return Array.from({length:24},(_,s)=>[cx+Math.cos(s/24*PI*2)*r,cy+Math.sin(s/24*PI*2)*r]);}
+function pMatW(){if(pMatW.m)return pMatW.m;const m=sbMat('#ffffff');m.vertexColors=true;return pMatW.m=m;} /* 소품 공용 재질(정점 색) — 집 벽 덩어리도 같이 */
 /* 정점 색 덩어리 하나(부품 목록 → 한 메시) */
 function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);
     g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...(pos||[0,0,0])),new THREE.Quaternion().setFromEuler(new THREE.Euler(...(rot||[0,0,0]))),new THREE.Vector3(...(s||[1,1,1]))));
