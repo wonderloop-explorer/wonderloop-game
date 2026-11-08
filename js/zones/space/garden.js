@@ -179,10 +179,10 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
      문 = 위가 둥근 아치 하나(네모 + 위 반원) + 테두리 한 줄 + 놋쇠 손잡이, 창 = 동그란 불빛 창 + 테두리 */
   const wallG=new THREE.CylinderGeometry(1.45,1.55,1.3,14,1).translate(hx,y+.62,hz),onWall=th=>(u,v)=>{const a=th+u/1.5;return [[hx+Math.sin(a)*3,y+v,hz+Math.cos(a)*3],[-Math.sin(a),0,-Math.cos(a)]];};
   {const DW=.78,DH=.5,f=onWall(face);put(wrapOn(wallG,archShape(DW,DH,.0),f,.015),wood,{});
-    put(rimTube(wallG,f,archLine(DW,DH,-.03),.028,false,.03),woodD,{});
+    put(rimTube(wallG,f,archLine(DW,DH,.005,.014),.028,false,.03),woodD,{}); /* 문틀 = 문판과 같은 윤곽을 관 반지름 절반만큼 바깥으로 — 관이 문판 가장자리를 살짝 덮어 사이로 벽이 비치지 않음, 바닥까지 */
     put(new THREE.SphereGeometry(.045,8,6),brass,{pos:wallPt(wallG,f,.24,.4,.05)});}
   {const WA=face-.565,f=onWall(WA),WR=.23,WY=.85;put(wrapOn(wallG,ellipseShape(0,WY,WR,WR),f,.015),'#ffd98a',{},glow);
-    put(rimTube(wallG,f,circleLine(0,WY,WR+.02),.032,true,.035),woodD,{});
+    put(rimTube(wallG,f,circleLine(0,WY,WR+.016),.032,true,.035),woodD,{});
     const hp=wallPt(wallG,f,0,WY,.1);halos.push({x:hp[0],z:hp[2],y:hp[1],c:'#ffd98a',s:1.3});}
   rod([hx,y+2.4,hz],[hx,y+3.1,hz],.025,woodD);put(new THREE.OctahedronGeometry(.16,0),'#ffe59a',{pos:[hx,y+3.2,hz],s:[1,1,.35]},glow);
   // 문 앞 디딤돌
@@ -740,7 +740,7 @@ function wrapOn(target,shape,frame,eps=.004,bulge=0,ell=null){const pos=[],nr=[]
   g.setAttribute('uv',new THREE.Float32BufferAttribute(shape.pts.flatMap(([u,v])=>[u*3,v*3]),2));return g;} /* uv = 모양 자리 — 크레용 결이 몸처럼 보이게 */
 function wallPt(target,frame,u,v,off){return surfHit(target,frame,u,v,off).toArray();}
 /* 테두리: 2D 선을 겉면에 붙여 그 위로 관(tube) */
-function rimTube(target,frame,line,r,closed,off){const pts=line.map(([u,v])=>surfHit(target,frame,u,v,off));return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,closed,'centripetal'),closed?48:56,r,6,closed);}
+function rimTube(target,frame,line,r,closed,off){const pts=line.map(([u,v])=>surfHit(target,frame,u,v,off));return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,closed,'centripetal'),Math.max(closed?48:56,pts.length*2),r,6,closed);}
 /* 2D 모양: 타원(가운데 + 고리), 아치(네모 격자 + 위 반원 — 맞닿는 줄의 점을 맞춤) */
 function ellipseShape(cx,cy,rx,ry,rings=7,seg=40){const pts=[[cx,cy,1]],idx=[];for(let r=1;r<=rings;r++){const f=r/rings;for(let s=0;s<seg;s++){const a=s/seg*PI*2;pts.push([cx+Math.cos(a)*rx*f,cy+Math.sin(a)*ry*f,1-f*f]);}}
   for(let s=0;s<seg;s++)idx.push(0,1+s,1+(s+1)%seg);
@@ -751,7 +751,8 @@ function archShape(w,hs,v0=0,rings=6,ny=6,seg=20){const nx=rings*2,pts=[],idx=[]
   const C=pts.length;pts.push([0,v0+hs]);for(let r=1;r<=rings;r++)for(let s=0;s<=seg;s++){const a=s/seg*PI,f=r/rings*w/2;pts.push([Math.cos(a)*f,v0+hs+Math.sin(a)*f]);}
   for(let s=0;s<seg;s++)idx.push(C,C+1+s,C+2+s);
   for(let r=1;r<rings;r++){const b0=C+1+(r-1)*(seg+1),b1=C+1+r*(seg+1);for(let s=0;s<seg;s++)idx.push(b0+s,b1+s,b1+s+1,b0+s,b1+s+1,b0+s+1);}return {pts,idx};}
-function archLine(w,hs,v0){const L=[[-w/2,v0],[-w/2,hs*.5],[-w/2,hs]];for(let s=1;s<20;s++){const a=PI-s/20*PI;L.push([Math.cos(a)*w/2,hs+Math.sin(a)*w/2]);}L.push([w/2,hs],[w/2,hs*.5],[w/2,v0]);return L;}
+function archLine(w,hs,v0,out=0){const r=w/2+out,L=[],n=Math.ceil((hs-v0)/.02); /* 점을 2cm마다 촘촘히 — 듬성하면 곡선이 옆선을 안쪽으로 휘게 했다 */
+  for(let k=0;k<n;k++)L.push([-r,v0+(hs-v0)*k/n]);for(let s=0;s<=40;s++){const a=PI-s/40*PI;L.push([Math.cos(a)*r,hs+Math.sin(a)*r]);}for(let k=n-1;k>=0;k--)L.push([r,v0+(hs-v0)*k/n]);return L;}
 function circleLine(cx,cy,r){return Array.from({length:24},(_,s)=>[cx+Math.cos(s/24*PI*2)*r,cy+Math.sin(s/24*PI*2)*r]);}
 /* 정점 색 덩어리 하나(부품 목록 → 한 메시) */
 function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);

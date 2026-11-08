@@ -138,8 +138,10 @@ const coarse=matchMedia('(pointer:coarse)').matches,SHOT_UI=new URLSearchParams(
 const dlg=$('#wlDlg');
 /* 탐험가 이름(탐험가 소개 창에서 바꾼 이름 — localStorage 'wl-look2'.name): 대화창 이름표의 '원더룹'을 그 이름으로. 촬영 모드는 늘 '원더룹' */
 const heroName=()=>{if(SHOT_UI)return '원더룹';try{const n=(JSON.parse(localStorage.getItem('wl-look2')||'{}').name||'').trim();return n||'원더룹';}catch(e){return '원더룹';}};
-function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';}
-function hideDialog(){dlg.style.display='none';}
+function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';stackGet();}
+function hideDialog(){dlg.style.display='none';stackGet();}
+/* 아이템 획득 카드와 대화창이 함께 뜨면(2026-11-08 — 달떡 카드가 보름 할아버지 대화창 위에 겹쳤다) 카드를 대화창 위로 24px(이름표가 대화창 위로 튀어나온 만큼 더) 띄워 올림, 대화창이 닫히면 제자리 */
+function stackGet(){const gt=document.getElementById('wlGet');if(!gt)return;const on=gt.classList.contains('on')&&dlg.style.display==='block';gt.style.bottom=on?Math.round(innerHeight-dlg.getBoundingClientRect().top+24)+'px':'';}
 const dialogShown=()=>dlg.style.display==='block';
 /* 카드 자리 하나: 안내 카드·결과창·비밀 카드는 한 번에 하나만 보인다(줄 세우기 — 결과창과 비밀 카드가 겹치지 않게).
    열려 있는 동안 다른 카드를 부르면 줄을 섰다가, 앞 카드가 닫히는 즉시 들어온 순서로 열린다. 각 함수는 그 카드가 닫힐 때 resolve */
@@ -194,8 +196,8 @@ const gt=$('#wlGet');let gtDone=null,gtCue=null,gtEnd=0;
 /* 아이템 획득 카드 — 같은 모양으로 스테이지 완료 안내도(sound·who만 바꿔) */
 let gtSpin=0;
 function itemCard({title='',text='',icon=null,frames=null,sec=2.8,sound='item-get',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
-  const img=gt.querySelector('img');clearInterval(gtSpin);gt.classList.toggle('spin',!!(frames&&frames.length));if(frames&&frames.length){let k=0;img.src=frames[0];if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gtSpin=setInterval(()=>{k=(k+1)%frames.length;img.src=frames[k];},90);}else if(icon)img.src=icon;else img.removeAttribute('src'); /* frames: 도는 물건(game/profile spinFrames) — 아이콘 대신 */gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');sfx(sound);});}
-function closeItemCard(){if(cardOn!=='item')return;clearInterval(gtSpin);gt.classList.remove('on');endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
+  const img=gt.querySelector('img');clearInterval(gtSpin);gt.classList.toggle('spin',!!(frames&&frames.length));if(frames&&frames.length){let k=0;img.src=frames[0];if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gtSpin=setInterval(()=>{k=(k+1)%frames.length;img.src=frames[k];},90);}else if(icon)img.src=icon;else img.removeAttribute('src'); /* frames: 도는 물건(game/profile spinFrames) — 아이콘 대신 */gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');stackGet();sfx(sound);});}
+function closeItemCard(){if(cardOn!=='item')return;clearInterval(gtSpin);gt.classList.remove('on');stackGet();endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
 /* 스테이지 완료 배지 (엔진 공통, 2026-11-03 — 요정의 숲부터): stageBadge({img, stage, next, title?, sub?, sec, sound, box, medal})
    세계 그림(투명 배지, 가운데 크림색 칸 = 글자 자리)에 큰 글자 "<stage> 탐험 완료!"(Jua·진갈색)와 작은 글자 "다음 목적지: <next>"(Gowun Dodum·연한 갈색)를 얹는다.
