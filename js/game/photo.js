@@ -46,13 +46,16 @@ float vz(vec2 uv){float d=texture2D(tDep,uv).x*2.-1.;return 2.*uNear*uFar/(uFar+
 float coc(float z,vec2 uv){float d=max(max(uZr.x-z,z-uZr.y),0.);vec2 o=max(uRect.xy-uv,uv-uRect.zw);float inR=1.-smoothstep(0.,.035,max(o.x,o.y));
   return uDof*clamp(max(uK*d/z,uSoft*(1.-inR)),0.,1.);}
 /* 물체가 있는 곳(깊이 < 1)은 불투명(1) — 그린 화면의 알파가 1보다 작은 곳이 있어(베이스캠프) 페이지 배경이 비쳐 뿌옜다. 빈 배경(하늘 없는 구역)은 (0,0,0,0)이라 섞어도 미리 곱한 알파 그대로 */
+/* 깨진 값 보호: NaN·무한·음수 화소(셰이더 계산이 깨진 점 하나)는 흐림이 크게 번지지 않게 — 표본에서 빼고(무게 0), 가운데 화소면 둘레 네 점 평균으로 */
+bool bad(vec4 c){return any(isnan(c))||any(isinf(c))||c.r<-.001||c.g<-.001||c.b<-.001;}
 vec4 col(vec2 uv){vec4 c=texture2D(tCol,uv);if(texture2D(tDep,uv).x<.99999)c.a=1.;return c;}
-void main(){float z=vz(vUv),tilt=uMini*smoothstep(.07,.42,abs(vUv.y-uMiniY));float r0=max(coc(z,vUv),tilt)*uMax;vec4 c=col(vUv);
+vec4 fix(vec2 uv){vec4 s=vec4(0.);float n=0.;for(int i=0;i<4;i++){vec2 o=vec2(i==0?1.:i==1?-1.:0.,i==2?1.:i==3?-1.:0.)/uRes;vec4 q=col(uv+o);if(!bad(q)){s+=q;n+=1.;}}return n>0.?s/n:vec4(0.,0.,0.,1.);}
+void main(){float z=vz(vUv),tilt=uMini*smoothstep(.07,.42,abs(vUv.y-uMiniY));float r0=max(coc(z,vUv),tilt)*uMax;vec4 c=col(vUv);if(bad(c))c=fix(vUv);
   if(r0>.6){vec4 acc=c;float ws=1.;for(int i=0;i<TAPS;i++){float fi=float(i),rr=sqrt(fi+.5)/sqrt(float(TAPS))*r0,a=fi*2.39996;vec2 uv=clamp(vUv+vec2(cos(a),sin(a))*rr/uRes,vec2(.0005),vec2(.9995));
-    float zt=vz(uv),rt=max(coc(zt,uv),tilt)*uMax,w=clamp(rt-rr+1.,0.,1.);if(zt<z-.3)w=max(w,clamp(rt-rr+1.,0.,1.));acc+=col(uv)*w;ws+=w;}c=acc/ws;}
+    float zt=vz(uv),rt=max(coc(zt,uv),tilt)*uMax,w=clamp(rt-rr+1.,0.,1.);if(zt<z-.3)w=max(w,clamp(rt-rr+1.,0.,1.));vec4 q=col(uv);if(!bad(q)){acc+=q*w;ws+=w;}}c=acc/ws;}
   if(uMini>0.){float l=dot(c.rgb,vec3(.299,.587,.114));c.rgb=mix(vec3(l),c.rgb,1.+.32*uMini);c.rgb=(c.rgb-.5)*(1.+.08*uMini)+.5+.02*uMini;
     float vg=smoothstep(1.2,.4,length(vUv-.5)*1.4);c.rgb*=mix(1.,.86+.14*vg,uMini);}
-  gl_FragColor=c;
+  gl_FragColor=clamp(c,0.,64.);
 }`;
 function postMat(taps){return new THREE.ShaderMaterial({defines:{TAPS:taps},uniforms:{tCol:{value:null},tDep:{value:null},uRes:{value:new THREE.Vector2(1,1)},uNear:{value:1},uFar:{value:100},
   uZr:{value:new THREE.Vector2(4,6)},uRect:{value:new THREE.Vector4(.4,.3,.6,.7)},uSoft:{value:.1},uK:{value:1},uMax:{value:10},uDof:{value:1},uMini:{value:0},uMiniY:{value:.45}},vertexShader:VS,fragmentShader:FS,depthTest:false,depthWrite:false,transparent:true,blending:THREE.NoBlending});}

@@ -33,6 +33,12 @@ vec4 wlBent( vec4 w ) {
   if (!S.vertexShader.includes(sp)) console.warn('원더룹: 둥근 땅 패치 실패(sprite)');
   S.vertexShader = S.vertexShader.replace(sp, 'vec4 mvPosition = wlBend.x > 0.0 ? viewMatrix * wlBent( modelMatrix[ 3 ] ) : modelViewMatrix[ 3 ];');
 }
+/* sRGB 바꾸기(three colorspace_pars_fragment)의 쓰지 않는 갈래 pow(0, 0.41666)이 이 GPU 경로(ANGLE·Metal)에서 NaN — mix가 그 NaN을 그대로 남긴다(2026-11-08).
+   캔버스(8비트)는 섞기 전에 0으로 잘려 안 보이지만 사진 모드 렌더 타깃(HalfFloat)에서는 NaN이 남아 더하기 섞기로 번져 까만 점이 됐다(회색 정원 집 둘레 빛 웅덩이 색 0인 곳).
+   pow 입력만 아주 작은 양수로 — 그 범위(≤0.0031308)는 늘 다른 갈래(×12.92)를 쓰므로 그림 값은 그대로(기준 촬영 바이트 그대로) */
+{ const o = 'pow( value.rgb, vec3( 0.41666 ) )';
+  if (C.colorspace_pars_fragment.includes(o)) C.colorspace_pars_fragment = C.colorspace_pars_fragment.replace(o, 'pow( max( value.rgb, vec3( 1e-7 ) ), vec3( 0.41666 ) )');
+  else if (!C.colorspace_pars_fragment.includes('1e-7')) console.warn('원더룹: sRGB NaN 패치 실패(colorspace_pars_fragment)'); }
 // 모든 재질에 uniform 끼워 넣기: onBeforeCompile을 바꿔 단 재질도 그 함수 뒤에 wlBend가 붙는다
 { const P = THREE.Material.prototype, add = (m, sh) => { const no = m.userData && m.userData.noBend; sh.uniforms.wlBend = no ? NONE : BEND; sh.uniforms.wlSph = no ? SNONE : SPH; };
   if (!Object.getOwnPropertyDescriptor(P, 'onBeforeCompile') || !P.__wlBend) {
