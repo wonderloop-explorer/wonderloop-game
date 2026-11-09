@@ -22,7 +22,7 @@ import {cue,clock} from './core.js';
 const PI=Math.PI,mf=m=>440*Math.pow(2,(m-69)/12);
 let CFG={},T=null;
 /* 세계 설정을 받아 둠 + 테마 파일 미리 불러 두기(휴대폰에서 연출 시작이 파일 때문에 늦지 않게) */
-export function prepare(cfg){CFG=cfg||{};const f=CFG.theme&&CFG.theme.file;if(f)quietBuf(f);}
+export function prepare(cfg){CFG=cfg||{};const f=CFG.theme&&CFG.theme.file;if(f)quietBuf(f);try{devBox();}catch(e){}}
 /* ── 코드로 만든 임시 테마 ── */
 function env(c,g,t,a,peak,d,tail=.001){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(tail,t+a+d);}
 function osc(c,type,f,t,dur,dest,peak,a=.005,det=0){if(f>16000)return;const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;if(det)o.detune.value=det;env(c,g,t,a,peak,dur);o.connect(g);g.connect(dest);o.start(t);o.stop(t+a+dur+.05);}
@@ -51,24 +51,41 @@ function codeTheme(c,D){const g=c.createGain(),t0=c.currentTime+.05;g.gain.setVa
     if(landAt!=null)cadence();},60);
   return {kind:'code',t0,get landAt(){return landAt;},landIn(sec){if(landAt==null){landAt=c.currentTime+Math.max(.85,sec);cadence();}},
     stop(sec=.6){if(stopped)return;stopped=true;clearInterval(iv);const now=c.currentTime;g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(g.gain.value,now);g.gain.linearRampToValueAtTime(0,now+sec);setTimeout(()=>{try{g.disconnect();}catch(e){}},sec*1000+200);}};}
-/* ── 파일 테마: from부터, 해결 화음(resolve)을 착지에 맞춤 ── */
-function fileTheme(c,D,buf,o){const from=o.from||0,to=Math.min(buf.duration,o.to||buf.duration),res=o.resolve??Math.max(from,to-1.5),lp=o.loop;
-  let cur=null,landAt=null,done=false;
-  function start(off,fade){const s=c.createBufferSource(),g=c.createGain(),now=c.currentTime;s.buffer=buf;if(lp&&landAt==null){s.loop=true;s.loopStart=lp[0];s.loopEnd=lp[1];}
-    g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(1,now+fade);s.connect(g);g.connect(D);s.start(now,Math.max(0,off),Math.max(.1,to-off));
-    const n={s,g,t:now,off};if(cur){const p=cur;p.g.gain.cancelScheduledValues(now);p.g.gain.setValueAtTime(p.g.gain.value,now);p.g.gain.linearRampToValueAtTime(0,now+fade);setTimeout(()=>{try{p.s.stop();p.g.disconnect();}catch(e){}},fade*1000+120);}
-    cur=n;return n;}
-  const head=()=>{if(!cur)return from;let h=cur.off+(c.currentTime-cur.t);if(cur.s.loop&&h>lp[1])h=lp[0]+((h-lp[0])%(lp[1]-lp[0]));return h;};
-  start(from,.3);
-  return {kind:'file',get landAt(){return landAt;},landIn(sec){if(landAt!=null||done)return;landAt=c.currentTime+sec;const want=res-sec;
-      if(Math.abs(head()-want)>.12||(cur&&cur.s.loop))start(Math.max(from,want),.5);
-      const end=landAt+1.5;cur.g.gain.setValueAtTime(1,landAt+.05);cur.g.gain.linearRampToValueAtTime(0,end);const k=cur;setTimeout(()=>{try{k.s.stop();k.g.disconnect();}catch(e){}},(end-c.currentTime)*1000+150);},
-    stop(sec=.6){if(done||!cur)return;done=true;const now=c.currentTime,k=cur;k.g.gain.cancelScheduledValues(now);k.g.gain.setValueAtTime(k.g.gain.value,now);k.g.gain.linearRampToValueAtTime(0,now+sec);setTimeout(()=>{try{k.s.stop();k.g.disconnect();}catch(e){}},sec*1000+150);}};}
-/* ── 한 번의 이동 ── */
+/* ── 파일 테마(수노 곡 등): from부터 시작해 해결 화음(resolve)이 착지에 오게 ──
+   o: {file, from, to, resolve, bar(한 마디 초), beat0(마디가 시작하는 한 자리), jumpAt(늘이거나 줄일 자리 — 절정 안 마디 경계 근처)}
+   expect(출발 때 알려 주는 '착지까지 남은 초')가 있으면 계획: 모자라는(남는) 시간 D = expect − (resolve − from) → 마디 k = round(D / bar)개만큼
+   절정의 마디 경계 J에서 J − k·bar 자리로 한 번 건너뜀(박자·마디가 그대로 이어지게 — 80ms 크로스페이드, 소리 시계로 정확히 예약),
+   남는 자투리(한 마디 안)는 시작 자리를 from − (D − k·bar)로 조금 당기거나 밀어 맞춤. 착지 시각을 정확히 알게 되면(landIn) 0.06초 넘게 어긋날 때만 0.35초 크로스페이드로 고침.
+   앞 0.3초 서서히 올리고, 해결 화음 0.8초 뒤부터 1.5초에 걸쳐 줄임(to를 넘지 않음) */
+function fileTheme(c,D,buf,o,expect){const from=o.from||0,to=Math.min(buf.duration,o.to||buf.duration),res=o.resolve??Math.max(from,to-1.5),bar=o.bar||0,XF=.08;
+  const segs=[];let landAt=null,done=false;
+  function seg(when,off,fadeIn){const s=c.createBufferSource(),g=c.createGain();s.buffer=buf;g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(1,when+fadeIn);s.connect(g);g.connect(D);
+    s.start(when,Math.max(0,off),Math.max(.1,to-Math.max(0,off)));const n={s,g,t:when,off};segs.push(n);return n;}
+  function cut(n,when,fade){n.g.gain.cancelScheduledValues(when);n.g.gain.setValueAtTime(1,when);n.g.gain.linearRampToValueAtTime(0,when+fade);try{n.s.stop(when+fade+.02);}catch(e){}}
+  const now0=c.currentTime+.03;let plan={k:0,start:from};
+  if(expect&&bar){const Dd=expect-(res-from),k=Math.round(Dd/bar),st=Math.max(0,from+k*bar-Dd);plan={k,start:+st.toFixed(3),D:+Dd.toFixed(3)};}
+  const a=seg(now0,plan.start,.3);
+  if(plan.k){const b0=o.beat0??from,ja=o.jumpAt??(from+res)/2;let J=b0+Math.round((ja-b0)/bar)*bar;while(J<=plan.start+1)J+=bar; // 절정 안 마디 경계
+    const tJ=now0+(J-plan.start);cut(a,tJ-XF/2,XF);seg(tJ-XF/2,J-plan.k*bar-XF/2,XF);plan.J=+J.toFixed(3);plan.to=+(J-plan.k*bar).toFixed(3);}
+  LOG.plan=plan;
+  const curAt=t=>{let n=segs[0];for(const x of segs)if(x.t<=t)n=x;return n;},head=t=>{const n=curAt(t);return n.off+(t-n.t);};
+  return {kind:'file',get landAt(){return landAt;},landIn(sec){if(landAt!=null||done)return;const now=c.currentTime;landAt=now+sec;
+      const err=head(landAt)-res;LOG.err=+err.toFixed(3); // +면 곡이 앞서 감
+      if(Math.abs(err)>.06){const w=now+.03;segs.filter(x=>x.t>w).forEach(x=>{try{x.s.stop();}catch(e){}});const k=curAt(w);cut(k,w,.35);seg(w,head(w)-err,.35);LOG.fix=+err.toFixed(3);}
+      const n=curAt(landAt),e1=landAt+.8,e2=landAt+2.3;n.g.gain.setValueAtTime(1,e1);n.g.gain.linearRampToValueAtTime(0,e2);setTimeout(()=>{segs.forEach(x=>{try{x.s.stop();x.g.disconnect();}catch(e){}});},(e2-now)*1000+200);},
+    stop(sec=.6){if(done)return;done=true;const now=c.currentTime;segs.forEach(n=>{n.g.gain.cancelScheduledValues(now);n.g.gain.setValueAtTime(n.g.gain.value,now);n.g.gain.linearRampToValueAtTime(0,now+sec);try{n.s.stop(now+sec+.05);}catch(e){}});}};}
+/* 테마 고르기(비교용, 2026-11-09): 'file'(곡 파일 — 기본) | 'code'(코드로 만든 테마) — 주소 ?travelTheme=, 톱니 메뉴 '이동 테마'(이 기기에 기억 'wl-travel-theme') */
+function themeMode(){try{const q=new URLSearchParams(location.search).get('travelTheme');if(q==='file'||q==='code')return q;const v=localStorage.getItem('wl-travel-theme');if(v==='file'||v==='code')return v;}catch(e){}return (CFG.theme&&CFG.theme.use)||'file';}
+function devBox(){if(document.getElementById('travelThemeBox'))return;const after=document.getElementById('spdBox');if(!after)return;const d=document.createElement('div');d.className='spdBox';d.id='travelThemeBox';
+  d.innerHTML='<span>이동 테마</span> <button type="button" data-m="file">곡</button> <button type="button" data-m="code">코드</button>';
+  const show=()=>d.querySelectorAll('button').forEach(b=>{b.style.fontWeight=b.dataset.m===themeMode()?'700':'400';b.style.textDecoration=b.dataset.m===themeMode()?'underline':'none';});
+  d.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{try{localStorage.setItem('wl-travel-theme',b.dataset.m);}catch(e){}show();}));show();after.after(d);}
+/* ── 한 번의 이동 ── o: {id, expect(착지까지 남은 초 — 곡 파일을 마디 단위로 맞출 때)} */
 export async function begin(o={}){if(T)end(true);const t={id:o.id||'travel',wind:.4,spark:1,landed:false,theme:null,bedT:null};T=t;
-  bedLevel(0,1);
-  const th=Object.assign({},CFG.theme||{},o.theme||{});cue({kind:'music',id:'travel-theme',file:th.file||null,dur:0});
-  const out=travelOut();if(out){const buf=th.file?await quietBuf(th.file):null;if(T!==t)return t;t.theme=buf?fileTheme(out.ctx,out.bus,buf,th):codeTheme(out.ctx,out.bus);LOG.kind=t.theme.kind;LOG.begin=out.ctx.currentTime;}
+  bedLevel(0,1);const mode=themeMode();
+  const th=Object.assign({},CFG.theme||{},o.theme||{});cue({kind:'music',id:'travel-theme',file:mode==='file'?th.file||null:null,dur:0});
+  const out=travelOut();if(out){const t0=out.ctx.currentTime,buf=mode==='file'&&th.file?await quietBuf(th.file):null;if(T!==t)return t;const ex=o.expect?o.expect-(out.ctx.currentTime-t0):0;
+    t.theme=buf?fileTheme(out.ctx,out.bus,buf,th,ex):codeTheme(out.ctx,out.bus);LOG.kind=t.theme.kind;LOG.begin=out.ctx.currentTime;LOG.expect=o.expect||null;}
   return t;}
 /* 비행 동안(매 프레임): 잔잔한 바람 + 꼬리 반짝이(작게) */
 export function tick(dt,phase){const t=T;if(!t||phase!=='fly')return;t.wind-=dt;if(t.wind<=0){t.wind=2.1;sfx('event-wind',{gain:.6,minor:true,cue:false});}

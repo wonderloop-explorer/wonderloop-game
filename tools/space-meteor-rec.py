@@ -8,10 +8,10 @@
 import json, os, sys, re, glob, shutil, subprocess, time
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-a = sys.argv[1:]; PHONE = '--phone' in a; ROT = '--rotate' in a; ANG = '--angles' in a; AUD = '--audio' in a
+a = sys.argv[1:]; PHONE = '--phone' in a; ROT = '--rotate' in a; ANG = '--angles' in a; AUD = '--audio' in a; THM = a[a.index('--theme') + 1] if '--theme' in a else None  # 이동 테마 고르기(file 곡 · code 코드 테마 — 비교용)
 TAG = a[a.index('--tag') + 1] if '--tag' in a else 'run'
 OUT = os.path.join(ROOT, a[a.index('--out') + 1] if '--out' in a else 'docs/compare/space-meteor'); os.makedirs(OUT, exist_ok=True)
-dev = ('phone' if PHONE else 'pc') + ('-rotate' if ROT else '') + ('-angles' if ANG else '') + ('-audio' if AUD else ''); R = {'tag': TAG, 'dev': dev}
+dev = ('phone' if PHONE else 'pc') + ('-rotate' if ROT else '') + ('-angles' if ANG else '') + ('-audio' if AUD else '') + (f'-{THM}' if THM else ''); R = {'tag': TAG, 'dev': dev}
 # 잘림 기록(매 프레임): 사진 모드와 같은 몸 범위(탈 꼭대기·발끝 등 뼈 공)를 화면에 비춰, 화면 밖으로 1% 넘게 나간 프레임 — 먼지구름이 덮은 동안은 뺌
 CLIPLOG = """(()=>{window.__clip=[];const L=()=>{try{const Z=wlZone.cur,r=Z.ride?Z.ride():null,ar=Z.arrival?Z.arrival():null,o=r&&!r.state.end?r:ar&&!ar.state.done?ar:null;
   const v=document.getElementById('wlDustVeil'),vo=v?+v.style.opacity:0;
@@ -31,7 +31,7 @@ with sync_playwright() as p:
     c = b.new_context(**o); V0 = time.time(); pg = c.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
     pg.on('console', lambda m: m.type in ('error', 'warning') and '404' not in m.text and 'AudioContext' not in m.text and errs.append(m.text[:300]))
-    pg.goto('http://localhost:8000/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '')); pg.evaluate('localStorage.clear()'); pg.reload()
+    pg.goto('http://localhost:8000/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '') + (f'&travelTheme={THM}' if THM else '')); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots', timeout=120000); pg.wait_for_timeout(2500)
     pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock'].forEach(k=>wlGame.state.setFlag(k,true))")
     ex = pg.evaluate('wlZone.cur.spots.exit')

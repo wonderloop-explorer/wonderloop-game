@@ -659,7 +659,7 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
     // 마을 쪽을 보고 서서 시작(별똥별이 앞에서 내려옴)
     const vx=wd(VIL[0]-P.x),vz=wd(VIL[1]-P.z),vl=Math.hypot(vx,vz)||1,ux=vx/vl,uz=vz/vl;W.rotation.y=Math.atan2(ux,uz);
     const sx=P.x+ux*1.25,sz=P.z+uz*1.25,sy=P.y+2.9,y0=P.y;
-    ride=departure({G,root,WL:W,groundY,mob:MOB,fly:13,
+    ride=departure({G,root,WL:W,groundY,mob:MOB,fly:13,after:3.6+.75+.06+1.9+1.385, // 비행 뒤 착지까지: 지도 3.6 + 먼지구름 덮음 .75 + 구역 바꿈 약 .06 + 내려옴 1.9 + 떨어짐 1.385(화성 중력, 3.55m)
       path:u=>{const e1=ss(0,.5,u),e2=ss(.5,1,u),d=vl*1.15*e1+26*e2;return {x:sx+ux*d,y:y0+2.9+14*ss(0,.45,u)+56*Math.pow(ss(.4,1,u),1.3),z:sz+uz*d};},
       onWave:on=>{WAVE.on=on;if(on)placeBobo(BOBO);},
       onFly:u=>{FLY.k=u;if(u>.3&&!st.marsPre){st.marsPre=true;import('./mars.js').catch(()=>{});}}, // 화성 구역을 비행 중에 미리 불러 둠(넘어갈 때 기다리지 않게)

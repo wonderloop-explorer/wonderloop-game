@@ -28,7 +28,7 @@ const STAGES = {
     out: 'dist/wonderloop-frame.html',
     copy: 'wonderloop-frame.html', // 게임 폴더(저장소 맨 위)에도 한 부 — 컴퓨터에서 더블클릭해 바로 열기(.gitignore, 2026-11-04)
     title: '원더룹 — 시리즈 공통 틀 (개미굴 설정)',
-    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/audio/antvillage/*'], // 개미굴 나레이션(모험 시작 연출·첫 미션)
+    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/audio/antvillage/*', 'assets/audio/travel-theme.mp3'], // 개미굴 나레이션(모험 시작 연출·첫 미션), 스테이지 이동 테마(무한 우주)
   },
   'fairy-dock': {
     out: 'dist/fairy-forest-stage01.html',
