@@ -66,6 +66,11 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `travel-step` | **새로 만듦** | 우주 지도 발자국 한 칸 '톡'(마림바 — 칸마다 D장조 한 음씩 위로, `sfx('travel-step',{step:n})`) | — | game/travel.js | 0.6 | — |
 | `travel-arrive` | **새로 만듦** | 다음 행성 대기에 들어섬(낮은 우웅이 부풀었다 잦아듦) | — | game/travel.js | 1.6 | — |
 | `photo-shutter` | **새로 만듦** | 사진 찍기 셔터 찰칵(사진 모드, 2026-11-08 — 높은 딸깍 두 번, 원본 `click`과 비슷한 크기) | — | game/photo.js | 0.2 | — |
+| `voice-mumble` | **새로 만듦** | 웅얼 목소리 — 진짜 녹음 전 자리(2026-11-09 화성: 모음 소리를 음절로 이어 붙임 · `{low}` 낮고 느린 둥둥 / 아니면 높고 빠른 삐삐 · `{sec}` 길이 · `{tape}` 카세트로 들을 때 좁은 대역 + 쉬익) | — | zones/space/mars.js | 2.4 | — |
+| `cassette-click` | **새로 만듦** | 카세트 단추 딸깍(녹음·재생·정지 — 무겁게 두 번) | — | zones/space/mars.js | 0.16 | — |
+| `cassette-run` | **새로 만듦** | 테이프 도는 소리(낮은 웅 + 사르르, 1.2초 — 녹음·재생 동안 되풀이) | — | zones/space/mars.js | 1.2 | — |
+| `cassette-rewind` | **새로 만듦** | 테이프 감기(빨라지는 쉬이익 — 틀기 전) | — | zones/space/mars.js | 0.9 | — |
+| `event-whirl` | **새로 만듦** | 먼지 회오리(위아래로 도는 쉬이익 두 겹 + 낮은 바람, 2.2초 — 타는 동안 되풀이) | — | zones/space/mars.js | 2.2 | — |
 | `mission-start` | 원본 `sus` | 미션 카드(할 일이 생김) | 미션 카드·의심 게이지·퀴즈 틀림 | game/ui.js | 0.35 | -31.2 |
 | `mission-clear` | 원본 `success` | 통과·결과창·스테이지 완료 배지 | 통과(저장고·보육실·통로·여왕·비행) | game/ui.js (result·stageBadge 기본) | 2.2 | -22.1 |
 | `item-pickup` | 원본 `pickup` | 물건 줍기(첫 미션 물건) | 랜턴 줍기·꿀단지 줍기·비밀 자리·옷장 표정 | game/front.js (장식 고르기), game/mission.js | 0.46 | -28.6 |

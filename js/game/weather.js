@@ -8,6 +8,7 @@
    - 공간음(합성 — 소리 파일 없음, 가볍게): 낮 새소리 · 밤 풀벌레 · 비 빗소리 + 아주 가끔 멀고 낮은 천둥(크고 가까운 천둥 없음, 번쩍임 없음) · 노을 잔잔한 바람.
      배경음과 함께 작게(sound 공간음 자리 0.32), 소리 끄기를 따른다. 실내는 먹먹하게(낮은 주파수만 통과·더 작게). 세계 설정 ambience로 날씨별 소리 이름을 바꿀 수 있다.
    - 길 안내(민트 동그라미)·이름표·말풍선·글씨는 조명을 받지 않는 재질·화면 글자라 어느 날씨에서도 또렷하다.
+   구역 정보 ambience:'이름'이면 날씨와 상관없이 그 공간음(2026-11-09 — 화성은 우주 웅웅거림 대신 잔잔한 바람).
    시험: 톱니 메뉴 '날씨: …' 단추로 차례로 바꿔 본다(setWeather). */
 import * as THREE from 'three';
 import {ambience} from './sound.js';
@@ -96,7 +97,7 @@ function tickWeather(dt,Z,camera){if(!ctx)return;
   const want=Z&&Z.sky&&!Z.indoor&&cur==='rain'?1:0;rainK+=(want-rainK)*Math.min(1,dt*1.5);if(Z&&Z.sky)Z.sky.rain=rainK;
   if(rainK>.01){buildRain();rain.visible=true;const u=rain.material.uniforms;u.uT.value+=dt;u.uC.value.copy(camera.position);u.uA.value=.42*rainK;}else if(rain)rain.visible=false;
   // 공간음: 날씨(+실내)가 바뀌거나 소리가 처음 깨어나면 다시
-  const W=ctx.world,A=ambience(),indoor=isIndoor(Z),key=((W&&W.ambience&&W.ambience[cur])||AMB[cur])||'',k=A&&A.running?key+'|'+indoor:'';
+  const W=ctx.world,A=ambience(),indoor=isIndoor(Z),key=((Z&&Z.ambience)||(W&&W.ambience&&W.ambience[cur])||AMB[cur])||'',k=A&&A.running?key+'|'+indoor:'';
   if(k!==ambKey){ambKey=k;if(k)startAmb(key,indoor);else stopAmb();}}
 function weatherState(){return {weather:cur,name:NAME[cur],rain:+rainK.toFixed(2),rainDrops:rain&&rain.visible?(rain.geometry.drawRange.count===Infinity?rainN:rain.geometry.drawRange.count/2):0,amb:ambKey};}
 export {ALL as WEATHERS,applyZone,indoorLight,indoorNight,initWeather,isIndoor,nextWeather,rainQuality,setWeather,tickWeather,timeOf,weather,weatherName,weatherState};

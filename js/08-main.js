@@ -43,7 +43,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
 const _kf=new THREE.Vector3(),_ct=new THREE.Vector3(),_cw=new THREE.Vector3();
 let shotDrive=null; // 촬영 모드: 직접 조작 대신 wlShot.drive({x,z,run})로 미는 값(끼임 시험) — 평소 null
 function driveInput(){const I=GAME.controls.input,U=WL.userData;if(SHOT){U.drive=shotDrive;return;}
-  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward')||GAME.core.blocking('itemget')||GAME.core.blocking('caught')||GAME.core.blocking('bigget')||GAME.core.blocking('finale'); // 아이템 획득 연출 동안도(game/itemget — 원본 ctrlLock). 첫 화면·옷 갈아입기 동안은 서 있는다
+  const sh=GAME.ui.cardShown(),lock=sh==='result'||sh==='cut'||GAME.core.blocking('fade')||GAME.core.blocking('front')||GAME.core.blocking('ward')||GAME.core.blocking('itemget')||GAME.core.blocking('caught')||GAME.core.blocking('bigget')||GAME.core.blocking('finale')||!!U.sceneLock; /* sceneLock: 구역 이야기 장면 동안 서 있기(대사 줄은 막지 않음 — core.block은 혼잣말 줄을 멈춰서, 2026-11-09 화성) */ // 아이템 획득 연출 동안도(game/itemget — 원본 ctrlLock). 첫 화면·옷 갈아입기 동안은 서 있는다
   camera.getWorldDirection(_kf);_kf.y=0;if(lock||_kf.lengthSq()<1e-6){U.drive=null;I.jumpReq=I.dashReq=false;return;}
   const a=I.axes();_kf.normalize();U.drive={x:_kf.x*a.f-_kf.z*a.s,z:_kf.z*a.f+_kf.x*a.s,k:a.k};
   if(I.jumpReq){U.jumpReq=true;I.jumpReq=false;}
@@ -193,7 +193,7 @@ function tickBody(){
   hemi.intensity=0.62-0.4*n;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
   sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
   if(SK)SK.light({hemi,sun,fill,fog:scene.fog},camera,dt,Z.sun.dir);else if(scene.fog.near<FOG_OFF){scene.fog.near=FOG_OFF;scene.fog.far=FOG_OFF*2;}
-  {const far=SK?Math.min(120,scene.fog.far+4):120;if(camera.far!==far){camera.far=far;camera.updateProjectionMatrix();}} // 하늘 있는 구역: 안개가 다 덮는 곳부터는 그리지 않는다(하늘 지붕은 그 안으로 줄어듦)
+  {const far=SK?Math.min(Z.far||120,scene.fog.far+4):120; /* 구역 정보 far: 멀리 있는 표지물(화성 큰 화산 — 2026-11-09)까지 그릴 때 */if(camera.far!==far){camera.far=far;camera.updateProjectionMatrix();}} // 하늘 있는 구역: 안개가 다 덮는 곳부터는 그리지 않는다(하늘 지붕은 그 안으로 줄어듦)
   const wx=SK?{night:0,rain:SK.rain||0}:GAME.weather.indoorLight(INL,dt,rawLin); // 실내 날씨: 밤은 푸르고 어둡게, 비는 회청색(창문 하늘은 구역 light(env)가 env.weather·env.rain으로)
   cave+=((SK?0:caveTarget)-cave)*Math.min(1,dt*2.2);dayLabel(); // 하늘 있는 구역에서는 굴 조명을 쓰지 않는다
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}

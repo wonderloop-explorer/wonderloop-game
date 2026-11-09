@@ -72,6 +72,23 @@ const NEW={
   'talk-bubble':[.12,(c,t,D)=>{tone(c,'sine',rr(620,700),t,.08,.035,D,{slide:1200});tone(c,'sine',1500,t+.05,.06,.011,D);}],
   // 길 열림: chime과 같은 크기 — 낮은 바람이 열리듯 쉬익 + 종 세 음 오름
   'event-open':[1.5,(c,t,D)=>{noise(c,t,.9,.09,D,'bandpass',400,1,2200);[79,84,88,91].forEach((m,i)=>bell(c,m,t+.18+i*.11,1.1,.045,D));}],
+  /* 웅얼 목소리(2026-11-09, 무한 우주 STAGE 2 — 진짜 녹음 전 자리): 모음 소리(포먼트 둘)를 짧은 음절로 이어 붙임. o.low 낮고 느린 목소리(둥둥)·아니면 높고 빠른 목소리(삐삐),
+     o.sec 길이, o.tape 카세트로 들을 때(좁은 대역 + 테이프 쉬익 + 살짝 출렁이는 음높이) */
+  'voice-mumble':{dur:2.4,play(c,D,o){o=o||{};const low=!!o.low,sec=o.sec||2.4,tape=!!o.tape,t0=c.currentTime+(o.delay||0);let out=D;
+    if(tape){const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3400;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=low?110:240;lp.connect(hp);hp.connect(D);out=lp;noise(c,t0,sec+.3,.014,D,'bandpass',4200,.6);setTimeout(()=>{lp.disconnect();hp.disconnect();},(sec+(o.delay||0)+1)*1000);}
+    const V=[[730,1090],[530,1840],[300,2290],[570,840],[340,870]],syl=low?.27:.12,gap=low?.08:.035,f0=low?118:480,vol=low?.5:.32;let t=t0,k=0;
+    while(t<t0+sec-syl*.6){const v=V[Math.floor(R()*5)],f=f0*rr(.88,1.16)*(1+.06*Math.sin(k*1.3)),os=c.createOscillator();os.type=low?'sawtooth':'triangle';
+      os.frequency.setValueAtTime(f,t);os.frequency.linearRampToValueAtTime(f*rr(.88,1.12),t+syl);if(tape){os.detune.setValueAtTime(rr(-18,18),t);}
+      const g=c.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+syl*.22);g.gain.exponentialRampToValueAtTime(.0001,t+syl);os.connect(g);
+      const fs=v.map((fv,i)=>{const fl=c.createBiquadFilter();fl.type='bandpass';fl.frequency.value=fv*(low?.82:1.18);fl.Q.value=low?5:4;const gg=c.createGain();gg.gain.value=i?.55:1;g.connect(fl);fl.connect(gg);gg.connect(out);return [fl,gg];});
+      os.start(t);os.stop(t+syl+.05);os.onended=()=>{g.disconnect();fs.forEach(([a,b])=>{a.disconnect();b.disconnect();});};
+      t+=syl+gap*rr(.5,1.7)+(R()<.18?gap*3:0);k++;}}},
+  /* 카세트(시리즈 상징 소지품): 단추 딸깍(무겁게 두 번) · 테이프 도는 소리(낮은 웅 + 사르르) · 테이프 감기(빨라지는 쉬이익) */
+  'cassette-click':[.16,(c,t,D)=>{noise(c,t,.02,.22,D,'bandpass',2600,2);tone(c,'square',900,t,.016,.04,D,{lp:3000});noise(c,t+.055,.03,.15,D,'bandpass',1500,2);tone(c,'triangle',300,t+.055,.045,.06,D);}],
+  'cassette-run':[1.2,(c,t,D)=>{noise(c,t,1.2,.03,D,'bandpass',3200,2);tone(c,'sine',64,t,1.2,.035,D);tone(c,'sine',128,t,1.2,.012,D);}],
+  'cassette-rewind':[.9,(c,t,D)=>{noise(c,t,.9,.06,D,'bandpass',1500,3,4600);tone(c,'square',170,t,.9,.014,D,{slide:460,lp:1600});}],
+  /* 먼지 회오리: 위아래로 도는 쉬이익 두 겹 + 낮은 바람(2.2초, 타는 동안 되풀이) */
+  'event-whirl':[2.2,(c,t,D)=>{noise(c,t,1.15,.085,D,'bandpass',480,1.5,1600);noise(c,t+.85,1.35,.07,D,'bandpass',1500,1.5,430);noise(c,t,2.2,.06,D,'lowpass',260,.7);}],
 };
 /* 종류 표: 이름 → [묶음, 쓰는 소리(ORIG·WL·NEW 이름), 설명]. 같은 원본 소리를 여러 종류가 가리킬 수 있다(원본이 그렇게 썼으니) */
 const KINDS={
@@ -117,6 +134,11 @@ const KINDS={
   'travel-step':['이동','travel-step','우주 지도 발자국 한 칸 톡(마림바 — 칸마다 한 음씩 위로, sfx(…,{step:n}), 원본에 없던 소리)'],
   'travel-arrive':['이동','travel-arrive','다음 행성 대기에 들어섬(낮은 우웅 — 원본에 없던 소리)'],
   'event-dust':['사건','event-dust','먼지 퐁(착지 때 흙먼지가 피어오름 — 원본에 없던 소리)'],
+  'voice-mumble':['목소리','voice-mumble','웅얼 목소리 — 진짜 녹음 전 자리(sfx(…,{low,sec,tape}) — 높고 빠른 삐삐·낮고 느린 둥둥, 카세트로 들을 때 tape, 원본에 없던 소리)'],
+  'cassette-click':['카세트','cassette-click','카세트 단추 딸깍(녹음·재생·정지 — 원본에 없던 소리)'],
+  'cassette-run':['카세트','cassette-run','테이프 도는 소리(1.2초 — 녹음·재생 동안 되풀이, 원본에 없던 소리)'],
+  'cassette-rewind':['카세트','cassette-rewind','테이프 감기 쉬이익(틀기 전 — 원본에 없던 소리)'],
+  'event-whirl':['사건','event-whirl','먼지 회오리 쉬이익(2.2초 — 타는 동안 되풀이, 원본에 없던 소리)'],
   'photo-shutter':['화면','photo-shutter','사진 찍기 셔터 찰칵(사진 모드 — 원본에 없던 소리, 2026-11-08)'],
   'weather-thunder':['날씨','thunder','천둥'],
   'weather-drip':['날씨','drip','물방울 똑'],

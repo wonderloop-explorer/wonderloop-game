@@ -593,7 +593,7 @@ const areas={planet:{bounds:[-HALF-4,HALF+4,-HALF-4,HALF+4],obstacles,camera:{ta
 const platforms=[{c:[ROCK.c[0],ROCK.c[1],ROCK.r*.98],top:ROCK_TOP}];
 /* ── 이야기 진행 */
 const F=G.state.flags,HAVE='have:'+WID+':necklace',K={demo:'space:demo',rock:'space:rock',clear:'clear:space-garden',cave:'secret:'+WID+':icecave'};
-G.profile.setup({world:WID,cards:{bobo:{name:'보름 할아버지',intro:'발자국으로 지도를 그리는 달토끼',likes:'아직 아무도 안 가 본 빈칸',quote:'여긴 바람이 없어서, 걸은 길이 아주 오래오래 남는단다.',bg:'#dfe1f2',portrait:{side:.5,lift:.1}}}});
+G.profile.setup({world:WID,cards:SPACE.cards}); /* 친구 카드는 세계 설정(스테이지마다 같은 목록 — '만난 친구 n/m'이 세계 전체 수) */
 const st={said:false,warm:false,cold:false,start:false,hop:null,lastQ:'',culled:false,demoSaid:false,cam:0};
 if(F[K.demo])placeBobo(DEMO_LAND);
 G.dialog.npc({id:'bobo',name:'보름 할아버지',root:bobo.root,bubbleY:1.62,talkR:2.4,

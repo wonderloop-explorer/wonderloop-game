@@ -4,6 +4,7 @@
    색: 바탕 남보라 #211F45(글자엔 안 씀) · 달 회색 #BFC3CC · 화성 주황 #D9704A · 파란 노을 #7FB6E8 · 금성 연보라 #C9A6E0 · 탈 연두 #9BD46B */
 /* 숨방울 목걸이 — 가는 은빛 끈 고리 + 가슴 앞 투명한 숨방울(안에 작은 빛 알갱이). 떠 있을 때는 숨방울이 가운데(원점 = 밑).
    얻으면(첫 미션) 손에 쥐지 않고 목에 건다: wear(WL) → 목 뼈에 목걸이, 머리 뼈에 탈 둘레 옅은 숨방울 막(둥근 반투명 공 + 테두리 빛) */
+import {glassIcon} from '../zones/space/martians.js';
 let ICON=null,MAPI=null;
 function canvasIcon(draw){const c=document.createElement('canvas');c.width=c.height=96;draw(c.getContext('2d'));return c.toDataURL();}
 function ICON_NECK(){return ICON||(ICON=canvasIcon(g=>{g.strokeStyle='#8a8fa0';g.lineWidth=4;g.beginPath();g.ellipse(48,34,26,20,0,Math.PI*.1,Math.PI*.9,true);g.stroke();
@@ -85,8 +86,15 @@ export default {
   /* 세계 물건(가방): 달떡 — STAGE 1 떡방아(js/zones/space/garden.js). bagOnly: 탐험 준비 장식 목록에는 넣지 않음.
      STAGE 4 연결 메모(share): 친구들이 모였을 때 나눠 먹는 장면에서 쓸 예정 — flags['item:infinite-space:dalddeok']로 가졌는지 본다 */
   items:[{id:'dalddeok',name:'달떡',stage:1,bagOnly:true,share:'stage4-friends',where:'STAGE 1 떡방아',icon:()=>ICON_CAKE(),
-    desc:'낮은 중력에서 둥실둥실 찧은 쫀득한 달떡. 친구들이 모이면 나눠 먹어요.'}],
-  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:null},{name:'파란 노을',zone:null},{name:'금성 구름',zone:null}],
+    desc:'낮은 중력에서 둥실둥실 찧은 쫀득한 달떡. 친구들이 모이면 나눠 먹어요.'},
+    /* 파란 노을 유리 조각 — STAGE 2 보답(삐삐가 줌, js/zones/space/mars.js). STAGE 4 연결 메모(share): 햇빛 한 줌을 담는 '파란 노을 유리병'이 될 예정(기획서 마지막 선물) */
+    {id:'bluesunset-glass',name:'파란 노을 유리 조각',stage:2,bagOnly:true,share:'stage4-bottle',where:'STAGE 2 파란 노을',icon:()=>glassIcon(),
+    desc:'화성의 파란 노을빛을 닮은 유리 조각. 삐삐와 둥둥이 노을을 같이 본 날 고맙다며 줬어요.'}],
+  /* 만난 친구 카드(game/profile — 스테이지마다 같은 목록을 써서 '만난 친구 n/m'이 세계 전체 수). 문구는 기획서 '주민 소개 카드' */
+  cards:{bobo:{name:'보름 할아버지',intro:'발자국으로 지도를 그리는 달토끼',likes:'아직 아무도 안 가 본 빈칸',quote:'여긴 바람이 없어서, 걸은 길이 아주 오래오래 남는단다.',bg:'#dfe1f2',portrait:{side:.5,lift:.1}},
+    pipi:{name:'삐삐',intro:'말이 먼저 도착하는 작은 화성 친구',likes:'파란 노을',quote:'둥둥아! …둥둥아? 내 말 들려?',bg:'#fbe3d2',portrait:{side:.45,lift:.08}},
+    dungdung:{name:'둥둥',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은… 항상… 조금… 늦어.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
+  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:null}],
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,
     bars:[45,41,43,40,45,41,38,40].map((r,i)=>{const q=[3,4,4,3,3,4,4,4][i];return {bass:r,pad:[r+24,r+24+q,r+31]};}),
