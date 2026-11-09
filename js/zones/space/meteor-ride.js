@@ -70,6 +70,21 @@ export function points(root,n,{map,add=true,size=.25,grav=0,drag=.6}={}){
     pts.visible=any;geo.attributes.position.needsUpdate=true;geo.attributes.color.needsUpdate=true;}
   function shift(kk,sh){for(let i=0;i<n;i++)pos[i*3+(kk==='x'?0:2)]+=sh;}
   return {pts,emit,tick,shift,dispose(){geo.dispose();m.dispose();}};}
+/* 화성 대기 먼지구름(구역이 바뀌는 순간 — 2026-11-09): 화면 전체를 파스텔 살구·분홍 먼지가 덮었다 걷힘(어두운 화면이 한 장도 안 보이게).
+   HTML 캔버스 하나(3D 그리기 0), 덩어리 구름 열여섯이 천천히 흘러가며 겹침, 덮을 때 바탕도 같은 색으로 채워 틈이 없게. cover(초)·clear(초)는 Promise */
+export function dustVeil(){const cv=document.createElement('canvas');cv.id='wlDustVeil';cv.setAttribute('aria-hidden','true');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none;opacity:0';document.body.appendChild(cv);
+  const g=cv.getContext('2d'),C=['#f3cfae','#ecb9a2','#f7dcc4','#e9a891','#f0c3a6'],B=[];for(let i=0;i<16;i++)B.push({x:Math.random(),y:Math.random(),r:.25+Math.random()*.35,c:C[i%C.length],v:.03+Math.random()*.05,p:Math.random()*6});
+  let k=0,goal=0,rate=1,t0=performance.now(),last=t0,on=true,done=null;
+  function draw(now){if(!on)return;const dt=Math.min(.05,(now-last)/1000);last=now;const t=(now-t0)/1000;k+=Math.sign(goal-k)*Math.min(Math.abs(goal-k),dt*rate);
+    const w=cv.width=Math.round(innerWidth*.5),h=cv.height=Math.round(innerHeight*.5),m=Math.max(w,h);g.globalAlpha=1;
+    const bg=g.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#f1caa9');bg.addColorStop(1,'#eab09c');g.fillStyle=bg;g.globalAlpha=Math.min(1,Math.max(0,(k-.35)/.5));g.fillRect(0,0,w,h);
+    for(const b of B){const x=((b.x+t*b.v)%1.4-.2)*w,y=(b.y+Math.sin(t*.6+b.p)*.04)*h,r=b.r*m*(.8+.5*k),gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,b.c);gr.addColorStop(1,'rgba(240,200,170,0)');
+      g.globalAlpha=Math.min(1,k*1.4);g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);}
+    cv.style.opacity=String(Math.min(1,k*1.25));if(Math.abs(goal-k)<1e-3&&done){const d=done;done=null;d();}
+    if(goal===0&&k<=0&&!done){on=false;cv.remove();return;}requestAnimationFrame(draw);}
+  requestAnimationFrame(draw);
+  return {cover(sec=.8){goal=1;rate=1/sec;return new Promise(r=>{done=r;});},clear(sec=1.4){goal=0;rate=1/sec;return new Promise(r=>{done=r;});}};}
 /* 붉은 먼지(화성 착지): 보통 섞기 둥근 점, 천천히 가라앉음 */
 export function redDust(root,n){return points(root,n,{map:dustTex(),add:false,size:.42,grav:.5,drag:1.6});}
 /* ── 목도리 끝 휘날림(연출 동안만): 목도리 매듭(06 앤트빌리지 차림 — 매듭 공)에서 두 가닥이 아래·앞쪽 바깥으로 펄럭(몸을 뚫지 않게 매듭에서 바깥쪽으로) ── */
@@ -99,10 +114,12 @@ function camChip(G){const root=document.querySelector('.wlg')||document.body;let
 export function lockOn(G,WL){const U=WL.userData;if(U.stopWalk)U.stopWalk();U.riding={y:WL.position.y};G.core.block('meteor',true);
   if(!RIDE.hid){RIDE.hid=true;RIDE.hints=G.ui.hintsVisible();G.ui.setHints(false);}camChip(G);G.goal.set(null);G.ui.setQuest('');}
 export function lockOff(G,WL){const U=WL.userData;U.riding=null;WL.scale.set(1,1,1);G.core.block('meteor',false);
-  if(RIDE.hid){RIDE.hid=false;G.ui.setHints(RIDE.hints!==false);}const b=document.getElementById('wlRideCam');if(b)b.remove();if(U.action==='꼬리 잡기'){U.action='서기';U.at=0;}}
+  if(RIDE.hid){RIDE.hid=false;G.ui.setHints(RIDE.hints!==false);}const b=document.getElementById('wlRideCam');if(b)b.remove();if(U.action==='꼬리 잡기'){U.action='서기';U.at=0;}if(U.setExpr)U.setExpr('기본');}
 /* 카메라: 따라가기 카메라를 그대로 쓰되(끌기·두 손가락·휠로 둘레·거리), 손을 뗀 지 1.6초 지나면 기본 각도로 천천히 */
 function camHome(G,dt,yaw,pitch,dist,st,rate=.9){const C=G.controls.input.cam;if(!C||!C.on)return;if(st.cu!==C.user){st.cu=C.user;st.idle=0;return;}st.idle+=dt;if(st.idle<1.6)return;
   const k=1-Math.exp(-dt*rate);let dy=yaw-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));C.yaw+=dy*k;C.pitch+=(pitch-C.pitch)*k;C.dist+=(dist-C.dist)*k;}
+/* 비행 카메라 기본 각도 키: [u, 원더룹이 보는 쪽 기준 방향(0 = 정면), 위아래(라디안), 거리(m)] */
+const CAMK=[[0,.95,.02,5.6],[.1,.95,.02,5.6],[.15,PI+.4,.92,9],[.31,PI+.4,.92,9],[.37,PI/2,.08,6.8],[.56,PI/2,.08,6.8],[.62,PI+.78,.2,5.2],[.74,PI+.78,.2,5.2],[.82,.55,.06,4.6],[1,.55,.06,4.6]]; // 어깨 너머는 옆으로 조금(얼굴 옆선이 살짝), 마지막 얼굴 정면은 비행 끝 약 2.3초
 /* 용수철(늘어남·눌림): squishy-test 값 */
 function spring(){return {x:1,v:0,step(dt,to,k=160,c=7){const a=k*(to-this.x)-c*this.v;this.v+=a*dt;this.x+=this.v*dt;return this.x;}};}
 function applySquish(WL,s){const q=Math.max(.45,s),w=1/Math.sqrt(q);WL.scale.set(w,q,w);}
@@ -118,7 +135,7 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13;const M=makeMeteo
   function tick(dt,t){if(st.end)return;st.t+=dt;const T=st.t,U=WL.userData;
     if(T<2.4){const u=ss(0,2.2,T),a=hi.clone().lerp(hover,u);a.y+=Math.sin(u*PI)*1.2;a.x+=-fz*Math.sin(u*PI)*1.5;a.z+=fx*Math.sin(u*PI)*1.5;head.copy(a);if(T>2.2){const w=(T-2.2)*3;head.x+=Math.cos(w)*.25;head.z+=Math.sin(w)*.25;}}
     else if(T<3.3){const w=(T-2.2)*3;head.copy(hover);head.x+=Math.cos(w)*.25*(1-ss(2.4,3.2,T));head.z+=Math.sin(w)*.25*(1-ss(2.4,3.2,T));head.y+=Math.sin(T*3)*.06;
-      if(st.phase==='come'){st.phase='grab';U.action='꼬리 잡기';U.at=0;WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y;}}
+      if(st.phase==='come'){st.phase='grab';U.action='꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y;}}
     else if(T<3.75){if(st.phase!=='pull'){st.phase='pull';G.sound.sfx('event-whoosh',{gain:.7});}head.copy(hover);head.y+=ss(3.3,3.75,T)*.55;}
     else{if(st.phase!=='fly'){st.phase='fly';st.liftT=T;G.sound.sfx('event-whoosh');S.v+=2.2;lastH.copy(head);}
       const u=Math.min(1,(T-3.75)/FLY),p=o.path(u);head.set(p.x,p.y,p.z);
@@ -147,21 +164,24 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13;const M=makeMeteo
     endP.set(mid.x+f1*.6,mid.y+.1,mid.z+f2*.6).lerp(mid,grabK);
     ctrl.set(endP.x+f1*1.05,endP.y+.2+Math.sin(t*2.3)*.06,endP.z+f2*1.05);
     st.endP=endP;st.head=head;    M.g.position.copy(head);M.setTail(head,endP,ctrl,t);SC.tick(t,st.phase==='fly',1);
-    /* 기본 각도: 별똥별이 내려와 잡을 때까지는 옆 앞(손으로 꼬리를 잡는 게 보이게) → 비행 앞쪽 반은 등 뒤 위에서 내려다봄(아래 마을·손 흔드는 할아버지와 토끼) → 뒤쪽 반은 낮게(토성·목성·화성) */
-    {const u=st.phase==='fly'?Math.min(1,(T-st.liftT)/FLY):0,f=st.phase==='fly'?ss(0,.12,u):0,down=ss(.05,.18,u)*(1-ss(.5,.68,u));
-     camHome(G,dt,st.face+1.15+(PI+.4-1.15)*f,.22+(.4-.22)*f+.55*down,6.5+2.5*f,st,1.3);}}
+    /* 기본 각도(손을 뗀 지 1.6초 뒤 이쪽으로 — 2026-11-09 다듬기: 등 뒤 위만 보면 초록 탈만 보이고 휴대폰에선 꼬리가 탈에 붙은 풍선 같았다):
+       내려와 잡을 때까지 옆 앞 → 끌려 올라간 직후 앞옆 낮게(얼굴·꼬리 잡은 손·멀어지는 달) → 마을 내려다보기(짧게) → 옆모습(목성·토성이 뒤로 스쳐 감)
+       → 어깨 너머로 다가오는 화성 → 마지막 얼굴 정면(반짝 신남). 키: [비행 진행 u, 원더룹 기준 방향, 위아래, 거리] */
+    {const u=st.phase==='fly'?Math.min(1,(T-st.liftT)/FLY):-1,K=CAMK;let a,p,d;
+     if(u<0){a=1.15;p=.22;d=6.5;}else{let i=0;while(i<K.length-2&&u>K[i+1][0])i++;const A=K[i],B=K[i+1],w=ss(A[0],B[0],u);let dy=B[1]-A[1];dy=Math.atan2(Math.sin(dy),Math.cos(dy));a=A[1]+dy*w;p=A[2]+(B[2]-A[2])*w;d=A[3]+(B[3]-A[3])*w;}
+     camHome(G,dt,st.face+a,p,d,st,2.2);}}
   function stop(){M.show(false);SC.tick(0,false);}
   function dispose(){M.dispose();M.g.removeFromParent();M.tail.removeFromParent();M.dust.pts.removeFromParent();SC.dispose();}
   function shift(k,sh){wp[k]+=sh;head[k]+=sh;lastH[k]+=sh;hover[k]+=sh;hi[k]+=sh;M.dust.shift(k,sh);}
   return {tick,late,stop,dispose,shift,state:st,meteor:M};}
 /* ── 도착 ── o: {G,root,WL,groundY,mob,dust(points 붉은 먼지),onDone()} — WL은 이미 착지 자리 위(xz)에 있다 */
-export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mob}),SC=makeScarf(WL),S=spring();lockOn(G,WL);const U=WL.userData;U.action='꼬리 잡기';U.at=0;
+export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mob}),SC=makeScarf(WL),S=spring();lockOn(G,WL);const U=WL.userData;U.action='꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');
   const P=WL.position.clone(),gy=o.groundY(P.x,P.z),face=WL.rotation.y,fx=Math.sin(face),fz=Math.cos(face);
   const head=new THREE.Vector3(),endP=new THREE.Vector3(),ctrl=new THREE.Vector3(),mid=new THREE.Vector3(),away=new THREE.Vector3(fx*9,7,fz*9);
   const st={t:0,phase:'down',y:gy+6,vy:0,bounce:0,cu:null,idle:9,done:false,rel:null};
   const G2=3.7; // 화성 중력(지구의 약 38%) m/초²
   function puff(n,sp){const x=WL.position.x,z=WL.position.z;for(let i=0;i<n;i++){const a=Math.random()*PI*2,r=Math.random()*.35,v=sp*(.5+Math.random()*.7);
-    o.dust.emit(x+Math.cos(a)*r,gy+.05,z+Math.sin(a)*r,Math.cos(a)*v,.35+Math.random()*.6,Math.sin(a)*v,1.4+Math.random()*1.2,Math.random()<.5?[.78,.36,.24]:[.88,.5,.33]);}}
+    o.dust.emit(x+Math.cos(a)*r,gy+.05,z+Math.sin(a)*r,Math.cos(a)*v,.35+Math.random()*.6,Math.sin(a)*v,1.4+Math.random()*1.2,Math.random()<.5?[.86,.58,.46]:[.93,.7,.56]);}}
   function land(k){S.v-=k;puff(o.mob?16:28,1.2*Math.min(1,k/5));G.sound.sfx('land');G.sound.sfx('event-pop',{gain:.6});G.sound.sfx('event-dust');}
   G.sound.sfx('event-sparkle');
   function tick(dt,t){if(st.done)return;st.t+=dt;const T=st.t;

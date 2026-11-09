@@ -112,7 +112,8 @@ head.children.forEach(c=>{if(c.position.z>.2&&c.position.y<.1){const m=WL_CHIN(c
  const base=brows.map(b=>({y:b.position.y}));const blushBase=blush.map(b=>b.scale.clone());
  const E={'기본':{},'기쁨':{arc:1,brow:[.015,-.05],mouth:'open',blush:1.25},'놀람':{eye:[1.12,1.22],brow:[.035,-.08],mouth:'o'},
    '궁금':{browEach:[[.03,-.12],[-.004,.15]],mouth:'side',tilt:.16},'걱정':{eye:[.9,.92],brow:[.012,-.3],mouth:'wavy',sweat:1,blush:.85},
-   '신남':{eye:[1.06,1.1],spark:1,brow:[.02,0],mouth:'smile',blush:1.2}};
+   '신남':{eye:[1.06,1.1],spark:1,brow:[.02,0],mouth:'smile',blush:1.2},
+   '반짝 신남':{eye:[1.1,1.16],spark:1,brow:[.035,-.04],mouth:'open',blush:1.3}}; // 반짝 신남(2026-11-09 별똥별 꼬리 비행): 눈 반짝 + 입 벌림
  const NAMES=Object.keys(E);
  function setExpr(n){const e=E[n];U.exprName=n;
    eyes.forEach(eg=>{const m=eg.children[0];m.visible=!e.arc;const s=e.eye||[1,1];m.scale.set(.74*s[0],1.15*s[1],.28);});

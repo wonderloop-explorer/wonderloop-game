@@ -30,7 +30,7 @@ import {sbMat} from '../../game/storybook.js';
 import {bentPos} from '../../game/bend.js';
 import {popShown} from '../../game/popup.js';
 import SPACE from '../../worlds/infinite-space.js';
-import {RIDE,departure} from './meteor-ride.js'; // 출구 → 별똥별 꼬리 타고 화성으로(2026-11-09)
+import {RIDE,departure,dustVeil} from './meteor-ride.js'; // 출구 → 별똥별 꼬리 타고 화성으로(2026-11-09)
 /* 행성 크기(2026-11-08 — 17m → 24m): 걷기 속도는 그대로 두고 행성을 키워 땅이 도는 속도를 약 30% 늦춤(땅 회전만 따로 늦추면 발이 미끄러져 보여서). 한 바퀴 2πR/3.78 ≈ 40초.
    ?debug 톱니 메뉴 '행성 반지름' 막대(localStorage 'wl-space-R', 12~40 — 바꾸면 다시 연다) 또는 ?planetR=로 맞춰 볼 수 있다.
    배치는 17m 때 자리를 기준으로 S = R/17배 펼친다: 멀리 있는 것(분화구·언덕·발자국 길·출구·따뜻한 땅·그늘 분화구 자리)은 S배,
@@ -567,7 +567,7 @@ function tickAnchor(dt,cam){if(!cam)return;anchor.position.copy(cam.position);if
   if(FLY.k>0){const k=FLY.k,e1=ss(.28,.82,k),e2=ss(.16,.7,k),put=(m,x,y,f)=>{m.position.set(x*th*D,y*tv*D,-D);m.scale.multiplyScalar(f);};
     {const Ls=LAYOUT.sat,x=port?Ls[4]:Ls[1],y=port?Ls[5]:Ls[2];put(sat.g,x+((port?-1.6:-1.5)-x)*e1,y+(.05-y)*e1,1+2.4*e1);}
     {const Lj=LAYOUT.jup,x=port?Lj[4]:Lj[1],y=port?Lj[5]:Lj[2];put(jup.g,x+((port?1.9:2.1)-x)*e2,y+(-.5-y)*e2,1+.6*e2);}
-    const em=ss(.55,1,k);mars.g.visible=k>.52;if(mars.g.visible){mars.g.position.set(0,(.5-.38*em)*tv*D,-D*.95);mars.g.scale.setScalar(2*u*D*(.035+.62*em*em)*.46);}}
+    const em=ss(.55,1,k);mars.g.visible=k>.52;if(mars.g.visible){mars.g.position.set(0,(.5-.38*em)*tv*D,-D*.95);mars.g.scale.setScalar(2*u*D*(.035+.62*em*em+1.1*ss(.9,1,k))*.46);}}
   else mars.g.visible=false;
   {const gs=2*D*.995*Math.max(tv,th)*4.2;grain.position.set(0,0,-D*1.0);grain.scale.set(gs,gs,1);grain.material.map.repeat.set(9,9);}
   sunView.copy(sunM.position).normalize().applyQuaternion(aq);}
@@ -661,8 +661,9 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
     ride=departure({G,root,WL:W,groundY,mob:MOB,fly:13,
       path:u=>{const e1=ss(0,.5,u),e2=ss(.5,1,u),d=vl*1.15*e1+26*e2;return {x:sx+ux*d,y:y0+2.9+14*ss(0,.45,u)+56*Math.pow(ss(.4,1,u),1.3),z:sz+uz*d};},
       onWave:on=>{WAVE.on=on;if(on)placeBobo(BOBO);},
-      onFly:u=>{FLY.k=u;},
-      onEnd:()=>{RIDE.pending={from:'space-garden',scarf:true};G.ui.transition(async()=>{if(window.wlZone)await window.wlZone.go('space-mars');},{out:.7,hold:.35,in:.9});}});};
+      onFly:u=>{FLY.k=u;if(u>.3&&!st.marsPre){st.marsPre=true;import('./mars.js').catch(()=>{});}}, // 화성 구역을 비행 중에 미리 불러 둠(넘어갈 때 기다리지 않게)
+      onEnd:async()=>{RIDE.pending={from:'space-garden',scarf:true};const veil=dustVeil();await veil.cover(.75); // 화성 대기로: 파스텔 먼지구름이 화면을 덮었다 걷힘(어두운 화면 없이 — 예전 ui.transition은 1초쯤 어두웠다)
+        try{if(window.wlZone)await window.wlZone.go('space-mars');}catch(e){console.error(e);}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}});};
   if(first){G.react.react('hop');Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]).then(()=>setTimeout(go,250));}
   else go();}
 const ICON_MAP=()=>SPACE.icons.map();
