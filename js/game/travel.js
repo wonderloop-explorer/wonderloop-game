@@ -1,0 +1,152 @@
+/* 원더룹 — 스테이지 이동 연출 공통 틀(2026-11-09, 모든 세계가 같이 씀 — 첫 적용: 무한 우주 달 → 화성 별똥별 꼬리 타기 js/zones/space/meteor-ride.js)
+   한 번의 이동 = begin() → (비행 동안 tick(dt,'fly')) → map() 우주 지도 장면 → arrive() → landIn(초)/land() → 끝.
+   - 이동 테마: 세계 설정 travel.theme {file:'assets/audio/travel-theme.mp3', from, to, resolve, loop:[a,b]}(초, 파일 기준).
+       파일이 있으면 그 파일을 from부터(앞 0.3초 서서히), 해결 화음 자리(resolve)가 착지 순간에 오게 맞춘다 — landIn(초)를 받으면 지금 재생 자리와
+       '착지까지 남은 시간'이 0.12초 넘게 어긋날 때 0.5초 크로스페이드로 resolve−남은 시간 자리에서 다시(비행 구간에서 늘이거나 줄이는 셈),
+       loop가 있으면 착지 시각을 모르는 동안 그 구간을 되풀이. 해결 화음 뒤 1.5초에 걸쳐 줄여 끝(to를 넘으면 거기서).
+       파일이 없으면(지금) 코드로 만든 짧은 테마: 오르골·글로켄슈필 아르페지오로 차오름(D장조 3/4, 한 마디 1.5초 D–Bm–G–A, 마디마다 음역이 조금씩 위로)
+       → 4.5초부터 패드·낮은 베이스가 깔리며 거르개가 열려 넓어짐 → 착지 0.75초 전 A(딸림화음) + 글로켄 오름 → 착지 순간 따뜻한 D 화음(D add9) + 종 굴림, 그 뒤 잦아듦.
+       곡 길이와 연출 길이가 달라도: 코드 테마는 착지를 받을 때까지 마디를 이어 가고, 착지 시각을 알면 그 앞을 딸림화음으로 정리해 해결 화음을 정확히 맞춘다.
+   - 섞기: 시작하면 스테이지 배경음을 1초에 걸쳐 줄이고(sound.bedLevel) 테마를 1초에 걸쳐 올림. 착지 해결 화음이 울리고 1.8초 뒤부터 배경음을 3.5초에 걸쳐 되돌림.
+     테마는 sound의 travelBus(.42 — 배경음 .5보다 조금 작게, 전체 out을 거쳐 M·메뉴 소리 끄기를 그대로 따름), 효과음은 묻히지 않게 1.15~1.3배.
+   - 효과음(공통 묶음 docs/sfx-list.md): 출발 travel-depart(반짝이며 휙 올라감) · 비행 event-wind(2.1초마다)·event-sparkle 작게(1.3~2.7초마다)
+     · 지도 travel-step(발자국 한 칸마다 마림바 톡, 칸마다 한 음씩 위로) · 도착 travel-arrive(낮은 우웅) + event-whoosh(먼지구름) · 착지 land + event-pop(퐁)
+   - 우주 지도 장면 map(o): HTML 캔버스 한 장(3D 그리기 0)이 화면을 덮음 — 미니어처처럼 행성이 한눈에(위아래 흐림 띠), 지나온 행성 → 다음 행성
+     분홍 발자국 점선(로딩 화면 발자국과 같은 모양 — index.html solePath)이 한 칸씩, 지나온 행성 둘레에 그 스테이지에서 발견한 것이 작은 그림으로 톡톡,
+     아래에 다음 행성 예고 한 줄(나레이션 자리 — 지금은 자막만, 시점 기록 kind 'narration'으로 남겨 녹음 뒤 같은 자리에 놓음). 약 3.6초, 누르면 끝나지 않음.
+     o: {bodies:[{id,name,color,r,ring?,glow?}], from:id, to:id, facts:[{img(데이터 주소)|draw(g,s)}], line:'예고 한 줄', lineId, sec}
+     세계 설정 travel.map.bodies, travel.lines['<지나온 구역>><다음 구역>'] — 세계마다 행성·문구만 바꿔 쓴다.
+   촬영 모드(?shot)는 소리를 틀지 않음(sound가 막음), 지도 장면은 그대로 그림. */
+import {sfx,bedLevel,travelOut,quietBuf} from './sound.js';
+import {cue,clock} from './core.js';
+const PI=Math.PI,mf=m=>440*Math.pow(2,(m-69)/12);
+let CFG={},T=null;
+/* 세계 설정을 받아 둠 + 테마 파일 미리 불러 두기(휴대폰에서 연출 시작이 파일 때문에 늦지 않게) */
+export function prepare(cfg){CFG=cfg||{};const f=CFG.theme&&CFG.theme.file;if(f)quietBuf(f);}
+/* ── 코드로 만든 임시 테마 ── */
+function env(c,g,t,a,peak,d,tail=.001){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(tail,t+a+d);}
+function osc(c,type,f,t,dur,dest,peak,a=.005,det=0){if(f>16000)return;const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;if(det)o.detune.value=det;env(c,g,t,a,peak,dur);o.connect(g);g.connect(dest);o.start(t);o.stop(t+a+dur+.05);}
+const musicBox=(c,D,m,t,v)=>{const f=mf(m);osc(c,'sine',f,t,1.5,D,v);osc(c,'sine',f*2,t,.35,D,v*.22);osc(c,'sine',f*3.01,t,.12,D,v*.08);};
+const glock=(c,D,m,t,v)=>{const f=mf(m);osc(c,'sine',f,t,2.1,D,v,.003);osc(c,'sine',f*2.76,t,.5,D,v*.3,.002);osc(c,'sine',f*5.4,t,.15,D,v*.1,.002);};
+function pad(c,D,ms,t,dur,v,c0,c1,att=.7){const f=c.createBiquadFilter(),g=c.createGain();f.type='lowpass';f.Q.value=.6;f.frequency.setValueAtTime(c0,t);f.frequency.linearRampToValueAtTime(c1,t+dur);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+att);g.gain.setValueAtTime(v,t+Math.max(att,dur-.35));g.gain.linearRampToValueAtTime(0,t+dur+.6);f.connect(g);g.connect(D);
+  for(const m of ms)for(const d of [-7,7]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=mf(m);o.detune.value=d;o.connect(f);o.start(t);o.stop(t+dur+.7);}}
+const bass=(c,D,m,t,dur,v)=>{osc(c,'sine',mf(m),t,dur,D,v,.04);osc(c,'triangle',mf(m),t,dur*.5,D,v*.25,.03);};
+const BAR=1.5,EI=BAR/6; // 3/4, 한 박 0.5초(120), 여덟음표 0.25초
+const PROG=[{r:62,ch:[62,66,69]},{r:59,ch:[59,62,66]},{r:55,ch:[55,59,62]},{r:57,ch:[57,61,64]}]; // D Bm G A
+const ARP=[0,1,2,3,2,1]; // 화음 음 차례(위로 갔다 내려옴)
+function codeTheme(c,D){const g=c.createGain(),t0=c.currentTime+.05;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(1,t0+1);g.connect(D);
+  let bar=0,landAt=null,stopped=false,cad=false;
+  function schedBar(k){const t=t0+k*BAR,P=PROG[k%4],lift=Math.min(7,Math.floor(k/2)*2+(k>=6?1:0)),ns=[...P.ch,P.ch[0]+12].map(m=>m+12+lift); // 마디마다 음역이 조금씩 위로(최대 +7)
+    for(let i=0;i<6;i++){const tt=t+i*EI;if(landAt!=null&&tt>landAt-.8)break;musicBox(c,g,ns[ARP[i]],tt,i===0?.13:.09);}
+    if(k>=2&&(landAt==null||t<landAt-.8))glock(c,g,ns[3],t,.05);
+    if(k>=3&&(landAt==null||t<landAt-.8)){const dur=landAt!=null?Math.min(BAR,landAt-.8-t):BAR;if(dur>.2){const w=Math.min(1,(k-3)/6);pad(c,g,P.ch.map(m=>m+12),t,dur,.035+.03*w,500+1500*w,700+1700*w,k===3?1.2:.25);bass(c,g,P.r-12,t,dur*.9,.12);}}}
+  function cadence(){if(cad)return;cad=true;const now=c.currentTime,ta=Math.max(now+.02,landAt-.8);
+    pad(c,g,[57,61,64,67],ta,Math.max(.3,landAt-ta),.06,1400,2200,.25);bass(c,g,45,ta,landAt-ta,.12);[69,73,76,81].forEach((m,i)=>glock(c,g,m+12,ta+i*.17,.05));
+    // 해결: 따뜻한 D add9 + 종 굴림 + 낮은 D, 그 뒤 2.5초에 걸쳐 잦아듦
+    pad(c,g,[50,57,62,66,69,76],landAt,2.6,.075,2400,1200,.12);bass(c,g,38,landAt,3,.18);[74,78,81,86,88].forEach((m,i)=>glock(c,g,m,landAt+i*.06,.07));musicBox(c,g,74,landAt,.14);musicBox(c,g,81,landAt+.3,.1);
+    g.gain.setValueAtTime(1,landAt+1.6);g.gain.linearRampToValueAtTime(0,landAt+4.4);setTimeout(()=>{stopped=true;clearInterval(iv);try{g.disconnect();}catch(e){}},(landAt-now+4.6)*1000);}
+  const iv=setInterval(()=>{if(stopped)return;const now=c.currentTime;
+    while(t0+bar*BAR<now+.35&&(landAt==null||t0+bar*BAR<landAt-.8)){schedBar(bar);bar++;}
+    if(landAt!=null)cadence();},60);
+  return {kind:'code',t0,get landAt(){return landAt;},landIn(sec){if(landAt==null){landAt=c.currentTime+Math.max(.85,sec);cadence();}},
+    stop(sec=.6){if(stopped)return;stopped=true;clearInterval(iv);const now=c.currentTime;g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(g.gain.value,now);g.gain.linearRampToValueAtTime(0,now+sec);setTimeout(()=>{try{g.disconnect();}catch(e){}},sec*1000+200);}};}
+/* ── 파일 테마: from부터, 해결 화음(resolve)을 착지에 맞춤 ── */
+function fileTheme(c,D,buf,o){const from=o.from||0,to=Math.min(buf.duration,o.to||buf.duration),res=o.resolve??Math.max(from,to-1.5),lp=o.loop;
+  let cur=null,landAt=null,done=false;
+  function start(off,fade){const s=c.createBufferSource(),g=c.createGain(),now=c.currentTime;s.buffer=buf;if(lp&&landAt==null){s.loop=true;s.loopStart=lp[0];s.loopEnd=lp[1];}
+    g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(1,now+fade);s.connect(g);g.connect(D);s.start(now,Math.max(0,off),Math.max(.1,to-off));
+    const n={s,g,t:now,off};if(cur){const p=cur;p.g.gain.cancelScheduledValues(now);p.g.gain.setValueAtTime(p.g.gain.value,now);p.g.gain.linearRampToValueAtTime(0,now+fade);setTimeout(()=>{try{p.s.stop();p.g.disconnect();}catch(e){}},fade*1000+120);}
+    cur=n;return n;}
+  const head=()=>{if(!cur)return from;let h=cur.off+(c.currentTime-cur.t);if(cur.s.loop&&h>lp[1])h=lp[0]+((h-lp[0])%(lp[1]-lp[0]));return h;};
+  start(from,.3);
+  return {kind:'file',get landAt(){return landAt;},landIn(sec){if(landAt!=null||done)return;landAt=c.currentTime+sec;const want=res-sec;
+      if(Math.abs(head()-want)>.12||(cur&&cur.s.loop))start(Math.max(from,want),.5);
+      const end=landAt+1.5;cur.g.gain.setValueAtTime(1,landAt+.05);cur.g.gain.linearRampToValueAtTime(0,end);const k=cur;setTimeout(()=>{try{k.s.stop();k.g.disconnect();}catch(e){}},(end-c.currentTime)*1000+150);},
+    stop(sec=.6){if(done||!cur)return;done=true;const now=c.currentTime,k=cur;k.g.gain.cancelScheduledValues(now);k.g.gain.setValueAtTime(k.g.gain.value,now);k.g.gain.linearRampToValueAtTime(0,now+sec);setTimeout(()=>{try{k.s.stop();k.g.disconnect();}catch(e){}},sec*1000+150);}};}
+/* ── 한 번의 이동 ── */
+export async function begin(o={}){if(T)end(true);const t={id:o.id||'travel',wind:.4,spark:1,landed:false,theme:null,bedT:null};T=t;
+  bedLevel(0,1);
+  const th=Object.assign({},CFG.theme||{},o.theme||{});cue({kind:'music',id:'travel-theme',file:th.file||null,dur:0});
+  const out=travelOut();if(out){const buf=th.file?await quietBuf(th.file):null;if(T!==t)return t;t.theme=buf?fileTheme(out.ctx,out.bus,buf,th):codeTheme(out.ctx,out.bus);LOG.kind=t.theme.kind;LOG.begin=out.ctx.currentTime;}
+  return t;}
+/* 비행 동안(매 프레임): 잔잔한 바람 + 꼬리 반짝이(작게) */
+export function tick(dt,phase){const t=T;if(!t||phase!=='fly')return;t.wind-=dt;if(t.wind<=0){t.wind=2.1;sfx('event-wind',{gain:.6,minor:true,cue:false});}
+  t.spark-=dt;if(t.spark<=0){t.spark=1.3+Math.random()*1.4;sfx('event-sparkle',{gain:.34,minor:true,cue:false});}}
+/* 도착: 대기에 들어섬 + 먼지구름 휙 */
+export function arrive(){sfx('travel-arrive',{gain:1.2});setTimeout(()=>sfx('event-whoosh',{gain:.9}),120);}
+/* 착지까지 남은 초(알게 되는 대로) — 테마 해결 화음을 그 순간에 */
+export function landIn(sec){const t=T;if(!t||t.landed)return;t.landed=true;if(t.theme)t.theme.landIn(sec);LOG.resolve=t.theme?t.theme.landAt:null;
+  t.bedT=setTimeout(()=>{bedLevel(1,3.5);},(sec+1.8)*1000);cue({kind:'music',id:'travel-resolve',dur:0,at:+(clock.t+sec).toFixed(3)});}
+export const land=()=>landIn(0);
+/* 시험 기록(소리 시각 = 오디오 시계): 테마 종류·해결 화음 시각·실제 착지 시각 — tools/space-meteor-rec.py가 읽어 둘의 차이를 잼 */
+const LOG={};export const log=()=>LOG;
+export function mark(name){const o=travelOut();LOG[name]=o?o.ctx.currentTime:null;if(name==='land'&&T&&T.theme)LOG.resolve=T.theme.landAt??null;}
+/* 끝(정리) — abort면 테마를 바로 줄이고 배경음을 되돌림 */
+export function end(abort){const t=T;if(!t)return;T=null;if(abort){if(t.theme)t.theme.stop(.6);clearTimeout(t.bedT);bedLevel(1,1.5);}}
+export const active=()=>!!T;
+/* 출발(몸이 끌려 올라가는 순간): 반짝이며 휙 올라감 */
+export function depart(){sfx('travel-depart',{gain:1.25});}
+/* 세계 설정으로 지도 장면: W.travel.map.bodies(행성마다 zone) · lines['지나온>다음'] · facts[지나온 구역](flag가 켜진 것만) */
+export function mapFor(W,from,to,flags={}){const C=W&&W.travel||{},B=C.map&&C.map.bodies||[],f=B.find(b=>b.zone===from),t=B.find(b=>b.zone===to),L=(C.lines||{})[from+'>'+to]||{};
+  return map({bodies:B,from:f&&f.id,to:t&&t.id,line:L.text||'',lineId:L.id,facts:((C.facts||{})[from]||[]).filter(x=>flags[x.flag]).map(x=>({img:typeof x.img==='function'?x.img():x.img,draw:x.draw}))});}
+/* ── 우주 지도 장면 ── */
+function solePath(c){c.beginPath();c.moveTo(0,.02);c.bezierCurveTo(.05,.02,.062,-.04,.062,-.085);c.bezierCurveTo(.062,-.135,.035,-.165,.002,-.165);c.bezierCurveTo(-.04,-.165,-.062,-.125,-.056,-.075);
+  c.bezierCurveTo(-.05,-.03,-.042,.02,0,.02);c.closePath();c.moveTo(.045,.075);c.ellipse(.003,.075,.042,.046,0,0,PI*2);} // 로딩 화면(index.html #wlBoot) 발자국과 같은 모양
+const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
+function shadeHex(h,k){const n=parseInt(h.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const f=v=>Math.round(k>0?v+(255-v)*k:v*(1+k));return `rgb(${f(r)},${f(g)},${f(b)})`;}
+export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=document.createElement('canvas');cv.id='wlTravelMap';cv.setAttribute('aria-hidden','true');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:58;pointer-events:none;opacity:0;transition:opacity .35s';document.body.appendChild(cv);
+  // 미니어처: 위·아래 띠를 흐리게(가운데만 또렷)
+  const blur=[0,1].map(i=>{const d=document.createElement('div');const m=i?'linear-gradient(to top,#000 0%,#000 30%,transparent 100%)':'linear-gradient(to bottom,#000 0%,#000 30%,transparent 100%)';
+    d.style.cssText=`position:fixed;left:0;right:0;${i?'bottom':'top'}:0;height:24%;z-index:58;pointer-events:none;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);mask-image:${m};-webkit-mask-image:${m};opacity:0;transition:opacity .35s`;document.body.appendChild(d);return d;});
+  const cap=document.createElement('div');cap.id='wlTravelLine';cap.setAttribute('role','status');cap.textContent=o.line||'';
+  cap.style.cssText='position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 9%);transform:translate(-50%,8px);z-index:59;pointer-events:none;max-width:min(88vw,560px);box-sizing:border-box;padding:.6rem 1.15rem;border-radius:16px;background:rgba(44,30,42,.86);color:#fbe9d8;font-family:"Gowun Dodum",sans-serif;font-size:clamp(15px,2.2vw,19px);line-height:1.45;text-align:center;word-break:keep-all;opacity:0;transition:opacity .45s,transform .45s';
+  if(o.line)document.body.appendChild(cap);
+  if(o.line)cue({kind:'narration',id:o.lineId||null,file:null,text:o.line,who:'나레이션',dur:+Math.max(2.4,o.line.replace(/\s+/g,'').length*.11+.5).toFixed(3)});
+  const g=cv.getContext('2d'),B=o.bodies||[],iF=B.findIndex(b=>b.id===o.from),iT=B.findIndex(b=>b.id===o.to);
+  const IM=(o.facts||[]).map(f=>{if(f.img){const im=new Image();im.src=f.img;return {im};}return {draw:f.draw};});
+  const STAR=[];for(let i=0;i<140;i++)STAR.push([Math.random(),Math.random(),.4+Math.random()*1.3,Math.random()*6]);
+  const NSTEP=o.steps||8,STEP0=.55,STEPD=.27;let stepN=0,t0=performance.now(),on=true,w=0,h=0,dpr=1;
+  requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
+  // 자리: 지나온 행성 → 다음 행성 사이를 넓게(발자국 길), 나머지는 고르게. 가로 화면은 왼쪽 → 오른쪽 완만한 물결, 세로 화면은 아래 → 위 지그재그
+  const GW=B.map((b,i)=>i===0?0:((i===iF&&i-1===iT)||(i===iT&&i-1===iF))?2.6:1),GS=[];{let a=0;GW.forEach(v=>{a+=v;GS.push(a);});}
+  function lay(){const pt=h>w,tot=GS[GS.length-1]||1;return B.map((b,i)=>{const s=B.length>1?GS[i]/tot:.5;
+      const x=pt?.5+(i%2?.2:-.2):.11+.78*s,y=pt?.66-.56*s:.6-.2*s+.1*Math.sin(s*PI);const R=Math.min(w,h)*(b.r||.07)*(pt?1.1:1)*(1.05-.15*s);return {x:x*w,y:y*h,R,b};});}
+  function planet(p,k,hl){const {x,y,R,b}=p;if(k<=0)return;const r=R*k;g.save();
+    if(b.glow){const gl=g.createRadialGradient(x,y,r*.6,x,y,r*2.4);gl.addColorStop(0,'rgba(255,214,120,.55)');gl.addColorStop(1,'rgba(255,214,120,0)');g.fillStyle=gl;g.fillRect(x-r*2.5,y-r*2.5,r*5,r*5);}
+    if(hl){const a=.35+.25*Math.sin(hl*7);const gl=g.createRadialGradient(x,y,r,x,y,r*1.7);gl.addColorStop(0,`rgba(255,236,210,${a})`);gl.addColorStop(1,'rgba(255,236,210,0)');g.fillStyle=gl;g.beginPath();g.arc(x,y,r*1.7,0,PI*2);g.fill();}
+    if(b.ring){g.strokeStyle=shadeHex(b.color,-.15);g.lineWidth=r*.16;g.beginPath();g.ellipse(x,y,r*1.75,r*.5,-.25,PI*1.02,PI*1.98);g.stroke();}
+    g.fillStyle='rgba(20,16,40,.35)';g.beginPath();g.ellipse(x+r*.12,y+r*1.08,r*.85,r*.2,0,0,PI*2);g.fill(); // 미니어처 장난감 그림자
+    const gr=g.createRadialGradient(x-r*.38,y-r*.42,r*.1,x,y,r*1.05);gr.addColorStop(0,shadeHex(b.color,.42));gr.addColorStop(.55,b.color);gr.addColorStop(1,shadeHex(b.color,-.38));
+    g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,PI*2);g.fill();
+    g.save();g.clip();g.globalAlpha=.16;g.strokeStyle='#fff8ec';g.lineWidth=Math.max(1,r*.025);for(let i=-6;i<=6;i++){g.beginPath();g.moveTo(x+i*r*.22-r,y-r);g.lineTo(x+i*r*.22+r*.4,y+r);g.stroke();}g.restore(); // 크레용 빗금
+    g.strokeStyle='rgba(74,42,42,.55)';g.lineWidth=Math.max(1.2,r*.05);g.beginPath();g.arc(x,y,r,0,PI*2);g.stroke();
+    if(b.ring){g.strokeStyle=shadeHex(b.color,.1);g.lineWidth=r*.16;g.beginPath();g.ellipse(x,y,r*1.75,r*.5,-.25,-PI*.02,PI*1.02);g.stroke();}
+    g.font=`${Math.round(Math.max(12,Math.min(w,h)*.028))}px Jua, "Gowun Dodum", sans-serif`;g.textAlign='center';g.textBaseline='top';g.fillStyle='rgba(251,233,216,.92)';g.fillText(b.name,x,y+r*1.32);g.restore();}
+  function draw(now){if(!on)return;const t=(now-t0)/1000;dpr=Math.min(2,devicePixelRatio||1);const W=Math.round(innerWidth*dpr),H=Math.round(innerHeight*dpr);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}w=W;h=H;
+    g.setTransform(1,0,0,1,0,0);
+    const bg=g.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#1d1a3e');bg.addColorStop(.6,'#2c2558');bg.addColorStop(1,'#3a2c5c');g.fillStyle=bg;g.fillRect(-w*.1,-h*.1,w*1.2,h*1.2);
+    const ng=g.createRadialGradient(w*.62,h*.35,0,w*.62,h*.35,Math.max(w,h)*.6);ng.addColorStop(0,'rgba(201,166,224,.22)');ng.addColorStop(1,'rgba(201,166,224,0)');g.fillStyle=ng;g.fillRect(0,0,w,h);
+    for(const [sx,sy,sr,sp] of STAR){g.globalAlpha=.45+.45*Math.sin(t*2+sp);g.fillStyle='#fff6e4';g.beginPath();g.arc(sx*w,sy*h,sr*dpr,0,PI*2);g.fill();}g.globalAlpha=1;
+    const L=lay();
+    // 미니어처 카메라: 한눈에 보다가(0~0.4초) 발자국 길 쪽으로 살짝 다가감
+    {let cx=w/2,cy=h/2;if(iF>=0&&iT>=0){cx=(L[iF].x+L[iT].x)/2;cy=(L[iF].y+L[iT].y)/2;}const k=ss(.35,2.4,t),z=1+(h>w?.12:.24)*k,fx=w/2+(cx-w/2)*k*.9,fy=h/2+(cy-h/2)*k*.9;
+     g.setTransform(z,0,0,z,w/2-fx*z,h/2-fy*z);}
+    // 궤도 길(옅은 점선)
+    g.save();g.setLineDash([2*dpr,7*dpr]);g.strokeStyle='rgba(251,233,216,.22)';g.lineWidth=1.5*dpr;g.beginPath();L.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.stroke();g.restore();
+    // 발자국: 지나온 행성 가장자리 → 다음 행성 가장자리, 휜 길을 따라 한 칸씩
+    if(iF>=0&&iT>=0){const A=L[iF],Bq=L[iT],dx=Bq.x-A.x,dy=Bq.y-A.y,dl=Math.hypot(dx,dy)||1,nx=-dy/dl,ny=dx/dl,bow=dl*.18;
+      const P=u=>{const x=A.x+dx*u+nx*bow*Math.sin(u*PI),y=A.y+dy*u+ny*bow*Math.sin(u*PI);return [x,y];};
+      const u0=(A.R*1.25)/dl,u1=1-(Bq.R*1.3)/dl,FOOT=Math.min(w,h)*.15;
+      const want=Math.min(NSTEP,Math.max(0,Math.floor((t-STEP0)/STEPD)+1));while(stepN<want){sfx('travel-step',{step:stepN,gain:1.3,cue:stepN===0});stepN++;}
+      for(let i=0;i<stepN;i++){const u=u0+(u1-u0)*(i+.5)/NSTEP,[x,y]=P(u),[x2,y2]=P(u+.01),ang=Math.atan2(y2-y,x2-x)+PI/2,left=i%2===0,pop=ss(0,.18,t-(STEP0+i*STEPD)),sc=FOOT*(pop<1?.6+.55*pop-.15*pop*pop:1);
+        g.save();g.translate(x+nx*(left?-1:1)*FOOT*.09,y+ny*(left?-1:1)*FOOT*.09);g.rotate(ang);g.scale((left?-1:1)*sc,sc);solePath(g);g.fillStyle='#E58E98';g.globalAlpha=Math.min(1,pop*1.4);g.fill();g.restore();}}
+    L.forEach((p,i)=>planet(p,ss(.02*i,.25+.02*i,t),i===iT&&stepN>=NSTEP?t:0));
+    // 지나온 행성 둘레에 발견한 것 — 작은 그림이 톡톡(0.2초부터 하나씩)
+    if(iF>=0&&IM.length){const A=L[iF],n=IM.length,S=Math.max(30*dpr,A.R*.95);IM.forEach((f,i)=>{const a=-PI*.92+i*(PI*1.0/Math.max(1,n-1)),k=ss(.15+i*.14,.4+i*.14,t);if(k<=0)return;
+        const x=A.x+Math.cos(a)*A.R*1.75,y=A.y+Math.sin(a)*A.R*1.75,s=S*(.7+.3*k);g.save();g.globalAlpha=k;g.fillStyle='rgba(251,240,224,.92)';g.strokeStyle='rgba(90,56,38,.8)';g.lineWidth=2*dpr;
+        g.beginPath();g.arc(x,y,s*.62,0,PI*2);g.fill();g.stroke();if(f.im&&f.im.complete&&f.im.naturalWidth)g.drawImage(f.im,x-s*.5,y-s*.5,s,s);else if(f.draw){g.translate(x,y);f.draw(g,s);}g.restore();});}
+    if(t<sec+2)requestAnimationFrame(draw);}
+  requestAnimationFrame(draw);
+  setTimeout(()=>done({remove(){on=false;cv.remove();blur.forEach(d=>d.remove());cap.remove();}}),sec*1000);});}

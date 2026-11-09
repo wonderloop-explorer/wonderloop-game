@@ -8,10 +8,10 @@
 import json, os, sys, re, glob, shutil, subprocess, time
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-a = sys.argv[1:]; PHONE = '--phone' in a; ROT = '--rotate' in a; ANG = '--angles' in a
+a = sys.argv[1:]; PHONE = '--phone' in a; ROT = '--rotate' in a; ANG = '--angles' in a; AUD = '--audio' in a
 TAG = a[a.index('--tag') + 1] if '--tag' in a else 'run'
 OUT = os.path.join(ROOT, a[a.index('--out') + 1] if '--out' in a else 'docs/compare/space-meteor'); os.makedirs(OUT, exist_ok=True)
-dev = ('phone' if PHONE else 'pc') + ('-rotate' if ROT else '') + ('-angles' if ANG else ''); R = {'tag': TAG, 'dev': dev}
+dev = ('phone' if PHONE else 'pc') + ('-rotate' if ROT else '') + ('-angles' if ANG else '') + ('-audio' if AUD else ''); R = {'tag': TAG, 'dev': dev}
 # 잘림 기록(매 프레임): 사진 모드와 같은 몸 범위(탈 꼭대기·발끝 등 뼈 공)를 화면에 비춰, 화면 밖으로 1% 넘게 나간 프레임 — 먼지구름이 덮은 동안은 뺌
 CLIPLOG = """(()=>{window.__clip=[];const L=()=>{try{const Z=wlZone.cur,r=Z.ride?Z.ride():null,ar=Z.arrival?Z.arrival():null,o=r&&!r.state.end?r:ar&&!ar.state.done?ar:null;
   const v=document.getElementById('wlDustVeil'),vo=v?+v.style.opacity:0;
@@ -36,6 +36,10 @@ with sync_playwright() as p:
     pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock'].forEach(k=>wlGame.state.setFlag(k,true))")
     ex = pg.evaluate('wlZone.cur.spots.exit')
     pg.evaluate(CLIPLOG)
+    if AUD:  # 소리 포함(--audio): 세계 배경음을 틀고(첫 화면을 건너뛰어 안 켜져 있음), 게임 소리 전체를 MediaRecorder로 받아 적음 — 영상과 합침
+        pg.evaluate("import('/js/worlds/infinite-space.js').then(m=>{const M=m.default.music;wlGame.sound.songs({[M.id]:M.song});wlGame.sound.bed(M.id);})")
+        pg.evaluate("""(()=>{const st=wlGame.sound.tap();const r=new MediaRecorder(st,{mimeType:'audio/webm;codecs=opus',audioBitsPerSecond:128000});window.__ach=[];r.ondataavailable=e=>__ach.push(e.data);r.start(500);window.__arec=r;})()""")
+        aud_t = time.time() - V0
     pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.x=x-3.2;W.position.z=z+.4;}", ex); pg.wait_for_timeout(1200)
     t0 = time.time() - V0; tm = {}; perf = {'비행': [], '착지': []}
     def stats():
@@ -95,13 +99,23 @@ with sync_playwright() as p:
     low = [x for x in cl if x[5] < .3 and not x[3] and x[1] == 'r:fly']
     R['비행 중 카메라가 원더룹 발보다 낮은 프레임(아래에서 올려다봄 — 발바닥·가방만)'] = {'프레임': len(low), '가장 낮음(m, 카메라 − 발)': min([x[5] for x in low], default=None), '시각': [x[0] for x in low][:: max(1, len(low) // 10)][:10]}
     R['잘림(화면 밖 1% 넘는 프레임, 먼지구름 덮은 동안 뺌)'] = {'전체 프레임': len(cl), '잘린 프레임': len(bad), '구간': sorted(set(x[1] for x in bad)), '가장 많이 나감': max([x[2] for x in bad], default=0), '예(시각·단계·나감·덮임·[x0,y0,x1,y1])': bad[:: max(1, len(bad) // 12)][:12]}
+    if AUD:
+        R['이동 소리 기록(오디오 시계 초)'] = L = pg.evaluate('wlGame.travel.log()')
+        if L.get('land') is not None and L.get('resolve') is not None: R['해결 화음 − 착지(초, +면 화음이 늦음)'] = round(L['resolve'] - L['land'], 3)
+        b64 = pg.evaluate("""new Promise(res=>{__arec.onstop=()=>{const fr=new FileReader();fr.onload=()=>res(fr.result.split(',')[1]);fr.readAsDataURL(new Blob(__ach,{type:'audio/webm'}));};__arec.stop();})""")
+        import base64; aud_path = os.path.join(OUT, '_aud.webm'); open(aud_path, 'wb').write(base64.b64decode(b64))
     R['오류'] = errs
     c.close(); b.close()
     if not ANG:
         v = glob.glob(os.path.join(vd, '*.webm'))
         if v:
             dst = os.path.join(OUT, f'{TAG}-{dev}.mp4')
-            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{max(0, t0 - .3):.2f}', '-i', v[0], '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '24', '-movflags', '+faststart', dst], check=True)
+            if AUD:  # 소리는 영상 시작 뒤 aud_t초부터 — 영상을 t0−0.3초부터 자르므로 그만큼 밀어 붙임
+                off = aud_t - max(0, t0 - .3)
+                subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{max(0, t0 - .3):.2f}', '-i', v[0], '-itsoffset', f'{off:.3f}', '-i', aud_path, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '24', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', dst], check=True)
+                os.remove(aud_path)
+            else:
+                subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{max(0, t0 - .3):.2f}', '-i', v[0], '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '24', '-movflags', '+faststart', dst], check=True)
             R['영상'] = os.path.relpath(dst, ROOT)
         shutil.rmtree(vd, ignore_errors=True)
 json.dump(R, open(os.path.join(OUT, f'{TAG}-{dev}.json'), 'w'), ensure_ascii=False, indent=1)

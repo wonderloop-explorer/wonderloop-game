@@ -62,6 +62,9 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `ui-book` | 원더룹 `dex` | 가방·도감 창 열기 | — | game/front.js | 1.1 | -21.1 |
 | `event-wind` | **새로 만듦** | 잔잔한 바람(별똥별 꼬리 비행 동안 2.1초마다 — 2026-11-09) | — | zones/space/meteor-ride.js | 2.4 | — |
 | `event-dust` | **새로 만듦** | 먼지 퐁(화성 착지 — 붉은 흙먼지가 피어오름) | — | zones/space/meteor-ride.js | 0.4 | — |
+| `travel-depart` | 원본 `enter` | 스테이지 이동 출발 — 반짝이며 휙 올라감(game/travel, 2026-11-09) | 구역 들어가기 | game/travel.js | 1.63 | — |
+| `travel-step` | **새로 만듦** | 우주 지도 발자국 한 칸 '톡'(마림바 — 칸마다 D장조 한 음씩 위로, `sfx('travel-step',{step:n})`) | — | game/travel.js | 0.6 | — |
+| `travel-arrive` | **새로 만듦** | 다음 행성 대기에 들어섬(낮은 우웅이 부풀었다 잦아듦) | — | game/travel.js | 1.6 | — |
 | `photo-shutter` | **새로 만듦** | 사진 찍기 셔터 찰칵(사진 모드, 2026-11-08 — 높은 딸깍 두 번, 원본 `click`과 비슷한 크기) | — | game/photo.js | 0.2 | — |
 | `mission-start` | 원본 `sus` | 미션 카드(할 일이 생김) | 미션 카드·의심 게이지·퀴즈 틀림 | game/ui.js | 0.35 | -31.2 |
 | `mission-clear` | 원본 `success` | 통과·결과창·스테이지 완료 배지 | 통과(저장고·보육실·통로·여왕·비행) | game/ui.js (result·stageBadge 기본) | 2.2 | -22.1 |

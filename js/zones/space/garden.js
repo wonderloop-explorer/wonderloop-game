@@ -653,6 +653,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
    비행 길(별똥별 머리 자리): 출구 → 마을 위(약 17m — 보름 할아버지·아기 토끼가 손 흔듦) → 계속 오르며 행성이 작아짐(작은 행성 그림이 원더룹 높이만큼 아래로 — 위로 70m),
    하늘 그림판의 토성·목성이 옆으로 스쳐 지나가고(FLY.k), 끝에 붉은 화성이 커짐 → 화면 전환으로 화성(space-mars) */
 let ride=null;const FLY={k:0},WAVE={on:false};
+G.travel.prepare(SPACE.travel); // 이동 테마 파일을 미리 불러 둠(휴대폰에서 연출 시작이 늦지 않게)
 function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W.userData;st.exitOut=false;if(U.stopWalk)U.stopWalk();U.riding={y:W.position.y};st.rideWait=true;
   const go=()=>{st.rideWait=false;const P=W.position;
     // 마을 쪽을 보고 서서 시작(별똥별이 앞에서 내려옴)
@@ -662,8 +663,11 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
       path:u=>{const e1=ss(0,.5,u),e2=ss(.5,1,u),d=vl*1.15*e1+26*e2;return {x:sx+ux*d,y:y0+2.9+14*ss(0,.45,u)+56*Math.pow(ss(.4,1,u),1.3),z:sz+uz*d};},
       onWave:on=>{WAVE.on=on;if(on)placeBobo(BOBO);},
       onFly:u=>{FLY.k=u;if(u>.3&&!st.marsPre){st.marsPre=true;import('./mars.js').catch(()=>{});}}, // 화성 구역을 비행 중에 미리 불러 둠(넘어갈 때 기다리지 않게)
-      onEnd:async()=>{RIDE.pending={from:'space-garden',scarf:true};const veil=dustVeil();await veil.cover(.75); // 화성 대기로: 파스텔 먼지구름이 화면을 덮었다 걷힘(어두운 화면 없이 — 예전 ui.transition은 1초쯤 어두웠다)
-        try{if(window.wlZone)await window.wlZone.go('space-mars');}catch(e){console.error(e);}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}});};
+      /* 비행 끝: 우주 지도 장면(game/travel 공통 — 달 → 화성 발자국 점선·발견한 것·예고 한 줄, 약 3.6초) → 화성 대기로 들어섬(낮은 우웅 + 먼지구름 휙) →
+         파스텔 먼지구름이 화면을 덮었다 걷힘(어두운 화면 없이 — 예전 ui.transition은 1초쯤 어두웠다) */
+      onEnd:async()=>{RIDE.pending={from:'space-garden',scarf:true};const mp=await G.travel.mapFor(SPACE,'space-garden','space-mars',F);
+        G.travel.arrive();const veil=dustVeil();await veil.cover(.75);
+        try{if(window.wlZone)await window.wlZone.go('space-mars');}catch(e){console.error(e);}mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}});};
   if(first){G.react.react('hop');Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]).then(()=>setTimeout(go,250));}
   else go();}
 const ICON_MAP=()=>SPACE.icons.map();

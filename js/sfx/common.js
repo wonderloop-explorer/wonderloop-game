@@ -57,6 +57,11 @@ const WL={
 const NEW={
   // 발소리 바닥별: 원본 step(띠 거르개 소음 0.045초)과 같은 모양·같은 크기, 거르개 자리·길이만 바닥에 맞게
   'event-wind':[2.4,(c,t,D)=>{noise(c,t,2.4,.05,D,'bandpass',rr(500,700),.6,rr(1100,1500));noise(c,t+.6,1.6,.025,D,'bandpass',rr(1600,2000),.8,rr(900,1200));}], // 쏴아: 낮은 바람이 천천히 오르내림
+  // 이동 연출(game/travel): 우주 지도 발자국 한 칸 '톡' — 마림바(사인 + 4배 배음, 짧게), o.step 칸 번호마다 D장조 한 음씩 위로. 세기는 pickup(triangle .11)에 맞춤
+  'travel-step':{dur:.6,play(c,D,o){const t=c.currentTime,M=[74,76,78,79,81,83,85,86,88,90,91,93],m=M[Math.min(M.length-1,Math.max(0,(o&&o.step)|0))],f=mf(m);
+    tone(c,'sine',f,t,.55,.16,D);tone(c,'sine',f*3.93,t,.09,.035,D);tone(c,'triangle',f*2,t,.05,.02,D);noise(c,t,.012,.03,D,'bandpass',f*4,2);}},
+  // 대기에 들어섬: 낮은 '우웅'이 부풀었다 잦아듦(사인 55 → 70Hz + 낮은 바람) — roll(rumbleBurst)과 같은 크기, 덜컹거림 없이
+  'travel-arrive':[1.6,(c,t,D)=>{tone(c,'sine',52,t,1.6,.26,D,{slide:72});tone(c,'sine',104,t+.1,1.3,.08,D,{slide:140});noise(c,t,1.5,.16,D,'lowpass',180,.7,420);}],
   'event-dust':[.4,(c,t,D)=>{noise(c,t,.35,.14,D,'lowpass',rr(900,1200),.7,220);noise(c,t+.03,.18,.04,D,'bandpass',rr(2200,2800),1.2);}], // 퍽: 부드러운 흙먼지
   'photo-shutter':[.2,(c,t,D)=>{noise(c,t,.03,.16,D,'highpass',3800,.8);tone(c,'square',1900,t,.018,.035,D,{lp:4200});noise(c,t+.075,.05,.12,D,'bandpass',2600,1.4);tone(c,'square',1300,t+.075,.02,.03,D,{lp:3600});}], // 찰-칵: 높은 딸깍 두 번(원본 click과 비슷한 크기)
   'step-grass':[.07,(c,t,D)=>{noise(c,t,.06,.021,D,'bandpass',rr(2200,3000),1.1);noise(c,t+.012,.04,.011,D,'highpass',5200,.7);}],      // 풀: 사각
@@ -108,6 +113,9 @@ const KINDS={
   'guard-caught':['사건','whoosh','안전한 곳으로 옮겨짐(세계 설정으로 — 개미굴 ant-caught)'],
   'big-get':['사건','success','큰 획득 — 선물이 원더룹 앞에 닿는 순간(원본 나침반 success)'],
   'event-wind':['사건','event-wind','잔잔한 바람(별똥별 비행 — 2.4초, 이어서 되풀이, 원본에 없던 소리)'],
+  'travel-depart':['이동','enter','출발 — 반짝이며 휙 올라감(스테이지 이동 연출 공통, 원본 구역 들어가기 소리)'],
+  'travel-step':['이동','travel-step','우주 지도 발자국 한 칸 톡(마림바 — 칸마다 한 음씩 위로, sfx(…,{step:n}), 원본에 없던 소리)'],
+  'travel-arrive':['이동','travel-arrive','다음 행성 대기에 들어섬(낮은 우웅 — 원본에 없던 소리)'],
   'event-dust':['사건','event-dust','먼지 퐁(착지 때 흙먼지가 피어오름 — 원본에 없던 소리)'],
   'photo-shutter':['화면','photo-shutter','사진 찍기 셔터 찰칵(사진 모드 — 원본에 없던 소리, 2026-11-08)'],
   'weather-thunder':['날씨','thunder','천둥'],

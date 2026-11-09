@@ -55,6 +55,7 @@ export * as itemget from './itemget.js';
 export * as stage from './stage.js';
 export * as stealth from './stealth.js';
 export * as finale from './finale.js';
+export * as travel from './travel.js';
 /* 구역에 들어온 뒤(08 — 처음 구역은 initGame 뒤, 그다음은 goZone에서 zoneLook 뒤): 세계 설정 stages[구역 id]의 긴장·감정 구역·스테이지 빛·숨바꼭질을 깐다 */
 function enterZone(z,W){setStageZone(z,W);setStealthZone(z,W);}
 export * as controls from './controls.js';

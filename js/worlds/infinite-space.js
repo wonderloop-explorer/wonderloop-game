@@ -12,6 +12,12 @@ function ICON_NECK(){return ICON||(ICON=canvasIcon(g=>{g.strokeStyle='#8a8fa0';g
 /* 달떡 아이콘: 연보라 접시 위 하얀 떡 셋(하나는 연분홍) */
 let CAKEI=null;function ICON_CAKE(){return CAKEI||(CAKEI=canvasIcon(g=>{g.fillStyle='#e8d6ea';g.strokeStyle='#5a3826';g.lineWidth=3;g.beginPath();g.ellipse(48,64,34,12,0,0,7);g.fill();g.stroke();
   [[36,52,'#fbf8f0'],[60,52,'#f7dbe4'],[48,40,'#fbf8f0']].forEach(([x,y,c])=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,14,11,0,0,7);g.fill();g.stroke();g.fillStyle='rgba(255,255,255,.8)';g.beginPath();g.ellipse(x-5,y-4,4,2.5,-.5,0,7);g.fill();});}));}
+/* 우주 지도에 붙는 발견 그림(game/travel): 얼음 동굴 — 연하늘 얼음 결정 셋, 망원경 — 갈색 다리 위 크림 통 */
+let ICEI=null,SCOPEI=null;
+function ICON_ICE(){return ICEI||(ICEI=canvasIcon(g=>{g.strokeStyle='#4a6f8c';g.lineWidth=3;[[48,62,14,46],[30,68,9,30],[66,70,8,26]].forEach(([x,y,hw,hh])=>{g.fillStyle='#d6f0ff';g.beginPath();g.moveTo(x,y-hh);g.lineTo(x+hw,y-hh*.35);g.lineTo(x+hw*.7,y+8);g.lineTo(x-hw*.7,y+8);g.lineTo(x-hw,y-hh*.35);g.closePath();g.fill();g.stroke();
+  g.strokeStyle='rgba(255,255,255,.9)';g.beginPath();g.moveTo(x-hw*.3,y-hh*.6);g.lineTo(x-hw*.4,y);g.stroke();g.strokeStyle='#4a6f8c';});}));}
+function ICON_SCOPE(){return SCOPEI||(SCOPEI=canvasIcon(g=>{g.strokeStyle='#5a3826';g.lineWidth=4;g.beginPath();g.moveTo(48,52);g.lineTo(30,84);g.moveTo(48,52);g.lineTo(66,84);g.moveTo(48,52);g.lineTo(48,86);g.stroke();
+  g.save();g.translate(48,44);g.rotate(-.55);g.fillStyle='#f3e4c4';g.lineWidth=3;g.beginPath();g.rect(-30,-9,56,18);g.fill();g.stroke();g.fillStyle='#d9704a';g.beginPath();g.rect(22,-12,10,24);g.fill();g.stroke();g.restore();}));}
 function ICON_MAP(){return MAPI||(MAPI=canvasIcon(g=>{g.fillStyle='#f3e4c4';g.strokeStyle='#5a3826';g.lineWidth=3;g.beginPath();g.moveTo(16,22);g.lineTo(44,14);g.lineTo(80,24);g.lineTo(74,76);g.lineTo(46,82);g.lineTo(20,72);g.closePath();g.fill();g.stroke();
   g.setLineDash([4,5]);g.strokeStyle='#a8603f';g.beginPath();g.moveTo(26,62);g.quadraticCurveTo(40,40,62,44);g.stroke();g.setLineDash([]);
   g.fillStyle='#9bd46b';g.beginPath();g.arc(64,42,7,0,7);g.fill();g.strokeStyle='#4a2a2a';g.lineWidth=2;g.stroke();g.fillStyle='#bfc3cc';g.beginPath();g.arc(28,62,6,0,7);g.fill();g.stroke();}));}
@@ -112,4 +118,12 @@ export default {
   finale:{gift:null,vehicle:null,miniature:null,endBackdrop:null},
   cert:null,
   icons:{map:ICON_MAP,necklace:ICON_NECK},
+  /* 스테이지 이동 연출(game/travel — 공통 틀, 2026-11-09): 이동 테마 파일 자리(없으면 코드로 만든 임시 테마), 우주 지도 장면의 행성(해에서 가까운 차례 — 미니어처처럼 한눈에),
+     구역 사이 예고 한 줄(나레이션 자리 — 지금은 자막만), 지나온 스테이지에서 발견한 것(flag가 켜진 것만 작은 그림으로) */
+  travel:{theme:{file:'assets/audio/travel-theme.mp3'},
+    map:{bodies:[{id:'sun',name:'해',color:'#F6C85A',r:.06,glow:true},{id:'venus',name:'금성',color:'#C9A6E0',r:.05},{id:'moon',name:'달',color:'#BFC3CC',r:.05,zone:'space-garden'},
+      {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true}]},
+    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파래대요.'}},
+    facts:{'space-garden':[{flag:'have:infinite-space:necklace',img:()=>ICON_NECK()},{flag:'secret:infinite-space:icecave',img:()=>ICON_ICE()},
+      {flag:'secret:infinite-space:telescope',img:()=>ICON_SCOPE()},{flag:'item:infinite-space:dalddeok',img:()=>ICON_CAKE()}]}},
 };

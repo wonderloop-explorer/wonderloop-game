@@ -24,13 +24,15 @@
 import {blocking,clock,cue,cues} from './core.js';
 import {common as SFX,WORLD_SFX} from '../sfx/index.js';
 import {asBeds} from './music.js';
-const SRC={},BUF={},LEN={},SYN={},PEND={};let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null;
+const SRC={},BUF={},LEN={},SYN={},PEND={};let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null,bedBus=null,travelBus=null;
 const S={muted:false,tts:false};
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webkitAudioContext)();
     out=ctx.createGain();out.gain.value=S.muted?0:.85;out.connect(ctx.destination);           // 전체 (개미굴 master)
     sfxBus=ctx.createGain();sfxBus.gain.value=.9;sfxBus.connect(out);                       // 효과음
-    musicBus=ctx.createGain();musicBus.gain.value=.5;musicBus.connect(out);                 // 배경음
+    bedBus=ctx.createGain();bedBus.gain.value=1;bedBus.connect(out);                         // 스테이지 배경음 크기(이동 연출 동안 줄임 — bedLevel)
+    musicBus=ctx.createGain();musicBus.gain.value=.5;musicBus.connect(bedBus);              // 배경음
+    travelBus=ctx.createGain();travelBus.gain.value=.42;travelBus.connect(out);             // 이동 테마(game/travel — 전체를 거쳐 M·메뉴 소리 끄기를 같이 따름, 효과음보다 살짝 작게)
     ambBus=ctx.createGain();ambBus.gain.value=.32;ambBus.connect(out);                     // 공간음(game/weather — 새소리·풀벌레·빗소리·바람, 음악을 덮지 않게 작게, 2026-11-04)
     voiceOut=ctx.createGain();voiceOut.gain.value=1;voiceOut.connect(ctx.destination);}    // 목소리 (개미굴 voOut — 전체를 거치지 않음)
   catch(e){ctx=null;}return ctx;}
@@ -105,6 +107,16 @@ const bedHandle=()=>B&&B.h||null;
 /* 구역 배경음: 구역 정보 music → bed. 파일 이름만 적으면 assets/audio/<이름>.mp3 */
 function zoneMusic(m){if(!m){bed(null);return;}const o=typeof m==='string'?{id:m}:m;const id=o.id.replace(/\.[a-z0-9]+$/i,'');
   if(!SRC[id]&&!(SYN[id]&&SYN[id].bed))SRC[id]=o.file||('assets/audio/'+(/\.[a-z0-9]+$/i.test(o.id)?o.id:o.id+'.mp3'));bed(id,o);}
+/* 이동 연출(game/travel, 2026-11-09): 스테이지 배경음 크기 줄이기·되돌리기(sec초에 걸쳐), 이동 테마가 울릴 자리.
+   이동 테마 파일은 조용히 읽는다(파일이 아직 없으면 404를 경고로 남기지 않고 null — 코드로 만든 임시 테마로) */
+function bedLevel(level,sec=1){const c=audio();if(!c||!bedBus)return;const now=c.currentTime;bedBus.gain.cancelScheduledValues(now);bedBus.gain.setValueAtTime(bedBus.gain.value,now);bedBus.gain.linearRampToValueAtTime(level,now+Math.max(.02,sec));}
+const travelOut=()=>!SHOT&&ctx&&ctx.state==='running'?{ctx,bus:travelBus}:null; // 소리를 꺼 둔 채 출발해도 테마는 돌림(전체 out이 0) — 도중에 켜면 그대로 들림
+/* 시험 도구용(소리 포함 녹화): 전체 소리와 목소리를 MediaStream으로도 내보냄(실제 출력은 그대로) */
+function tap(){const c=audio();if(!c)return null;const d=c.createMediaStreamDestination();out.connect(d);voiceOut.connect(d);return d.stream;}
+const audioNow=()=>ctx?ctx.currentTime:null;
+const QF={};
+function quietBuf(url){if(QF[url])return QF[url];const c=audio();if(!c||SHOT)return Promise.resolve(null);
+  return QF[url]=(async()=>{try{const r=await fetch(url+(url.includes('?')?'':'?v='+(window.WL_V||'')));if(!r.ok)return null;return await c.decodeAudioData(await r.arrayBuffer());}catch(e){return null;}})();}
 /* 나레이션 줄 */
 const NQ=[];let cur=null;
 function narrate(line){return new Promise(done=>{NQ.push(Object.assign({},line,{done,plays:0}));});}
@@ -117,4 +129,4 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {tap,audioNow,bedLevel,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};

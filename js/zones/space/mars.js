@@ -11,6 +11,7 @@ import {PI,QUALITY,rng} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {RIDE,arrival,redDust} from './meteor-ride.js';
+import SPACE from '../../worlds/infinite-space.js';
 export function build({root}){
 const MOB=QUALITY.tier==='mobile',R=rng('space-mars:props'),rnd=(a,b)=>a+(b-a)*R();
 const SIZE=64,HALF=SIZE/2;
@@ -59,6 +60,7 @@ const fineN=MOB?80:160,fine=(()=>{const pos=new Float32Array(fineN*3),ph=new Flo
       const lx=x-P.x,lz=z-P.z;if(lx>12)x-=24;if(lx<-12)x+=24;if(lz>12)z-=24;if(lz<-12)z+=24;if(y>3.4)y=.1;a[i*3]=x;a[i*3+1]=y;a[i*3+2]=z;}geo.attributes.position.needsUpdate=true;}};})();
 const dust=redDust(root,MOB?70:120);keep.push(dust.pts);
 /* 별똥별을 타고 왔으면: 도착 연출 */
+if(SPACE.music)G.sound.songs({[SPACE.music.id]:SPACE.music.song});
 const pend=RIDE.pending;RIDE.pending=null;let arr=null,started=false;
 const U0=()=>G.mission.hero&&G.mission.hero();
 function update(dt,t){const W=U0();if(!W)return;
@@ -71,7 +73,7 @@ return {
   areas:{field:{bounds:[-HALF+3,HALF-3,-HALF+3,HALF-3],obstacles,camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
   sun:{dir:new THREE.Vector3(-5,-6,-7).normalize(),shadow:12,follow:true},
   sky:SK,bend:{k:.008,d0:6},gravity:.38,jumpK:1.15,rim:.2,camRoom:{c:[0,0],r:HALF-4},
-  groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
+  groundY,ground:[ground],keepOut:keep,mergeColors:true,music:SPACE.music?{id:SPACE.music.id,fade:2}:null, // 세계 배경음을 이어받음(같은 곡이면 끊김 없이 — 별똥별로 왔으면 이동 테마 뒤에 game/travel이 서서히 올림)
   arrival:()=>arr, /* 시험 도구가 읽음 */
   update,lateUpdate,dispose(){if(arr){arr.dispose();arr=null;}},
 };
