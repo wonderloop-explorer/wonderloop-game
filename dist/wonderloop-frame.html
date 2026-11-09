@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="4cbdfdfac6";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="a077e3139a";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 d530c92, 버전 4011e5f6a3, 2026-11-09)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 d255747, 버전 2a4bd30f35, 2026-11-09)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -347,8 +347,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="4011e5f6a3";
-window.WL_BUILD={"commit":"d530c92","date":"2026-11-09","stage":"basecamp"};
+window.WL_V="2a4bd30f35";
+window.WL_BUILD={"commit":"d255747","date":"2026-11-09","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -2059,6 +2059,11 @@ function tickBody(){
     if(Z.camBox&&(C.fw||0)<.5)clampBox(_cw,Z.camBox); // 카메라 상자(구역 정보 camBox): 경계 너머 빈 곳·세계 끝이 보이지 않게 카메라 자리를 상자 안으로(연출 중에는 빼고)
     _cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
     const snap=!SHOT&&GAME.view.req&&GAME.view.req.snap&&C.fw>=1; // view.hold(fn,{snap}) — 연출 길을 그대로 따라감(늦게 따라가면 도는 길의 안쪽을 질러 원더룹 머리를 지나갔다)
+    /* 연출이 원더룹을 빠르게 옮길 때(U.riding.carry — 별똥별 꼬리 타기): 카메라·보는 점을 원더룹이 움직인 만큼 함께 옮긴 뒤 각도·거리만 따라감
+       (늦게 따라가면 위로 빨리 끌려 올라가는 원더룹 아래로 처져 탈 꼭대기가 화면 위로 잘렸다 — 2026-11-09). riding.snap이면 한 번 바로 그 자리로(화면이 덮였을 때) */
+    {const rd=WL.userData.riding;if(rd&&rd.carry&&!SHOT){const lp=C.carryP;if(lp){const dx=WL.position.x-lp.x,dy=WL.position.y-lp.y,dz=WL.position.z-lp.z;
+        if(dx*dx+dy*dy+dz*dz<400){camera.position.x+=dx;camera.position.y+=dy;camera.position.z+=dz;controls.target.x+=dx;controls.target.y+=dy;controls.target.z+=dz;}}
+      (C.carryP||(C.carryP=new THREE.Vector3())).copy(WL.position);if(rd.snap){rd.snap=false;camera.position.copy(_cw);controls.target.copy(_ct);}}else C.carryP=null;}
     camera.position.lerp(_cw,snap?1:SHOT?Math.min(1,dt*7):1-Math.exp(-dt*7));camera.position.y=Math.max(camera.position.y,groundY(camera.position.x,camera.position.z)+.6); // 따라오는 길에도 땅 속으로 들어가지 않게
     controls.target.lerp(_ct,snap?1:SHOT?Math.min(1,dt*10):1-Math.exp(-dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
   else if(GAME.view.req&&GAME.view.req.fn&&(C.hv=GAME.view.req.fn())){C.ready=false;const k=Math.min(1,dt*1.5); // 방 카메라 구역에서도 view.hold(첫 화면 배경 루프 — 베이스캠프): 개미굴 타이틀처럼 그 자리로 부드럽게
@@ -4986,7 +4991,7 @@ function key(e){if(e.code==='KeyC'){if(!e.repeat)toggle();return true;}if(!on)re
   return false;}
 function tick(){if(SHOT)return;placeBtn();}
 function initPhoto(c){if(SHOT)return;ctx=c;mobile=c.mobile;controlHooks.photoKey=key;build();setInterval(tick,500);tick();
-  window.wlPhoto={enter,exit,shoot,state:PH,active:()=>on,setRatio:r=>{PH.ratio=r;layout();},setZoom:d=>{setD(d);PH.d=PH.dGoal;headPt(PH.tgt);},setAngle:(y,p)=>{PH.yaw=y;PH.pitch=p;},setBlur:b=>{PH.blur=!!b;layout();},setMini:b=>{PH.mini=!!b;layout();}};}
+  window.wlPhoto={enter,exit,shoot,state:PH,body:cam=>bodyRange(cam||ctx.camera),active:()=>on,setRatio:r=>{PH.ratio=r;layout();},setZoom:d=>{setD(d);PH.d=PH.dGoal;headPt(PH.tgt);},setAngle:(y,p)=>{PH.yaw=y;PH.pitch=p;},setBlur:b=>{PH.blur=!!b;layout();},setMini:b=>{PH.mini=!!b;layout();}};}
 const active=()=>on;
 export {active,cameraTick,enter,exit,initPhoto,render,shift,shoot,toggle};
 
@@ -9907,16 +9912,35 @@ export function points(root,n,{map,add=true,size=.25,grav=0,drag=.6}={}){
   function shift(kk,sh){for(let i=0;i<n;i++)pos[i*3+(kk==='x'?0:2)]+=sh;}
   return {pts,emit,tick,shift,dispose(){geo.dispose();m.dispose();}};}
 /* 화성 대기 먼지구름(구역이 바뀌는 순간 — 2026-11-09): 화면 전체를 파스텔 살구·분홍 먼지가 덮었다 걷힘(어두운 화면이 한 장도 안 보이게).
-   HTML 캔버스 하나(3D 그리기 0), 덩어리 구름 열여섯이 천천히 흘러가며 겹침, 덮을 때 바탕도 같은 색으로 채워 틈이 없게. cover(초)·clear(초)는 Promise */
+   HTML 캔버스 하나(3D 그리기 0), 덩어리 구름 열여섯이 천천히 흘러가며 겹침, 덮을 때 바탕도 같은 색으로 채워 틈이 없게. cover(초)·clear(초)는 Promise.
+   다시(2026-11-09): 다 덮은 순간이 평평한 살구색이라 비어 보였다 → 이어지는 잡음 결(타일 한 장, 크림·테라코타 두 겹)이 화면 가운데를 축으로 서로 반대로 돌며 흘러가고(소용돌이),
+   먼지 알갱이가 가운데에서 화면 밖으로 날아감(깊이가 있는 점 — 가까워질수록 크고 길게 = 먼지 속을 지나가는 느낌). 덮고 걷히는 시간은 그대로 */
+function noiseTile(N,seed,rgb){const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),im=x.createImageData(N,N),D=im.data;
+  const h=(i,j,o)=>{const v=Math.sin((((i%o)+o)%o)*127.1+(((j%o)+o)%o)*311.7+seed*74.7)*43758.5453;return v-Math.floor(v);},sm=t=>t*t*(3-2*t);
+  for(let y=0;y<N;y++)for(let x0=0;x0<N;x0++){let v=0,a=.5;for(let o=6;o<=48;o*=2){const fx=x0/N*o,fy=y/N*o,i=Math.floor(fx),j=Math.floor(fy),u=sm(fx-i),w=sm(fy-j);
+      v+=a*((h(i,j,o)*(1-u)+h(i+1,j,o)*u)*(1-w)+(h(i,j+1,o)*(1-u)+h(i+1,j+1,o)*u)*w);a*=.5;}
+    const r=1-Math.abs(v/.94*2-1),k=(y*N+x0)*4,al=Math.max(0,Math.min(1,(r-.45)*2.6)); /* 능선 잡음 = 가는 먼지 자락 */D[k]=rgb[0];D[k+1]=rgb[1];D[k+2]=rgb[2];D[k+3]=al*al*255;}
+  x.putImageData(im,0,0);return c;}
 export function dustVeil(){const cv=document.createElement('canvas');cv.id='wlDustVeil';cv.setAttribute('aria-hidden','true');
   cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none;opacity:0';document.body.appendChild(cv);
   const g=cv.getContext('2d'),C=['#f3cfae','#ecb9a2','#f7dcc4','#e9a891','#f0c3a6'],B=[];for(let i=0;i<16;i++)B.push({x:Math.random(),y:Math.random(),r:.25+Math.random()*.35,c:C[i%C.length],v:.03+Math.random()*.05,p:Math.random()*6});
+  const T1=noiseTile(128,1,[255,240,222]),T2=noiseTile(128,2,[205,128,104]),P1=g.createPattern(T1,'repeat'),P2=g.createPattern(T2,'repeat');
+  const NP=110,Q=[];const reset=(q,z)=>{const a=Math.random()*PI*2,r=.05+Math.random()*.9;q.x=Math.cos(a)*r;q.y=Math.sin(a)*r;q.z=z??(.35+Math.random()*1.65);q.s=.5+Math.random()*1.1;q.c=Math.random()<.6?'255,244,228':Math.random()<.5?'214,140,112':'236,184,160';};
+  for(let i=0;i<NP;i++){const q={};reset(q);Q.push(q);}
   let k=0,goal=0,rate=1,t0=performance.now(),last=t0,on=true,done=null;
   function draw(now){if(!on)return;const dt=Math.min(.05,(now-last)/1000);last=now;const t=(now-t0)/1000;k+=Math.sign(goal-k)*Math.min(Math.abs(goal-k),dt*rate);
-    const w=cv.width=Math.round(innerWidth*.5),h=cv.height=Math.round(innerHeight*.5),m=Math.max(w,h);g.globalAlpha=1;
+    const w=cv.width=Math.round(innerWidth*.5),h=cv.height=Math.round(innerHeight*.5),m=Math.max(w,h),cx=w/2,cy=h/2;g.globalAlpha=1;
     const bg=g.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#f1caa9');bg.addColorStop(1,'#eab09c');g.fillStyle=bg;g.globalAlpha=Math.min(1,Math.max(0,(k-.35)/.5));g.fillRect(0,0,w,h);
     for(const b of B){const x=((b.x+t*b.v)%1.4-.2)*w,y=(b.y+Math.sin(t*.6+b.p)*.04)*h,r=b.r*m*(.8+.5*k),gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,b.c);gr.addColorStop(1,'rgba(240,200,170,0)');
       g.globalAlpha=Math.min(1,k*1.4);g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);}
+    /* 소용돌이 결: 세 겹이 가운데를 축으로 서로 반대로 돌며 흘러감(살짝 숨쉬듯 늘었다 줄었다) */
+    const ka=Math.min(1,Math.max(0,(k-.15)/.6));
+    for(const [P,rot,sc,op,dr] of [[P2,.32,1.6,.5,.07],[P1,-.45,1.2,.75,-.05],[P2,.6,2.6,.3,.11]]){if(ka<=0)break;const z=sc*m/128;
+      g.save();g.globalAlpha=op*ka;g.translate(cx,cy);g.rotate(t*rot);g.scale(z*(1+.12*Math.sin(t*.7)),z);g.translate(t*dr*128,t*dr*60);g.fillStyle=P;g.fillRect(-256,-256,512,512);g.restore();}
+    /* 날리는 먼지 알갱이: 가운데에서 바깥으로(깊이 z가 줄며 커지고 길어짐) */
+    if(ka>0){g.lineCap='round';for(const q of Q){const z0=q.z;q.z-=dt*(.75+.4*q.s);if(q.z<.12){reset(q,1.6+Math.random()*.4);continue;}
+        const sx=cx+q.x/q.z*m*.5,sy=cy+q.y/q.z*m*.5,px=cx+q.x/z0*m*.5,py=cy+q.y/z0*m*.5,rr=Math.min(3.2,Math.max(.6,q.s*1.5/q.z));
+        g.globalAlpha=ka*Math.min(1,(2-q.z)*1.2)*Math.min(.85,q.z*1.6);g.strokeStyle='rgba('+q.c+',1)';g.lineWidth=rr;g.beginPath();g.moveTo(px-(sx-px)*.8,py-(sy-py)*.8);g.lineTo(sx,sy);g.stroke();}}
     cv.style.opacity=String(Math.min(1,k*1.25));if(Math.abs(goal-k)<1e-3&&done){const d=done;done=null;d();}
     if(goal===0&&k<=0&&!done){on=false;cv.remove();return;}requestAnimationFrame(draw);}
   requestAnimationFrame(draw);
@@ -9947,7 +9971,7 @@ function camChip(G){const root=document.querySelector('.wlg')||document.body;let
   b.style.cssText='position:fixed;right:calc(env(safe-area-inset-right,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px);z-index:41;display:inline-flex;align-items:center;gap:.35rem;min-height:40px;box-sizing:border-box;background:rgba(46,28,44,.66);color:#fff4e4;border-radius:999px;padding:.4rem .95rem;font-family:"Jua","Gowun Dodum",sans-serif;font-size:.98rem;cursor:pointer;-webkit-tap-highlight-color:transparent';
   b.addEventListener('click',()=>{b.blur();if(window.wlPhoto)window.wlPhoto.enter();});root.appendChild(b);return b;}
 /* 연출 시작·끝: 조작 잠금 + 화면 UI 숨김 */
-export function lockOn(G,WL){const U=WL.userData;if(U.stopWalk)U.stopWalk();U.riding={y:WL.position.y};G.core.block('meteor',true);
+export function lockOn(G,WL){const U=WL.userData;if(U.stopWalk)U.stopWalk();U.riding={y:WL.position.y,carry:true};G.core.block('meteor',true);
   if(!RIDE.hid){RIDE.hid=true;RIDE.hints=G.ui.hintsVisible();G.ui.setHints(false);}camChip(G);G.goal.set(null);G.ui.setQuest('');}
 export function lockOff(G,WL){const U=WL.userData;U.riding=null;WL.scale.set(1,1,1);G.core.block('meteor',false);
   if(RIDE.hid){RIDE.hid=false;G.ui.setHints(RIDE.hints!==false);}const b=document.getElementById('wlRideCam');if(b)b.remove();if(U.action==='꼬리 잡기'){U.action='서기';U.at=0;}if(U.setExpr)U.setExpr('기본');}
@@ -10015,6 +10039,9 @@ export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mo
   const P=WL.position.clone(),gy=o.groundY(P.x,P.z),face=WL.rotation.y,fx=Math.sin(face),fz=Math.cos(face);
   const head=new THREE.Vector3(),endP=new THREE.Vector3(),ctrl=new THREE.Vector3(),mid=new THREE.Vector3(),away=new THREE.Vector3(fx*9,7,fz*9);
   const st={t:0,phase:'down',y:gy+6,vy:0,bounce:0,cu:null,idle:9,done:false,rel:null};
+  /* 내려오는 동안(먼지구름이 걷히는 때부터 착지까지): 앞옆 3/4 조금 위에서 — 내려오는 얼굴과 화성 땅이 함께(2026-11-09 다시: 예전엔 비행 끝 카메라를 이어 받고 1.6초를 기다려 등 뒤 탈만 보였다).
+     화면이 덮인 동안 그 각도로 바로 놓고(riding.snap), 착지 뒤에는 리액션 각도(아래 late)로 천천히 */
+  const DOWN=[face+.85,.38,6.2];{const C=G.controls.input.cam;if(C){C.yaw=DOWN[0];C.pitch=DOWN[1];C.dist=DOWN[2];st.cu=C.user;}U.riding.snap=true;}
   const G2=3.7; // 화성 중력(지구의 약 38%) m/초²
   function puff(n,sp){const x=WL.position.x,z=WL.position.z;for(let i=0;i<n;i++){const a=Math.random()*PI*2,r=Math.random()*.35,v=sp*(.5+Math.random()*.7);
     o.dust.emit(x+Math.cos(a)*r,gy+.05,z+Math.sin(a)*r,Math.cos(a)*v,.35+Math.random()*.6,Math.sin(a)*v,1.4+Math.random()*1.2,Math.random()<.5?[.86,.58,.46]:[.93,.7,.56]);}}
@@ -10037,7 +10064,7 @@ export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mo
     if(st.phase==='down'){endP.copy(mid);WL.rotation.z=Math.sin(T*1.7)*.06;ctrl.set(mid.x+fx*1.05,mid.y+.2,mid.z+fz*1.05);}
     else{endP.copy(head);endP.y-=1.9;endP.x-=fx*1.2;endP.z-=fz*1.2;ctrl.copy(head).lerp(endP,.5);ctrl.y+=.3;} /* 놓아준 뒤: 꼬리가 별똥별을 따라감 */
     st.endP=endP;M.g.position.copy(head);M.setTail(head,endP,ctrl,t);SC.tick(t,st.phase==='down'||st.phase==='fall',st.phase==='down'?.6:1);
-    camHome(G,dt,face+.75,.28,7,st,1.6);} // 도착: 얼굴이 보이는 앞쪽 3/4(깜짝·갸웃·두리번이 보이게)
+    if(st.phase==='down'||st.phase==='fall')camHome(G,dt,DOWN[0],DOWN[1],DOWN[2],st,2.2);else camHome(G,dt,face+.75,.28,7,st,1.6);} // 착지 뒤: 얼굴이 보이는 앞쪽 3/4(깜짝·갸웃·두리번이 보이게)
   function dispose(){M.dispose();M.g.removeFromParent();M.tail.removeFromParent();M.dust.pts.removeFromParent();SC.dispose();}
   return {tick,late,dispose,state:st};}
 
