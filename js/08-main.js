@@ -266,6 +266,11 @@ function tickBody(){
     if(Z.camBox&&(C.fw||0)<.5)clampBox(_cw,Z.camBox); // 카메라 상자(구역 정보 camBox): 경계 너머 빈 곳·세계 끝이 보이지 않게 카메라 자리를 상자 안으로(연출 중에는 빼고)
     _cw.y=Math.max(_cw.y,groundY(_cw.x,_cw.z)+.7);
     const snap=!SHOT&&GAME.view.req&&GAME.view.req.snap&&C.fw>=1; // view.hold(fn,{snap}) — 연출 길을 그대로 따라감(늦게 따라가면 도는 길의 안쪽을 질러 원더룹 머리를 지나갔다)
+    /* 연출이 원더룹을 빠르게 옮길 때(U.riding.carry — 별똥별 꼬리 타기): 카메라·보는 점을 원더룹이 움직인 만큼 함께 옮긴 뒤 각도·거리만 따라감
+       (늦게 따라가면 위로 빨리 끌려 올라가는 원더룹 아래로 처져 탈 꼭대기가 화면 위로 잘렸다 — 2026-11-09). riding.snap이면 한 번 바로 그 자리로(화면이 덮였을 때) */
+    {const rd=WL.userData.riding;if(rd&&rd.carry&&!SHOT){const lp=C.carryP;if(lp){const dx=WL.position.x-lp.x,dy=WL.position.y-lp.y,dz=WL.position.z-lp.z;
+        if(dx*dx+dy*dy+dz*dz<400){camera.position.x+=dx;camera.position.y+=dy;camera.position.z+=dz;controls.target.x+=dx;controls.target.y+=dy;controls.target.z+=dz;}}
+      (C.carryP||(C.carryP=new THREE.Vector3())).copy(WL.position);if(rd.snap){rd.snap=false;camera.position.copy(_cw);controls.target.copy(_ct);}}else C.carryP=null;}
     camera.position.lerp(_cw,snap?1:SHOT?Math.min(1,dt*7):1-Math.exp(-dt*7));camera.position.y=Math.max(camera.position.y,groundY(camera.position.x,camera.position.z)+.6); // 따라오는 길에도 땅 속으로 들어가지 않게
     controls.target.lerp(_ct,snap?1:SHOT?Math.min(1,dt*10):1-Math.exp(-dt*10));camera.lookAt(controls.target);ui.camGoal=0;}
   else if(GAME.view.req&&GAME.view.req.fn&&(C.hv=GAME.view.req.fn())){C.ready=false;const k=Math.min(1,dt*1.5); // 방 카메라 구역에서도 view.hold(첫 화면 배경 루프 — 베이스캠프): 개미굴 타이틀처럼 그 자리로 부드럽게

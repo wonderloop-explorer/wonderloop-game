@@ -262,6 +262,6 @@ function key(e){if(e.code==='KeyC'){if(!e.repeat)toggle();return true;}if(!on)re
   return false;}
 function tick(){if(SHOT)return;placeBtn();}
 function initPhoto(c){if(SHOT)return;ctx=c;mobile=c.mobile;controlHooks.photoKey=key;build();setInterval(tick,500);tick();
-  window.wlPhoto={enter,exit,shoot,state:PH,active:()=>on,setRatio:r=>{PH.ratio=r;layout();},setZoom:d=>{setD(d);PH.d=PH.dGoal;headPt(PH.tgt);},setAngle:(y,p)=>{PH.yaw=y;PH.pitch=p;},setBlur:b=>{PH.blur=!!b;layout();},setMini:b=>{PH.mini=!!b;layout();}};}
+  window.wlPhoto={enter,exit,shoot,state:PH,body:cam=>bodyRange(cam||ctx.camera),active:()=>on,setRatio:r=>{PH.ratio=r;layout();},setZoom:d=>{setD(d);PH.d=PH.dGoal;headPt(PH.tgt);},setAngle:(y,p)=>{PH.yaw=y;PH.pitch=p;},setBlur:b=>{PH.blur=!!b;layout();},setMini:b=>{PH.mini=!!b;layout();}};}
 const active=()=>on;
 export {active,cameraTick,enter,exit,initPhoto,render,shift,shoot,toggle};

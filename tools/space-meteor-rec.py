@@ -12,6 +12,11 @@ a = sys.argv[1:]; PHONE = '--phone' in a; ROT = '--rotate' in a; ANG = '--angles
 TAG = a[a.index('--tag') + 1] if '--tag' in a else 'run'
 OUT = os.path.join(ROOT, a[a.index('--out') + 1] if '--out' in a else 'docs/compare/space-meteor'); os.makedirs(OUT, exist_ok=True)
 dev = ('phone' if PHONE else 'pc') + ('-rotate' if ROT else '') + ('-angles' if ANG else ''); R = {'tag': TAG, 'dev': dev}
+# 잘림 기록(매 프레임): 사진 모드와 같은 몸 범위(탈 꼭대기·발끝 등 뼈 공)를 화면에 비춰, 화면 밖으로 1% 넘게 나간 프레임 — 먼지구름이 덮은 동안은 뺌
+CLIPLOG = """(()=>{window.__clip=[];const L=()=>{try{const Z=wlZone.cur,r=Z.ride?Z.ride():null,ar=Z.arrival?Z.arrival():null,o=r&&!r.state.end?r:ar&&!ar.state.done?ar:null;
+  const v=document.getElementById('wlDustVeil'),vo=v?+v.style.opacity:0;
+  if(o&&wlPhoto&&wlPhoto.body){const B=wlPhoto.body(wlGame.view.camera),q=B.rect,m=.015,out=Math.max(m-q[0]-m*2,m-q[1]-m*2,q[2]-1-m,q[3]-1-m,0);
+    const ph=(r&&o===r?'r:':'a:')+o.state.phase;const cm=wlGame.view.camera,W=wlGame.mission.hero();__clip.push([+o.state.t.toFixed(2),ph,+out.toFixed(3),vo>.5?1:0,q.map(x=>+x.toFixed(3)),+(cm.position.y-W.position.y).toFixed(2)]);}}catch(e){}requestAnimationFrame(L);};requestAnimationFrame(L);})()"""
 MEAS = """(()=>{const Z=wlZone.cur,W=wlGame.mission.hero(),r=Z.ride?Z.ride():null,ar=Z.arrival?Z.arrival():null,o=r||ar;if(!o||!o.state.endP)return null;
   const V=W.position.constructor,hr=new V(),hl=new V(),hd=new V();W.updateMatrixWorld(true);W.getObjectByName('forearm.R').localToWorld(hr.set(0,-.19,.03));W.getObjectByName('forearm.L').localToWorld(hl.set(0,-.19,.03));
   W.getObjectByName('head').getWorldPosition(hd);const e=o.state.endP,g=(r?r.meteor:null);let minHood=1e9;
@@ -30,6 +35,7 @@ with sync_playwright() as p:
     pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots', timeout=120000); pg.wait_for_timeout(2500)
     pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock'].forEach(k=>wlGame.state.setFlag(k,true))")
     ex = pg.evaluate('wlZone.cur.spots.exit')
+    pg.evaluate(CLIPLOG)
     pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.x=x-3.2;W.position.z=z+.4;}", ex); pg.wait_for_timeout(1200)
     t0 = time.time() - V0; tm = {}; perf = {'비행': [], '착지': []}
     def stats():
@@ -85,6 +91,10 @@ with sync_playwright() as p:
     if yawlog: R['카메라 기본 각도와 차이(라디안, [연출 시각, 차이])'] = yawlog
     if meas: R['손·꼬리·탈 거리(m)'] = meas
     if shots: R['사진'] = shots
+    cl = pg.evaluate('window.__clip||[]'); bad = [x for x in cl if x[2] > .01 and not x[3]]
+    low = [x for x in cl if x[5] < .3 and not x[3] and x[1] == 'r:fly']
+    R['비행 중 카메라가 원더룹 발보다 낮은 프레임(아래에서 올려다봄 — 발바닥·가방만)'] = {'프레임': len(low), '가장 낮음(m, 카메라 − 발)': min([x[5] for x in low], default=None), '시각': [x[0] for x in low][:: max(1, len(low) // 10)][:10]}
+    R['잘림(화면 밖 1% 넘는 프레임, 먼지구름 덮은 동안 뺌)'] = {'전체 프레임': len(cl), '잘린 프레임': len(bad), '구간': sorted(set(x[1] for x in bad)), '가장 많이 나감': max([x[2] for x in bad], default=0), '예(시각·단계·나감·덮임·[x0,y0,x1,y1])': bad[:: max(1, len(bad) // 12)][:12]}
     R['오류'] = errs
     c.close(); b.close()
     if not ANG:
