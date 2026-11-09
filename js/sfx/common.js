@@ -56,6 +56,8 @@ const WL={
 /* 새로 만든 소리 — 원본에 없던 종류만. 세기는 같은 묶음 원본 소리의 RMS에 맞춤(docs/sfx-list.md 표) */
 const NEW={
   // 발소리 바닥별: 원본 step(띠 거르개 소음 0.045초)과 같은 모양·같은 크기, 거르개 자리·길이만 바닥에 맞게
+  'event-wind':[2.4,(c,t,D)=>{noise(c,t,2.4,.05,D,'bandpass',rr(500,700),.6,rr(1100,1500));noise(c,t+.6,1.6,.025,D,'bandpass',rr(1600,2000),.8,rr(900,1200));}], // 쏴아: 낮은 바람이 천천히 오르내림
+  'event-dust':[.4,(c,t,D)=>{noise(c,t,.35,.14,D,'lowpass',rr(900,1200),.7,220);noise(c,t+.03,.18,.04,D,'bandpass',rr(2200,2800),1.2);}], // 퍽: 부드러운 흙먼지
   'photo-shutter':[.2,(c,t,D)=>{noise(c,t,.03,.16,D,'highpass',3800,.8);tone(c,'square',1900,t,.018,.035,D,{lp:4200});noise(c,t+.075,.05,.12,D,'bandpass',2600,1.4);tone(c,'square',1300,t+.075,.02,.03,D,{lp:3600});}], // 찰-칵: 높은 딸깍 두 번(원본 click과 비슷한 크기)
   'step-grass':[.07,(c,t,D)=>{noise(c,t,.06,.021,D,'bandpass',rr(2200,3000),1.1);noise(c,t+.012,.04,.011,D,'highpass',5200,.7);}],      // 풀: 사각
   'step-wood':[.07,(c,t,D)=>{noise(c,t,.05,.011,D,'bandpass',rr(380,520),1.6);tone(c,'sine',rr(180,220),t,.06,.008,D);}],               // 나무 바닥: 톡
@@ -105,6 +107,8 @@ const KINDS={
   'guard-windup':['사건','whoosh','덤비기 전(세계 설정으로 — 개미굴 ant-windup)'],
   'guard-caught':['사건','whoosh','안전한 곳으로 옮겨짐(세계 설정으로 — 개미굴 ant-caught)'],
   'big-get':['사건','success','큰 획득 — 선물이 원더룹 앞에 닿는 순간(원본 나침반 success)'],
+  'event-wind':['사건','event-wind','잔잔한 바람(별똥별 비행 — 2.4초, 이어서 되풀이, 원본에 없던 소리)'],
+  'event-dust':['사건','event-dust','먼지 퐁(착지 때 흙먼지가 피어오름 — 원본에 없던 소리)'],
   'photo-shutter':['화면','photo-shutter','사진 찍기 셔터 찰칵(사진 모드 — 원본에 없던 소리, 2026-11-08)'],
   'weather-thunder':['날씨','thunder','천둥'],
   'weather-drip':['날씨','drip','물방울 똑'],

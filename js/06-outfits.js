@@ -152,7 +152,7 @@ function wlMerge(list){
   addA(wm(new THREE.BoxGeometry(.08,.06,.02),aBuck),wlBody).position.set(0,.37,.225);
   addA(wm(new THREE.CylinderGeometry(.2,.22,.1,20),aPants),wlBase).position.y=.31;
   {const sc=addA(wm(new THREE.TorusGeometry(.2,.062,12,32),aScarf),wlBody);sc.rotation.x=PI/2;sc.scale.set(1.08,1,1);sc.position.set(0,.6,-.02);
-   const kn=addA(wm(new THREE.SphereGeometry(.06,12,10),aScarf),wlBody);kn.scale.set(1.1,.9,.8);kn.position.set(.1,.57,.18);
+   const kn=addA(wm(new THREE.SphereGeometry(.06,12,10),aScarf),wlBody);kn.scale.set(1.1,.9,.8);kn.name='ant-scarf-knot';kn.position.set(.1,.57,.18);
    const tl=addA(wm(roundBox(.045,.09,.02,.5),aScarf),wlBody);tl.position.set(.13,.48,.19);tl.rotation.set(-.15,0,.25);}
   WL.traverse(o=>{if(!o.isBone)return;const n=o.name;
     if(n.startsWith('upperarm.'))addA(wm(new THREE.CylinderGeometry(.058,.054,.125,12).translate(0,-.0625,0),aTop),o);           // 긴팔: 어깨~팔꿈치

@@ -3,7 +3,7 @@
    python3 tools/space-stage1-test.py [--out docs/compare/space-stage1] [--phone] [--video] [--real]
    기록을 지운 첫 방문 ?world=infinite-space: 타이틀 '새로 시작' → 탐험 준비 '모험 떠나기' → 이야기 소개 세 단계 → 미션(숨방울 목걸이) →
    망원경 '살펴보기'(시야·발견) → 떡방아 '찧기' 세 번(달떡) → 목걸이까지 걸어감 → 얻음·목에 걺 → 얼음 동굴(비밀) → 할아버지에게 돌아감 → 둥실 뛰기 시범 →
-   높은 바위로 둥실 뛰어 오름 → 첫 빈칸 → 출구 → STAGE 1 완료. 자리는 구역이 알려 줌(wlZone.cur.spots — 행성 크기가 바뀌어도 그대로).
+   높은 바위로 둥실 뛰어 오름 → 첫 빈칸 → 출구 → STAGE 1 완료 → 별똥별 꼬리 타기 → 화성 착지(조작 풀림·화면 UI 돌아옴·걸음). 자리는 구역이 알려 줌(wlZone.cur.spots — 행성 크기가 바뀌어도 그대로).
    --real: 사람처럼 읽는 시간을 둠(카드·대사마다 약 3초, 이야기 소개는 글자가 다 써질 때까지, 망원경 6초) → '처음부터 끝까지 걸린 시간'을 잴 때.
    단계마다 화면을 <out>/에, 결과 JSON(단계별 시각 포함), --video면 녹화(webm → <out>/<pc|phone>-stage1.webm, 단계 시각은 영상 시작 기준). 소리 끔, 끝나면 닫음."""
 import json, os, sys, shutil, time
@@ -117,8 +117,20 @@ with sync_playwright() as p:
         P = hero('[P.x,P.z]'); walk(P[0] + (3 if k % 2 else -3), P[1] + 2, 6)
     pg.wait_for_timeout(1500); shot('stage-clear'); R['완료'] = pg.evaluate("!!wlGame.state.flags['clear:space-garden']"); mark('STAGE 1 완료')
     R['처음부터 끝까지(초)'] = round(time.time() - t_start, 1); R['읽는 시간 넣음'] = REAL
-    pg.wait_for_timeout(3000)
-    pg.evaluate("()=>{const C=wlGame.controls.input.cam;C.pitch=.75;C.dist=11;C.user=(C.user||0)+1;}"); pg.wait_for_timeout(1500); shot('footprints')
+    # 별똥별 꼬리 타기(2026-11-09): 카드 뒤 별똥별이 내려와 → 비행 → 화성 착지 → 조작이 풀리고 화면 UI가 돌아옴
+    for _ in range(240):
+        if pg.evaluate("!!(wlZone.cur.ride&&wlZone.cur.ride()&&wlZone.cur.ride().state.phase==='fly')"): break
+        pg.wait_for_timeout(250)
+    mark('별똥별 출발'); pg.wait_for_timeout(5000); shot('meteor-flight')
+    for _ in range(240):
+        if pg.evaluate("wlZone.cur&&wlZone.cur.arrival&&wlZone.cur.arrival()&&wlZone.cur.arrival().state.done"): break
+        pg.wait_for_timeout(250)
+    pg.wait_for_timeout(800); shot('mars-landed'); mark('화성 착지')
+    R['화성 착지'] = pg.evaluate("!!(wlZone.cur.arrival&&wlZone.cur.arrival()&&wlZone.cur.arrival().state.done)")
+    R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.core.blocking('meteor')")
+    R['화면 UI 돌아옴'] = pg.evaluate("wlGame.ui.hintsVisible()&&!document.getElementById('wlRideCam')&&getComputedStyle(document.getElementById('wlHud')).visibility!=='hidden'")
+    P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
+    R['화성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
     R['오류'] = errs; R['영상 시각(초)'] = T
     vid = pg.video.path() if VIDEO else None
     c.close(); b.close()

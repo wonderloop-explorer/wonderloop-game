@@ -15,12 +15,14 @@
 import * as THREE from 'three';
 const BEND = { value: new THREE.Vector4(0, 0, 0, 8) }, NONE = { value: new THREE.Vector4(0, 0, 0, 8) }, SPH = { value: new THREE.Vector4(0, 0, 0, 1) }, SNONE = { value: new THREE.Vector4(0, 0, 0, 1) };
 const C = THREE.ShaderChunk;
+/* 작은 행성 각도(2026-11-09 — 별똥별 꼬리 타기): 4m 위는 그 높이의 둘레로 각도를 잰다(th = r/(R+max(0,y−4))) — R로만 재면 높이 y의 물체가 (R+y)/R배 옆으로 넓어져
+   하늘 높이의 원더룹·별똥별이 납작해졌다. 땅·4m 아래(바위 꼭대기·둥실 뛰기 포함)는 예전 그대로 */
 if (!C.common.includes('wlBend')) {
   C.common += `
 uniform vec4 wlBend; // 둥근 땅(game/bend.js): x 세기 k, yz 카메라 x·z, w 평평하게 둘 거리 d0
 uniform vec4 wlSph; // 작은 행성(game/bend.js): x 반지름 R(0이면 끔), yz 원더룹 x·z, w 이어지는 간격 L
 vec4 wlBent( vec4 w ) {
-  if ( wlSph.x > 0.0 ) { vec2 d = mod( w.xz - wlSph.yz + 0.5 * wlSph.w, wlSph.w ) - 0.5 * wlSph.w; float r = length( d ), th = r / wlSph.x, rr = wlSph.x + w.y;
+  if ( wlSph.x > 0.0 ) { vec2 d = mod( w.xz - wlSph.yz + 0.5 * wlSph.w, wlSph.w ) - 0.5 * wlSph.w; float r = length( d ), th = r / ( wlSph.x + max( 0.0, w.y - 4.0 ) ), rr = wlSph.x + w.y;
     vec2 dir = r > 1e-5 ? d / r : vec2( 0.0 ); w.xz = wlSph.yz + dir * rr * sin( th ); w.y = rr * cos( th ) - wlSph.x; return w; }
   vec2 d = w.xz - wlBend.yz; float r = max( 0.0, length( d ) - wlBend.w ); w.y -= wlBend.x * r * r; return w; }`;
   const pv = 'mvPosition = modelViewMatrix * mvPosition;';
@@ -66,7 +68,7 @@ const sphereInfo = () => sphere;
 function bendPaused() { paused++; const x = BEND.value.x, sx = SPH.value.x; BEND.value.x = 0; SPH.value.x = 0; return () => { paused--; BEND.value.x = paused ? 0 : x; SPH.value.x = paused ? 0 : sx; }; }
 /* 그림 위치 계산(자바스크립트 쪽 — 화면 위 안내를 3D 자리에 맞출 때): 평평한 자리 p를 휜 자리로 */
 function bentPos(p) { const s = SPH.value; if (!(s.x > 0)) { p.y = bentY(p.x, p.z, p.y); return p; } const L = s.w, w = q => ((q % L) + 1.5 * L) % L - .5 * L;
-  const dx = w(p.x - s.y), dz = w(p.z - s.z), r = Math.hypot(dx, dz), th = r / s.x, rr = s.x + p.y, k = r > 1e-5 ? rr * Math.sin(th) / r : 1;
+  const dx = w(p.x - s.y), dz = w(p.z - s.z), r = Math.hypot(dx, dz), th = r / (s.x + Math.max(0, p.y - 4)), rr = s.x + p.y, k = r > 1e-5 ? rr * Math.sin(th) / r : 1;
   p.x = s.y + dx * k; p.z = s.z + dz * k; p.y = rr * Math.cos(th) - s.x; return p; }
 function bentY(x, z, y) { const s = SPH.value; if (s.x > 0) return bentPos({ x, y, z }).y; const v = BEND.value; if (!(v.x > 0)) return y; const r = Math.max(0, Math.hypot(x - v.y, z - v.z) - v.w); return y - v.x * r * r; }
 const bendInfo = () => ({ on: !!zoneBend, level, label: LEVELS[level], k: bendK(), d0: zoneBend ? zoneBend.d0 : null });

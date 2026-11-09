@@ -30,6 +30,7 @@ import {sbMat} from '../../game/storybook.js';
 import {bentPos} from '../../game/bend.js';
 import {popShown} from '../../game/popup.js';
 import SPACE from '../../worlds/infinite-space.js';
+import {RIDE,departure} from './meteor-ride.js'; // 출구 → 별똥별 꼬리 타고 화성으로(2026-11-09)
 /* 행성 크기(2026-11-08 — 17m → 24m): 걷기 속도는 그대로 두고 행성을 키워 땅이 도는 속도를 약 30% 늦춤(땅 회전만 따로 늦추면 발이 미끄러져 보여서). 한 바퀴 2πR/3.78 ≈ 40초.
    ?debug 톱니 메뉴 '행성 반지름' 막대(localStorage 'wl-space-R', 12~40 — 바꾸면 다시 연다) 또는 ?planetR=로 맞춰 볼 수 있다.
    배치는 17m 때 자리를 기준으로 S = R/17배 펼친다: 멀리 있는 것(분화구·언덕·발자국 길·출구·따뜻한 땅·그늘 분화구 자리)은 S배,
@@ -321,7 +322,11 @@ const bunBlob=blobMany(BUN.length+1);if(bunBlob){bunBlob.frustumCulled=false;roo
 const bunnies=BUN.map((b,i)=>{const m=makeBunny(b.fur,b.scarf);const [x,z]=b.way[0];m.root.position.set(x,groundY(x,z),z);root.add(m.root);keep.push(m.root);
   const st={i:0,t:0,wait:RR(.5,2.5),from:[x,z],to:null,ry:0};
   G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:1.4,variants:[{when:()=>!GATHER.on,lines:[b.line]}]}); /* 망원경·절구에서 조금 떨어져 뛰놀고(가까우면 E가 '말 걸기'로 먼저 가서 체험이 안 됐다), 떡방아 구경 중엔 말 걸 상대가 아님 */return {...b,m,st};});
-function tickBunnies(dt,t,P){bunnies.forEach((b,i)=>{const s=b.st,r=b.m.root,gs=GATHER.on&&GATHER.spots[i],near=!gs&&P&&dist(P.x,P.z,[r.position.x,r.position.z])<2.4;
+function tickBunnies(dt,t,P){
+  if(WAVE.on&&P){bunnies.forEach((b,i)=>{const r=b.m.root,a=i*2.1+.6,x=BOBO[0]+Math.cos(a)*1.5,z=BOBO[1]+Math.sin(a)*1.5,hop=Math.abs(Math.sin(t*4.2+i*1.7)); // 별똥별 타고 가는 원더룹에게: 할아버지 둘레에서 통통 뛰며 몸을 좌우로 흔듦(손 흔들기 — 토끼는 팔이 따로 없다)
+      r.position.set(x,groundY(x,z)+hop*.45,z);const ry=Math.atan2(wd(P.x-x),wd(P.z-z));b.st.ry+=Math.atan2(Math.sin(ry-b.st.ry),Math.cos(ry-b.st.ry))*Math.min(1,dt*4);r.rotation.y=b.st.ry;
+      b.m.squash(hop>.92?(hop-.92)/.08*.5:0,t);r.rotation.z=Math.sin(t*6+i)*.18;b.st.from=[x,z];b.st.to=null;});return;}
+  bunnies.forEach((b,i)=>{const s=b.st,r=b.m.root,gs=GATHER.on&&GATHER.spots[i],near=!gs&&P&&dist(P.x,P.z,[r.position.x,r.position.z])<2.4;
   if(!s.to&&gs){const dx=gs[0]-s.from[0],dz=gs[1]-s.from[1],d=Math.hypot(dx,dz); // 떡방아 구경: 절구 둘레 자리로 둥실둥실 모여 절구를 봄
     if(d>.3){const n=Math.max(1,Math.ceil(d/2.1));s.to=[s.from[0]+dx/n,s.from[1]+dz/n];s.goal=gs;s.t=0;s.ry=Math.atan2(dx,dz);}
     else{const a=Math.atan2(MORTAR[0]-s.from[0],MORTAR[1]-s.from[1]);s.ry+=Math.atan2(Math.sin(a-s.ry),Math.cos(a-s.ry))*Math.min(1,dt*4);r.position.set(s.from[0],groundY(...s.from)+Math.abs(Math.sin(t*5+i))*.06,s.from[1]);b.m.squash(0,t);}}
@@ -412,7 +417,7 @@ PEST.rest.q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),P
 const _hR=new THREE.Vector3(),_hL=new THREE.Vector3(),_px=new THREE.Vector3(),_py=new THREE.Vector3(),_pz=new THREE.Vector3(),_pm=new THREE.Matrix4(),_pqH=new THREE.Quaternion(),_ph=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
 let foreR=null,foreL=null;
 function poundingNow(W){const A=W&&W.userData.action;return A==='떡메 찧기'||A==='떡메 들기';}
-function lateUpdate(dt){const W=U0();if(!W)return;const U=W.userData;
+function lateUpdate(dt,t){const W=U0();if(!W)return;const U=W.userData;if(ride)ride.late(dt,t);
   if(!foreR){foreR=W.getObjectByName('forearm.R');foreL=W.getObjectByName('forearm.L');}
   PEST.idle+=dt;
   // 찧기 사이 잡고 기다리다가 — 2.4초 쉬거나 걷기 시작하면 내려놓음
@@ -516,6 +521,8 @@ function orb({map,rep=[5,3],ring=false}){const g=new THREE.Group();anchor.add(g)
 const haloTex=canvasTex(128,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(190,170,255,0)');gr.addColorStop(.72,'rgba(190,170,255,0)');gr.addColorStop(.78,'rgba(196,178,255,.3)');gr.addColorStop(.9,'rgba(180,160,250,.12)');gr.addColorStop(1,'rgba(170,150,240,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
 const jup=orb({map:canvasTex(512,jupiterMap,256),rep:[6,3]});
 const sat=orb({map:canvasTex(256,saturnMap,128),rep:[4,2],ring:true});
+/* 화성(별똥별 비행 끝에만 — 점점 커짐): 같은 로우폴리 구 + 녹슨 주황 그림(어두운 무늬·흰 극관) */
+const mars=orb({map:canvasTex(256,marsMap,128),rep:[4,2]});mars.g.visible=false;
 /* 토성 고리 기울기(그림판 자리 기준 — 화면에서 비스듬한 타원): 고리 면의 법선 */
 {const n=new THREE.Vector3(.16,.88,.45).normalize();sat.ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),n);sat.U.uRn.value.copy(n);}
 const neb=bill(canvasTex(512,nebulaArt),{add:true,order:-7,op:.8});
@@ -554,8 +561,14 @@ function tickAnchor(dt,cam){if(!cam)return;anchor.position.copy(cam.position);if
   for(const k in LAYOUT){const [m,x0,y0,s0,x1,y1,s1]=LAYOUT[k],x=port?x1:x0,y=port?y1:y0,s=port?s1:s0;m.position.set(x*th*D,y*tv*D,-D);m.quaternion.identity();
     const sz=s*2*u*D;if(k==='milky'){m.scale.set(sz*1.0,sz*1.0,1);m.rotation.z=port?-.55:-.22;}else if(k==='jup')m.scale.setScalar(sz*.46);else if(k==='sat')m.scale.setScalar(sz*.2);else m.scale.set(sz,sz,1);}
   /* 행성 빛 방향(세계): 그림판의 해 쪽(왼쪽 위) + 카메라 쪽을 조금 섞음 — 해가 거의 같은 거리에 있어 옆에서만 비추면 반쪽이 어두워 대비가 셌다 */
-  for(const o of [jup,sat]){_od.copy(sunM.position).sub(o.g.position).normalize();_od.z+=.85;o.U.uL.value.copy(_od.normalize()).applyQuaternion(aq);}
+  for(const o of [jup,sat,mars]){_od.copy(sunM.position).sub(o.g.position).normalize();_od.z+=.85;o.U.uL.value.copy(_od.normalize()).applyQuaternion(aq);}
   sat.U.uRn.value.set(.16,.88,.45).normalize().applyQuaternion(aq);
+  /* 별똥별 비행(FLY.k 0~1): 토성·목성이 커지며 옆으로 스쳐 지나가고(앞으로 갈 곳 미리 보기), 끝에 붉은 화성이 가운데 위에서 점점 커짐 */
+  if(FLY.k>0){const k=FLY.k,e1=ss(.28,.82,k),e2=ss(.16,.7,k),put=(m,x,y,f)=>{m.position.set(x*th*D,y*tv*D,-D);m.scale.multiplyScalar(f);};
+    {const Ls=LAYOUT.sat,x=port?Ls[4]:Ls[1],y=port?Ls[5]:Ls[2];put(sat.g,x+((port?-1.6:-1.5)-x)*e1,y+(.05-y)*e1,1+2.4*e1);}
+    {const Lj=LAYOUT.jup,x=port?Lj[4]:Lj[1],y=port?Lj[5]:Lj[2];put(jup.g,x+((port?1.9:2.1)-x)*e2,y+(-.5-y)*e2,1+.6*e2);}
+    const em=ss(.55,1,k);mars.g.visible=k>.52;if(mars.g.visible){mars.g.position.set(0,(.5-.38*em)*tv*D,-D*.95);mars.g.scale.setScalar(2*u*D*(.035+.62*em*em)*.46);}}
+  else mars.g.visible=false;
   {const gs=2*D*.995*Math.max(tv,th)*4.2;grain.position.set(0,0,-D*1.0);grain.scale.set(gs,gs,1);grain.material.map.repeat.set(9,9);}
   sunView.copy(sunM.position).normalize().applyQuaternion(aq);}
 const NEB0=.62;
@@ -603,10 +616,11 @@ function hopDemo(){const W=U0();st.hop={t:0,from:[bobo.root.position.x,bobo.root
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};});}
 let fpLast=null;
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
+const W0=P=>P; // 손 흔들기: 원더룹 자리(할아버지·토끼가 바라볼 곳)
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
-  bobo.tick(dt,t,st.hop);tickSparks(t,P,cam);tickBunnies(dt,t,P);tickBits(dt);tickCake(dt);
+  bobo.tick(dt,t,st.hop,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}
@@ -633,9 +647,24 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
     const V=U.vert;if(V&&V.y>ROCK_TOP-.2&&dist(P.x,P.z,ROCK.c)<ROCK.r+.2){G.state.setFlag(K.rock,true);G.react.react('joy');
       G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()});}return;}
   if(!F[K.clear]){quest('행성 끝 출구 빛기둥까지 가요',{at:EXIT,label:'출구',style:'ant',h:4});
-    if(dist(P.x,P.z,EXIT)<1.7){G.state.setFlag(K.clear,true);quest('',null);G.react.react('hop');
-      G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:4.5,sound:'mission-clear',who:'완료'});}}
-  else quest('',null);}
+    if(dist(P.x,P.z,EXIT)<1.7){G.state.setFlag(K.clear,true);quest('',null);startRide(true);}}
+  else{quest('',null);if(dist(P.x,P.z,EXIT)>3)st.exitOut=true;else if(st.exitOut&&dist(P.x,P.z,EXIT)<1.5&&!G.ui.cardShown())startRide(false);}} // 다시 들어서면 또 타고 감(화성으로)
+/* ── 출구 → 별똥별 꼬리 타기(meteor-ride.js 맨 위 주석): 처음이면 'STAGE 1 완료!' 카드(그동안 서 있음) 뒤 연출.
+   비행 길(별똥별 머리 자리): 출구 → 마을 위(약 17m — 보름 할아버지·아기 토끼가 손 흔듦) → 계속 오르며 행성이 작아짐(작은 행성 그림이 원더룹 높이만큼 아래로 — 위로 70m),
+   하늘 그림판의 토성·목성이 옆으로 스쳐 지나가고(FLY.k), 끝에 붉은 화성이 커짐 → 화면 전환으로 화성(space-mars) */
+let ride=null;const FLY={k:0},WAVE={on:false};
+function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W.userData;st.exitOut=false;if(U.stopWalk)U.stopWalk();U.riding={y:W.position.y};st.rideWait=true;
+  const go=()=>{st.rideWait=false;const P=W.position;
+    // 마을 쪽을 보고 서서 시작(별똥별이 앞에서 내려옴)
+    const vx=wd(VIL[0]-P.x),vz=wd(VIL[1]-P.z),vl=Math.hypot(vx,vz)||1,ux=vx/vl,uz=vz/vl;W.rotation.y=Math.atan2(ux,uz);
+    const sx=P.x+ux*1.25,sz=P.z+uz*1.25,sy=P.y+2.9,y0=P.y;
+    ride=departure({G,root,WL:W,groundY,mob:MOB,fly:13,
+      path:u=>{const e1=ss(0,.5,u),e2=ss(.5,1,u),d=vl*1.15*e1+26*e2;return {x:sx+ux*d,y:y0+2.9+14*ss(0,.45,u)+56*Math.pow(ss(.4,1,u),1.3),z:sz+uz*d};},
+      onWave:on=>{WAVE.on=on;if(on)placeBobo(BOBO);},
+      onFly:u=>{FLY.k=u;},
+      onEnd:()=>{RIDE.pending={from:'space-garden',scarf:true};G.ui.transition(async()=>{if(window.wlZone)await window.wlZone.go('space-mars');},{out:.7,hold:.35,in:.9});}});};
+  if(first){G.react.react('hop');Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]).then(()=>setTimeout(go,250));}
+  else go();}
 const ICON_MAP=()=>SPACE.icons.map();
 // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
 function caveSecret(){G.state.setFlag(K.cave,true);G.react.react('awe',{sound:'card-secret'});
@@ -653,12 +682,13 @@ function tickWeather(dt,t,w){const M=meteors,cam=G.view.camera;
   const A=aurora.m.uniforms;A.uT.value=t;A.uA.value+=((w==='aurora'?.85:0)-A.uA.value)*Math.min(1,dt*.8);aurora.me.visible=A.uA.value>.01;
   neb.material.opacity+=((w==='nebula'?.95:NEB0)-neb.material.opacity)*Math.min(1,dt*.8);
   sunG.scale.multiplyScalar(1+.05*Math.sin(t*1.3));} // 빛무리가 천천히 숨쉼
-function wrapShift(k,sh){if(fpLast)fpLast[k]+=sh;
+function wrapShift(k,sh){if(fpLast)fpLast[k]+=sh;if(ride)ride.shift(k,sh);
   // 아기 토끼·할아버지는 마을 자리 그대로(원더룹이 이어 붙는 선을 넘으면 같은 자리가 L만큼 옮겨진 쪽에 그려진다 — 평평한 좌표는 그대로 둬도 wd로 거리 계산)
 }
 return {
   name:'회색 정원',kind:'outdoor',
   spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R,hut:[HUT[0],HUT[1],groundY(...HUT),Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])],win:Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])-2*PI/14},
+  ride:()=>ride,flyK:()=>FLY.k, /* 별똥별 꼬리 타기 확인(tools/space-meteor-rec.py) */
   poundInfo:()=>({hits:PEST.hits,stand:MSTAND,d:+POUND_D.toFixed(3),cakeTop:+CAKE_TOP.toFixed(3),squish:+CSQ.x.toFixed(3),head:(()=>{pestle.updateMatrixWorld(true);const h=HEAD_C.clone().addScaledVector(HEAD_AX,-.12);pestle.localToWorld(h);return h.toArray().map(n=>+n.toFixed(3));})()}), /* 떡방아 확인(tools/space-pound-rec.py) */ // 시험 도구가 읽는 자리(tools/space-stage1-test.py)
 start:{compass:true},world:null,
   spawn:{x:SPAWN[0],z:SPAWN[1],ry:PI},
@@ -666,7 +696,7 @@ start:{compass:true},world:null,
   sun:ZSUN,lights:[lav],light,rim:.32,
   sky:SK,bend:{sphere:R,wrap:L},gravity:.38,jumpK:1.15,
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
-  update,lateUpdate,dispose(){scopeClose();if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
+  update,lateUpdate,dispose(){scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
 function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
@@ -697,6 +727,11 @@ function jupiterMap(g,w,h){const bands=['#f6ead2','#f2cba4','#f5e6cb','#edbd92',
   for(let i=0;i<16;i++){const k=i/16,a0=k*PI*2.6,rr=.25+.7*k;g.strokeStyle=i%2?'rgba(255,190,160,.45)':'rgba(196,78,58,.45)';g.lineWidth=1.6;g.beginPath();
     g.ellipse(sx,sy,rx*rr,ry*rr,0,a0,a0+1.6);g.stroke();}
   g.restore();}
+/* 화성 그림(equirect): 녹슨 주황 + 어두운 무늬(손그림 얼룩) + 밝은 모래빛 + 위아래 흰 극관 + 빗금 */
+function marsMap(g,w,h){g.fillStyle='#cf6a45';g.fillRect(0,0,w,h);const R=srand(23);
+  for(let i=0;i<46;i++){const x=R()*w,y=h*(.2+R()*.6),r=w*(.02+R()*.07);g.globalAlpha=.25+R()*.3;g.fillStyle=R()<.6?'#9c4430':'#e4925f';g.beginPath();g.ellipse(x,y,r*1.6,r*.7,R()*.6-.3,0,PI*2);g.fill();}
+  g.globalAlpha=1;g.fillStyle='#f6ece2';g.fillRect(0,0,w,h*.07);g.fillRect(0,h*.95,w,h*.05);
+  hatch(g,0,0,w,h,420,['#f0a074','#b04e34','#fbe0c8'],31,{len:[5,13],alpha:[.07,.16]});}
 /* 토성 줄무늬 그림(equirect): 금빛 몸통 + 옅은 줄무늬 + 빗금 */
 function saturnMap(g,w,h){g.fillStyle='#efc979';g.fillRect(0,0,w,h);const R=srand(31);
   [[.28,'#e2bc78',5],[.42,'#f6e0ae',4],[.55,'#ddb26a',6],[.68,'#f3dba6',3],[.8,'#d9ad66',4]].forEach(([y,c,lw])=>{g.strokeStyle=c;g.lineWidth=lw;g.beginPath();for(let x=0;x<=w;x+=4){const yy=y*h+Math.sin(x/w*PI*6+y*9)*1.6;x?g.lineTo(x,yy):g.moveTo(x,yy);}g.stroke();});
@@ -816,7 +851,9 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
     [Cy(.035,.035,.012,10),'#e6d2a8',[.205,0,0],[0,0,PI/2]],[Cy(.035,.035,.012,10),'#e6d2a8',[-.205,0,0],[0,0,PI/2]]]);
   scroll.position.set(0,-.33,.06);scroll.rotation.set(0,.5,.9);scroll.visible=false;armR.add(scroll);
   let mode=0,mt=0;
-  function tick(dt,t,hop){mt+=dt;if(mt>6.5){mt=0;mode=(mode+1)%2;}
+  function tick(dt,t,hop,wave){mt+=dt;if(mt>6.5){mt=0;mode=(mode+1)%2;}
+    if(wave){const P=wave,dx=P.x-root.position.x,dz=P.z-root.position.z;root.rotation.y+=Math.atan2(Math.sin(Math.atan2(dx,dz)-root.rotation.y),Math.cos(Math.atan2(dx,dz)-root.rotation.y))*Math.min(1,dt*3); // 별똥별 타고 가는 원더룹에게 두 팔 번쩍 손 흔들기
+      armR.rotation.set(-2.5,0,-.25+Math.sin(t*8)*.45);armL.rotation.set(-2.5,0,.25-Math.sin(t*8+1.3)*.45);head.rotation.x=-.4;head.rotation.z=Math.sin(t*1.6)*.05;map.scale.x=.001;map.visible=false;scroll.visible=false;return;}
     const k=hop?0:ss(0,.6,mt)*ss(6.5,5.8,mt);// 동작 세기(들어갔다 나옴)
     head.rotation.z=Math.sin(t*.9)*.04;head.position.y=.84+Math.sin(t*1.8)*.008;earBent.rotation.z=Math.sin(t*1.3)*.08;
     scroll.visible=!!hop;
