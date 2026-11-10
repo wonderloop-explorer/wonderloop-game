@@ -23,14 +23,14 @@ const css=`
 #wlDlg .who{position:absolute;left:-12px;top:-20px;z-index:1;padding:.3rem 1.05rem .35rem;font-size:1rem;font-family:"Jua",sans-serif} /* 민트 마스킹테이프 이름표 — 대화창 왼쪽 위 모서리에 걸쳐 붙임 */
 #wlDlg .line{margin:0;font-size:1.16rem;line-height:1.62;color:var(--f-ink)} /* 대화 본문은 읽기 쉬운 Gowun Dodum */
 #wlDlg .more{margin:.35rem 0 0;text-align:right;font-size:.8rem;color:var(--ink-soft)}
-#wlNotice{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;display:flex;gap:1rem;align-items:center;
+#wlNotice{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 120px);transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;display:flex;gap:1rem;align-items:center;
   width:min(26rem,calc(100vw - 32px));box-sizing:border-box;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.2rem 1.3rem;box-shadow:0 18px 50px rgba(30,14,36,.5);
   transition:transform .4s cubic-bezier(.2,1.5,.4,1),opacity .25s;z-index:21}
 #wlNotice.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
 #wlNotice img{width:72px;height:72px;flex:none}#wlNotice img:not([src]){display:none}
 #wlNotice .k{margin:0;display:inline-block;background:var(--tag);color:var(--tag-ink);border-radius:999px;padding:.15rem .7rem;font-size:.85rem}
 #wlNotice .t{margin:.45rem 0 .3rem;font-size:1.3rem;font-family:"Jua",sans-serif}
-#wlGet{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 110px);width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:center;gap:.9rem;z-index:21;
+#wlGet{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 120px);width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:center;gap:.9rem;z-index:21;
   background:var(--panel);color:var(--ink);border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;box-shadow:0 14px 40px rgba(30,14,36,.45);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s}
 #wlGet.on{opacity:1;transform:translate(-50%,0) scale(1)}
 #wlGet .ic{flex:none;display:grid;place-items:center;width:58px;height:58px;box-sizing:border-box;border-radius:50%;background:#f3ead6;border:1.5px solid #a77a52}#wlGet .ic:has(img:not([src])){display:none}
@@ -63,21 +63,18 @@ const css=`
 #wlPrompt.wl-felt:not(#wl_a):not(#wl_b)::before{display:none} /* 'E 말 걸기' 안내: 점선 없이 조금 크게 */
 #wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .8rem;
   background:#f2b63c;color:#3e2834;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none;box-sizing:border-box} /* 개미굴 #act: 노란 동그라미(글자가 길면 알약) */ /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
-#wlSecret{position:fixed;inset:0;display:none;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.25);z-index:31}
-#wlSecret .card{background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:4px solid #e3ad35;border-radius:22px;padding:1.4rem 1.5rem 1.2rem;width:min(21rem,100%);box-sizing:border-box;text-align:center;
-  box-shadow:inset 0 0 0 3px #fff6d6,0 0 34px rgba(255,196,70,.65),0 18px 50px rgba(30,14,36,.5)}
-/* 비밀 카드 금빛 반짝임(개미굴 비밀 카드처럼, 2026-11-03): 카드 둘레 별 다섯이 차례로 반짝, 카드가 살짝 빛나며 숨쉼, 그림 둘레 금빛 고리 */
-#wlSecret .card{position:relative;animation:wlSecIn .5s cubic-bezier(.2,1.4,.4,1) both,wlSecGlow 2.4s ease-in-out .5s infinite}
-#wlSecret .tw{position:absolute;left:var(--x);top:var(--y);width:26px;height:26px;transform:translate(-50%,-50%) scale(0);pointer-events:none;background:#ffe9a0;
-  clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);filter:drop-shadow(0 0 6px rgba(255,210,90,.95));animation:wlSecTw 2.2s ease-in-out var(--d) infinite}
-#wlSecret img{border-radius:50%;background:#fff8e8;box-shadow:0 0 0 4px #e3ad35,0 0 18px rgba(255,196,70,.8)}
-@keyframes wlSecTw{0%,55%,100%{transform:translate(-50%,-50%) scale(0) rotate(0);opacity:0}70%{transform:translate(-50%,-50%) scale(1) rotate(30deg);opacity:1}85%{transform:translate(-50%,-50%) scale(.4) rotate(50deg);opacity:.6}}
-@keyframes wlSecGlow{0%,100%{box-shadow:inset 0 0 0 3px #fff6d6,0 0 26px rgba(255,196,70,.55),0 18px 50px rgba(30,14,36,.5)}50%{box-shadow:inset 0 0 0 3px #fff6d6,0 0 46px rgba(255,196,70,.9),0 18px 50px rgba(30,14,36,.5)}}
-@keyframes wlSecIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion: reduce){#wlSecret .card{animation:none}#wlSecret .tw{display:none}}
-#wlSecret .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.95rem}#wlSecret img{width:112px;height:112px;margin:.6rem auto 0;display:block;object-fit:contain}#wlSecret img:not([src]){display:none}
-#wlSecret h2{margin:.5rem 0 .4rem;font-size:1.45rem;font-weight:400;font-family:"Jua",sans-serif}#wlSecret .f{margin:0;line-height:1.65}#wlSecret .n{margin:.6rem 0 0;color:#9a6a18;font-size:.9rem}#wlSecret .n:empty{display:none}
-#wlSecret button{display:block;width:100%;margin-top:1rem;text-align:center;border-radius:14px;background:#e3ad35;color:#fffaf2;font-size:1.05rem;padding:.75rem 1.2rem}
+/* 발견 띠 카드(2026-11-10 화면 가림 규칙 3): 숨겨진 비밀·발견은 화면 가운데 큰 카드 대신 위쪽 띠로 떴다가 몇 초 뒤 사라진다(막지 않음 — 걷기·대화 그대로, 자세한 내용은 가방에서). 금빛 테두리 + 작은 별 */
+#wlStrip{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 120px);width:max-content;max-width:min(27rem,calc(100vw - 28px));box-sizing:border-box;transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;display:flex;align-items:center;gap:.8rem;z-index:21;cursor:pointer;
+  background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:3px solid #e3ad35;border-radius:18px;padding:.6rem 1.1rem .65rem .7rem;box-shadow:0 0 22px rgba(255,196,70,.55),0 10px 26px rgba(30,14,36,.4);transition:transform .38s cubic-bezier(.2,1.5,.4,1),opacity .25s}
+#wlStrip.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+#wlStrip img{flex:none;width:58px;height:58px;border-radius:50%;background:#fff8e8;box-shadow:0 0 0 2.5px #e3ad35;object-fit:contain}#wlStrip img:not([src]){display:none}
+#wlStrip .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.82rem}#wlStrip .k::before{content:"✦ "}
+#wlStrip .t{margin:.1rem 0 0;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.12rem;line-height:1.25}
+#wlStrip .f{margin:.15rem 0 0;font-size:.88rem;line-height:1.4;color:#6b4a3a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}#wlStrip .f:empty{display:none}
+@media (max-width:600px){#wlStrip img{width:48px;height:48px}#wlStrip .t{font-size:1.04rem}#wlStrip .f{font-size:.84rem}}
+@media (prefers-reduced-motion: reduce){#wlStrip{transition:none}#wlStrip:not(.on){transform:translate(-50%,0)}}
+/* 휴대폰 단계(body.wl-lowfx — 2026-11-10 발열): 늘 떠 있는 칩의 뒤 흐림(backdrop-filter)은 3D 화면을 매 프레임 다시 흐리게 해 GPU를 쓴다 → 끔(바탕이 66% 넘게 불투명해 차이가 거의 없음). 연출용 흐림(귀환 미니어처·우주 지도 띠)은 그대로 */
+body.wl-lowfx #wlQuest,body.wl-lowfx #wlPrompt,body.wl-lowfx #wlToast,body.wl-lowfx #wlTool,body.wl-lowfx .wl-chip{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 body.wl-nohints .wl-hint{visibility:hidden!important}
 .wlg button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 #wlCut{position:fixed;inset:0;display:none;place-items:center;background:#1e0e24;z-index:45;cursor:pointer}#wlCut.on{display:grid;animation:wlCutIn .6s ease-out}
@@ -104,8 +101,9 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 @keyframes wlCutIn{from{opacity:0}to{opacity:1}}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
 @media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast{transition:none}#wlProf .dcard{animation:none}#wlNotice:not(.on),#wlGet:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
-@media (max-width:600px){#wlDlg .line{font-size:1.06rem;line-height:1.55}#wlDlg{padding:1.15rem 1.05rem .75rem}#wlDlg .who{font-size:.95rem}}
-@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}#wlGet{bottom:calc(env(safe-area-inset-bottom,0px) + 152px)}} /* 터치 화면: 대화창은 조이스틱·단추 위로, 아이템 획득 카드는 조이스틱(위끝 142px)에 걸치지 않을 만큼만 낮게 — 원더룹을 가리지 않게(2026-11-06 아이폰) */
+@media (max-height:500px){#wlStrip .f,#wlNotice .s{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}#wlStrip{padding:.45rem 1rem .5rem .6rem}#wlStrip img{width:44px;height:44px}#wlNotice{padding:.7rem 1rem;gap:.7rem;border-radius:18px;width:min(24rem,calc(100vw - 32px))}#wlNotice img{width:48px;height:48px}#wlNotice .t{font-size:1.08rem;margin:.25rem 0 .15rem}#wlNotice .s{font-size:.88rem;line-height:1.4}#wlNotice .h{display:none}}
+@media (max-width:600px){#wlNotice{padding:.8rem 1rem;gap:.7rem;border-radius:18px}#wlNotice img{width:52px;height:52px}#wlNotice .t{font-size:1.12rem;margin:.3rem 0 .2rem}#wlNotice .s{font-size:.9rem;line-height:1.45}#wlNotice .h{display:none}#wlGet{padding:.65rem 1.1rem .65rem .8rem;gap:.7rem}#wlGet .t{font-size:1.08rem}#wlGet .s{font-size:.86rem}#wlDlg .line{font-size:1.06rem;line-height:1.55}#wlDlg{padding:1.15rem 1.05rem .75rem}#wlDlg .who{font-size:.95rem}}
+@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}} /* (2026-11-10 화면 가림 규칙: 자리는 game/layout이 정함 — 아래는 예전 메모) 터치 화면: 대화창은 조이스틱·단추 위로, 아이템 획득 카드는 조이스틱(위끝 142px)에 걸치지 않을 만큼만 낮게 — 원더룹을 가리지 않게(2026-11-06 아이폰) */
 #wlBadge{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 11vh);width:min(560px,calc(100vw - 20px));transform:translate(-50%,0);z-index:21;pointer-events:none;display:none}
 #wlBadge.on{display:block;animation:wlbIn .7s cubic-bezier(.25,1.6,.45,1) both}#wlBadge.out{animation:wlbOut .45s ease-in both}
 #wlBadge .bg{position:relative;display:block;width:100%;height:auto;filter:drop-shadow(0 8px 14px rgba(30,14,36,.35))}
@@ -124,7 +122,7 @@ root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"
 <div id="wlNotice" class="wl-felt" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
 <div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard wl-pop-body"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
-<div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><i class="tw" style="--x:8%;--y:6%;--d:0s"></i><i class="tw" style="--x:93%;--y:14%;--d:.7s"></i><i class="tw" style="--x:5%;--y:62%;--d:1.3s"></i><i class="tw" style="--x:95%;--y:78%;--d:.35s"></i><i class="tw" style="--x:50%;--y:2%;--d:1.8s"></i><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
+<div id="wlStrip" role="status" aria-live="polite"><img alt=""><div><p class="k"></p><p class="t"></p><p class="f"></p></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
 <div id="wlBadge" role="status" aria-live="polite"><img class="bg" alt=""><span class="medal" aria-hidden="true"><img alt=""></span><div class="txt"><p class="t"></p><p class="s"></p></div></div>
@@ -138,10 +136,13 @@ const coarse=matchMedia('(pointer:coarse)').matches,SHOT_UI=new URLSearchParams(
 const dlg=$('#wlDlg');
 /* 탐험가 이름(탐험가 소개 창에서 바꾼 이름 — localStorage 'wl-look2'.name): 대화창 이름표의 '원더룹'을 그 이름으로. 촬영 모드는 늘 '원더룹' */
 const heroName=()=>{if(SHOT_UI)return '원더룹';try{const n=(JSON.parse(localStorage.getItem('wl-look2')||'{}').name||'').trim();return n||'원더룹';}catch(e){return '원더룹';}};
-function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';stackGet();}
-function hideDialog(){dlg.style.display='none';stackGet();}
+function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';fitDialog();uiHooks.layout&&uiHooks.layout();}
+/* 대화창은 세 줄까지(화면 가림 규칙 1): 넘으면 글자를 조금씩 줄인다(0.86배까지 — 그래도 넘으면 그대로 보여 줌) */
+function fitDialog(){const l=dlg.querySelector('.line');l.style.fontSize='';const cs=getComputedStyle(l),f0=parseFloat(cs.fontSize),lh=parseFloat(cs.lineHeight)/f0||1.6;let f=f0;for(let i=0;i<6&&l.offsetHeight>f*lh*3+2;i++){f*=.97;l.style.fontSize=f+'px';}}
+const uiHooks={layout:null}; /* game/layout이 넣음 — 무엇이 뜨거나 닫힐 때 바로 자리를 다시 잡게 */
+function hideDialog(){dlg.style.display='none';uiHooks.layout&&uiHooks.layout();}
 /* 아이템 획득 카드와 대화창이 함께 뜨면(2026-11-08 — 달떡 카드가 보름 할아버지 대화창 위에 겹쳤다) 카드를 대화창 위로 24px(이름표가 대화창 위로 튀어나온 만큼 더) 띄워 올림, 대화창이 닫히면 제자리 */
-function stackGet(){const gt=document.getElementById('wlGet');if(!gt)return;const on=gt.classList.contains('on')&&dlg.style.display==='block';gt.style.bottom=on?Math.round(innerHeight-dlg.getBoundingClientRect().top+24)+'px':'';}
+function stackGet(){uiHooks.layout&&uiHooks.layout();} /* 자리는 game/layout(화면 가림 규칙)이 정한다 — 띠 카드는 위쪽, 인물을 덮으면 아래(대화창 위) */
 const dialogShown=()=>dlg.style.display==='block';
 /* 카드 자리 하나: 안내 카드·결과창·비밀 카드는 한 번에 하나만 보인다(줄 세우기 — 결과창과 비밀 카드가 겹치지 않게).
    열려 있는 동안 다른 카드를 부르면 줄을 섰다가, 앞 카드가 닫히는 즉시 들어온 순서로 열린다. 각 함수는 그 카드가 닫힐 때 resolve */
@@ -157,19 +158,20 @@ const closers={};const cardCloser=(kind,fn)=>{closers[kind]=fn;}; // 다른 모�
 const nt=$('#wlNotice');let ntDone=null,ntCue=null,ntEnd=0;
 function notice({kicker='미션',title='',text='',icon=null}){return enqueue('notice',r=>{ntDone=r;nt.querySelector('.k').textContent=kicker;nt.querySelector('.t').textContent=title;nt.querySelector('.s').textContent=text;
   const img=nt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');nt.querySelector('.h').textContent=coarse?'화면을 누르면 닫혀요':'아무 키나 누르면 닫혀요';
-  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');block('notice',true);ntEnd=clock.t+6;sfx('mission-start');});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
-function closeNotice(why){if(cardOn!=='notice')return;nt.classList.remove('on');endCue(ntCue);ntCue=null;block('notice',false);const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
+  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');uiHooks.layout&&uiHooks.layout();block('notice',true);ntEnd=clock.t+6;sfx('mission-start');});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
+function closeNotice(why){if(cardOn!=='notice')return;nt.classList.remove('on');uiHooks.layout&&uiHooks.layout();endCue(ntCue);ntCue=null;block('notice',false);const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
 const noticeShown=()=>cardOn==='notice';
 /* 비밀 카드 (숨겨진 비밀을 찾았을 때 — 개미굴 도감 비밀 카드 모양): 아무 키나 누르거나 단추로 닫힘 */
-const sc=$('#wlSecret');let scDone=null,scCue=null;
-function secret({kicker='숨겨진 비밀',title='',text='',icon=null,count='',button='좋아요',onOpen=null}){return enqueue('secret',r=>{scDone=r;sc.querySelector('.k').textContent=kicker;sc.querySelector('h2').textContent=title;sc.querySelector('.f').textContent=text;sc.querySelector('button').textContent=button;if(onOpen)try{onOpen();}catch(e){console.error(e);}
-  sc.querySelector('.n').textContent=count;const img=sc.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');
-  scCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});sc.style.display='grid';block('secret',true);});}
-function closeSecret(){if(cardOn!=='secret')return;sc.style.display='none';endCue(scCue);scCue=null;block('secret',false);const d=scDone;scDone=null;cardDone();if(d)d();}
+const sc=$('#wlStrip');let scDone=null,scCue=null,scEnd=0;
+/* 2026-11-10 화면 가림 규칙 3: 위쪽 띠 카드로 — 막지 않고 sec초(기본 글 길이에 따라 4.5~7초, 게임 시간) 뒤 저절로, 띠를 누르거나 Esc로도 닫힘. count는 꼬리표 옆에('숨겨진 비밀 · 2/3'). 닫힐 때 resolve(예전과 같음) */
+function secret({kicker='숨겨진 비밀',title='',text='',icon=null,count='',sec=null,onOpen=null}){return enqueue('secret',r=>{scDone=r;sc.querySelector('.k').textContent=kicker+(count?' · '+count:'');sc.querySelector('.t').textContent=title;sc.querySelector('.f').textContent=text;if(onOpen)try{onOpen();}catch(e){console.error(e);}
+  const img=sc.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');scEnd=clock.t+(sec||Math.min(7,Math.max(4.5,2.5+(title.length+text.length)*.06)));
+  scCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});sc.classList.add('on');uiHooks.layout&&uiHooks.layout();});}
+function closeSecret(){if(cardOn!=='secret')return;sc.classList.remove('on');endCue(scCue);scCue=null;const d=scDone;scDone=null;cardDone();uiHooks.layout&&uiHooks.layout();if(d)d();}
 const secretShown=()=>cardOn==='secret';
-sc.querySelector('button').addEventListener('click',closeSecret);
+sc.addEventListener('pointerdown',e=>{if(performance.now()-cardOpenT>400){e.preventDefault();e.stopPropagation();closeSecret();}});window.addEventListener('keydown',e=>{if(cardOn==='secret'&&e.code==='Escape')closeSecret();});
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,e=>{if(performance.now()-cardOpenT<=(cardOn==='notice'?800:600)||(e.target&&e.target.closest&&e.target.closest('#wlResult,#wlSecret button')))return;
-  if(cardOn==='notice')closeNotice();else if(cardOn==='secret')closeSecret();}));
+  if(cardOn==='notice')closeNotice();}));
 /* 그림 컷 (장면 사이에 넣는 한 장짜리 그림, 예: 오프닝 편지 클로즈업): cut({src, alt, sec, id})
    화면 전체에 그림을 띄우고 sec초(게임 시간 — 촬영 모드에서도 같은 길이) 뒤나 누르면(0.6초 뒤부터) 닫힌다. 카드 자리를 함께 써서 다른 카드와 겹치지 않는다.
    영상에는 그리지 않는다(HTML) → 시점 기록 kind 'card'(who '그림', id)로 남겨 편집 때 같은 그림을 얹는다. 열고 닫을 때 종이 스치는 소리(sfx 'cut'). */
@@ -246,16 +248,16 @@ function toastTop(){let b=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBt
 /* 횟수 안내 칩(2026-11-10 — 떡방아 '세 번 찧기'): count({label,n,max}) 화면 위 가운데(맨 위 단추 줄 바로 아래 — 대화창·말풍선과 겹치지 않는 자리), 동그라미 max개 중 n개가 채워짐. count(null)이면 치움.
    안내 문구(toast)는 이 칩이 떠 있으면 그 아래로. 안내 표시(영상에 안 나옴) */
 let cnt=null;
-function count(o){if(!o){if(cnt)cnt.classList.remove('on');return;}
+function count(o){if(!o){if(cnt)cnt.classList.remove('on');uiHooks.layout&&uiHooks.layout();return;}
   if(!cnt){cnt=document.createElement('p');cnt.id='wlCount';cnt.className='wl-hint';cnt.setAttribute('role','status');root.appendChild(cnt);
     const st=document.createElement('style');st.textContent='#wlCount{position:fixed;left:50%;top:120px;transform:translate(-50%,-8px);margin:0;z-index:31;display:flex;align-items:center;gap:.5rem;padding:.4rem .95rem;border-radius:999px;background:rgba(46,28,44,.82);color:#fff4e4;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.08rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}#wlCount.on{opacity:1;transform:translate(-50%,0)}#wlCount i{width:.85rem;height:.85rem;border-radius:50%;border:2px solid #fff4e4;box-sizing:border-box;display:inline-block}#wlCount i.f{background:#f7c948;border-color:#f7c948}#wlCount b{font-weight:400;color:#f7c948}@media (prefers-reduced-motion: reduce){#wlCount{transition:none;transform:translate(-50%,0)}}';document.head.appendChild(st);}
   cnt.innerHTML='';const l=document.createElement('span');l.textContent=o.label||'';cnt.appendChild(l);for(let i=0;i<o.max;i++){const d=document.createElement('i');if(i<o.n)d.className='f';cnt.appendChild(d);}
   const b=document.createElement('b');b.textContent=o.n+'/'+o.max;cnt.appendChild(b);
   let bt=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBtn']){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)bt=Math.max(bt,r.bottom);}
-  cnt.style.top=Math.round((bt||58)+10)+'px';cnt.classList.add('on');}
-function toast(msg,sec=2.8){ts.textContent=msg;toastTop();ts.classList.add('on');tsEnd=clock.t+sec;}
-const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
-  if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;}tickFade();};
+  cnt.style.top=Math.round((bt||58)+10)+'px';cnt.classList.add('on');uiHooks.layout&&uiHooks.layout();}
+function toast(msg,sec=2.8){ts.textContent=msg;if(uiHooks.layout){ts.classList.add('on');uiHooks.layout();}else{toastTop();ts.classList.add('on');}tsEnd=clock.t+sec;}
+const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='secret'&&clock.t>=scEnd)closeSecret();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
+  if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;uiHooks.layout&&uiHooks.layout();}tickFade();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));
 /* 결과 화면: result({title,text,buttons:[{label,act}],note}) → 누른 단추의 번호로 resolve */
@@ -284,7 +286,7 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {count,badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {uiHooks,count,badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
 // 소리 안내 (개미굴과 같은 문구): 화면에 돌아왔는데 소리가 깨어나지 않으면, M으로 끄고 켤 때
 soundHooks.onWakeFail=()=>toast('소리가 멈췄다면 화면을 한 번 눌러 주세요');
 soundHooks.onMute=m=>toast(m?'소리 꺼짐 (M으로 다시 켜기)':'소리 켜짐');

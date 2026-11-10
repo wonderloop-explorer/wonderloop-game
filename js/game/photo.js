@@ -99,6 +99,7 @@ function enter(){if(on||!ctx||SHOT||blockedNow())return false;build();on=true;co
   input.cam.photo=true;syncZoom();layout();sfx('ui-click');setTimeout(()=>{const s=el.querySelector('.shut');if(s&&!touchDev())s.focus({preventScroll:true});},0);return true;}
 function exit(){if(!on)return;on=false;const cam=ctx.camera;cam.near=PH.near;cam.updateProjectionMatrix();setHints(PH.prevHints);document.body.classList.remove('wl-photo-on');
   el.hidden=true;closeViewer();if(ctx.controls)ctx.controls.enabled=true;input.cam.photo=false;sfx('ui-click');
+  if(RT.rt){RT.rt.depthTexture.dispose();RT.rt.dispose();RT.rt=null;RT.w=RT.h=0;} /* 나가면 후처리 그림판(화면 크기 HalfFloat + 깊이)도 놓는다 — GPU 메모리(2026-11-10 발열 점검: 흐림·미니어처 그리기는 사진 모드 안에서만 돎) */
   if(btn&&!touchDev())btn.focus({preventScroll:true});} // 휴대폰은 초점 테두리를 남기지 않게
 function toggle(){if(on)exit();else enter();}
 /* 보는 점: 멀면 몸 가운데(0.75m), 가까우면 얼굴(머리 뼈) — 4.8m 안으로 들어오며 부드럽게 */

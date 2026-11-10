@@ -180,7 +180,7 @@ function tickSky(cam,P){if(!cam)return;skyG.position.copy(cam.position);_sd.copy
   const up=P?ss(18,70,P.y):0;phobos.scale.setScalar(4.2*(1+1.8*up));}
 /* ── 먼지: 바람에 날리는 고운 알갱이 + 착지·회오리 붉은 먼지 ── */
 const fineN=MOB?80:160,fine=(()=>{const pos=new Float32Array(fineN*3),ph=new Float32Array(fineN);for(let i=0;i<fineN;i++){pos.set([rnd(-12,12),rnd(.1,3.2),rnd(-12,12)],i*3);ph[i]=rnd(0,6);}
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));if(MOB)geo.setDrawRange(0,56); /* 휴대폰은 56개만 그림(2026-11-10 발열) */
   const m=new THREE.PointsMaterial({color:new THREE.Color('#f8e2cc'),size:.07,transparent:true,opacity:.55,depthWrite:false,sizeAttenuation:true});const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.userData.noMerge=true;root.add(pts);keep.push(pts);
   return {tick(dt,t,P){const a=geo.attributes.position.array;for(let i=0;i<fineN;i++){let x=a[i*3]+dt*(1.3+.4*Math.sin(t+ph[i])),y=a[i*3+1]+Math.sin(t*1.7+ph[i])*dt*.25,z=a[i*3+2]+dt*.35;
       const lx=x-P.x,lz=z-P.z;if(lx>12)x-=24;if(lx<-12)x+=24;if(lz>12)z-=24;if(lz<-12)z+=24;if(y>P.y+3.4||y<P.y-3)y=P.y+.1;a[i*3]=x;a[i*3+1]=y;a[i*3+2]=z;}geo.attributes.position.needsUpdate=true;}};})();

@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import {bentPos} from './bend.js';
 import {clock} from './core.js';
 import {hint,hintsVisible} from './ui.js';
+import {topEdge} from './layout.js';
 const L=[];let ctx=null,css=false;const _p=new THREE.Vector3();
 const CSS=`.wl-float{position:fixed;left:0;top:0;z-index:41;pointer-events:none;margin:0;opacity:0;transition:opacity .2s;will-change:transform}
 .wl-float.on{opacity:1}
@@ -39,8 +40,8 @@ const shown=e=>{const cs=getComputedStyle(e);return cs.display!=='none'&&cs.visi
 const hit=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
 function tickFloat(){if(!ctx||!L.length)return;const cam=ctx.camera,W=ctx.WL,P=W.position,vis=hintsVisible(),iw=innerWidth,ih=innerHeight,placed=[];
   /* 위·아래 한계: 맨 위 단추 줄 아래 ~ 아래 대화창·획득 카드 위 */
-  let top=8;for(const id of ['wlQuest','wlItems','wlMenu']){const e=document.getElementById(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top<ih*.3)top=Math.max(top,r.bottom+6);}
-  let bot=ih-8;for(const id of ['wlDlg','wlGet']){const e=document.getElementById(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top>ih*.35)bot=Math.min(bot,r.top-8);}
+  let top=8;for(const id of ['wlQuest','wlItems','wlMenu']){const e=document.getElementById(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top<ih*.3)top=Math.max(top,r.bottom+6);}top=Math.max(top,topEdge()); /* 위쪽 쌓기(횟수·띠 카드·안내 문구 — game/layout) 아래에서 */
+  let bot=ih-8;for(const id of ['wlDlg','wlGet','wlStrip','wlNotice']){const e=document.getElementById(id);if(!e||!shown(e)||(id!=='wlDlg'&&!e.classList.contains('on')))continue;const r=e.getBoundingClientRect();if(r.height&&r.top>ih*.35)bot=Math.min(bot,r.top-8);}
   for(let i=L.length-1;i>=0;i--){const it=L[i];if(it.end&&clock.t>=it.end)it.remove();}
   /* 말풍선이 원더룹 얼굴을 덮지 않게: 탈 둘레를 먼저 자리로 잡아 둔다(말풍선만 비켜남 — 횟수 표시는 그대로) */
   let face=null;{const b=bentPos({x:P.x,y:P.y+1.02,z:P.z});_p.set(b.x,b.y,b.z);const dz=_p.distanceTo(cam.position);_p.project(cam);if(_p.z<1){const r=.5/(Math.max(.5,dz)*Math.tan(cam.fov*Math.PI/360))*ih/2,fx=(_p.x+1)/2*iw,fy=(1-_p.y)/2*ih;face=[fx-r,fy-r,fx+r,fy+r];}}

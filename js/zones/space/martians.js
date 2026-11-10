@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {sbMat} from '../../game/storybook.js';
 import {bentY} from '../../game/bend.js';
+const LOWFX=(()=>{try{const q=new URLSearchParams(location.search),t=q.get('quality');return t?t==='mobile':(!q.has('shot')&&matchMedia('(pointer:coarse)').matches);}catch(e){return false;}})();
 const PI=Math.PI;
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 /* 정점 색 덩어리: [geometry(이미 자리 잡은 것), 색] 목록 → 메시 하나 */
@@ -96,7 +97,7 @@ export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
   const me=new THREE.Mesh(geo,mat);me.frustumCulled=false;me.userData.noMerge=true;me.renderOrder=3;root.add(me);
   /* 날리는 알갱이: 깔때기 겉을 따라 나선으로 올라가며 도는 모래 알갱이(점 묶음 — 자리는 셰이더가 시간으로 계산, 그리기 1) */
   const NG=big?90:54,sd=new Float32Array(NG*3),pp=new Float32Array(NG*3);for(let i=0;i<NG;i++){sd[i*3]=Math.random();sd[i*3+1]=Math.random();sd[i*3+2]=Math.random();}
-  const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pp,3));gg.setAttribute('seed',new THREE.BufferAttribute(sd,3));
+  const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pp,3));gg.setAttribute('seed',new THREE.BufferAttribute(sd,3));if(LOWFX)gg.setDrawRange(0,Math.round(NG*.7)); /* 휴대폰은 알갱이 70%만(2026-11-10 발열) */
   const gm=new THREE.ShaderMaterial({uniforms:{uT:U.uT,uH:U.uH,uA:U.uA,uR:{value:radius},uS:{value:big?26:20}},transparent:true,depthWrite:false,
     vertexShader:'#include <common>\nattribute vec3 seed;uniform float uT;uniform float uH;uniform float uR;uniform float uS;varying float vA;varying float vK;void main(){float v=fract(seed.x+uT*(.16+.14*seed.y));float a=seed.z*6.2832+uT*(3.2-1.6*v)+v*5.;'+
       'float r=(.25+uR*pow(v,1.35))*(.85+.4*seed.y);vec4 w=modelMatrix*vec4(0.,0.,0.,1.);w.xyz+=vec3(cos(a)*r,v*uH,sin(a)*r);vA=smoothstep(0.,.08,v)*(1.-smoothstep(.75,1.,v));vK=seed.y;'+

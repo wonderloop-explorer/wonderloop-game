@@ -10,8 +10,11 @@ import json, os, sys, shutil, time, re
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 a = sys.argv[1:]; PHONE = '--phone' in a; SECRET = '--secret' in a; REAL = '--real' in a; VIDEO = '--video' in a
+VIEW = a[a.index('--view') + 1] if '--view' in a else None  # --view 844x390t (끝에 t = 터치 기기) — 화면 가림 재기용 크기
+PORT = a[a.index('--port') + 1] if '--port' in a else '8000'; COVER = '--cover' in a  # --cover: tools/cover-probe.js를 끼워 넣어 가려진 화면 수를 <out>/<크기>-cover.json에
+if VIEW: PHONE = VIEW.endswith('t')
 OUT = os.path.join(ROOT, a[a.index('--out') + 1] if '--out' in a else 'docs/compare/space-stage2'); os.makedirs(OUT, exist_ok=True)
-pre = ('phone' if PHONE else 'pc') + ('-secret' if SECRET else '') + ('-real' if REAL else '') + '-'; R = {'dev': pre[:-1]}; T = {}
+pre = ('phone' if PHONE else 'pc') + ('-secret' if SECRET else '') + ('-real' if REAL else '') + '-'; pre = (VIEW + '-' + pre) if VIEW else pre; R = {'dev': pre[:-1]}; T = {}
 READ = 3.0 if REAL else 0.3
 CLIP = """(()=>{window.__clip=[];const L=()=>{try{const Z=wlZone.cur;if(Z&&Z.state){const s=Z.state();const on=s.ride||s.cross||s.big||(s.stage==='finale'&&s.scene);
   if(on&&wlPhoto&&wlPhoto.body){const B=wlPhoto.body(wlGame.view.camera),q=B.rect,m=.015,out=Math.max(m-q[0]-m*2,m-q[1]-m*2,q[2]-1-m,q[3]-1-m,0);
@@ -20,13 +23,18 @@ with sync_playwright() as p:
     b = p.chromium.launch(args=['--mute-audio', '--autoplay-policy=no-user-gesture-required', '--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal'])
     o = dict(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True) if PHONE else dict(viewport={'width': 1280, 'height': 720})
     if VIDEO: o['record_video_dir'] = os.path.join(OUT, 'vid-' + pre[:-1]); o['record_video_size'] = dict(o['viewport'])
-    c = b.new_context(**o); V0 = time.time(); pg = c.new_page(); errs = []
+    if VIEW:
+        vw, vh = [int(x) for x in VIEW.rstrip('t').split('x')]; o['viewport'] = {'width': vw, 'height': vh}
+    CX = o['viewport']['width'] // 2
+    c = b.new_context(**o)
+    if COVER: c.add_init_script(open(os.path.join(ROOT, 'tools/cover-probe.js')).read())
+    V0 = time.time(); pg = c.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
     pg.on('console', lambda m: m.type == 'error' and '404' not in m.text and errs.append(m.text[:300]))
     mark = lambda k: T.__setitem__(k, round(time.time() - V0, 1))
     shot = lambda n: pg.screenshot(path=os.path.join(OUT, pre + n + '.png'))
-    W0 = 640 if not PHONE else 195
-    pg.goto('http://localhost:8000/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '')); pg.evaluate('localStorage.clear()'); pg.reload()
+    W0 = CX
+    pg.goto('http://localhost:' + PORT + '/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '')); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots', timeout=120000); pg.wait_for_timeout(2500)
     pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock'].forEach(k=>wlGame.state.setFlag(k,true))")
     ex = pg.evaluate('wlZone.cur.spots.exit')
@@ -168,6 +176,8 @@ with sync_playwright() as p:
     R['그리기'] = {k: agg(v) for k, v in perf.items()}
     R['오류'] = errs; R['시각(초)'] = T
     vid = pg.video.path() if VIDEO else None
+    if COVER:
+        cv = pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered']}; json.dump(cv, open(os.path.join(OUT, pre + 'cover.json'), 'w'), ensure_ascii=False, indent=1)
     c.close(); b.close()
     if vid: shutil.move(vid, os.path.join(OUT, pre + 'stage2.webm')); shutil.rmtree(os.path.join(OUT, 'vid-' + pre[:-1]), ignore_errors=True)
 json.dump(R, open(os.path.join(OUT, pre + 'result.json'), 'w'), ensure_ascii=False, indent=1)

@@ -438,8 +438,8 @@ let poundCam=null;
 function poundCamStart(){const W=U0(),cam=G.view.camera;if(!W||!cam)return;if(poundCam&&G.view.req&&G.view.req.fn===poundCam.fn)return;
   const P=W.position,ry=W.rotation.y,cp=cam.position,side=[1,-1].map(s=>{const a=ry+s*PI/4;return {a,d:Math.hypot(P.x+Math.sin(a)*3-cp.x,P.z+Math.cos(a)*3-cp.z)};}).sort((p,q)=>p.d-q.d)[0];
   const pc={a:side.a,end:0};pc.fn=()=>{const W=U0();if(!W)return null;if(!poundingNow(W)){pc.end+=1/60;if(pc.end>.1){if(poundCam===pc)poundCam=null;return null;}}else pc.end=0;
-    const k=cam.aspect<1?Math.min(2,1.25/cam.aspect):1,P=W.position,mx=(P.x+MORTAR[0])/2,mz=(P.z+MORTAR[1])/2,d=3.5*k;
-    const at=bentPos({x:mx*.7+P.x*.3,y:P.y+.68-.32*(k-1),z:mz*.7+P.z*.3}) /* 세로 화면은 보는 점을 낮춰 원더룹·절구를 화면 위쪽에(아래는 대사창·조이스틱) */,from=bentPos({x:P.x+Math.sin(pc.a)*d,y:P.y+1.3+.4*(k-1),z:P.z+Math.cos(pc.a)*d});
+    const k=cam.aspect<1?Math.min(2,1.25/cam.aspect):1,P=W.position,mx=(P.x+MORTAR[0])/2,mz=(P.z+MORTAR[1])/2,d=(k>1?3.5:4.1)*k*Math.max(1,Math.min(1.7,600/innerHeight)); /* 낮은 가로 화면은 멀리 — 탈이 위쪽 표시(할 일·횟수)에 닿지 않게 */
+    const at=bentPos({x:mx*.7+P.x*.3,y:P.y+(k>1?.68+.12*(k-1):.78),z:mz*.7+P.z*.3}) /* 화면 가림 규칙(2026-11-10): 횟수는 화면 위쪽 고정 자리라, 보는 점을 조금 올려 탈 꼭대기가 위쪽 쌓기(할 일·횟수) 아래에 오게 — 예전엔 보는 점을 낮춰 탈이 위쪽 표시에 닿았다 */,from=bentPos({x:P.x+Math.sin(pc.a)*d,y:P.y+1.3+.4*(k-1),z:P.z+Math.cos(pc.a)*d});
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};};
   /* 구경 자리(2026-11-10): 카메라에서 볼 때 절구 뒤쪽 반원에(원더룹에게서 1.1m 넘게 떨어진 세 자리) — 정해 둔 자리는 카메라가 그쪽 사선으로 잡히면 토끼가 원더룹·절구 앞을 가렸다(휴대폰에서 특히) */
   {const cx=P.x+Math.sin(pc.a)*3.5,cz=P.z+Math.cos(pc.a)*3.5,b=Math.atan2(MORTAR[0]-cx,MORTAR[1]-cz),sp=[];
@@ -467,8 +467,8 @@ function tickBits(dt){let any=false;const GR=.2; // 낮은 중력(지구 9.8의 
 const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(...MORTAR)+.5,MORTAR[1]);root.add(mortarMark);
 const BUN_SAY=[['콩콩','와, 떡이 날아다녀!'],['몽실','천천히 떨어져서 받아먹을 수도 있겠다!'],['보슬','콩! 하고 찧으니까 둥실 올라가!']];
 /* 횟수 표시(2026-11-10 두 번째): 절구 바로 위에 크게(game/float count — 화면 위 가운데 칩도 세로가 낮은 창 1280×632에서 대화창에 가려졌다). 대화창·획득 카드가 뜨면 그 위로 비켜남 */
-let cntEl=null;function cntShow(n){if(n==null){if(cntEl){cntEl.remove();cntEl=null;}return;}
-  if(!cntEl)cntEl=G.float.count({at:[MORTAR[0],groundY(...MORTAR),MORTAR[1]],y:1.5,label:'떡 찧기',n,max:3});else cntEl.set(n);}
+/* 횟수는 화면 위쪽 고정 자리(할 일 안내 바로 아래 — 화면 가림 규칙 4, 2026-11-10: 절구 위에 띄우면 가까이 잡은 카메라에서 원더룹 얼굴에 걸렸다) */
+function cntShow(n){G.ui.count(n==null?null:{label:'떡 찧기',n,max:3});}
 const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
   onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=true;st.cntK=(st.cntK||0)+1;cntShow(PEST.n);},
   onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;const bi=(n-1)%3,say=BUN_SAY[bi];G.float.bubble({root:bunnies[bi].m.root,y:1.02,text:say[1],sec:3}); /* 떡방아 동안 토끼 말은 아래 대화창 대신 머리 위 작은 말풍선(대화창이 횟수·절구를 가렸다) */
@@ -562,6 +562,7 @@ const stars=(()=>{const pos=new Float32Array(STAR_N*3),cc=new Float32Array(STAR_
   for(let i=0;i<STAR_N;i++){const az=sr(-1.66,1.66),el=Math.asin(sr(Math.sin(-.35),Math.sin(1.22)));pos.set([Math.sin(az)*Math.cos(el)*D*.99,Math.sin(el)*D*.99,-Math.cos(az)*Math.cos(el)*D*.99],i*3);
     c.set(cols[(sr(0,cols.length))|0]);cc.set([c.r,c.g,c.b],i*3);const q=sr(0,1);sz[i]=q<.6?sr(2,3):q<.88?sr(3.1,4.4):q<.98?sr(4.5,6):sr(6.2,8);ph.set([sr(0,PI*2),sr(.35,1.6)],i*2);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(cc,3));geo.setAttribute('psize',new THREE.BufferAttribute(sz,1));geo.setAttribute('tw',new THREE.BufferAttribute(ph,2));
+  if(MOB)geo.setDrawRange(0,2000); /* 휴대폰은 2000개만 그림(2026-11-10 발열 — 자리는 그대로 두고 그리는 수만 줄여 난수 순서·배치가 안 바뀜) */
   const m=new THREE.ShaderMaterial({uniforms:starU,transparent:true,depthWrite:false,fog:false,
     vertexShader:'uniform float uT,uPR;attribute float psize;attribute vec2 tw;attribute vec3 color;varying vec3 vC;varying float vA;void main(){float w=.5+.5*sin(uT*tw.y+tw.x);float big=step(3.2,psize);vA=mix(.35,1.,w*w)*(.8+.2*big);vC=color;vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;gl_PointSize=psize*uPR*(.82+.3*w);}',
     fragmentShader:'varying vec3 vC;varying float vA;void main(){vec2 d=gl_PointCoord-.5;float r=length(d)*2.;float a=1.-smoothstep(.55,1.,r);if(a<.01)discard;gl_FragColor=vec4(vC*(1.+.35*smoothstep(.45,0.,r)),a*vA);}'});
@@ -633,7 +634,7 @@ function quest(q,goal){if(q!==st.lastQ){st.lastQ=q;G.ui.setQuest(q);}G.goal.set(
 function hopDemo(){const W=U0();st.hop={t:0,from:[bobo.root.position.x,bobo.root.position.z],y0:bobo.root.position.y,to:DEMO_LAND};G.state.setFlag(K.demo,true);
   const P=W.position,mid=[(st.hop.from[0]+DEMO_LAND[0])/2,(st.hop.from[1]+DEMO_LAND[1])/2],dx=wd(mid[0]-P.x),dz=wd(mid[1]-P.z),dl=Math.hypot(dx,dz)||1,ux=dx/dl,uz=dz/dl;
   const base={x:P.x-ux*5.5+uz*1.4,z:P.z-uz*5.5-ux*1.4};let tEnd=0;
-  G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:1,b=bobo.root.position,Wp=W.position;
+  G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:Math.max(1,Math.min(1.7,620/innerHeight)) /* 낮은 가로 화면도 멀리(2026-11-10 — 휴대폰 가로에서 원더룹이 화면 아래로 잘렸다) */,b=bobo.root.position,Wp=W.position;
     if(!st.hop){tEnd+=1/60;if(tEnd>1.2)return null;}
     const at=bentPos({x:Wp.x*.35+b.x*.65,y:Math.max(Wp.y,b.y)*.65+1.1,z:Wp.z*.35+b.z*.65}),from=bentPos({x:Wp.x+(base.x-Wp.x)*k,y:Wp.y+3.4*k,z:Wp.z+(base.z-Wp.z)*k});
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};});}

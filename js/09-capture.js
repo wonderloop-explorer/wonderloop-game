@@ -225,7 +225,7 @@ async function take(aspect,opt={}){
     if(auto.dialog&&G.dialog.talking()){const e=G.dialog.lineEnd();if(e!=null&&t>=e+auto.linePad)G.dialog.act();}
     const read=sel=>Math.max(3.5,[...document.querySelectorAll(sel)].map(e=>e.textContent).join('').replace(/\s+/g,'').length*.07+1.5); // 읽을 시간
     const kind=U.cardShown();if(kind==='notice'||kind==='secret'){if(cardT==null)cardT=t;
-      const hold=auto.card??read(kind==='notice'?'#wlNotice .t,#wlNotice .s':'#wlSecret h2,#wlSecret .f');if(t-cardT>=hold)kind==='notice'?U.closeNotice():U.closeSecret();}
+      const hold=auto.card??read(kind==='notice'?'#wlNotice .t,#wlNotice .s':'#wlStrip .t,#wlStrip .f');if(t-cardT>=hold)kind==='notice'?U.closeNotice():U.closeSecret();}
     else if(kind==='dex'||kind==='book'||kind==='ending'){if(cardT==null)cardT=t;const hold=auto.card??(kind==='ending'?6:read('#wlDex h2,#wlDex .fact'));if(t-cardT>=hold&&U.cardClosers[kind])U.cardClosers[kind]();}
     else cardT=null;
     if(U.resultShown()){if(resT==null)resT=t;if(auto.result!=null&&t-resT>=auto.resultHold)U.chooseResult(auto.result);}else resT=null;}

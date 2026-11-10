@@ -10,18 +10,26 @@ import json, os, sys, shutil, time
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 args = sys.argv[1:]; PHONE = '--phone' in args; VIDEO = '--video' in args; REAL = '--real' in args
+VIEW = args[args.index('--view') + 1] if '--view' in args else None  # --view 844x390t (끝에 t = 터치 기기) — 화면 가림 재기용 크기
+PORT = args[args.index('--port') + 1] if '--port' in args else '8000'; COVER = '--cover' in args  # --cover: tools/cover-probe.js를 끼워 넣어 가려진 화면 수를 <out>/<크기>-cover.json에
+if VIEW: PHONE = VIEW.endswith('t')
 OUT = os.path.join(ROOT, args[args.index('--out') + 1] if '--out' in args else 'docs/compare/space-stage1'); os.makedirs(OUT, exist_ok=True)
-pre = 'phone-' if PHONE else 'pc-'; R = {}; T = {}
+pre = 'phone-' if PHONE else 'pc-'; pre = (VIEW + '-' + pre) if VIEW else pre; R = {}; T = {}
 READ = 3.0 if REAL else 0.4
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--mute-audio', '--autoplay-policy=no-user-gesture-required', '--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal'])
     o = dict(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True) if PHONE else dict(viewport={'width': 1280, 'height': 720})
     if VIDEO: o['record_video_dir'] = os.path.join(OUT, 'vid'); o['record_video_size'] = {'width': o['viewport']['width'], 'height': o['viewport']['height']}
-    c = b.new_context(**o); V0 = time.time(); pg = c.new_page(); errs = []
+    if VIEW:
+        vw, vh = [int(x) for x in VIEW.rstrip('t').split('x')]; o['viewport'] = {'width': vw, 'height': vh}
+    CX = o['viewport']['width'] // 2
+    c = b.new_context(**o)
+    if COVER: c.add_init_script(open(os.path.join(ROOT, 'tools/cover-probe.js')).read())
+    V0 = time.time(); pg = c.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
     pg.on('console', lambda m: m.type == 'error' and '404' not in m.text and errs.append(m.text[:300]))
     mark = lambda k: T.__setitem__(k, round(time.time() - V0, 1))
-    pg.goto('http://localhost:8000/?world=infinite-space'); pg.evaluate('localStorage.clear()'); pg.reload()
+    pg.goto('http://localhost:' + PORT + '/?world=infinite-space'); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_selector('#wlTitle .go', timeout=120000); pg.wait_for_timeout(2500)
     shot = lambda n: pg.screenshot(path=os.path.join(OUT, pre + n + '.png'))
     shot('title')
@@ -42,7 +50,7 @@ with sync_playwright() as p:
             if pg.evaluate('wlGame.ui.dialogShown()'):
                 pg.wait_for_timeout(int(READ * 1000)); pg.keyboard.press('e'); pg.wait_for_timeout(250); continue
             if pg.evaluate('wlGame.ui.cardShown()'):
-                pg.wait_for_timeout(int(READ * 1000)); pg.mouse.click(640 if not PHONE else 195, 300); pg.wait_for_timeout(400); continue
+                pg.wait_for_timeout(int(READ * 1000)); pg.mouse.click(CX, 300); pg.wait_for_timeout(400); continue
             break
     def walk(x, z, sec=40):
         pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", [x, z])
@@ -60,7 +68,7 @@ with sync_playwright() as p:
     # 망원경
     walk(*S['scope']); act('살펴보기'); pg.wait_for_timeout(2600); mark('망원경 시야'); pg.wait_for_timeout(3000); shot('telescope')
     R['망원경 시야'] = pg.evaluate("!!document.getElementById('wlScope')"); pg.wait_for_timeout(int((6 if REAL else 1) * 1000))
-    pg.mouse.click(640 if not PHONE else 195, 300); pg.wait_for_timeout(800); readAll(); R['망원경 발견'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:telescope']")
+    pg.mouse.click(CX, 300); pg.wait_for_timeout(800); readAll(); R['망원경 발견'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:telescope']")
     # 떡방아
     walk(*S['mortar'])
     pg.evaluate("()=>{const C=wlGame.controls.input.cam;C.user=(C.user||0)+1;C.yaw=-.5;C.pitch=.32;}")
@@ -133,6 +141,8 @@ with sync_playwright() as p:
     R['화성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
     R['오류'] = errs; R['영상 시각(초)'] = T
     vid = pg.video.path() if VIDEO else None
+    if COVER:
+        cv = pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered']}; json.dump(cv, open(os.path.join(OUT, pre + 'cover.json'), 'w'), ensure_ascii=False, indent=1)
     c.close(); b.close()
     if vid: shutil.move(vid, os.path.join(OUT, pre + 'stage1.webm')); shutil.rmtree(os.path.join(OUT, 'vid'), ignore_errors=True)
 json.dump(R, open(os.path.join(OUT, pre + 'result.json'), 'w'), ensure_ascii=False, indent=1)

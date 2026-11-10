@@ -22,12 +22,16 @@ const fill=new THREE.DirectionalLight(rawLin(0xe2e9ff),0.22);fill.position.set(1
 
 /* ---------- 렌더러 / 카메라 ---------- */
 const stage=document.getElementById('stage');
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,stencil:true}); // stencil: 가려진 원더룹 윤곽(game/occlude xray)이 원더룹 자신 위에는 안 그려지게
+/* 절전 모드(메뉴 — 08 ECO, localStorage 'wl-eco'): 켠 채로 열면 가장자리 다듬기(다중 표본)도 끈다 — 켜고 끌 수 없는 설정이라 열 때 한 번만. 촬영 모드는 늘 원래대로 */
+const ECO_BOOT=(()=>{try{return !new URLSearchParams(location.search).has('shot')&&localStorage.getItem('wl-eco')==='1';}catch(e){return false;}})();
+const renderer=new THREE.WebGLRenderer({antialias:!ECO_BOOT,alpha:true,stencil:true}); // stencil: 가려진 원더룹 윤곽(game/occlude xray)이 원더룹 자신 위에는 안 그려지게
 /* 그리기 해상도: 기기 픽셀 비율(최대 2)을 쓰되, 그리는 화소가 1440p(2560×1440)를 넘지 않게 낮춘다 — 5K 아이맥 전체 화면이 1470만 화소를 그려 팬이 돌던 문제.
    휴대폰 단계는 최대 1.5배(개미굴과 같음 — 아이폰 기본 3배를 그대로 그리면 화소가 4배라 기기가 뜨거워진다, 2026-11-01). 촬영 모드(?shot)는 08이 1로 고정하고 wlShot.size로 크기를 정하므로 건드리지 않는다(1440p 영상 품질 그대로). */
 const MAX_PX=2560*1440,FIXED_PR=new URLSearchParams(location.search).has('shot');
 let PR_CAP=+(new URLSearchParams(location.search).get('pr')||0)||(QUALITY.tier==='mobile'?1.25:2); // ?pr=1.5 처럼 주면 그 값(비교 촬영용) // 휴대폰 1.25(2026-11-02 발열 — 1.5와 나란히 비교해 차이가 거의 안 보임), 08 자동 화질 조절이 1.1·1로 더 낮출 수 있다(setPixelCap)
-const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,PR_CAP);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
+/* 동적 해상도(08 perfTick — 2026-11-10 발열): PR_DYN 0.7~1을 상한에 곱한다. 바닥은 기기 화소 0.85배(그 아래는 눈에 띄게 흐림) */
+let PR_DYN=1;
+const fitPixelRatio=(w,h)=>{const d0=Math.min(window.devicePixelRatio||1,PR_CAP),dpr=d0*PR_DYN;return Math.max(Math.min(PR_DYN<1?.85:1,d0),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
 renderer.setPixelRatio(fitPixelRatio(stage.clientWidth,stage.clientHeight));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.shadowMap.enabled=QUALITY.shadows;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -43,6 +47,8 @@ function placeCamera(){
 }
 placeCamera();window.addEventListener('resize',placeCamera);
 function setPixelCap(v){PR_CAP=v;placeCamera();}
+function setPixelDyn(k){k=Math.min(1,Math.max(.7,k));if(Math.abs(k-PR_DYN)<.001)return;PR_DYN=k;placeCamera();}
+const pixelInfo=()=>({cap:PR_CAP,dyn:PR_DYN});
 // ROOM_T: '방 전체' 카메라가 바라보는 점 (구역·방마다 바뀜), ui.dist: 그때의 거리
 // 따라가기 카메라 거리: 가로 화면은 7.5, 세로처럼 좁은 화면(화면비 1.25 미만)은 방 카메라와 같은 규칙으로 1.25/화면비배(최대 2.1배) 멀리
 const followDist=()=>{const asp=camera.aspect;return 7.5*(asp<1.25?Math.min(2.1,1.25/asp):1);};
@@ -105,4 +111,4 @@ function setupView(z,area){
   setAreaCamera(z.areas[area].camera,true);
   mergeStatic(z);setOpt(optimized);}
 setupView(zone.cur,zone.area);
-export {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui};
+export {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setPixelDyn,pixelInfo,setupView,statsEl,sun,ui};

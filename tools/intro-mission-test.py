@@ -8,18 +8,23 @@ import json, os, sys
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 args = sys.argv[1:]
-PHONE = '--phone' in args
+PHONE = '--phone' in args or ('--view' in args and args[args.index('--view') + 1].endswith('t'))
 OUT = os.path.join(ROOT, args[args.index('--out') + 1] if '--out' in args else 'docs/compare/intro-mission')
 os.makedirs(OUT, exist_ok=True)
-pre = 'phone-' if PHONE else 'pc-'
+pre = (args[args.index('--view') + 1] + '-' if '--view' in args else '') + ('phone-' if PHONE else 'pc-')
 R = {}
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--mute-audio', '--autoplay-policy=no-user-gesture-required'])
     o = dict(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True) if PHONE else dict(viewport={'width': 1280, 'height': 800})
-    c = b.new_context(**o); pg = c.new_page(); errs = []; vo = []
+    VIEW = args[args.index('--view') + 1] if '--view' in args else None  # --view 844x390t|1280x632 + --cover: 화면 가림 재기(tools/cover-probe.js)
+    if VIEW:
+        vw, vh = [int(x) for x in VIEW.rstrip('t').split('x')]; o['viewport'] = {'width': vw, 'height': vh}
+    c = b.new_context(**o)
+    if '--cover' in args: c.add_init_script(open(os.path.join(ROOT, 'tools/cover-probe.js')).read())
+    pg = c.new_page(); errs = []; vo = []
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
     pg.on('request', lambda r: vo.append(r.url.split('/')[-1].split('?')[0]) if '/audio/antvillage/' in r.url else None)
-    pg.goto('http://localhost:8000/'); pg.evaluate('localStorage.clear()'); pg.reload()
+    pg.goto('http://localhost:' + (args[args.index('--port') + 1] if '--port' in args else '8000') + '/'); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_selector('#wlTitle .go', timeout=120000); pg.wait_for_timeout(1800)
     shot = lambda n: pg.screenshot(path=os.path.join(OUT, pre + n + '.png'))
     bedid = "(()=>{const h=wlGame.sound.bedHandle();return h?1:0})()"
@@ -67,5 +72,7 @@ with sync_playwright() as p:
     R['도구 단추'] = pg.evaluate("(()=>{const b=document.getElementById('wlTool');return b&&getComputedStyle(b).display!=='none'?b.textContent:null})()")
     R['미션 뒤 배경음'] = pg.evaluate(bedid)
     R['받은 나레이션 파일'] = sorted(set(vo)); R['오류'] = errs
+    if '--cover' in args:
+        cv = pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered'], '목록': [x['key'] + ' ← ' + ','.join(x['by']) for x in cv['list']]}
     b.close()
 print(json.dumps(R, ensure_ascii=False, indent=1))

@@ -38,18 +38,21 @@ function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webk
   catch(e){ctx=null;}return ctx;}
 const awake=()=>!SHOT&&!S.muted&&ctx&&ctx.state==='running';
 // 소리 깨우기 (개미굴 wakeAudio): 아이폰은 사용자 입력 안에서만 소리가 켜지고, 다른 앱에 다녀오면 멈춰 있을 때가 있다
-function wake(){const c=audio();if(!c||c.state==='running'||c.state==='closed')return;
+function wake(){if(S.muted&&ctx)return;const c=audio();if(!c||c.state==='running'||c.state==='closed')return;
   try{c.resume().then(()=>{try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);}catch(e){}}).catch(()=>{});}catch(e){}}
 try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){} // 아이폰 무음 스위치를 켜도 소리 (사파리 17+)
 ['pointerdown','touchend','keydown'].forEach(ev=>window.addEventListener(ev,wake,true));
 const hooks={onWakeFail:null,onMute:null};
-document.addEventListener('visibilitychange',()=>{if(document.hidden||SHOT)return;wake();
+/* 쓰지 않을 때 소리 처리 멈춤(2026-11-10 발열): 화면이 가려지면(다른 앱·탭) 오디오 처리를 멈추고(배경음·공간음 노드가 안 보이는 동안 계속 돌았다) 돌아오면 깨운다.
+   소리를 끈 동안(M·메뉴)에도 멈춤 — 크기만 0이면 노드는 계속 계산된다. 다시 켜면 wake */
+const rest=()=>{if(ctx&&ctx.state==='running'){try{ctx.suspend();}catch(e){}}};
+document.addEventListener('visibilitychange',()=>{if(SHOT)return;if(document.hidden){rest();return;}if(S.muted)return;wake();
   setTimeout(()=>{if(ctx&&!S.muted&&ctx.state!=='running'&&hooks.onWakeFail)hooks.onWakeFail();},800);});
 window.addEventListener('pageshow',wake);window.addEventListener('focus',wake);
 /* 소리 끄고 켜기 (M 키, 개미굴과 같음) */
 const VOICES=new Set();
 function setMuted(m){S.muted=!!m;if(m){VOICES.forEach(v=>{try{v.stop();}catch(e){}});VOICES.clear();try{speechSynthesis.cancel();}catch(e){}}
-  if(ctx)out.gain.setTargetAtTime(m?0:.85,ctx.currentTime,.05);if(hooks.onMute)hooks.onMute(S.muted);}
+  if(ctx)out.gain.setTargetAtTime(m?0:.85,ctx.currentTime,.05);if(m)setTimeout(()=>{if(S.muted)rest();},400);else wake();if(hooks.onMute)hooks.onMute(S.muted);}
 window.addEventListener('keydown',e=>{if(e.code!=='KeyM'||e.repeat||SHOT||(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)))return;audio();setMuted(!S.muted);});
 function register(map){Object.assign(SRC,map);}
 function synth(map){Object.assign(SYN,map);}

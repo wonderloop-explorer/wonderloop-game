@@ -192,8 +192,10 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   menu=document.createElement('div');menu.id='wlMenu';const mb=document.createElement('button');mb.type='button';mb.className='wl-chip y';mb.setAttribute('aria-expanded','false');
   const ls=document.createElement('div');ls.className='ls';const chip=(t,on)=>{const b=document.createElement('button');b.type='button';b.className='wl-chip';b.textContent=t;b.addEventListener('click',e=>{b.blur();on(e);});return b;};
   const snd=chip('',()=>{setMuted(!soundSettings.muted);sfx('ui-click');sndLabel();}),sndLabel=()=>{snd.textContent=soundSettings.muted?'소리 꺼짐':'소리 켜짐';};
-  ls.append(snd,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
-  const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on)sndLabel();};
+  /* 절전 모드(2026-11-10 — 08 window.wlEco: 낮은 화질·30프레임 고정, 기본 꺼짐, 이 기기에 기억) */
+  const eco=chip('',()=>{sfx('ui-click');if(window.wlEco){window.wlEco.set(!window.wlEco.on);ecoLabel();toast(window.wlEco.on?'절전 모드 켜짐 — 화질을 낮추고 30프레임으로':'절전 모드 꺼짐');}}),ecoLabel=()=>{eco.textContent='절전 모드: '+(window.wlEco&&window.wlEco.on?'켜짐':'꺼짐');};
+  ls.append(snd,eco,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
+  const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on){sndLabel();ecoLabel();}};
   mb.addEventListener('click',()=>{sfx('ui-click');mb.blur();setMenu(!menu.classList.contains('open'));});setMenu(false);menu.append(mb,ls);
   // 왼쪽 위 가방 단추(개미굴 '도감 0/11' 노란 칩 자리): 받은 물건을 줄줄이 늘어놓지 않고 한 단추 → 탐험 가방 창
   items=document.createElement('div');items.id='wlItems';corner.append(items,menu);renderItems();

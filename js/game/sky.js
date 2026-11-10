@@ -18,13 +18,27 @@ const DEFAULT_KEYS=[
 const RAIN_KEY={top:'#8c98a8',horizon:'#c4c9cd',hemi:'#c9d0d8',ground:'#8d8c82',hemiI:.5,sun:'#d4dae2',sunI:.16,sunDir:[3,-12,4],fill:.2,fog:'#b8bfc5',fogNear:14,fogFar:58,stars:0,milky:0};
 const CKEYS=['top','horizon','hemi','ground','sun','fog'],NKEYS=['hemiI','sunI','fill','fogNear','fogFar','stars','milky'];
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
+const LOW_SKY=(()=>{try{const q=new URLSearchParams(location.search);if(q.has('shot'))return false;const t=q.get('quality');return t?t==='mobile':matchMedia('(pointer:coarse)').matches;}catch(e){return false;}})();
+let PAT=null;
+function bakePattern(){if(PAT)return PAT;const W=256,H=128,d=new Uint8Array(W*H*4),sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);},bn=new THREE.Vector3(.55,.42,.72).normalize();
+  for(let j=0;j<H;j++)for(let i=0;i<W;i++){const u=(i+.5)/W,v=(j+.5)/H,ph=u*Math.PI*2,th=(1-v)*Math.PI,x=-Math.cos(ph)*Math.sin(th),y=Math.cos(th),z=Math.sin(ph)*Math.sin(th);
+    const n=.6+.4*Math.sin(x*23+Math.sin(z*17)*2)*Math.sin(z*19+y*11),n2=.5+.25*Math.sin(x*7+Math.sin(z*5+y*3)*2)*Math.sin(z*6-x*2)+.25*Math.sin(x*17+z*13),bb=x*bn.x+y*bn.y+z*bn.z,m=Math.exp(-bb*bb*28)*sm(.05,.35,y),k=(j*W+i)*4;
+    d[k]=Math.round(n*255);d[k+1]=Math.round(Math.min(1,Math.max(0,n2))*255);d[k+2]=Math.round(m*255);d[k+3]=255;}
+  PAT=new THREE.DataTexture(d,W,H,THREE.RGBAFormat);PAT.wrapS=THREE.RepeatWrapping;PAT.magFilter=PAT.minFilter=THREE.LinearFilter;PAT.needsUpdate=true;return PAT;}
+function domeLow(uni){return new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
+  vertexShader:'varying vec3 vP;varying vec2 vU;void main(){vP=position;vU=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;uniform float cloud;uniform float cloudK;uniform sampler2D uPat;varying vec3 vP;varying vec2 vU;void main(){float h=normalize(vP).y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
+    'if(milky>0.||cloud>0.){vec3 p=texture2D(uPat,vU).rgb;c+=vec3(.16,.19,.3)*p.b*p.r*milky;if(cloud>0.){vec3 cc=mix(vec3(.47,.5,.55),vec3(.72,.74,.77),p.g)*mix(.8,1.,k);c=mix(c,cc*cloudK,cloud*smoothstep(-.1,.12,h));}}'+
+    'gl_FragColor=vec4(c,1.);\n#include <colorspace_fragment>\n}'});}
 function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey=null,space=false}={}){ // space: 우주(공기가 없어 낮에도 별·은하수 — 시간과 상관없이 keys의 stars·milky 그대로, 2026-11-07 무한 우주)
   const RK=Object.assign({},RAIN_KEY,rainKey||{}),RC={};CKEYS.forEach(c=>RC[c]=new THREE.Color(RK[c]));RC.dir=new THREE.Vector3(...RK.sunDir).normalize();
   const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
   // 하늘 둥근 지붕: 지평선 → 위로 색이 바뀐다(땅 아래는 지평선 색). 카메라를 따라다닌다
   const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0},cloud:{value:0},cloudK:{value:1}};
-  const mat=new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
+  /* 휴대폰 단계(2026-11-10 발열): 은하수·비구름 얼룩은 방향만의 함수(시간에 따라 안 변함)라 화소마다 sin 여덟 번을 계산하지 않고 256×128 그림 한 장에 구워(구의 uv — R 은하수 얼룩, G 구름 얼룩, B 은하수 띠) 한 번 읽는다.
+     컴퓨터·촬영 모드는 예전 계산 그대로(기준 화면) */
+  const mat=LOW_SKY?(uni.uPat={value:bakePattern()},domeLow(uni)):new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     // 은하수(milky): 하늘을 비스듬히 가로지르는 옅은 띠 — 가운데가 밝고 잔물결처럼 얼룩진 푸른 흰빛(그리기는 하늘 지붕 그대로 1회)
     fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;uniform float cloud;uniform float cloudK;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
@@ -32,7 +46,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
       // 비구름(cloud, game/weather — 비 오는 날): 하늘 전체를 얼룩진 회색 구름으로 덮는다(해·달·별은 안 보임)
       'if(cloud>0.){float n2=.5+.25*sin(d.x*7.+sin(d.z*5.+d.y*3.)*2.)*sin(d.z*6.-d.x*2.)+.25*sin(d.x*17.+d.z*13.);vec3 cc=mix(vec3(.47,.5,.55),vec3(.72,.74,.77),n2)*mix(.8,1.,k);c=mix(c,cc*cloudK,cloud*smoothstep(-.1,.12,h));}'+
       'gl_FragColor=vec4(c,1.);\n#include <colorspace_fragment>\n}'});
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,24,12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,LOW_SKY?48:24,LOW_SKY?24:12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
   // 별: 위쪽 하늘에 고르게(지평선 근처는 드물게). 첫별은 따로 크게
   let r=seed;const R=()=>(r=(r*16807)%2147483647)/2147483647;
   const P=new Float32Array(nStars*3);for(let i=0;i<nStars;i++){const a=R()*Math.PI*2,y=.12+.88*Math.sqrt(R()),c=Math.sqrt(1-y*y);P.set([Math.cos(a)*c*radius*.9,y*radius*.9,Math.sin(a)*c*radius*.9],i*3);}

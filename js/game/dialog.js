@@ -76,7 +76,7 @@ const _f=new THREE.Vector3();
 function tickFace(dt){const n=speakNPC();if(!n||n.face===false||!n.root)return;const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);n.root.getWorldPosition(_f);const dx=_f.x-P.x,dz=_f.z-P.z;if(dx*dx+dz*dz<.01)return;
   const turn=(o,a)=>{o.rotation.y+=Math.atan2(Math.sin(a-o.rotation.y),Math.cos(a-o.rotation.y))*k;};
   if(n.turn!==false)turn(n.root,Math.atan2(-dx,-dz));
-  if(!(U.isWalking&&U.isWalking())&&!U.drive&&!U.riding&&!blocking('itemget')&&!(U.reactFace))turn(W,Math.atan2(dx,dz));}
+  if(!(U.isWalking&&U.isWalking())&&!(U.drive&&Math.abs(U.drive.x)+Math.abs(U.drive.z)>.01)&&!U.riding /* drive는 가만히 있어도 {0,0}으로 늘 있다 — 예전엔 !U.drive라 주민 대화에서 원더룹이 상대를 보지 않았다(2026-11-10) */&&!blocking('itemget')&&!(U.reactFace))turn(W,Math.atan2(dx,dz));}
 function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   // 대화 중 너무 멀어지면 닫음
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}

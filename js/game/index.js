@@ -26,6 +26,9 @@ import {clearMission,initMission,tickMission} from './mission.js';
 import {applyZone as weatherZone} from './weather.js';
 import {clearIncident,initIncident,tickIncident} from './incident.js';
 import {clearFloat,initFloat,tickFloat} from './float.js';
+import {band,initLayout,layoutNow,tickLayout} from './layout.js';
+import {speaking,talking} from './dialog.js';
+import {uiHooks} from './ui.js';
 /* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기)
    view.focus({at:[x,y,z], from:[x,y,z]?, dist, sec}): 따라가기 카메라가 sec초 동안 at을 비췄다가 돌아온다(미션 장소 알려 주기, 2026-11-02).
      from이 없으면 원더룹 쪽에서 dist(기본 7)만큼 떨어져 비스듬히 내려다본다. 들어갈 때·돌아올 때 0.45초씩 부드럽게(08 따라가기 카메라가 섞는다).
@@ -49,9 +52,11 @@ const view={camera:null,aim:null,
 let HERO=null,TC=null;const SHOT_Q=new URLSearchParams(location.search).has('shot');
 function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
   root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14],P=W.position;let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
-  /* 거리는 시야각으로 계산: 두 사람의 발끝~머리 위(세로)와 둘 사이 너비(가로)가 화면의 약 60%·70%에 들어오게 — 가까우면 원더룹 큰 탈이 상대를 가렸다. 아래 대화창이 다리를 덮으니 둘을 화면 조금 위쪽에 */
-  const top=Math.max(P.y+1.5,ny+headY+.15),bot=Math.min(P.y,ny),span=top-bot,mx=(P.x+nx)/2,mz=(P.z+nz)/2,my=(top+bot)/2-span*.1;let px=-az,pz=ax;if((cam.position.x-mx)*px+(cam.position.z-mz)*pz<0){px=-px;pz=-pz;}
-  const asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360),D=Math.min(16,Math.max(span/.6,(sep+2.1)/(.72*asp))/tf);
+  /* 화면 가림 규칙 2(2026-11-10): 인물을 넣을 화면 띠 = 맨 위 단추 줄 아래(fT) ~ 맨 아래로 내려간 대화창 위(fB). 그 띠 안에 두 사람의 머리 위~발끝을 넣고,
+     낮은 쪽 얼굴(작은 주민)도 화면 위쪽 절반(fF ≤ 0.44)에 오게 — 거리는 시야각으로: 세로(얼굴 위·아래 각각)와 가로(둘 사이 너비) 가운데 가장 먼 것 */
+  const [fT,fB]=band(),fF=Math.min(.38,fT+(fB-fT)*.45),top=Math.max(P.y+1.52,ny+headY+.15),bot=Math.min(P.y,ny),face=Math.min(P.y+.95,ny+headY-Math.min(.35,headY*.3));
+  const mx=(P.x+nx)/2,mz=(P.z+nz)/2;let px=-az,pz=ax;if((cam.position.x-mx)*px+(cam.position.z-mz)*pz<0){px=-px;pz=-pz;}
+  const asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360),vis=Math.max((top-face)/Math.max(.08,fF-fT-.02),(face-bot)/Math.max(.08,fB-fF-.015),(sep+1.5)/(.86*asp)),D=Math.min(19,vis/tf),my=face-(.5-fF)*D*tf*1.02;
   let fx=mx+px*D*.99-ax*D*.05,fz=mz+pz*D*.99-az*D*.05;const fy=my+D*.1;
   if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
   const o={at:[mx,my,mz],from:[fx,fy,fz]};return ()=>o;}
@@ -60,8 +65,8 @@ function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
   else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}}
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);}
-function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickFloat();}
+function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking});uiHooks.layout=layoutNow;}
+function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}
 function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();clearFloat();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)
@@ -100,4 +105,5 @@ export * as mission from './mission.js';
 export * as photo from './photo.js'; // 사진 모드(시리즈 공통 — 08이 initPhoto·cameraTick·render)
 export * as weather from './weather.js';
 export * as incident from './incident.js';
+export * as layout from './layout.js'; // 화면 가림 규칙(2026-11-10) — 글상자·카드·표시 자리, 대화 중 단추 숨김
 export * as float from './float.js'; // 3D 자리에 붙는 화면 표시(말풍선·횟수·반짝이 표시 — 2026-11-10) // 사건 연출 공통 처리 — 사건 순간 카메라 show · 굴러가는 물건 scatter

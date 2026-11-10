@@ -74,8 +74,8 @@ export async function run() {
     ok('영역 트리거 → 나레이션 → 카드', !!nar && card && document.getElementById('wlQuest').textContent.includes('견본 손님'), `나레이션 ${nar ? nar.t + '초' : '없음'}, 카드 ${card}, 할 일 문구 바뀜`); }
 
   // 11. 결과창과 비밀 카드는 동시에 표시하지 않는다 (줄 세우기)
-  { await reset(); const log = []; const shown = () => ['notice', 'result', 'secret'].filter(k => document.getElementById({ notice: 'wlNotice', result: 'wlResult', secret: 'wlSecret' }[k])
-      .matches(k === 'notice' ? '.on' : '[style*="grid"]'));
+  { await reset(); const log = []; const shown = () => ['notice', 'result', 'secret'].filter(k => document.getElementById({ notice: 'wlNotice', result: 'wlResult', secret: 'wlStrip' }[k])
+      .matches(k === 'result' ? '[style*="grid"]' : '.on')); // 비밀 카드는 위쪽 띠(#wlStrip, 2026-11-10 화면 가림 규칙)
     G.ui.result({ title: '탐험 성공', text: '', buttons: [{ label: '계속' }] }).then(() => log.push('결과 닫힘'));
     G.ui.secret({ title: '숨겨진 비밀', text: '시험 비밀' }).then(() => log.push('비밀 닫힘'));
     G.ui.notice({ title: '안내', text: '' }).then(() => log.push('안내 닫힘'));
@@ -94,12 +94,12 @@ export async function run() {
     // 비밀: 5m → 반짝임, 영상 모드에서 숨김, 1m → 비밀 카드
     WL.position.set(4.8 - 4.5, 0, -2.6); sec(.2); const sp = [...G.ui.hintObjs].find(o => o.isSprite && o.material.blending === 2);
     const glow = !!(sp && sp.visible && sp.parent && sp.material.opacity > 0); G.ui.setHints(false); sec(.1); const hid = !(sp && sp.visible && sp.parent); G.ui.setHints(true);
-    WL.position.set(4.8 - .8, 0, -2.6); sec(.3); await flush(); const sec1 = G.ui.cardShown() === 'secret' && document.querySelector('#wlSecret .n').textContent;
+    WL.position.set(4.8 - .8, 0, -2.6); sec(.3); await flush(); const sec1 = G.ui.cardShown() === 'secret' && document.querySelector('#wlStrip .k').textContent;
     G.ui.closeSecret(); await flush(); sec(.3); const noAgain = !G.ui.cardShown() && !(sp && sp.parent);
     notes.push(`반짝임 ${glow}·영상에서 숨김 ${hid}, 비밀 카드 "${sec1}", 찾은 뒤 반짝임 없음 ${noAgain}`);
     let ended = -1; C.ending({ logo: '견본 탐험 끝', buttons: [{ label: '처음으로' }] }).then(i => ended = i); sec(.2); const stat = document.querySelector('#wlEnd .stat').textContent;
     G.ui.cardClosers.ending(); await flush(); notes.push(`엔딩 "${stat}" → 닫힘 ${ended === 0}`);
-    ok('도감·비밀·엔딩', first && again === false && dexOn && resWaits && resNow && note === '✦ 발견한 비밀 0/1' && glow && hid && sec1 === '✦ 발견한 비밀 1/1' && noAgain && /견본 도감 \d\/2 · ✦ 발견한 비밀 1\/1/.test(stat) && ended === 0, notes.join(' / ')); }
+    ok('도감·비밀·엔딩', first && again === false && dexOn && resWaits && resNow && note === '✦ 발견한 비밀 0/1' && glow && hid && /✦ 발견한 비밀 1\/1$/.test(sec1 || '') && noAgain && /견본 도감 \d\/2 · ✦ 발견한 비밀 1\/1/.test(stat) && ended === 0, notes.join(' / ')); }
 
   // 13. 손으로 하는 상호작용(game/interact): 가까이서 E → 원더룹이 물건 앞으로 걸어가 마주 보고 손 동작 → 끝나면 '서기'로 돌아오고 onDone, 한 번만
   { await reset(); const THREE = await import('three'); const box = new THREE.Mesh(new THREE.BoxGeometry(.3, .3, .3), new THREE.MeshBasicMaterial()); box.position.set(-1.6, .5, 2.2); s.scene.add(box);

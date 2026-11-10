@@ -27,12 +27,12 @@ export async function run(o = {}) {
   const cards = [
     ['대화창', () => G.ui.showDialog('견본 손님', '어서 와! 여기는 세로 화면에서 대화창이 원더룹을 가리는지 보는 두 줄짜리 대사예요.', 'E로 계속'), () => G.ui.hideDialog(), '#wlDlg'],
     ['안내 카드', () => { G.ui.notice({ title: '서재로 가 봐요', text: '문간을 지나면 카메라가 서재를 비춰요. 서재의 견본 손님에게 말을 걸어 보세요.' }); }, () => G.ui.closeNotice(), '#wlNotice'],
-    ['비밀 카드', () => { G.ui.secret({ title: '숨겨진 비밀', text: '세로 화면에서 비밀 카드가 넘치지 않는지 보는 문장이에요. 두세 줄 정도 됩니다.', count: '✦ 발견한 비밀 1/5' }); }, () => G.ui.closeSecret(), '#wlSecret .card'],
+    ['비밀 카드', () => { G.ui.secret({ title: '숨겨진 비밀', text: '세로 화면에서 비밀 카드가 넘치지 않는지 보는 문장이에요. 두세 줄 정도 됩니다.', count: '✦ 발견한 비밀 1/5' }); }, () => G.ui.closeSecret(), '#wlStrip'],
     ['결과창', () => { G.ui.result({ title: '탐험 성공', text: '결과창 문장이 세로 화면에 들어가는지 봐요.', buttons: [{ label: '계속' }, { label: '다시 하기' }] }); }, () => G.ui.chooseResult(0), '#wlResult .card'],
   ];
   for (const [name, open, close, sel] of cards) {
     open(); s.step(2); await flush(); const r = document.querySelector(sel).getBoundingClientRect();
-    const cv2 = Math.max(cover(wl, r), cover(body, r)), fit = fits(r), modal = name === '비밀 카드' || name === '결과창';
+    const cv2 = Math.max(cover(wl, r), cover(body, r)), fit = fits(r), modal = name === '결과창';
     const res = !fit ? FIX : modal ? OK : cv2 > .25 ? FIX : cv2 > .05 ? WARN : OK;
     add(`세로 화면 · ${name}`, res, `${fit ? '화면 안' : '화면 밖으로 넘침'}, 원더룹(전체·몸 중 큰 쪽)을 ${Math.round(cv2 * 100)}% 가림${modal ? ' (가운데 창 — 가림 허용)' : ''} · 카드 ${Math.round(r.width)}×${Math.round(r.height)} (${Math.round(r.top)}~${Math.round(r.bottom)})`);
     close(); s.step(2); await flush();
