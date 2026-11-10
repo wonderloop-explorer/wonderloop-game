@@ -163,7 +163,9 @@ function startTime(){const Z=zone();if((!SHOT||Q.has('weather'))&&Z&&Z.sky)weath
 function applyLook(U){if(SHOT||!U)return;const X=worldX();if(X){applyWorldLook(U,X);return;}if(U.setVest)U.setVest(look.vest|0);if(U.setScarf)U.setScarf(look.scarf|0);
   const D=decoList();if(look.deco&&U.setHood){const d=D.find(x=>x.hood===look.deco);if(d&&(!d.flag||flags[d.flag]))U.setHood(d.hood);}}
 /* 세계 설정 explorer(js/worlds — 2026-11-04): 탐험가 소개 창(새로 시작)과 게임 중 '옷 갈아입기'가 같은 목록·같은 저장값 look.w[세계 id] = {hood, outfit, deco} */
-const curWorld=()=>WORLD&&WORLD.backdrop&&(WORLD.zones||[WORLD.backdrop.zone]).includes(zoneId(zone()))?WORLD:null;
+/* 이 세계의 구역 = 첫 화면 구역 + 모험 지도(map)의 스테이지 구역들(2026-11-10 — 화성 'space-mars'가 빠져 있어 STAGE 2에서는 옛 가방 화면이 떴다: 유리 조각·만난 친구가 안 보이고 '에서 받을 수 있어요'만) */
+const worldZones=W=>W.zones||[W.backdrop.zone,...(W.map||[]).map(m=>m.zone).filter(Boolean)];
+const curWorld=()=>WORLD&&WORLD.backdrop&&worldZones(WORLD).includes(zoneId(zone()))?WORLD:null;
 const worldX=()=>{const W=curWorld();return W&&W.talColors?W:null;}; // 탐험 준비 창을 쓰는 세계(talColors가 있는 세계 설정)
 const wsave=()=>{const W=curWorld();look.w=look.w||{};return look.w[W.id]=look.w[W.id]||{tal:0,deco:0};}; // 탈 색·장식은 세계마다, 옷 조합(look.combo)·이름은 하나
 const itemFlag=(W,it)=>'item:'+W.id+':'+it.id,itemGot=(W,it)=>!!flags[itemFlag(W,it)];
@@ -209,7 +211,10 @@ function worldBag(){const W=curWorld();if(!W||bagCfg())return null;const L=[];
   const F=W.firstMission&&W.firstMission.item;if(F)L.push({key:'have:'+W.id+':'+F.id,name:F.name,f:F.desc||'',where:F.where||'첫 미션',img:F.icon?F.icon():null});
   (W.items||[]).forEach(i=>L.push({key:'item:'+W.id+':'+i.id,name:i.name,f:i.desc||'탐험 준비에서 달 수 있는 장식이에요.',where:i.where||('STAGE 0'+i.stage),img:i.icon?i.icon():null,st:i.stage||9}));
   L.forEach(i=>i.got=!!flags[i.key]);const got=L.filter(i=>i.got).sort((a,b)=>gotAt(a.key)-gotAt(b.key));return [...got,...L.filter(i=>!i.got).sort((a,b)=>(a.st||0)-(b.st||0))];}
-function bagCount(){const WB=worldBag();if(WB)return WB.filter(i=>i.got).length;const B=bagCfg();if(!B)return Object.keys(ITEMS).filter(id=>flags[id]).length;
+/* 세계 설정 cards(만난 친구 — game/profile flags 'meet:<세계>:<id>'): 숨겨진 친구(secret)는 만난 뒤에만 보임 */
+const friendGot=(W,id)=>!!flags['meet:'+W.id+':'+id];
+function worldFriends(){const W=curWorld();if(!W||!W.cards)return [];return Object.keys(W.cards).map(id=>({id,c:W.cards[id],got:friendGot(W,id)})).filter(f=>f.got||!f.c.secret);}
+function bagCount(){const WB=worldBag();if(WB)return WB.filter(i=>i.got).length+worldFriends().filter(f=>f.got).length;const B=bagCfg();if(!B)return Object.keys(ITEMS).filter(id=>flags[id]).length;
   return B.items.filter(i=>flags[i.id]).length+(B.friends||[]).filter(id=>seen(id)).length+(B.secrets||[]).filter(q=>seen(q.id)).length;}
 function renderItems(){if(!items)return;let b=items.querySelector('.bagbtn');
   if(!b){b=document.createElement('button');b.type='button';b.className='wl-chip y bagbtn';b.setAttribute('aria-label','탐험 가방 열기');b.innerHTML=BAG_SVG+'<span class="n"></span>';b.addEventListener('click',()=>{b.blur();openBag();});items.prepend(b);}
@@ -222,15 +227,18 @@ function renderBag(){const WB=worldBag();if(WB){renderWorldBag(WB);return;}const
   const nI=B.items.filter(i=>flags[i.id]).length,nF=(B.friends||[]).filter(seen).length;
   H.innerHTML='<div class="dhead"><h2></h2><p class="cnt"></p></div><div class="grid wl-pop-body"></div>';H.querySelector('h2').textContent=B.title;H.querySelector('.cnt').textContent=`받은 물건 ${nI}개 · 만난 친구 ${nF}명`;
   const G=H.querySelector('.grid'),sec=(t,gold=false)=>{const h=document.createElement('p');h.className='sec'+(gold?' gold':'');h.textContent=t;G.appendChild(h);const d=document.createElement('div');d.className='cards';G.appendChild(d);return d;};
-  const A=sec('받은 물건');B.items.forEach(i=>{const got=!!flags[i.id];A.appendChild(card({got,img:ic[i.id]||null,svg:ic[i.id]?null:icon(i.id),title:i.name,text:got?i.f:i.where+'에서 받을 수 있어요'}));});
+  const A=sec('받은 물건');B.items.forEach(i=>{const got=!!flags[i.id];A.appendChild(card({got,img:ic[i.id]||null,svg:ic[i.id]?null:icon(i.id),title:i.name,text:got?i.f:(i.where?i.where+'에서 받을 수 있어요':'아직 받지 못했어요')}));});
   if((B.friends||[]).length){const F=sec('만난 친구');B.friends.forEach(id=>{const c=C[id]||{},got=seen(id);F.appendChild(card({got,img:pic(id),title:c.name,text:got?c.intro:'어딘가에서 만날 수 있어요'}));});}
   if((B.secrets||[]).length){const n=B.secrets.filter(q=>seen(q.id)).length,S=sec(`✦ 숨겨진 비밀 ${n}/${B.secrets.length}`,true);
     B.secrets.forEach(q=>{const c=C[q.id]||{},got=seen(q.id);S.appendChild(card({got,secret:true,img:pic(q.id),title:c.name,text:got?c.intro:q.where+' 어딘가에 숨어 있어요'}));});}
   const x=pbtn('close wl-pop-foot','닫기',()=>closeBag());H.appendChild(x);bag.appendChild(H);}
 function renderWorldBag(L){const W=curWorld();bag.innerHTML='';const H=document.createElement('div');H.className='hcard wl-pop-card';const n=L.filter(i=>i.got).length;
-  H.innerHTML='<div class="dhead"><h2>탐험 가방</h2><p class="cnt"></p></div><div class="grid wl-pop-body"></div>';H.querySelector('.cnt').textContent=`받은 물건 ${n}개`;
+  H.innerHTML='<div class="dhead"><h2>탐험 가방</h2><p class="cnt"></p></div><div class="grid wl-pop-body"></div>';const FR=worldFriends(),nF=FR.filter(f=>f.got).length;H.querySelector('.cnt').textContent=FR.length?`받은 물건 ${n}개 · 만난 친구 ${nF}명`:`받은 물건 ${n}개`;
   const G=H.querySelector('.grid'),h=document.createElement('p');h.className='sec';h.textContent='받은 물건';const d=document.createElement('div');d.className='cards';G.append(h,d);
-  L.forEach(i=>d.appendChild(card({got:i.got,img:i.img,title:i.name,text:i.got?i.f:i.where+'에서 받을 수 있어요'})));
+  L.forEach(i=>d.appendChild(card({got:i.got,img:i.img,title:i.name,text:i.got?i.f:(i.where?i.where+'에서 받을 수 있어요':'아직 받지 못했어요')})));
+  if(FR.length){const h2=document.createElement('p');h2.className='sec';h2.textContent=`만난 친구 ${nF}/${FR.length}`;const d2=document.createElement('div');d2.className='cards';G.append(h2,d2);
+    FR.forEach(f=>{const im=pic(f.id,W.id);const cd=card({got:f.got,img:im,title:f.c.name,text:f.got?f.c.intro:(f.c.where?f.c.where+'에서 만날 수 있어요':'어딘가에서 만날 수 있어요')});
+      if(f.got&&!im){const ic=cd.querySelector('.ic');ic.innerHTML='';const b=document.createElement('b');b.textContent=(f.c.name||'?').slice(0,1);b.style.cssText='color:#5a3826';ic.style.background=f.c.bg||'';ic.appendChild(b);}d2.appendChild(cd);});}
   H.appendChild(pbtn('close wl-pop-foot','닫기',()=>closeBag()));bag.appendChild(H);}
 function openBag(){build();if(bagOn||frontOn||wardOn||storyOn)return;if(blocking('talk')||cardShown()){toast('지금은 가방을 열 수 없어요');return;}
   bagOn=true;sfx('ui-book');renderBag();bag.classList.add('on');popShown('bag',true);document.body.classList.add('wl-bag-on');block('bag',true);if(ctx.WL.userData.stopWalk)ctx.WL.userData.stopWalk();setTimeout(()=>{const b=bag.querySelector('.close');if(b&&!coarse)b.focus({preventScroll:true});},50);}

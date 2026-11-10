@@ -13,7 +13,7 @@ function setFlag(k,v=true){if(flags[k]===v)return;flags[k]=v;if(v===true&&!order
 function onFlag(f){listeners.add(f);return()=>listeners.delete(f);}
 function applyStart(start){if(start)for(const k in start)setFlag(k,start[k]);}
 /* 진행 초기화(톱니 메뉴 '진행 초기화'): 저장된 진행·도감을 지운다 — 08이 지운 뒤 페이지를 다시 연다 */
-function resetProgress(){try{localStorage.removeItem(KEY);localStorage.removeItem('wl-codex');}catch(e){}}
+function resetProgress(){try{localStorage.removeItem(KEY);localStorage.removeItem('wl-codex');localStorage.removeItem('wl-pics');}catch(e){}}
 /* 첫 화면 '처음부터'(game/front): 저장도 지우고 지금 값도 처음으로 — 페이지를 다시 열지 않고 첫 구역을 다시 만든다 */
 function resetAll(){resetProgress();for(const k of Object.keys(flags))delete flags[k];order.length=0;Object.assign(flags,{compass:false,umbrella:false});}
 const gotAt=k=>{const i=order.indexOf(k);return i<0?1e9:i;}; // 얻은 순서(없으면 맨 뒤)

@@ -34,7 +34,7 @@ const NAMES={shiver:'후덜덜',shake:'화면 흔들림',joy:'기쁨',startle:'�
 const SKIN=[255,201,160],PALE=[240,242,228]; // 얼굴빛: 살색 #ffc9a0 → 하얗게 질린 색(아주 옅은 푸른 기) — 06 setTint('skin')
 function initReact(c){C=c;}
 const vib=p=>{try{if(p&&navigator.vibrate&&!window.wlShot)navigator.vibrate(p);}catch(e){}};
-function endBody(ok){if(!cur)return;const U=C.WL.userData;if(cur.expr&&U.exprName===cur.expr&&U.setExpr)U.setExpr(cur.prev||'기본');const r=cur.res;cur=null;r(ok);}
+function endBody(ok){if(!cur)return;const U=C.WL.userData;U.reactFace=false;if(cur.expr&&U.exprName===cur.expr&&U.setExpr)U.setExpr(cur.prev||'기본');const r=cur.res;cur=null;r(ok);}
 function react(name,o={}){if(!C)return Promise.resolve(false);
   if(name==='shake'){const P=SHAKE[o.preset||'bump']||SHAKE.bump,sec=o.sec??P[0],amp=o.amp??P[1],snd=o.sound===undefined?P[2]:o.sound;
     shk={t:sec,amp};if(snd)sfx(snd);vib(o.vib===undefined?P[3]:o.vib);cue({kind:'react',id:'shake',who:NAMES.shake,text:'',dur:sec});return new Promise(r=>setTimeout(()=>r(true),sec*1000));}
@@ -74,7 +74,7 @@ function tickReact(dt){T+=dt;if(shk){shk.t-=dt;if(shk.t<=0)shk=null;}
   switch(R.name){
     case 'shiver':neck.rotation.z+=Math.sin(T*42)*.035;break; // 원본 그대로(들어가고 나옴 없이)
     case 'joy':{if(R.bounce)spine.position.y+=Math.abs(Math.sin(T*9))*.07; // 원본 그대로(bounce:false = 꿀방울 들어 보일 때처럼 웃기만)
-      if(R.face&&!(U.walkAmt>0)){const cp=C.camera.position,a=Math.atan2(cp.x-WL.position.x,cp.z-WL.position.z);let d=a-WL.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));WL.rotation.y+=d*Math.min(1,dt*8);}break;}
+      if(R.face&&!(U.walkAmt>0)){U.reactFace=true; /* 카메라를 보는 동안 대화 마주 보기(game/dialog tickFace)가 돌리지 않게 */const cp=C.camera.position,a=Math.atan2(cp.x-WL.position.x,cp.z-WL.position.z);let d=a-WL.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));WL.rotation.y+=d*Math.min(1,dt*8);}break;}
     case 'startle':{if(t<.12){const k=Math.sin(t/.12*Math.PI*.5);spine.position.y-=.05*k;arms[0].rotation.z+=.2*k;arms[1].rotation.z-=.2*k;neck.rotation.x-=.13*k;}
       else{const u=Math.min(1,(t-.12)/.38),j=Math.sin(u*Math.PI);WL.position.y+=.25*j;arms[0].rotation.z-=.7*j;arms[1].rotation.z+=.7*j;neck.rotation.x-=.13*env;
         if(u>=1&&t<.62){const q=1-(t-.5)/.12;spine.position.y-=.03*Math.max(0,q);}}

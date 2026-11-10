@@ -41,7 +41,7 @@ function endTalk(done=false){if(!talk)return;const n=talk.n,talk0sig=talk.sig;if
   if(n.onDone)try{n.onDone();}catch(e){console.error(e);}}
 function advance(){if(!talk)return false;talk.i++;show();return true;}
 /* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 true, 구역을 바꿔 지워지면 false */
-function say(who,text,sec,id){return new Promise(r=>sayQ.push({who,text,sec,id,r}));}
+function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face}));}
 function tickSay(){
   if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r(true);}
   if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
@@ -66,7 +66,18 @@ function makeBubble(scene){bubScene=scene;bubTex=bubCanvas(false);heartTex=bubCa
 const BUB_H=.82/(7*2*Math.tan(27.5*Math.PI/180));
 function bubbleSize(cam,d){const asp=cam.aspect,far=7.5*(asp<1.25?Math.min(2.1,1.25/asp):1)*7/6,h=BUB_H*Math.min(d,far)*2*Math.tan(cam.fov*Math.PI/360);return h;}
 const _p=new THREE.Vector3(),_q=new THREE.Vector3();
-function tickDialog(){if(!ctx)return;const P=ctx.WL.position;
+/* 마주 보기 (2026-11-10 — 모든 세계 공통 규칙, docs/series-rules.md '대화'): 말하는 주민은 원더룹 쪽으로 몸을 돌리고, 원더룹도 말하는 상대를 본다.
+   - NPC 대화(startTalk)와, 주민 이름으로 나오는 혼잣말 줄(say('삐삐', …) · '삐삐 (녹음 중)'처럼 이름 뒤에 괄호가 붙어도) 모두. 초당 7로 부드럽게.
+   - 원더룹은 걷거나 탈것·획득 연출·리액션으로 카메라를 보는 중이면 돌리지 않는다. 원더룹 대사('원더룹' 줄)는 아무도 돌리지 않는다.
+   - 끄기: NPC 정의 face:false(벽에 붙은 주민 등), say(…, {face:false})(둘이 같은 곳을 보며 말하는 줄 — 노을 보기). 구역이 주민 방향을 매 프레임 정하면 구역 값이 이긴다(구역 update가 뒤) → 그런 구역은 dialog.speaking()을 보고 맞춘다 */
+const speakNPC=()=>{if(talk)return talk.n;if(!saying||saying.face===false||!saying.who)return null;const w=saying.who;return NPCS.find(n=>n.root&&n.name&&(w===n.name||w.startsWith(n.name+' ')||n.name.endsWith(' '+w)||n.name.endsWith(' '+w.split(' (')[0])))||null;};
+const speaking=()=>speakNPC();
+const _f=new THREE.Vector3();
+function tickFace(dt){const n=speakNPC();if(!n||n.face===false||!n.root)return;const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);n.root.getWorldPosition(_f);const dx=_f.x-P.x,dz=_f.z-P.z;if(dx*dx+dz*dz<.01)return;
+  const turn=(o,a)=>{o.rotation.y+=Math.atan2(Math.sin(a-o.rotation.y),Math.cos(a-o.rotation.y))*k;};
+  if(n.turn!==false)turn(n.root,Math.atan2(-dx,-dz));
+  if(!(U.isWalking&&U.isWalking())&&!U.drive&&!U.riding&&!blocking('itemget')&&!(U.reactFace))turn(W,Math.atan2(dx,dz));}
+function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   // 대화 중 너무 멀어지면 닫음
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
   near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
@@ -103,4 +114,4 @@ const talking=()=>!!talk,talkNPC=()=>talk?talk.n:null; /* 지금 이야기하는
 const npcList=()=>NPCS; // 시험 도구(game/devcheck 크기 확인)
 const findNPC=name=>NPCS.find(n=>n.name===name)||null;
 const lineEnd=()=>talk&&talk.h?talk.h.end:null; // 지금 대사(목소리)가 끝나는 게임 시각 — 영상 캡처가 대사를 저절로 넘길 때
-export {talkNPC,act,setDialogZone,met as npcMet,clearDialog,clickNPC,endTalk,findNPC,npcList,initDialog,lineEnd,linesOf,npc,say,startTalk,talkable,talking,tickDialog};
+export {speaking,talkNPC,act,setDialogZone,met as npcMet,clearDialog,clickNPC,endTalk,findNPC,npcList,initDialog,lineEnd,linesOf,npc,say,startTalk,talkable,talking,tickDialog};

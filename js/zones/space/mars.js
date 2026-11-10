@@ -217,7 +217,7 @@ const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 const east=x=>x>CANYON.x;
 const onRock=W=>{const P=W.position,V=W.userData.vert;return Math.hypot(P.x-ROCKD.c[0],P.z-ROCKD.c[1])<ROCKD.r+.3&&P.y>ROCKD.top-.4&&!(V&&V.air);};
 function quest(q,goal){if(q!==st.lastQ){st.lastQ=q;G.ui.setQuest(q);G.goal.set(goal||null);}}
-const say=(who,text,sec)=>G.dialog.say(who,text,sec);
+const say=(who,text,sec,o)=>G.dialog.say(who,text,sec,undefined,o);
 const wait=s=>G.core.wait(s);
 const mumble=(low,sec,o={})=>G.sound.sfx('voice-mumble',{low,sec,...o});
 /* 대화(다시 말 걸 때 — 이야기 장면 동안·녹음/틀기 차례에는 비워서 손 상호작용이 먼저) */
@@ -319,24 +319,26 @@ async function finale(W,U){SK.to(1,9);G.sound.bedLevel(.55,3);
   dung.root.rotation.y=SUNSET.face;
   /* 카메라: 셋 뒤 비스듬히 위에서 서쪽(해 쪽)을 — 셋과 낮게 걸린 파란 해가 한 화면에(처음 각도만, 그 뒤로는 플레이어 것) */
   const c=[SUNSET.wl[0],groundY(...SUNSET.wl),SUNSET.wl[1]];G.view.start({at:[c[0]-3,c[1]+2.4,c[2]],from:[c[0]+7.4,c[1]+1.7,c[2]-.6]}); /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
-  await wait(3);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6);pipi.mode='idle';
-  await wait(1.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','…같이… 보니까… 더… 파랗다…',3.4);dung.mode='idle';
+  await wait(3);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{face:false});pipi.mode='idle';
+  await wait(1.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','…같이… 보니까… 더… 파랗다…',3.4,{face:false});dung.mode='idle';
   G.ui.toast('사진 찍기 좋은 순간이에요 — 사진 단추(C)로 남겨 보세요',4.6);await wait(4.2);
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
     await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
-  faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);pipi.mode='talk';mumble(false,2.4);
+  pipi.mode='talk';mumble(false,2.4); /* 말하는 삐삐와 원더룹이 서로 돌아봄(game/dialog 마주 보기 — 부드럽게) */
   await say('삐삐','우리 둘이 같이 노을을 본 건 네 덕분이야. 이거 받아! 파란 노을이 굳어 생긴 유리 조각이래.',4.6);pipi.mode='idle';
   if(!F[K.glass]){const gl=makeGlass();const p=pipi.root.position;gl.position.set(p.x,p.y+.55,p.z);root.add(gl);G.sound.sfx('event-sparkle');
-    await G.itemget.itemGet({obj:gl,to:'bag',card:{title:'파란 노을 유리 조각을 얻었어요!',text:'파란 노을빛을 닮은 유리 조각 — 가방에 넣었어요',icon:glassIcon()},scale:1.4,top:1.95});
+    await G.itemget.itemGet({obj:gl,to:'bag',giver:pipi.root,card:{title:'파란 노을 유리 조각을 얻었어요!',text:'파란 노을빛을 닮은 유리 조각 — 가방에 넣었어요',icon:glassIcon()},scale:1.4,top:1.95});
     G.state.setFlag(K.glass,true);gl.removeFromParent();}
   dung.mode='talk';mumble(true,3);await say('둥둥','…언젠가… 그 유리에… 좋은 빛을… 담아 보렴.',4);dung.mode='idle';
+  /* 작별 인사가 끝나면 둘은 다시 노을 쪽으로 돌아 나란히 서고(부드럽게), 원더룹도 노을을 봄 */
+  st.sunFace=true;{const t0=G.clock.t;await G.core.until(()=>{const d=SUNSET.face-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.12;return G.clock.t-t0>1.1;},2);}
   await bigLift(W,U);}
 /* ⑧ 큰 먼지 회오리가 원더룹을 하늘로 → STAGE 2 완료 카드 → (금성 이동은 다음 작업) 다시 언덕에 내려놓음 */
 function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{radius:3.4,height:12,seed:7.7,big:true});st.big=big;const P0=W.position.clone(),gy=groundY(P0.x,P0.z);
   const fx=-1,bx0=P0.x+fx*14,bz0=P0.z+3,bo={x:P0.x,z:P0.z};let bx=bx0,bz=bz0,T0=G.clock.t,ph=0,liftT=0;G.sound.sfx('event-whirl');
-  pipi.mode='hop';dung.mode='wave';
+  /* 2026-11-10: 큰 회오리가 다가오는 동안 둘은 노을을 보고 있다가, 원더룹이 들려 올라가면 돌아보며 손을 흔들고, 내려오면 다시 노을을 봄 */
   st.bigTick=dt=>{const t=G.clock.t-T0;big.tick(dt);
-    if(ph===0){const u=ss(0,3.2,t);bx=lerp(bx0,P0.x,u);bz=lerp(bz0,P0.z,u);big.setBase(bx,groundY(bx,bz),bz);if(t>3.2){ph=1;liftT=t;lockOn(G,W);U.riding.y=gy;G.react.react('startle');G.sound.sfx('event-whoosh');if(U.setExpr)U.setExpr('반짝 신남');}}
+    if(ph===0){const u=ss(0,3.2,t);bx=lerp(bx0,P0.x,u);bz=lerp(bz0,P0.z,u);big.setBase(bx,groundY(bx,bz),bz);if(t>3.2){ph=1;liftT=t;big.clear(true);st.sunFace=false;st.lookWL=true;pipi.mode='wave';dung.mode='wave';lockOn(G,W);U.riding.y=gy;G.react.react('startle');G.sound.sfx('event-whoosh');if(U.setExpr)U.setExpr('반짝 신남');}}
     else{const k=t-liftT,y=ph===1?gy+22*ss(0,4.5,k):gy+22*(1-ss(0,3.2,k));const ox=Math.cos(k*3)*.35,oz=Math.sin(k*3)*.35;
       W.position.set(P0.x+ox,y,P0.z+oz);U.riding.y=y;W.rotation.y+=dt*2.4;W.rotation.z=Math.sin(k*2.3)*.1;big.setBase(P0.x,gy,P0.z);big.setHeight(Math.max(8,y-gy+4));
       if(Math.floor(k/2.1)!==st.bwi){st.bwi=Math.floor(k/2.1);G.sound.sfx('event-whirl',{gain:.9});}
@@ -345,11 +347,11 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
         Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 금성 구름',icon:SPACE.icons.map(),sec:3.6,sound:null,who:'완료'}),new Promise(r=>setTimeout(r,4200))])
           .then(()=>{G.state.setFlag(K.clear,true);ph=2;liftT=G.clock.t-T0;});}
       if(ph===2&&k>3.3){W.position.set(P0.x,gy,P0.z);W.rotation.z=0;lockOff(G,W);G.sound.sfx('land');puffAt(P0.x,P0.z,16);st.bigTick=null;
-        const b=big;let f=1;const fade=setInterval(()=>{f-=.05;b.mat.uniforms.uA.value=.95*f;if(f<=0){clearInterval(fade);b.dispose();}},50);st.big=null;pipi.mode='idle';dung.mode='idle';res();}}};});}
+        const b=big;let f=1;const fade=setInterval(()=>{f-=.05;b.mat.uniforms.uA.value=.16*f;if(f<=0){clearInterval(fade);b.dispose();}},50);st.big=null;pipi.mode='idle';dung.mode='idle';st.lookWL=false;st.sunFace=true;res();}}};});}
 const discN=()=>Object.values(DISC).filter(k=>F[k]).length;
 /* ── 회오리 타기(원더룹): 들림 1초 → 빙글빙글 건너감 → 내려앉음(dur초, 조작 잠금 · 카메라는 플레이어 것 — 원더룹과 함께 움직임) ── */
 function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝 신남');U.action='서기';U.at=0;const P0=W.position.clone(),gy0=groundY(P0.x,P0.z),to=o.to,gy1=groundY(to[0],to[1]),D=o.dur;
-  const w=o.whirl,wo=o.wo;wo.busy=true;let T=0,wi=-1,landed=false;G.sound.sfx('event-whoosh',{gain:.9});G.react.react('startle',{sound:null});
+  const w=o.whirl,wo=o.wo;wo.busy=true;w.clear(true);let T=0,wi=-1,landed=false;G.sound.sfx('event-whoosh',{gain:.9});G.react.react('startle',{sound:null});
   st.ride={o,tick(dt){T+=dt;let x,z,y;
     if(T<1){x=P0.x;z=P0.z;y=gy0+1.2*ss(0,1,T);}
     else if(T<D-1.1){const u=ss(1,D-1.1,T);x=lerp(P0.x,to[0],u);z=lerp(P0.z,to[1],u);y=lerp(gy0,gy1,u)+1.2+o.peak*Math.sin(PI*u);}
@@ -357,7 +359,7 @@ function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝
     const ox=Math.cos(T*2.6)*.32,oz=Math.sin(T*2.6)*.32;W.position.set(x+ox,y,z+oz);U.riding.y=y;W.rotation.y+=dt*(2+Math.sin(T*.9)*.8);W.rotation.z=Math.sin(T*2.4)*.11;
     wo.x=x;wo.z=z;const wg=groundY(x,z);w.setBase(x,wg,z);w.setHeight(Math.max(5,y-wg+1.4));
     if(Math.floor(T/2.1)!==wi){wi=Math.floor(T/2.1);G.sound.sfx('event-whirl',{gain:.95});}
-    if(T>=D&&!landed){landed=true;W.position.set(to[0],gy1,to[1]);W.rotation.z=0;st.ride=null;wo.busy=false;wo.armed=false;w.setHeight(o.h0||6);lockOff(G,W);G.sound.sfx('land');G.sound.sfx('event-dust');puffAt(to[0],to[1],18);
+    if(T>=D&&!landed){landed=true;W.position.set(to[0],gy1,to[1]);W.rotation.z=0;st.ride=null;wo.busy=false;wo.armed=false;w.setHeight(o.h0||6);w.clear(false);lockOff(G,W);G.sound.sfx('land');G.sound.sfx('event-dust');puffAt(to[0],to[1],18);
       G.react.react('joy',{bounce:false});if(o.onEnd)o.onEnd();}}};}
 /* 비밀: 화산 꼭대기(갔다가 머물고 돌아옴) */
 function secretRide(W){const back=[SECRET_HOME[0]+2,SECRET_HOME[1]+3];
@@ -382,7 +384,10 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   const pm=st.pipiWalk?'walk':pipi.mode;pipi.tick(dt,t,pm);dung.tick(dt,t,dung.mode);
   if(blob){blob.set(0,pipi.root.position.x,groundY(pipi.root.position.x,pipi.root.position.z)+.03,pipi.root.position.z,.32);const dp=dung.root.position;const gd=platformTop(dp.x,dp.z);blob.set(1,dp.x,gd+.03,dp.z,.42);}
   if(st.cross)st.cross.tick(dt);if(st.bigTick)st.bigTick(dt);if(st.ride){st.ride.tick(dt);}
-  if(!st.scene&&!st.cross){if(!st.pipiWalk&&stage()!=='meet')faceTo(pipi,P.x,P.z,dt);if(!dung.root.userData.fixed&&!F[K.told]&&stage()!=='meet')faceTo(dung,P.x,P.z,dt*.5);}
+  {const sp=G.dialog.speaking&&G.dialog.speaking(),sun=(m)=>{if(sp&&sp.root===m.root)return;const r=m.root,d=SUNSET.face-r.rotation.y;r.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*Math.min(1,dt*4);};
+    if(st.lookWL){faceTo(pipi,P.x,P.z,dt);faceTo(dung,P.x,P.z,dt);}
+    else if(st.sunFace||(F[K.told]&&!st.scene&&!st.cross)){sun(pipi);sun(dung);} /* 노을을 같이 본 뒤: 나란히 노을 쪽(말 걸면 그동안만 원더룹 쪽) */
+    else if(!st.scene&&!st.cross){if(!st.pipiWalk&&stage()!=='meet')faceTo(pipi,P.x,P.z,dt);if(!dung.root.userData.fixed&&stage()!=='meet')faceTo(dung,P.x,P.z,dt*.5);}}
   if(st.pipiWalk){const r=pipi.root.position,to=st.pipiWalk.to,dx=to[0]-r.x,dz=to[1]-r.z,d=Math.hypot(dx,dz),far=Math.hypot(P.x-r.x,P.z-r.z);
     const wd=Math.hypot(P.x-to[0],P.z-to[1]),sp=wd>d+8&&far>10?0:far>22?4.6:3.1; /* 원더룹이 한참 뒤에 있으면 기다리고, 앞서 가 있으면 조금 빨리 */if(d<.15){st.pipiWalk=null;pipi.mode='idle';}else if(sp>0){const s=Math.min(d,sp*dt);place(pipi,pipiOb,r.x+dx/d*s,r.z+dz/d*s);faceTo(pipi,to[0],to[1],dt);}else{faceTo(pipi,P.x,P.z,dt);}}
   if(arr&&!st.arrDone){return;}

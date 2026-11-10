@@ -321,7 +321,7 @@ const BUN=[{id:'kongkong',name:'콩콩',fur:'#d8d8e0',scarf:'#ff9eb3',way:[[-.6,
 const bunBlob=blobMany(BUN.length+1);if(bunBlob){bunBlob.frustumCulled=false;root.add(bunBlob);keep.push(bunBlob);}
 const bunnies=BUN.map((b,i)=>{const m=makeBunny(b.fur,b.scarf);const [x,z]=b.way[0];m.root.position.set(x,groundY(x,z),z);root.add(m.root);keep.push(m.root);
   const st={i:0,t:0,wait:RR(.5,2.5),from:[x,z],to:null,ry:0};
-  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:1.4,variants:[{when:()=>!GATHER.on,lines:[b.line]}]}); /* 망원경·절구에서 조금 떨어져 뛰놀고(가까우면 E가 '말 걸기'로 먼저 가서 체험이 안 됐다), 떡방아 구경 중엔 말 걸 상대가 아님 */return {...b,m,st};});
+  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:1.4,onDone:()=>G.profile.meet('bunnies',m.root),variants:[{when:()=>!GATHER.on,lines:[b.line]}]}); /* 망원경·절구에서 조금 떨어져 뛰놀고(가까우면 E가 '말 걸기'로 먼저 가서 체험이 안 됐다), 떡방아 구경 중엔 말 걸 상대가 아님 */return {...b,m,st};});
 function tickBunnies(dt,t,P){
   if(WAVE.on&&P){bunnies.forEach((b,i)=>{const r=b.m.root,a=i*2.1+.6,x=BOBO[0]+Math.cos(a)*1.5,z=BOBO[1]+Math.sin(a)*1.5,hop=Math.abs(Math.sin(t*4.2+i*1.7)); // 별똥별 타고 가는 원더룹에게: 할아버지 둘레에서 통통 뛰며 몸을 좌우로 흔듦(손 흔들기 — 토끼는 팔이 따로 없다)
       r.position.set(x,groundY(x,z)+hop*.45,z);const ry=Math.atan2(wd(P.x-x),wd(P.z-z));b.st.ry+=Math.atan2(Math.sin(ry-b.st.ry),Math.cos(ry-b.st.ry))*Math.min(1,dt*4);r.rotation.y=b.st.ry;
@@ -441,6 +441,10 @@ function poundCamStart(){const W=U0(),cam=G.view.camera;if(!W||!cam)return;if(po
     const k=cam.aspect<1?Math.min(2,1.25/cam.aspect):1,P=W.position,mx=(P.x+MORTAR[0])/2,mz=(P.z+MORTAR[1])/2,d=3.5*k;
     const at=bentPos({x:mx*.7+P.x*.3,y:P.y+.68-.32*(k-1),z:mz*.7+P.z*.3}) /* 세로 화면은 보는 점을 낮춰 원더룹·절구를 화면 위쪽에(아래는 대사창·조이스틱) */,from=bentPos({x:P.x+Math.sin(pc.a)*d,y:P.y+1.3+.4*(k-1),z:P.z+Math.cos(pc.a)*d});
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};};
+  /* 구경 자리(2026-11-10): 카메라에서 볼 때 절구 뒤쪽 반원에(원더룹에게서 1.1m 넘게 떨어진 세 자리) — 정해 둔 자리는 카메라가 그쪽 사선으로 잡히면 토끼가 원더룹·절구 앞을 가렸다(휴대폰에서 특히) */
+  {const cx=P.x+Math.sin(pc.a)*3.5,cz=P.z+Math.cos(pc.a)*3.5,b=Math.atan2(MORTAR[0]-cx,MORTAR[1]-cz),sp=[];
+    for(const da of [0,.7,-.7,1.25,-1.25,1.8,-1.8]){const x=MORTAR[0]+Math.sin(b+da)*1.4,z=MORTAR[1]+Math.cos(b+da)*1.4;if(Math.hypot(x-P.x,z-P.z)>1.1)sp.push([x,z]);if(sp.length===3)break;}
+    if(sp.length===3&&!bunnies.some(q=>q.st.to&&GATHER.on))GATHER.spots=sp;}
   poundCam=pc;G.view.hold(pc.fn);}
 /* 떡 조각(인스턴스 하나)·가루(점 하나): 찧을 때만 보임 */
 const BITS=14,FL=MOB?28:44;
@@ -462,17 +466,35 @@ function tickBits(dt){let any=false;const GR=.2; // 낮은 중력(지구 9.8의 
   bitIM.visible=flour.visible=any;if(any){bitIM.instanceMatrix.needsUpdate=true;flGeo.attributes.position.needsUpdate=true;flGeo.attributes.color.needsUpdate=true;}}
 const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(...MORTAR)+.5,MORTAR[1]);root.add(mortarMark);
 const BUN_SAY=[['콩콩','와, 떡이 날아다녀!'],['몽실','천천히 떨어져서 받아먹을 수도 있겠다!'],['보슬','콩! 하고 찧으니까 둥실 올라가!']];
+/* 횟수 표시(2026-11-10 두 번째): 절구 바로 위에 크게(game/float count — 화면 위 가운데 칩도 세로가 낮은 창 1280×632에서 대화창에 가려졌다). 대화창·획득 카드가 뜨면 그 위로 비켜남 */
+let cntEl=null;function cntShow(n){if(n==null){if(cntEl){cntEl.remove();cntEl=null;}return;}
+  if(!cntEl)cntEl=G.float.count({at:[MORTAR[0],groundY(...MORTAR),MORTAR[1]],y:1.5,label:'떡 찧기',n,max:3});else cntEl.set(n);}
 const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
-  onStart:()=>{PEST.hit=false;PEST.idle=0;GATHER.on=true;GATHER.until=1e9;poundCamStart();st.cntOn=true;st.cntK=(st.cntK||0)+1;G.ui.count({label:'떡 찧기',n:PEST.n,max:3});},
-  onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;const say=BUN_SAY[(n-1)%3];G.dialog.say('아기 토끼 '+say[0],say[1],2.6);
-    G.ui.count({label:'떡 찧기',n,max:3}); /* 횟수 안내는 화면 위 가운데 칩(아래 'E 찧기'는 아기 토끼 대화창에 가려졌다, 2026-11-10) */
-    if(n<3){mortarIt.label=`찧기 (${n}/3)`;return;}
-    mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;G.ui.count(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
+  onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=true;st.cntK=(st.cntK||0)+1;cntShow(PEST.n);},
+  onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;const bi=(n-1)%3,say=BUN_SAY[bi];G.float.bubble({root:bunnies[bi].m.root,y:1.02,text:say[1],sec:3}); /* 떡방아 동안 토끼 말은 아래 대화창 대신 머리 위 작은 말풍선(대화창이 횟수·절구를 가렸다) */
+    cntShow(n);
+    if(n<3)return; /* 횟수는 절구 위 표시가 맡는다(단추 글자는 '찧기' 그대로) */
+    mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;cntShow(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
 function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return;st.cakeT=null;
   if(!F[CAKE_KEY]){G.state.setFlag(CAKE_KEY,true);G.react.react('joy');const it=(SPACE.items||[]).find(i=>i.id==='dalddeok');
     G.ui.itemCard({title:'달떡을 얻었어요!',text:'낮은 중력에서 찧은 쫀득한 달떡 — 가방에 넣었어요',icon:it&&it.icon?it.icon():null,sec:4,sound:'item-get'});}
   setTimeout(()=>G.dialog.say('보름 할아버지','옛날엔 나도 이걸로 떡을 찧었단다. 여기선 떡도 둥실둥실 날아다니지.',5),F[CAKE_KEY]?400:4200);
   setTimeout(()=>{GATHER.on=false;},9000);}
+/* ── 체험 안내(2026-11-10 — 떡방아·망원경을 그냥 지나치기 쉬웠다): 아직 안 해 본 체험 자리 위에 멀리서도 보이는 반짝이 표시(game/float mark, 그리기 0),
+   7m 안이면 설 자리 발밑에 민트 동그라미(안내 표시 — 영상에 안 나옴), 3.4m 안이면 한 줄 안내, 가까이 왔다가 그냥 멀어지면(10m) 보름 할아버지·아기 토끼가 한 번 불러 세움(판마다 한 번). 해 보면 모두 사라짐 */
+const TRY=[{key:DISC.scope,at:SCOPE,stand:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],h:2.5,msg:'망원경으로 하늘을 볼 수 있어요',
+    call:()=>G.dialog.say('보름 할아버지','얘야, 망원경으로 하늘 한번 보고 가렴. 목성이 아주 잘 보인단다.',4.2)},
+  {key:CAKE_KEY,at:MORTAR,stand:MSTAND,h:2.1,msg:'떡방아를 찧어 볼 수 있어요',
+    call:()=>{G.float.bubble({root:bunnies[0].m.root,y:1.02,text:'떡방아 찧고 가!',sec:3.4});G.dialog.say('아기 토끼 콩콩','원더룹! 떡방아 한번 찧어 보고 가! 떡이 둥실둥실 날아다녀!',4);}}];
+TRY.forEach(q=>{q.mark=G.float.mark({at:[q.at[0],groundY(...q.at),q.at[1]],y:q.h,when:()=>!F[q.key]&&!st.cntOn});
+  const g=new THREE.RingGeometry(.5,.66,30);g.rotateX(-PI/2);const m=new THREE.MeshBasicMaterial({color:new THREE.Color('#5cc4b9'),transparent:true,opacity:.9,depthWrite:false});m.userData.noStorybook=true;
+  q.ring=new THREE.Mesh(g,m);q.ring.position.set(q.stand[0],groundY(...q.stand)+.05,q.stand[1]);q.ring.visible=false;q.ring.frustumCulled=false;q.ring.userData.noMerge=true;q.ring.renderOrder=2;G.ui.hint(q.ring);root.add(q.ring);keep.push(q.ring);});
+function tickTry(dt,t,P){for(const q of TRY){const done=!!F[q.key],d=dist(P.x,P.z,q.at),on=!done&&d<7&&!st.cntOn&&!GATHER.on&&G.ui.hintsVisible();
+    if(q.ring.visible!==on)q.ring.visible=on;if(on){const k=1+Math.sin(t*4)*.08;q.ring.scale.set(k,1,k);q.ring.material.opacity=.55+.35*(.5+.5*Math.sin(t*4));}
+    if(done)continue;
+    if(d<3.4&&!q.told&&!G.core.blocking()){q.told=true;q.seen=true;G.ui.toast(q.msg,3.6);}
+    if(d<7&&F[HAVE])q.seen=true;if(d>9)q.told=false; /* 불러 세우기는 첫 미션(숨방울)을 받은 뒤부터 — 시작 자리가 망원경 곁이라 첫 미션 길을 나서자마자 불렀다 */
+    if(q.seen&&!q.called&&d>10&&d<16&&!G.core.blocking()&&!ride){q.called=true;q.call();}}}
 /* ── 하늘: 남보라 우주(공기가 없어 낮에도 까맣고 별) + 은하수, 하늘 그림판(anchor — 카메라를 늦게 따라오며 늘 화면에): 해·토성·큰 목성·성운·은하수 띠·별똥별 */
 const key={top:'#151331',horizon:'#2b2560',hemi:'#c4c6e6',ground:'#56506e',hemiI:.52,sun:'#ffe8c4',sunI:.95,sunDir:[-6,-3.6,-9],fill:.24,fog:'#2e2a5c',fogNear:70,fogFar:150,stars:0,milky:1.1}; // 별은 아래 그림판 별(점 별·깜빡임·네 갈래 반짝이)이 맡는다 — 공용 하늘 별·첫별은 끔
 const SK=G.sky.sky({parent:root,keys:[key,key,key],t:0,nStars:MOB?220:340,starSize:3,space:true});
@@ -620,9 +642,9 @@ const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 const W0=P=>P; // 손 흔들기: 원더룹 자리(할아버지·토끼가 바라볼 곳)
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
-  if(st.cntOn&&dist(P.x,P.z,MORTAR)>4.5){st.cntOn=false;G.ui.count(null);}
+  if(st.cntOn&&dist(P.x,P.z,MORTAR)>4.5){st.cntOn=false;cntShow(null);}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
-  bobo.tick(dt,t,st.hop,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);
+  bobo.tick(dt,t,st.hop,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);tickTry(dt,t,P);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}
@@ -703,7 +725,7 @@ start:{compass:true},world:null,
   sun:ZSUN,lights:[lav],light,rim:.32,
   sky:SK,bend:{sphere:R,wrap:L},gravity:.38,jumpK:1.15,
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
-  update,lateUpdate,dispose(){G.ui.count(null);scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
+  update,lateUpdate,dispose(){cntShow(null);scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
 function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}

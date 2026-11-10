@@ -13,6 +13,9 @@ import {profileCard} from './ui.js';
 import {cutPaused} from './occlude.js';
 import {bendPaused} from './bend.js';
 let ctx=null,W='',CARDS={};const PICS={};
+/* 초상 기억(2026-11-10): 게임 안에서 찍은 초상은 작게(160) 한 번 더 찍어 이 기기에 저장('wl-pics' — 세계:id) → 다시 열거나 다음 스테이지로 가도 탐험 가방 '만난 친구'에 그림이 나온다. 촬영 모드는 저장 안 함 */
+const SHOT=new URLSearchParams(location.search).has('shot');let SAVED={};if(!SHOT)try{SAVED=JSON.parse(localStorage.getItem('wl-pics')||'{}')||{};}catch(e){}
+function keep(id,root,c){if(SHOT||c.img||!root)return;const u=portrait(root,{...(c.portrait||{}),w:160,h:160});if(!u)return;SAVED[W+':'+id]=u;try{localStorage.setItem('wl-pics',JSON.stringify(SAVED));}catch(e){}}
 function initProfile(c){ctx=c;}
 function setup({world,cards}){W=world||'';CARDS=cards||{};}
 const seen=id=>!!flags['meet:'+W+':'+id];
@@ -51,12 +54,12 @@ function spinFrames(obj,{n=24,w=160,h=160,lift=.3}={}){if(!ctx||!ctx.renderer||!
   finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();resumeBend();rt.dispose();pv.remove(obj);}
   return out.length?out:null;}
 function meet(id,root){const c=CARDS[id];if(!c||seen(id))return Promise.resolve(false);setFlag('meet:'+W+':'+id,true);
-  const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;
+  const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;keep(id,root,c);
   const ids=Object.keys(CARDS).filter(k=>!CARDS[k].secret),n=ids.filter(seen).length; // 숨겨진 비밀 친구는 빼고(비밀이 몇인지 미리 알리지 않게) // 친구 수(개미굴 '자연 도감 8/11'처럼) — 탐험 가방의 '만난 친구'와 같은 수
   return profileCard({name:c.name,intro:c.intro,likes:c.likes,quote:c.quote,img,bg:c.bg,kicker:c.secret?'숨겨진 친구':'새 친구',count:`만난 친구 ${n}/${ids.length}`,button:'가방에 넣기'}).then(()=>true);}
 /* 탐험 가방(game/front)이 그림을 다시 쓸 수 있게: 처음 만날 때 찍은 초상은 기억해 둔다 */
 /* 비밀 장면처럼 카드 없이 '만났다'만 적을 때(숨겨진 비밀 카드가 대신 뜬다): 기록 + 초상을 찍어 돌려준다(탐험 가방 그림) */
-function found(id,root){const c=CARDS[id];if(!c)return null;setFlag('meet:'+W+':'+id,true);const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;return img;}
+function found(id,root){const c=CARDS[id];if(!c)return null;setFlag('meet:'+W+':'+id,true);const img=c.img||(root?portrait(root,c.portrait):null);if(img)PICS[id]=img;keep(id,root,c);return img;}
 const clearProfile=()=>{CARDS={};};
-const cards=()=>CARDS,pic=id=>PICS[id]||(CARDS[id]&&CARDS[id].img)||null;
+const cards=()=>CARDS,pic=(id,w)=>PICS[id]||(CARDS[id]&&CARDS[id].img)||SAVED[(w||W)+':'+id]||null;
 export {cards,clearProfile,found,initProfile,meet,pic,portrait,seen,setup,spinFrames};

@@ -1,5 +1,6 @@
 /* 원더룹 — 아이템 획득 공통 연출 (2026-11-05 — 개미굴 원본 꿀방울 얻기 startItemGet·updateItem을 그대로 옮김, 규칙은 docs/series-rules.md '아이템')
-   itemGet({obj, to:'hand'|'bag', held:()=>손에 쥘 물체, card:{title,text,icon}, scale, top, onDone}) → Promise(끝나면)
+   itemGet({obj, to:'hand'|'bag', held:()=>손에 쥘 물체, card:{title,text,icon}, scale, top, onDone, giver}) → Promise(끝나면)
+   giver(주는 친구의 3D 물체 — 2026-11-10): 물건이 날아오는 동안 원더룹이 그 친구를 보고, 머리 위에 들어 보일 때 카메라 쪽으로 돌아선다(받을 때 반대편을 보던 것).
    ① 날아오기 0.85초: obj(장면에 있는 물체 — 떠 있던 물건, 주는 주민 배 등)가 지금 자리에서 원더룹 머리 위(top, 기본 발밑 + 1.95m — 물건 원점이 밑이면 더듬이 바로 위)로 포물선(높이 1.6)을 그리며 빙글빙글(초당 7)
       — 시작에 item-pickup 소리. 원더룹은 멈춰 선다(조작 잠금 core 'itemget' — 원본 ctrlLock).
    ② 들어 보이기 1.9초: 머리 위에서 위아래로 살랑(초당 4·0.08)·천천히 돌고(초당 2.5)·숨쉬듯 커졌다 작아짐(scale × (1 + sin·0.065), 원본 1.55 ± 0.1),
@@ -20,11 +21,11 @@ function initItemGet(c){C=c;}
 function star(){if(STAR)return STAR;const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#fff3c0';g.beginPath(); // 원본 STAR 그대로
   for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?7:30;g.lineTo(32+Math.cos(a)*r,32+Math.sin(a)*r);}g.fill();STAR=new THREE.CanvasTexture(c);STAR.colorSpace=THREE.SRGBColorSpace;return STAR;}
 let seed=777;const rnd=()=>((seed=(seed*1103515245+12345)&0x7fffffff)/0x7fffffff),rr=(a,b)=>a+(b-a)*rnd();
-function itemGet({obj,to='bag',held=null,card=null,scale=1.55,top=1.95,onDone=null,zoom=true}){if(!C||!obj)return Promise.resolve(false);clearItemGet();
+function itemGet({obj,to='bag',held=null,card=null,scale=1.55,top=1.95,onDone=null,zoom=true,giver=null}){if(!C||!obj)return Promise.resolve(false);clearItemGet();
   const U=C.WL.userData;if(U.stopWalk)U.stopWalk();block('itemget',true);
   obj.updateWorldMatrix(true,false);const from=obj.getWorldPosition(new THREE.Vector3());C.scene.attach(obj);
   const s0=obj.scale.clone();sfx('item-pickup');cue({kind:'itemget',who:'아이템',text:card&&card.title||'',dur:3.13});
-  return new Promise(res=>{cur={obj,to,held,card,scale,top,onDone,res,ph:'fly',t:0,from,s0,sp:[]};if(zoom)dolly(cur);});}
+  return new Promise(res=>{cur={obj,to,held,card,scale,top,onDone,res,ph:'fly',t:0,from,s0,sp:[],giver};if(zoom)dolly(cur);});}
 /* 살짝 다가가기: 지금 카메라 방향 그대로 거리만 줄인다(돌지 않음 — 머리를 뚫지 않고 휴대폰도 가볍다). 끝(R.zoomOut)이면 0.6초에 돌아간 뒤 놓아 준다 */
 function dolly(R){const V=C.view;if(!V||!V.hold)return;const W=C.WL,P=W.position,c=C.camera.position,y0=.85,yT=R.top*.75;
   const a0=Math.atan2(c.x-P.x,c.z-P.z),h0=Math.hypot(c.x-P.x,c.z-P.z),v0=c.y-P.y-y0;if(h0<.5)return;const e=k=>k*k*(3-2*k);let t=0,last=performance.now();
@@ -45,7 +46,9 @@ function tickItemGet(dt){if(!cur)return;const R=cur,o=R.obj,W=C.WL,P=W.position;
     if(s.t<=0){s.sp.removeFromParent();s.sp.material.dispose();R.sp.splice(i,1);}}
   if(R.ph==='done'){if(!R.sp.length)cur=null;return;}
   _v.set(P.x,P.y+R.top,P.z);
-  if(R.ph==='fly'){const k=Math.min(1,R.t/.85);o.position.lerpVectors(R.from,_v,k);o.position.y+=Math.sin(k*Math.PI)*1.6;o.rotation.y+=dt*7;
+  if(R.ph==='fly'){const k=Math.min(1,R.t/.85);
+    if(R.giver){R.giver.getWorldPosition(_w);const a=Math.atan2(_w.x-P.x,_w.z-P.z);W.rotation.y+=Math.atan2(Math.sin(a-W.rotation.y),Math.cos(a-W.rotation.y))*Math.min(1,dt*9);} /* 받을 때는 주는 친구를 본다(2026-11-10) — 받은 뒤 들어 보일 때는 카메라 쪽(react joy) */
+    o.position.lerpVectors(R.from,_v,k);o.position.y+=Math.sin(k*Math.PI)*1.6;o.rotation.y+=dt*7;
     if(k>=1){R.ph='hold';R.t=0;burst(o.position);react('joy',{sec:2.3,sound:null,punch:false,bounce:false});
       if(R.card)itemCard({title:R.card.title||'',text:R.card.text||'',icon:R.card.icon||null,sec:R.card.sec||2.8,who:'아이템'});}}
   else if(R.ph==='hold'){o.position.copy(_v);o.position.y+=Math.sin(R.t*4)*.08;o.rotation.y+=dt*2.5;o.scale.copy(R.s0).multiplyScalar(R.scale*(1+Math.sin(R.t*7)*.065));

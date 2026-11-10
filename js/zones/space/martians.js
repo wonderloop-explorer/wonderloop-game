@@ -45,18 +45,17 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
   if(mouth==='o')L.push([onHead(sph(1,8,6),R,hc,-.3,0,0,0,[R*.06,R*.085,R*.03]),'#7a2f2a']);
   else L.push([onHead(new THREE.TorusGeometry(1,.16,5,12,PI),R,hc,-.27,0,PI,0,[R*.13,R*.09,R*.06]),'#6a2a24']); /* 둥둥: 웃는 입(아래로 둥근 반 고리) */
   /* 목·몸통(가늘고 마른 — 위가 조금 넓은 원통)·다리(가는 둘) */
+  /* 2026-11-10 두 번째: 도톰하게 바꾼 몸보다 원래 가는 몸이 더 낫다는 사용자 확인 → 원래 모습 그대로(다시 바꾸지 않기) */
   const tTop=hc[1]-R*.82,tBot=legs;
-  /* 2026-11-10: 가는 막대 몸이라 막대 사탕처럼 보였다 → 몸통은 아래가 살짝 도톰한 달걀꼴 기둥, 다리·팔도 도톰하게, 손발 끝은 동그랗게(생김새·키는 그대로) */
-  L.push([new THREE.CylinderGeometry(torso*.6,torso*.7,R*.4,10).applyMatrix4(M4([0,tTop+R*.12,0])),skin]);
-  L.push([new THREE.CylinderGeometry(torso*.82,torso*1.08,tTop-tBot,12).applyMatrix4(M4([0,(tTop+tBot)/2,0])),skin]);
-  L.push([sph(torso*.84,12,8).applyMatrix4(M4([0,tTop,0],[0,0,0],[1,.7,1])),skin]);
-  L.push([sph(torso*1.1,12,8).applyMatrix4(M4([0,tBot+torso*.15,0],[0,0,0],[1,.8,1])),skin]);
-  for(const s of [-1,1]){L.push([new THREE.CylinderGeometry(torso*.42,torso*.38,legs,8).applyMatrix4(M4([s*torso*.52,legs/2+torso*.1,0],[0,0,s*.08])),skinD]);
-    L.push([sph(torso*.52,10,7).applyMatrix4(M4([s*torso*.6,torso*.3,torso*.2],[0,0,0],[1,.62,1.35])),skinD]);}
-  const bodyMesh=lump(L,true,3);bodyMesh.name=name+'-body';body.add(bodyMesh);
+  L.push([new THREE.CylinderGeometry(torso*.62,torso*.62,R*.4,8).applyMatrix4(M4([0,tTop+R*.12,0])),skin]);
+  L.push([new THREE.CylinderGeometry(torso,torso*.82,tTop-tBot,10).applyMatrix4(M4([0,(tTop+tBot)/2,0])),skin]);
+  L.push([sph(torso*.86,10,7).applyMatrix4(M4([0,tBot,0])),skin]);
+  for(const s of [-1,1]){L.push([new THREE.CylinderGeometry(torso*.36,torso*.3,legs,6).applyMatrix4(M4([s*torso*.48,legs/2,0],[0,0,s*.12])),skinD]);
+    L.push([sph(torso*.46,8,6).applyMatrix4(M4([s*torso*.62,torso*.2,torso*.18],[0,0,0],[1,.6,1.5])),skinD]);}
+  const bodyMesh=lump(L);bodyMesh.name=name+'-body';body.add(bodyMesh);
   /* 팔: 어깨를 축으로(아래로 늘어진 가는 원통 + 동그란 손) */
-  const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*torso*1.02,tTop-.02,0);body.add(g);
-    const me=lump([[new THREE.CylinderGeometry(torso*.36,torso*.33,armLen,8).applyMatrix4(M4([0,-armLen/2,0])),skin],[sph(torso*.36,8,6),skin],[sph(torso*.56,10,7).applyMatrix4(M4([0,-armLen,0])),skin]],true,3);g.add(me);
+  const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*torso*.95,tTop-.02,0);body.add(g);
+    const me=lump([[new THREE.CylinderGeometry(torso*.3,torso*.26,armLen,6).applyMatrix4(M4([0,-armLen/2,0])),skin],[sph(torso*.5,8,6).applyMatrix4(M4([0,-armLen,0])),skin]]);g.add(me);
     g.rotation.z=s*.32;g.userData.s=s;return g;});
   const st={mode:'idle',t:Math.random()*5,walk:0,head:0};
   /* mode: idle 서서 살랑 · walk 걷기(콩콩) · call 두 손을 입가로 모아 부르기 · wave 한 손 흔들기 · talk 고개 끄덕 · spin 회오리에 실려 빙글 · sit 나란히 앉아 노을 보기 */
@@ -74,8 +73,8 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
   return {root,body,arms,st,tick,height,headY:hc[1],
     set mode(v){st.mode=v;},get mode(){return st.mode;},
     dispose(){root.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}};}
-export const makePipi=()=>makeMartian({name:'pipi',skin:'#E8946A',height:.966,headR:.25,torso:.105,legs:.17,armLen:.27,mouth:'o'});
-export const makeDungdung=()=>makeMartian({name:'dungdung',skin:'#C2633F',height:1.79,headR:.34,torso:.14,legs:.24,armLen:.66,lids:true,mouth:'smile'});
+export const makePipi=()=>makeMartian({name:'pipi',skin:'#E8946A',height:.966,headR:.25,torso:.075,legs:.2,armLen:.27,mouth:'o'});
+export const makeDungdung=()=>makeMartian({name:'dungdung',skin:'#C2633F',height:1.79,headR:.34,torso:.1,legs:.22,armLen:.66,lids:true,mouth:'smile'});
 /* ── 먼지 회오리 ── */
 export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
   const RS=20,HS=14,pos=[],uv=[],idx=[];
@@ -83,7 +82,7 @@ export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
     for(let j=0;j<=HS;j++){const v=j/HS;for(let i=0;i<=RS;i++){const u=i/RS,a=u*PI*2+v*2.2*(layer?-1:1),r=(.18+radius*Math.pow(v,1.35))*rk;pos.push(Math.cos(a)*r,v,Math.sin(a)*r);uv.push(u,v);}}
     for(let j=0;j<HS;j++)for(let i=0;i<RS;i++){const a=o+j*(RS+1)+i,b=a+1,c=a+RS+1,d=c+1;idx.push(a,c,b,b,c,d);}}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);
-  const U={uT:{value:0},uH:{value:height},uA:{value:big?1:.92},uSeed:{value:seed}};
+  const U={uT:{value:0},uH:{value:height},uA:{value:big?.6:.55},uSeed:{value:seed}};
   const mat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,
     vertexShader:'#include <common>\nuniform float uH;varying vec2 vU;void main(){vU=uv;vec3 p=position;p.y*=uH;vec4 w=modelMatrix*vec4(p,1.);gl_Position=projectionMatrix*(wlBend.x>0.?viewMatrix*wlBent(w):viewMatrix*w);}',
     /* 크레용 결처럼 비스듬한 먼지 자락이 위로 돌며 흐름(살구·크림·테라코타), 위·아래 끝은 옅게 */
@@ -98,16 +97,18 @@ export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
   /* 날리는 알갱이: 깔때기 겉을 따라 나선으로 올라가며 도는 모래 알갱이(점 묶음 — 자리는 셰이더가 시간으로 계산, 그리기 1) */
   const NG=big?90:54,sd=new Float32Array(NG*3),pp=new Float32Array(NG*3);for(let i=0;i<NG;i++){sd[i*3]=Math.random();sd[i*3+1]=Math.random();sd[i*3+2]=Math.random();}
   const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pp,3));gg.setAttribute('seed',new THREE.BufferAttribute(sd,3));
-  const gm=new THREE.ShaderMaterial({uniforms:{uT:U.uT,uH:U.uH,uR:{value:radius},uS:{value:big?26:20}},transparent:true,depthWrite:false,
+  const gm=new THREE.ShaderMaterial({uniforms:{uT:U.uT,uH:U.uH,uA:U.uA,uR:{value:radius},uS:{value:big?26:20}},transparent:true,depthWrite:false,
     vertexShader:'#include <common>\nattribute vec3 seed;uniform float uT;uniform float uH;uniform float uR;uniform float uS;varying float vA;varying float vK;void main(){float v=fract(seed.x+uT*(.16+.14*seed.y));float a=seed.z*6.2832+uT*(3.2-1.6*v)+v*5.;'+
       'float r=(.25+uR*pow(v,1.35))*(.85+.4*seed.y);vec4 w=modelMatrix*vec4(0.,0.,0.,1.);w.xyz+=vec3(cos(a)*r,v*uH,sin(a)*r);vA=smoothstep(0.,.08,v)*(1.-smoothstep(.75,1.,v));vK=seed.y;'+
       'vec4 mv=wlBend.x>0.?viewMatrix*wlBent(w):viewMatrix*w;gl_Position=projectionMatrix*mv;gl_PointSize=uS*(.6+.9*seed.z)*projectionMatrix[1][1]/max(.1,-mv.z);}',
-    fragmentShader:'varying float vA;varying float vK;void main(){vec2 d=gl_PointCoord-.5;float k=1.-smoothstep(.2,.5,length(d));vec3 c=pow(mix(vec3(.72,.46,.33),vec3(.95,.78,.6),vK),vec3(2.2));gl_FragColor=vec4(c,k*vA*.9);\n#include <colorspace_fragment>\n}'});
+    fragmentShader:'uniform float uA;varying float vA;varying float vK;void main(){vec2 d=gl_PointCoord-.5;float k=1.-smoothstep(.2,.5,length(d));vec3 c=pow(mix(vec3(.72,.46,.33),vec3(.95,.78,.6),vK),vec3(2.2));gl_FragColor=vec4(c,k*vA*min(1.,uA*1.7));\n#include <colorspace_fragment>\n}'});
   gm.userData.noStorybook=true;const grains=new THREE.Points(gg,gm);grains.frustumCulled=false;grains.userData.noMerge=true;grains.renderOrder=4;me.add(grains);
-  let H=height;
+  /* 2026-11-10: 너무 진해서 안에 탄 원더룹이 안 보였다 → 평소에도 옅게(.55), 누가 타는 동안(clear(true))은 훨씬 옅게(.16) — 0.4초쯤에 걸쳐 */
+  let H=height,A0=U.uA.value,aGoal=A0;
   return {me,mat,
     setBase(x,y,z){me.position.set(x,y,z);},setHeight(h){H=h;U.uH.value=h;},get height(){return H;},
-    tick(dt){U.uT.value+=dt;me.rotation.y-=dt*(big?2.6:3.6);grains.rotation.y=-me.rotation.y;},
+    tick(dt){U.uT.value+=dt;me.rotation.y-=dt*(big?2.6:3.6);grains.rotation.y=-me.rotation.y;U.uA.value+=(aGoal-U.uA.value)*Math.min(1,dt*6);},
+    clear(on){aGoal=on?.16:A0;},
     show(v){me.visible=v;},dispose(){geo.dispose();mat.dispose();gg.dispose();gm.dispose();me.removeFromParent();}};}
 /* ── 카세트 ── */
 export function makeCassette(){const g=new THREE.Group();g.name='cassette';const b=new THREE.Group();g.add(b);b.position.set(0,.03,.07);b.rotation.x=-.35;

@@ -91,9 +91,11 @@ export default {
     {id:'bluesunset-glass',name:'파란 노을 유리 조각',stage:2,bagOnly:true,share:'stage4-bottle',where:'STAGE 2 파란 노을',icon:()=>glassIcon(),
     desc:'화성의 파란 노을빛을 닮은 유리 조각. 삐삐와 둥둥이 노을을 같이 본 날 고맙다며 줬어요.'}],
   /* 만난 친구 카드(game/profile — 스테이지마다 같은 목록을 써서 '만난 친구 n/m'이 세계 전체 수). 문구는 기획서 '주민 소개 카드' */
-  cards:{bobo:{name:'보름 할아버지',intro:'발자국으로 지도를 그리는 달토끼',likes:'아직 아무도 안 가 본 빈칸',quote:'여긴 바람이 없어서, 걸은 길이 아주 오래오래 남는단다.',bg:'#dfe1f2',portrait:{side:.5,lift:.1}},
-    pipi:{name:'삐삐',intro:'말이 먼저 도착하는 작은 화성 친구',likes:'파란 노을',quote:'둥둥아! …둥둥아? 내 말 들려?',bg:'#fbe3d2',portrait:{side:.45,lift:.08}},
-    dungdung:{name:'둥둥',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은… 항상… 조금… 늦어.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
+  cards:{bobo:{name:'보름 할아버지',where:'STAGE 1 회색 정원',intro:'발자국으로 지도를 그리는 달토끼',likes:'아직 아무도 안 가 본 빈칸',quote:'여긴 바람이 없어서, 걸은 길이 아주 오래오래 남는단다.',bg:'#dfe1f2',portrait:{side:.5,lift:.1}},
+    /* 아기 토끼 셋은 카드 한 장(2026-11-10 — 가방 '만난 친구'에 기록되게): 셋 가운데 누구든 처음 이야기하면 */
+    bunnies:{name:'아기 토끼들',where:'STAGE 1 회색 정원',intro:'보름 할아버지 마을에서 둥실둥실 뛰노는 콩콩·몽실·보슬',likes:'떡방아 구경',quote:'여기선 톡 뛰면 한참 동안 떠 있어!',bg:'#e6e4f0',portrait:{side:.45,lift:.1}},
+    pipi:{name:'삐삐',where:'STAGE 2 붉은 모래 언덕',intro:'말이 먼저 도착하는 작은 화성 친구',likes:'파란 노을',quote:'둥둥아! …둥둥아? 내 말 들려?',bg:'#fbe3d2',portrait:{side:.45,lift:.08}},
+    dungdung:{name:'둥둥',where:'STAGE 2 붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은… 항상… 조금… 늦어.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
   map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:null}],
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,

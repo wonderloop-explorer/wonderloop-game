@@ -349,7 +349,7 @@ function updateWL(dt,t){
   {const U=WL.userData,A=U.action||'서기';U.at=(U.at||0)+dt;const at=U.at;
    let T=null;if(moving){if(SHOTM&&(A==='뛰기'||(!wlTarget&&D.spd>DRV.walk*1.2)))T=runPose(wlPhase);}else if(A!=='서기')T=actionPose(A,at); /* 촬영 모드가 아니면 걷기·달리기는 아래 gait */
    U.aw=Math.max(0,Math.min(1,(U.aw||0)+(T?1:-1)*dt*6));
-   const base={ex0:-.12,ex1:-.12,ez0:0,ez1:0,kx0:0,kx1:0,lx0:legs[0].rotation.x,lx1:legs[1].rotation.x,ly0:legs[0].position.y,ly1:legs[1].position.y,ax0:arms[0].rotation.x,ax1:arms[1].rotation.x,az0:arms[0].rotation.z,az1:arms[1].rotation.z,bx:0,bz:body.rotation.z,by:body.position.y,hx:0,hy:0,hz:neck.rotation.z,wy:WL.position.y/WLS};
+   const base={ex0:-.12,ex1:-.12,ez0:0,ez1:0,kx0:0,kx1:0,lx0:legs[0].rotation.x,lx1:legs[1].rotation.x,ly0:legs[0].position.y,ly1:legs[1].position.y,ax0:arms[0].rotation.x,ax1:arms[1].rotation.x,az0:arms[0].rotation.z,az1:arms[1].rotation.z,bx:0,bz:body.rotation.z,by:body.position.y,hx:0,hy:0,hz:neck.rotation.z,wy:(WL.position.y-GY)/WLS /* 땅 높이는 빼고(2026-11-10 — 높이가 있는 땅에서 손 동작을 시작하면 땅 높이가 두 번 더해져 한 번 튀어 올랐다) */};
    if(!U.pc)U.pc=Object.assign({},base);const kr=T&&T._kr||10;if(T)delete T._kr;const tg=T?Object.assign({},base,T,U.poseTest||null):base; /* poseTest: 시험 도구가 자세 값을 잠깐 덮어 봄(팔 각도 맞추기) */for(const k in tg)U.pc[k]+=(tg[k]-U.pc[k])*Math.min(1,dt*kr); /* kr: 떡메 내려치기처럼 빠른 동작만 더 빨리 따라감 */
    const w=U.aw;
    if(w>0){const P=U.pc,L=k=>base[k]+(P[k]-base[k])*w;
