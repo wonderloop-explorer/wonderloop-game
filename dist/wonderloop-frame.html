@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="8a49b152ef";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="f4652293cb";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 f314b31, 버전 9b441804f2, 2026-11-10)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 49924fa, 버전 5d25819d83, 2026-11-10)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -302,6 +302,7 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
   <h1>원더룹 베이스캠프</h1>
   <p>파스텔 색연필 로우폴리, 소품·텍스처 디테일 실험</p>
 </header>
+<output id="perfChip" hidden style="position:fixed;left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(4px + env(safe-area-inset-bottom,0px));z-index:60;pointer-events:none;font:12px/1.3 ui-monospace,Menlo,monospace;color:#fff4e4;background:rgba(30,14,36,.6);border-radius:6px;padding:2px 6px"></output>
 <button id="dbgBtn" type="button" aria-label="시험용 단추 열기" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.3 2h3.4l.5 2.6c.6.2 1.2.5 1.7.9l2.5-.9 1.7 2.9-2 1.7c.1.6.1 1.2 0 1.8l2 1.7-1.7 2.9-2.5-.9c-.5.4-1.1.7-1.7.9l-.5 2.6h-3.4l-.5-2.6c-.6-.2-1.2-.5-1.7-.9l-2.5.9-1.7-2.9 2-1.7a5.6 5.6 0 0 1 0-1.8l-2-1.7 1.7-2.9 2.5.9c.5-.4 1.1-.7 1.7-.9zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z"/></svg></button>
 <div class="bar">
   <button id="dayBtn" type="button">저녁으로 바꾸기</button>
@@ -315,7 +316,7 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
   <button id="emphBtn" type="button">캐릭터 강조: 자동</button>
   <button id="weatherBtn" type="button">날씨: 낮</button>
   <div class="spdBox" id="spdBox"><label>걷기 속도 <input id="walkSpd" type="range" min="0.8" max="7" step="0.05"></label><output id="walkOut"></output><button id="spdReset" type="button">기본값</button></div>
-  <div class="spdBox frameBox" id="frameBox"><button id="fps60Btn" type="button">60프레임으로 보기: 끔</button><canvas id="frameGraph" width="480" height="120"></canvas><output id="frameOut"></output></div>
+  <div class="spdBox frameBox" id="frameBox"><button id="fps60Btn" type="button">60프레임으로 보기: 끔</button><button id="perfBtn" type="button">성능 표시: 끔</button><canvas id="frameGraph" width="480" height="120"></canvas><output id="frameOut"></output></div>
   <button id="outfitBtn" type="button">옷: 평상복</button>
   <button id="bendBtn" type="button">둥근 땅: 중</button>
   <button id="boundsBtn" type="button">경계 보기: 끔</button>
@@ -347,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="9b441804f2";
-window.WL_BUILD={"commit":"f314b31","date":"2026-11-10","stage":"basecamp"};
+window.WL_V="5d25819d83";
+window.WL_BUILD={"commit":"49924fa","date":"2026-11-10","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -830,12 +831,16 @@ const fill=new THREE.DirectionalLight(rawLin(0xe2e9ff),0.22);fill.position.set(1
 
 /* ---------- 렌더러 / 카메라 ---------- */
 const stage=document.getElementById('stage');
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,stencil:true}); // stencil: 가려진 원더룹 윤곽(game/occlude xray)이 원더룹 자신 위에는 안 그려지게
+/* 절전 모드(메뉴 — 08 ECO, localStorage 'wl-eco'): 켠 채로 열면 가장자리 다듬기(다중 표본)도 끈다 — 켜고 끌 수 없는 설정이라 열 때 한 번만. 촬영 모드는 늘 원래대로 */
+const ECO_BOOT=(()=>{try{return !new URLSearchParams(location.search).has('shot')&&localStorage.getItem('wl-eco')==='1';}catch(e){return false;}})();
+const renderer=new THREE.WebGLRenderer({antialias:!ECO_BOOT,alpha:true,stencil:true}); // stencil: 가려진 원더룹 윤곽(game/occlude xray)이 원더룹 자신 위에는 안 그려지게
 /* 그리기 해상도: 기기 픽셀 비율(최대 2)을 쓰되, 그리는 화소가 1440p(2560×1440)를 넘지 않게 낮춘다 — 5K 아이맥 전체 화면이 1470만 화소를 그려 팬이 돌던 문제.
    휴대폰 단계는 최대 1.5배(개미굴과 같음 — 아이폰 기본 3배를 그대로 그리면 화소가 4배라 기기가 뜨거워진다, 2026-11-01). 촬영 모드(?shot)는 08이 1로 고정하고 wlShot.size로 크기를 정하므로 건드리지 않는다(1440p 영상 품질 그대로). */
 const MAX_PX=2560*1440,FIXED_PR=new URLSearchParams(location.search).has('shot');
 let PR_CAP=+(new URLSearchParams(location.search).get('pr')||0)||(QUALITY.tier==='mobile'?1.25:2); // ?pr=1.5 처럼 주면 그 값(비교 촬영용) // 휴대폰 1.25(2026-11-02 발열 — 1.5와 나란히 비교해 차이가 거의 안 보임), 08 자동 화질 조절이 1.1·1로 더 낮출 수 있다(setPixelCap)
-const fitPixelRatio=(w,h)=>{const dpr=Math.min(window.devicePixelRatio||1,PR_CAP);return Math.max(Math.min(1,dpr),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
+/* 동적 해상도(08 perfTick — 2026-11-10 발열): PR_DYN 0.7~1을 상한에 곱한다. 바닥은 기기 화소 0.85배(그 아래는 눈에 띄게 흐림) */
+let PR_DYN=1;
+const fitPixelRatio=(w,h)=>{const d0=Math.min(window.devicePixelRatio||1,PR_CAP),dpr=d0*PR_DYN;return Math.max(Math.min(PR_DYN<1?.85:1,d0),Math.min(dpr,Math.sqrt(MAX_PX/Math.max(1,w*h))));};
 renderer.setPixelRatio(fitPixelRatio(stage.clientWidth,stage.clientHeight));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.shadowMap.enabled=QUALITY.shadows;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -851,6 +856,8 @@ function placeCamera(){
 }
 placeCamera();window.addEventListener('resize',placeCamera);
 function setPixelCap(v){PR_CAP=v;placeCamera();}
+function setPixelDyn(k){k=Math.min(1,Math.max(.7,k));if(Math.abs(k-PR_DYN)<.001)return;PR_DYN=k;placeCamera();}
+const pixelInfo=()=>({cap:PR_CAP,dyn:PR_DYN});
 // ROOM_T: '방 전체' 카메라가 바라보는 점 (구역·방마다 바뀜), ui.dist: 그때의 거리
 // 따라가기 카메라 거리: 가로 화면은 7.5, 세로처럼 좁은 화면(화면비 1.25 미만)은 방 카메라와 같은 규칙으로 1.25/화면비배(최대 2.1배) 멀리
 const followDist=()=>{const asp=camera.aspect;return 7.5*(asp<1.25?Math.min(2.1,1.25/asp):1);};
@@ -913,7 +920,7 @@ function setupView(z,area){
   setAreaCamera(z.areas[area].camera,true);
   mergeStatic(z);setOpt(optimized);}
 setupView(zone.cur,zone.area);
-export {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui};
+export {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setPixelDyn,pixelInfo,setupView,statsEl,sun,ui};
 
 </script>
 <script type="text/x-wl-module" data-path="js/04-character.js">
@@ -1795,7 +1802,7 @@ export {DRV,SPEED,GT as GAIT,hopWL,setWalkTarget,steerWalk,stopWalk,updateWL,wal
 import * as THREE from 'three';
 import {PI,QUALITY,rawLin,rngLoaded,scene} from './01-textures.js';
 import {ZONES,areaAt,blocked,doorAt,floorAt,groundY,loadZone,overlap,unloadZone,zone} from './02-zone.js';
-import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setupView,statsEl,sun,ui} from './03-scene.js';
+import {ROOM_T,camera,controls,fill,follow,followDist,hemi,optimized,renderer,setAreaCamera,setPixelCap,setPixelDyn,pixelInfo,setupView,statsEl,sun,ui} from './03-scene.js';
 import {WL,arms,neck,spine} from './04-character.js';
 import './05-hair-headwear.js';
 import './06-outfits.js';
@@ -1928,7 +1935,11 @@ const SHOT=new URLSearchParams(location.search).has('shot');let shotT=0,shotDt=1
 const tickErrSeen=new Set();
 /* 플레이 중 아끼기(촬영 모드는 그대로 — 한 걸음씩 직접 진행): 컴퓨터는 화면 갱신마다(개미굴 원본과 같게, 2026-11-05 — 예전엔 60으로 묶었다), 휴대폰 단계는 30프레임(발열, 2026-11-01),
    창이 가려지거나(document.hidden) 다른 창을 보고 있으면(blur) 그리기를 멈췄다가 돌아오면(focus·누르기) 다시 그린다. 멈춘 동안 게임 시간도 멈춘다(돌아온 첫 프레임 간격은 0.05초로 자른다). */
-let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_MS=QUALITY.tier==='mobile'?1000/30:0; // 컴퓨터는 개미굴 원본처럼 화면 갱신마다(120Hz면 120번 — 2026-11-05, 60으로 묶으면 원본보다 덜 부드러웠다), 휴대폰은 30
+/* 절전 모드(2026-11-10, 메뉴 '절전 모드' — 기본 꺼짐, 이 기기에 기억 'wl-eco'): 낮은 화질(픽셀 비율 1 · 입자·먼 배경 줄임(자동 화질 2단계) · 다음에 열 때부터 가장자리 다듬기 끔) + 30프레임 고정(쉴 때 15).
+   window.wlEco.set(켜짐) — 픽셀 비율·프레임은 바로, 줄인 입자는 끄더라도 다시 열 때 돌아온다 */
+const ECO={on:false};try{ECO.on=!new URLSearchParams(location.search).has('shot')&&localStorage.getItem('wl-eco')==='1';}catch(e){}
+const BASE_CAP=pixelInfo().cap;if(ECO.on)setPixelCap(1);
+let lastFrame=-1e9,paused=false,rafOn=false;const FRAME_BASE=QUALITY.tier==='mobile'?1000/30:0;let FRAME_MS=ECO.on?1000/30:FRAME_BASE; // 컴퓨터는 개미굴 원본처럼 화면 갱신마다(120Hz면 120번 — 2026-11-05, 60으로 묶으면 원본보다 덜 부드러웠다), 휴대폰은 30
 const schedule=()=>{if(!rafOn){rafOn=true;requestAnimationFrame(frame);}}; // 루프가 두 갈래로 갈라지지 않게 예약은 한 번만
 /* 쉴 때 아끼기(휴대폰 단계, 2026-11-02 발열): 대화·카드가 열려 있거나, 1.5초 넘게 손대지 않고 원더룹·카메라가 가만히 있으면 초당 20프레임.
    누르기·끌기·키·조이스틱, 원더룹이 움직이거나 탈것을 타거나 카메라가 움직이면 바로 30프레임으로 */
@@ -1937,7 +1948,11 @@ let lastAct=0;const _lw=new THREE.Vector3(),_lc=new THREE.Vector3();
 ['pointerdown','pointermove','keydown','wheel','touchmove'].forEach(ev=>window.addEventListener(ev,()=>{lastAct=performance.now();},{passive:true,capture:true}));
 let _lr=0;function markMotion(now){const I=GAME.controls.input;if(I.jx||I.jy||GAME.ride.riding()||_lw.distanceToSquared(WL.position)>1e-6||_lc.distanceToSquared(camera.position)>1e-5||Math.abs(WL.rotation.y-_lr)>1e-4||(WL.userData.isWalking&&WL.userData.isWalking()))lastAct=now;_lw.copy(WL.position);_lc.copy(camera.position);_lr=WL.rotation.y;}
 /* 20프레임은 입력·원더룹·카메라가 모두 1초 넘게 멈췄을 때만(대화·카드가 열려 있어도 움직이면 30 — 2026-11-05 걷는 중 덜컹 점검) */
-const idle=now=>MOBILE&&!SHOT&&!FPS60.on&&now-lastAct>1000;
+/* 2026-11-10 발열: 가방·조작법·옷장 같은 창(body.wl-pop-on)이 떠 있으면 바로 쉬는 프레임. 컴퓨터도 쉴 때는 30프레임(움직이면 화면 갱신마다) */
+const popRest=()=>{const c=document.body.classList;return c.contains('wl-pop-on')&&!c.contains('wl-ward-on');}; /* 탐험가 소개·옷 갈아입기는 원더룹이 돌아가며 보이는 창이라 뺌 */
+const idle=now=>!SHOT&&!FPS60.on&&(now-lastAct>1000||popRest());
+/* 쉬는 프레임: 휴대폰 20 → 창이 떠 있거나 8초 넘게 그대로면 15(절전 모드는 늘 15), 컴퓨터 30 */
+const IDLE_MS=()=>MOBILE?(ECO.on||popRest()||performance.now()-lastAct>8000?1000/15:50):1000/30;
 /* 화면 갱신에 맞춘 프레임 제한(2026-11-05): requestAnimationFrame 간격의 중앙값으로 화면 갱신 간격(vs — 60Hz 16.7ms, 120Hz 8.3ms)을 재고,
    그 갱신을 세어 N번에 1번 그린다(N = 목표 간격 ÷ 갱신 간격 반올림) → 120Hz에서 30프레임이면 4번에 1번, 60Hz면 2번에 1번이 늘 고르게. 갱신 개수는 직전 콜백과의 간격을 반올림해 세므로(건너뛴 갱신도 셈) 타임스탬프가 몇 ms 흔들려도 그대로다
    (예전 '목표−2ms' 시간 문턱은 타임스탬프가 2ms만 일러도 한 번 더 기다려 33/42ms로 들쭉날쭉할 수 있었다 — tools/walk-smooth-test.py 시뮬레이션: 120Hz·흔들림 ±3ms에서 27%가 41.7ms).
@@ -1947,10 +1962,10 @@ const frameLog={iv:new Float32Array(240),dt:new Float32Array(240),idle:new Uint8
 function frame(now){rafOn=false;if(paused)return;
   const dr=now-VS.prev;VS.prev=now;if(dr>3&&dr<45){VS.d.push(dr);if(VS.d.length>41)VS.d.shift();if(VS.d.length>=9){const a=[...VS.d].sort((x,y)=>x-y);VS.v=a[a.length>>1];}}
   VS.cnt=(VS.cnt||0)+(dr>0&&dr<200?(dr>VS.v*1.6?Math.round(dr/VS.v):1):99); // 지난 그리기 뒤 화면 갱신 몇 번 — 콜백 하나 = 갱신 하나(간격이 1.6배 넘을 때만 건너뛴 갱신을 셈) → 타임스탬프가 몇 ms 흔들려도 개수는 그대로
-  const id=idle(now),ms=id?50:(FPS60.on?1000/60:FRAME_MS),N=Math.max(1,Math.round(ms/VS.v));if(VS.cnt<N){schedule();return;}VS.cnt=0;
+  const id=idle(now),ms=id?IDLE_MS():(FPS60.on?1000/60:FRAME_MS),N=Math.max(1,Math.round(ms/VS.v));if(VS.cnt<N){schedule();return;}VS.cnt=0;
   const L=frameLog,i=L.n%240;L.iv[i]=lastFrame>0&&now-lastFrame<1000?now-lastFrame:0;L.idle[i]=id?1:0;L.n++;
   lastFrame=now;frameNow=now;const w0=performance.now();tick();L.dt[i]=ui.lastDt||0;markMotion(now);perfTick(now,performance.now()-w0);}
-window.wlFrameLog={log:frameLog,vs:VS,fps60:FPS60,target:()=>idle(performance.now())?50:(FPS60.on?1000/60:(FRAME_MS||VS.v))};
+window.wlFrameLog={log:frameLog,vs:VS,fps60:FPS60,target:()=>idle(performance.now())?IDLE_MS():(FPS60.on?1000/60:(FRAME_MS||VS.v))};
 /* ?debug 프레임 간격 기록(2026-11-05): 그린 프레임마다 간격(ms)을 막대로 — 초록 목표 ±1.5ms, 노랑 그보다 김, 파랑 쉬는 20프레임. 아래 줄에 화면 갱신(Hz)·몇 번에 한 번·평균·흔들림(표준편차)·최소/최대·벗어난 비율.
    '60프레임으로 보기'는 휴대폰 단계에서도 60프레임(30과 비교용, 이 기기 이 탭에서만) */
 {const b=document.getElementById('fps60Btn'),cv=document.getElementById('frameGraph'),out=document.getElementById('frameOut'),g=cv.getContext('2d');
@@ -1964,12 +1979,25 @@ window.wlFrameLog={log:frameLog,vs:VS,fps60:FPS60,target:()=>idle(performance.no
    자동 화질 조절(휴대폰 단계만): 초당 프레임이 목표(30)보다 3초 연달아 26 아래면 한 단계씩 낮춘다 —
    1 공중 입자 끔 · 2 먼 배경 겹·빛줄기 끔(구역 정보 quality(단계)) · 3 픽셀 비율 1.1 · 4 픽셀 비율 1. 다시 올리지는 않는다(오르내림 반복 막기). 빛·그림자 개수는 건드리지 않는다.
    쉬는 20프레임(위 idle) 동안은 느린 것으로 세지 않는다. 오래 플레이하면(휴대폰이 데워짐) 프레임과 상관없이 10분에 적어도 1단계, 20분에 적어도 2단계(화면을 보고 있는 시간만 셈) */
-const PERF={t0:0,last:0,n:0,iv:0,work:0,fps:0,ivA:0,workA:0,bad:0,level:0,play:0};
+const PERF={t0:0,last:0,n:0,iv:0,work:0,fps:0,ivA:0,workA:0,bad:0,level:ECO.on?2:0,play:0,dyn:1,slow:0,good:0,wait:12};
 function perfTick(now,work){const P=PERF;if(!P.last||now-P.last>500){P.t0=now;P.last=now;P.n=P.iv=P.work=0;return;}P.iv+=now-P.last;P.work+=work;P.n++;P.last=now;
   if(now-P.t0<1000)return;const sec=(now-P.t0)/1000;P.fps=P.n*1000/(now-P.t0);P.ivA=P.iv/P.n;P.workA=P.work/P.n;P.t0=now;P.n=P.iv=P.work=0;
+  /* 동적 해상도(2026-11-10 발열 — 휴대폰 단계·절전 모드): 쉬지 않는 동안 초당 프레임이 목표의 88% 아래로 2초 이어지면 해상도를 8%씩 낮추고(0.7배까지, 바닥 = 기기 화소 0.85배),
+     목표를 지키며 계산 시간이 프레임 예산의 절반 아래인 채 wait초(처음 12초, 올렸다가 다시 느려지면 두 배씩 — 오르내림 반복 막기, 최대 2분) 이어지면 4%씩 되돌린다 */
+  if((MOBILE||ECO.on)&&!SHOT&&!idle(now)){const tg=1000/(FRAME_MS||VS.v);
+    if(P.fps<tg*.88){P.good=0;if(++P.slow>=2&&P.dyn>.7){if(P.up){P.wait=Math.min(120,P.wait*2);P.up=false;}P.dyn=Math.max(.7,P.dyn-.08);P.slow=0;setPixelDyn(P.dyn);}}
+    else{P.slow=0;if(P.fps>=tg*.96&&P.workA<1000/tg*.5){if(++P.good>=P.wait&&P.dyn<1){P.dyn=Math.min(1,P.dyn+.04);P.good=0;P.up=true;setPixelDyn(P.dyn);}}else P.good=0;}}
   if(MOBILE&&!SHOT){P.play+=sec;if(idle(now))P.bad=0;else if(P.fps<26)P.bad++;else P.bad=0;
     const want=Math.max(P.bad>=3?P.level+1:P.level,P.play>1200?2:P.play>600?1:0);if(want>P.level&&P.level<4){P.level=Math.min(4,want);P.bad=0;applyQuality();}}}
-function applyQuality(){const L=PERF.level;GAME.weather.rainQuality(L);if(zone.cur&&zone.cur.quality)zone.cur.quality(L);if(L>=3)setPixelCap(L>=4?1:1.1);}
+function applyQuality(){const L=PERF.level;GAME.weather.rainQuality(L);if(zone.cur&&zone.cur.quality)zone.cur.quality(L);if(ECO.on)setPixelCap(1);else if(L>=3)setPixelCap(L>=4?1:1.1);}
+function setEco(on){on=!!on;if(SHOT)return;ECO.on=on;try{localStorage.setItem('wl-eco',on?'1':'0');}catch(e){}FRAME_MS=on?1000/30:FRAME_BASE;
+  if(on){PERF.level=Math.max(PERF.level,2);applyQuality();}else setPixelCap(PERF.level>=4?1:PERF.level>=3?1.1:BASE_CAP);}
+window.wlEco={get on(){return ECO.on;},set:setEco};
+/* 성능 작은 표시(2026-11-10, 톱니 메뉴 '성능 표시' — 톱니를 닫아도 화면 왼쪽 아래에 fps · 프레임 시간(ms) · 실제 그리는 해상도. 톱니가 있는 판에서만, 이 기기에 기억 'wl-perfchip') */
+const perfChip=document.getElementById('perfChip');
+{const b=document.getElementById('perfBtn');if(b&&perfChip){const lab=()=>{b.textContent='성능 표시: '+(perfChip.hidden?'끔':'켬');};let on=false;try{on=localStorage.getItem('wl-perfchip')==='1';}catch(e){}
+  perfChip.hidden=!(on&&document.body.classList.contains('wl-dev'));lab();b.addEventListener('click',()=>{perfChip.hidden=!perfChip.hidden;try{localStorage.setItem('wl-perfchip',perfChip.hidden?'0':'1');}catch(e){}lab();});
+  setTimeout(()=>{if(on&&document.body.classList.contains('wl-dev')){perfChip.hidden=false;lab();}},1500);}}
 const nextFrame=()=>{if(!SHOT&&!paused)schedule();};
 if(!SHOT){const setPaused=p=>{if(p===paused)return;paused=p;if(!p)schedule();};
   document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
@@ -2043,7 +2071,11 @@ function tickBody(){
      if(V.aim){const a=V.aim;if(!a.rel){const o=a.at||[WL.position.x,WL.position.y+.85,WL.position.z];a.rel=[a.from[0]-o[0],a.from[1]-o[1],a.from[2]-o[2]];}a.t+=dt;
        const [ox,oy,oz]=a.rel,L=Math.hypot(ox,oy,oz)||1,gy=Math.atan2(ox,oz),k=Math.min(1,dt*6);let dy=gy-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));
        C.yaw+=dy*k;C.pitch+=(Math.min(1.15,Math.max(-.55,Math.asin(oy/L)))-C.pitch)*k;C.dist+=(Math.min(13,Math.max(CAM_MIN/fk,L))-C.dist)*k;if(a.t>.8)V.aim=null;}} // from 거리는 가로 화면 기준(세로 화면은 따라가기와 같은 배율로 멀리)
-    C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;_ct.set(WL.position.x,WL.position.y+.85+d*(asp<1?FOLLOW.liftP:FOLLOW.lift),WL.position.z); /* 보는 점을 거리에 비례해 올림 → 원더룹이 화면 아래쪽 3분의 1쯤(가까이 당기면 덜 올라감) */
+    C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;
+    /* 화면 가림 규칙(2026-11-10, game/layout heroBand): 아래에 대화창이 떠 있는 동안은 원더룹을 그 위 띠 가운데로 — 보는 점을 내려 원더룹이 화면에서 올라가게(0.25초쯤에 걸쳐, 대화창이 닫히면 돌아옴). 촬영 모드는 안 함 */
+    {const hb=SHOT?null:GAME.layout.heroBand();if(hb)C.dc=(hb[0]+hb[1])/2;C.dk=(C.dk||0)+((hb?1:0)-(C.dk||0))*Math.min(1,dt*4);if(C.dk<.002)C.dk=0;}
+    const liftY=.85+d*(asp<1?FOLLOW.liftP:FOLLOW.lift),dockY=.75+((C.dc??.5)-.5)*d*2*Math.tan(camera.fov*Math.PI/360)/Math.max(.6,Math.cos(C.pitch));
+    _ct.set(WL.position.x,WL.position.y+liftY+(Math.min(liftY,dockY)-liftY)*C.dk,WL.position.z); /* 보는 점을 거리에 비례해 올림 → 원더룹이 화면 아래쪽 3분의 1쯤(가까이 당기면 덜 올라감) */
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
     {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
        if(A>1e-6&&(_cw.x-rx)**2+(_cw.z-rz)**2>rr*rr)kt=Cq<0?(-B+Math.sqrt(B*B-4*A*Cq))/(2*A):0;
@@ -2078,7 +2110,8 @@ function tickBody(){
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}${window.WL_BUILD?' · 커밋 '+window.WL_BUILD.commit:''}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':
-      `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${FRAME_MS?Math.round(1000/FRAME_MS):"화면 갱신마다"}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계 · 플레이 ${Math.floor(P.play/60)}분${idle(performance.now())?' · 쉬는 중 20프레임':''}`);}
+      `\n${QUALITY.tier==='mobile'?'휴대폰':'컴퓨터'} 단계 · 초당 ${P.fps.toFixed(0)}프레임(목표 ${FRAME_MS?Math.round(1000/FRAME_MS):"화면 갱신마다"}) · 프레임 간격 ${P.ivA.toFixed(1)}ms · 계산 ${P.workA.toFixed(1)}ms\n픽셀 비율 ${renderer.getPixelRatio()}(기기 ${window.devicePixelRatio}) · 그리는 크기 ${c.width}×${c.height} · 자동 화질 ${P.level}단계 · 플레이 ${Math.floor(P.play/60)}분${P.dyn<1?' · 동적 해상도 ×'+P.dyn.toFixed(2):''}${ECO.on?' · 절전 모드':''}${idle(performance.now())?' · 쉬는 중 '+Math.round(1000/IDLE_MS())+'프레임':''}`);
+    if(perfChip&&!perfChip.hidden)perfChip.textContent=`${P.fps.toFixed(0)}fps · ${P.ivA.toFixed(1)}ms · ${c.width}×${c.height}`;}
   nextFrame();
 }
 tick();
@@ -2350,7 +2383,7 @@ async function take(aspect,opt={}){
     if(auto.dialog&&G.dialog.talking()){const e=G.dialog.lineEnd();if(e!=null&&t>=e+auto.linePad)G.dialog.act();}
     const read=sel=>Math.max(3.5,[...document.querySelectorAll(sel)].map(e=>e.textContent).join('').replace(/\s+/g,'').length*.07+1.5); // 읽을 시간
     const kind=U.cardShown();if(kind==='notice'||kind==='secret'){if(cardT==null)cardT=t;
-      const hold=auto.card??read(kind==='notice'?'#wlNotice .t,#wlNotice .s':'#wlSecret h2,#wlSecret .f');if(t-cardT>=hold)kind==='notice'?U.closeNotice():U.closeSecret();}
+      const hold=auto.card??read(kind==='notice'?'#wlNotice .t,#wlNotice .s':'#wlStrip .t,#wlStrip .f');if(t-cardT>=hold)kind==='notice'?U.closeNotice():U.closeSecret();}
     else if(kind==='dex'||kind==='book'||kind==='ending'){if(cardT==null)cardT=t;const hold=auto.card??(kind==='ending'?6:read('#wlDex h2,#wlDex .fact'));if(t-cardT>=hold&&U.cardClosers[kind])U.cardClosers[kind]();}
     else cardT=null;
     if(U.resultShown()){if(resT==null)resT=t;if(auto.result!=null&&t-resT>=auto.resultHold)U.chooseResult(auto.result);}else resT=null;}
@@ -3122,7 +3155,7 @@ const _f=new THREE.Vector3();
 function tickFace(dt){const n=speakNPC();if(!n||n.face===false||!n.root)return;const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);n.root.getWorldPosition(_f);const dx=_f.x-P.x,dz=_f.z-P.z;if(dx*dx+dz*dz<.01)return;
   const turn=(o,a)=>{o.rotation.y+=Math.atan2(Math.sin(a-o.rotation.y),Math.cos(a-o.rotation.y))*k;};
   if(n.turn!==false)turn(n.root,Math.atan2(-dx,-dz));
-  if(!(U.isWalking&&U.isWalking())&&!U.drive&&!U.riding&&!blocking('itemget')&&!(U.reactFace))turn(W,Math.atan2(dx,dz));}
+  if(!(U.isWalking&&U.isWalking())&&!(U.drive&&Math.abs(U.drive.x)+Math.abs(U.drive.z)>.01)&&!U.riding /* drive는 가만히 있어도 {0,0}으로 늘 있다 — 예전엔 !U.drive라 주민 대화에서 원더룹이 상대를 보지 않았다(2026-11-10) */&&!blocking('itemget')&&!(U.reactFace))turn(W,Math.atan2(dx,dz));}
 function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   // 대화 중 너무 멀어지면 닫음
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
@@ -3500,6 +3533,7 @@ import * as THREE from 'three';
 import {bentPos} from './bend.js';
 import {clock} from './core.js';
 import {hint,hintsVisible} from './ui.js';
+import {topEdge} from './layout.js';
 const L=[];let ctx=null,css=false;const _p=new THREE.Vector3();
 const CSS=`.wl-float{position:fixed;left:0;top:0;z-index:41;pointer-events:none;margin:0;opacity:0;transition:opacity .2s;will-change:transform}
 .wl-float.on{opacity:1}
@@ -3527,8 +3561,8 @@ const shown=e=>{const cs=getComputedStyle(e);return cs.display!=='none'&&cs.visi
 const hit=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
 function tickFloat(){if(!ctx||!L.length)return;const cam=ctx.camera,W=ctx.WL,P=W.position,vis=hintsVisible(),iw=innerWidth,ih=innerHeight,placed=[];
   /* 위·아래 한계: 맨 위 단추 줄 아래 ~ 아래 대화창·획득 카드 위 */
-  let top=8;for(const id of ['wlQuest','wlItems','wlMenu']){const e=document.getElementById(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top<ih*.3)top=Math.max(top,r.bottom+6);}
-  let bot=ih-8;for(const id of ['wlDlg','wlGet']){const e=document.getElementById(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top>ih*.35)bot=Math.min(bot,r.top-8);}
+  let top=8;for(const id of ['wlQuest','wlItems','wlMenu']){const e=document.getElementById(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top<ih*.3)top=Math.max(top,r.bottom+6);}top=Math.max(top,topEdge()); /* 위쪽 쌓기(횟수·띠 카드·안내 문구 — game/layout) 아래에서 */
+  let bot=ih-8;for(const id of ['wlDlg','wlGet','wlStrip','wlNotice']){const e=document.getElementById(id);if(!e||!shown(e)||(id!=='wlDlg'&&!e.classList.contains('on')))continue;const r=e.getBoundingClientRect();if(r.height&&r.top>ih*.35)bot=Math.min(bot,r.top-8);}
   for(let i=L.length-1;i>=0;i--){const it=L[i];if(it.end&&clock.t>=it.end)it.remove();}
   /* 말풍선이 원더룹 얼굴을 덮지 않게: 탈 둘레를 먼저 자리로 잡아 둔다(말풍선만 비켜남 — 횟수 표시는 그대로) */
   let face=null;{const b=bentPos({x:P.x,y:P.y+1.02,z:P.z});_p.set(b.x,b.y,b.z);const dz=_p.distanceTo(cam.position);_p.project(cam);if(_p.z<1){const r=.5/(Math.max(.5,dz)*Math.tan(cam.fov*Math.PI/360))*ih/2,fx=(_p.x+1)/2*iw,fy=(1-_p.y)/2*ih;face=[fx-r,fy-r,fx+r,fy+r];}}
@@ -3741,8 +3775,10 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   menu=document.createElement('div');menu.id='wlMenu';const mb=document.createElement('button');mb.type='button';mb.className='wl-chip y';mb.setAttribute('aria-expanded','false');
   const ls=document.createElement('div');ls.className='ls';const chip=(t,on)=>{const b=document.createElement('button');b.type='button';b.className='wl-chip';b.textContent=t;b.addEventListener('click',e=>{b.blur();on(e);});return b;};
   const snd=chip('',()=>{setMuted(!soundSettings.muted);sfx('ui-click');sndLabel();}),sndLabel=()=>{snd.textContent=soundSettings.muted?'소리 꺼짐':'소리 켜짐';};
-  ls.append(snd,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
-  const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on)sndLabel();};
+  /* 절전 모드(2026-11-10 — 08 window.wlEco: 낮은 화질·30프레임 고정, 기본 꺼짐, 이 기기에 기억) */
+  const eco=chip('',()=>{sfx('ui-click');if(window.wlEco){window.wlEco.set(!window.wlEco.on);ecoLabel();toast(window.wlEco.on?'절전 모드 켜짐 — 화질을 낮추고 30프레임으로':'절전 모드 꺼짐');}}),ecoLabel=()=>{eco.textContent='절전 모드: '+(window.wlEco&&window.wlEco.on?'켜짐':'꺼짐');};
+  ls.append(snd,eco,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
+  const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on){sndLabel();ecoLabel();}};
   mb.addEventListener('click',()=>{sfx('ui-click');mb.blur();setMenu(!menu.classList.contains('open'));});setMenu(false);menu.append(mb,ls);
   // 왼쪽 위 가방 단추(개미굴 '도감 0/11' 노란 칩 자리): 받은 물건을 줄줄이 늘어놓지 않고 한 단추 → 탐험 가방 창
   items=document.createElement('div');items.id='wlItems';corner.append(items,menu);renderItems();
@@ -4282,6 +4318,9 @@ import {clearMission,initMission,tickMission} from './mission.js';
 import {applyZone as weatherZone} from './weather.js';
 import {clearIncident,initIncident,tickIncident} from './incident.js';
 import {clearFloat,initFloat,tickFloat} from './float.js';
+import {band,initLayout,layoutNow,tickLayout} from './layout.js';
+import {speaking,talking} from './dialog.js';
+import {uiHooks} from './ui.js';
 /* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기)
    view.focus({at:[x,y,z], from:[x,y,z]?, dist, sec}): 따라가기 카메라가 sec초 동안 at을 비췄다가 돌아온다(미션 장소 알려 주기, 2026-11-02).
      from이 없으면 원더룹 쪽에서 dist(기본 7)만큼 떨어져 비스듬히 내려다본다. 들어갈 때·돌아올 때 0.45초씩 부드럽게(08 따라가기 카메라가 섞는다).
@@ -4305,9 +4344,11 @@ const view={camera:null,aim:null,
 let HERO=null,TC=null;const SHOT_Q=new URLSearchParams(location.search).has('shot');
 function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
   root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14],P=W.position;let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
-  /* 거리는 시야각으로 계산: 두 사람의 발끝~머리 위(세로)와 둘 사이 너비(가로)가 화면의 약 60%·70%에 들어오게 — 가까우면 원더룹 큰 탈이 상대를 가렸다. 아래 대화창이 다리를 덮으니 둘을 화면 조금 위쪽에 */
-  const top=Math.max(P.y+1.5,ny+headY+.15),bot=Math.min(P.y,ny),span=top-bot,mx=(P.x+nx)/2,mz=(P.z+nz)/2,my=(top+bot)/2-span*.1;let px=-az,pz=ax;if((cam.position.x-mx)*px+(cam.position.z-mz)*pz<0){px=-px;pz=-pz;}
-  const asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360),D=Math.min(16,Math.max(span/.6,(sep+2.1)/(.72*asp))/tf);
+  /* 화면 가림 규칙 2(2026-11-10): 인물을 넣을 화면 띠 = 맨 위 단추 줄 아래(fT) ~ 맨 아래로 내려간 대화창 위(fB). 그 띠 안에 두 사람의 머리 위~발끝을 넣고,
+     낮은 쪽 얼굴(작은 주민)도 화면 위쪽 절반(fF ≤ 0.44)에 오게 — 거리는 시야각으로: 세로(얼굴 위·아래 각각)와 가로(둘 사이 너비) 가운데 가장 먼 것 */
+  const [fT,fB]=band(),fF=Math.min(.38,fT+(fB-fT)*.45),top=Math.max(P.y+1.52,ny+headY+.15),bot=Math.min(P.y,ny),face=Math.min(P.y+.95,ny+headY-Math.min(.35,headY*.3));
+  const mx=(P.x+nx)/2,mz=(P.z+nz)/2;let px=-az,pz=ax;if((cam.position.x-mx)*px+(cam.position.z-mz)*pz<0){px=-px;pz=-pz;}
+  const asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360),vis=Math.max((top-face)/Math.max(.08,fF-fT-.02),(face-bot)/Math.max(.08,fB-fF-.015),(sep+1.5)/(.86*asp)),D=Math.min(19,vis/tf),my=face-(.5-fF)*D*tf*1.02;
   let fx=mx+px*D*.99-ax*D*.05,fz=mz+pz*D*.99-az*D*.05;const fy=my+D*.1;
   if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
   const o={at:[mx,my,mz],from:[fx,fy,fz]};return ()=>o;}
@@ -4316,8 +4357,8 @@ function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
   else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}}
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);}
-function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickFloat();}
+function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking});uiHooks.layout=layoutNow;}
+function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}
 function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();clearFloat();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)
@@ -4356,6 +4397,7 @@ export * as mission from './mission.js';
 export * as photo from './photo.js'; // 사진 모드(시리즈 공통 — 08이 initPhoto·cameraTick·render)
 export * as weather from './weather.js';
 export * as incident from './incident.js';
+export * as layout from './layout.js'; // 화면 가림 규칙(2026-11-10) — 글상자·카드·표시 자리, 대화 중 단추 숨김
 export * as float from './float.js'; // 3D 자리에 붙는 화면 표시(말풍선·횟수·반짝이 표시 — 2026-11-10) // 사건 연출 공통 처리 — 사건 순간 카메라 show · 굴러가는 물건 scatter
 
 </script>
@@ -4543,6 +4585,109 @@ function lampSet({parent,real=1,color=0xffb35a,glowColor=0xffc27a,warm=0.12,grou
   function dispose(){glowTex.dispose();poolTex.dispose();}
   return {add,light,lights,ambient:amb,all:[...lights,amb],lamps,dispose};}
 export {lampSet};
+
+</script>
+<script type="text/x-wl-module" data-path="js/game/layout.js">
+/* ===== 원본: js/game/layout.js ===== */
+/* 원더룹 — 화면 가림 규칙 (2026-11-10, 시리즈 공통 — docs/series-rules.md '화면 가림 규칙')
+   휴대폰 세로에서 위(할 일 안내·가방·메뉴)와 아래(조이스틱·대쉬·점프)가 차 있고 대화창이 그 사이에 떠서, 카메라가 원더룹·주민을 두는 바로 그 높이를 거의 매번 덮었다.
+   글상자·카드·표시의 자리는 모두 여기서 정한다(ui.js·float.js는 모양만):
+   1. 조작이 잠긴 동안(주민 대화 · 이야기 장면 sceneLock · 탈것 · 획득 연출 …) body.wl-dock → 조이스틱·대쉬·점프·말 걸기 단추를 숨기고, 대화창은 그 자리(화면 맨 아래)로 내린다.
+      풀리면 0.35초 뒤 단추가 돌아온다(대사 줄 사이에 깜빡이지 않게). 대화 넘기기는 대화창·화면 누르기(터치)·E·클릭 그대로. 대화창은 세 줄까지(넘으면 글자를 줄임 — ui.showDialog).
+   2. 따라가기 카메라(08)는 아래에 대화창이 떠 있는 동안 heroBand() — 단추 줄 아래 ~ 대화창 위 — 가운데로 원더룹을 올린다(평소엔 화면 아래쪽 3분의 1이라 대화창에 덮였다).
+      대화 카메라(game/index pairCam)는 band() — 맨 위 단추 줄 아래 ~ 내려간 대화창 위 — 안에 두 사람의 머리부터 발까지를 넣고, 낮은 쪽 얼굴도 화면 위쪽 절반에 오게 잡는다.
+   3. 화면 가운데 큰 카드는 꼭 멈춰서 봐야 하는 것만(새 친구 소개·결과창). 발견(비밀)·아이템 획득·완료·미션 안내는 화면 위쪽 띠 카드(ui.js #wlStrip·#wlGet·#wlNotice)로 떴다가 몇 초 뒤 사라진다
+      (자세한 내용은 가방에서). 카드는 카드 자리 하나를 나눠 써서 한 번에 하나(ui.js 줄 세우기).
+   4. 진행 표시(ui.count — 떡방아 횟수)는 화면 위쪽 고정 자리: 맨 위 단추 줄 → 횟수 → 띠 카드 → 안내 문구(toast) 순으로 위에서부터 쌓는다(stack) — 서로 겹치지 않음.
+   5. 뜰 때(그리고 카메라가 자리 잡는 0.5초 뒤 한 번 더) 원더룹과 말하는 상대의 화면 자리를 재서(chars — 발~머리 위를 화면에 비춘 네모, 둥근 땅은 휜 자리), 겹치면 반대쪽으로 비켜 간다:
+      대화창 아래 ↔ 위(쌓기 아래), 띠 카드·안내 문구 위 → 왼쪽 옆(가로 화면) → 아래(대화창·조이스틱 위). 다 겹치면 덜 겹치는 쪽. 화면 밖으로 나가는 자리는 후보에서 뺌.
+      가로 화면에서는 조이스틱과 단추 사이가 넓어, 잠기지 않은 혼잣말 대화창도 그 사이 맨 아래에 둔다. avoid(fn)으로 피할 자리를 더 넣을 수 있다(획득 연출의 떠 있는 물건).
+   6. 머리 위 말풍선('…'·하트·float.bubble)은 그대로(float.js가 topEdge() 아래에서 자리를 잡음).
+   자리 계산은 무엇이 뜨거나 바뀔 때·그 0.5초 뒤·그 뒤로 0.5초마다만(매 프레임 DOM을 재지 않음). 촬영 모드에서도 같다(영상에는 HTML이 안 들어감). */
+import * as THREE from 'three';
+import {bentPos} from './bend.js';
+import {blocking,clock} from './core.js';
+import {input} from './controls.js';
+const coarse=matchMedia('(pointer:coarse)').matches;
+let dlgTopPx=0;
+let ctx=null,speakFn=null,talkFn=null,dockT=-9,docked=false,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
+const EXTRA=new Set(),SLOT={dlg:'bot',strip:'top'},_a=new THREE.Vector3(),_b=new THREE.Vector3();
+const css=`body.wl-dock #wlJoy,body.wl-dock #wlJump,body.wl-dock #wlDash,body.wl-dock #wlAct{visibility:hidden!important;pointer-events:none!important}
+body.wl-dock #wlDlg{width:min(34rem,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}`;
+const $=id=>document.getElementById(id);
+const shown=e=>{if(!e)return false;const cs=getComputedStyle(e);return cs.display!=='none'&&cs.visibility!=='hidden';};
+function safe(){if(!probe){probe=document.createElement('div');probe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)';document.body.appendChild(probe);}
+  const cs=getComputedStyle(probe);safeT=parseFloat(cs.paddingTop)||0;safeB=parseFloat(cs.paddingBottom)||0;safeL=parseFloat(cs.paddingLeft)||0;}
+/* 조작이 잠겼나: 주민 대화 · 이야기 장면 · 탈것 · 획득·결말 연출 · 화면 전환 */
+function locked(){if(!ctx)return false;const U=ctx.WL.userData;return !!((talkFn&&talkFn())||U.sceneLock||U.riding||blocking('itemget')||blocking('caught')||blocking('bigget')||blocking('finale')||blocking('meteor'));}
+/* 화면에 비춘 인물 네모 [x0,y0,x1,y1, 얼굴 아래 끝 y] — 원더룹, 말하는 상대, avoid로 넣은 것 */
+function proj(x,y,z){const b=bentPos({x,y,z});_a.set(b.x,b.y,b.z).project(ctx.camera);return _a.z>1?null:[(_a.x+1)/2*innerWidth,(1-_a.y)/2*innerHeight];}
+function rectOf(x,y,z,h,wk,fk){const a=proj(x,y,z),b=proj(x,y+h,z);if(!a||!b)return null;const H=Math.abs(a[1]-b[1]),w=Math.max(18,H*wk),cx=(a[0]+b[0])/2,y0=Math.min(a[1],b[1]);return [cx-w/2,y0,cx+w/2,y0+H,y0+H*fk];}
+function chars(){const L=[];if(!ctx||!ctx.camera)return L;const P=ctx.WL.position,r=rectOf(P.x,P.y-.04,P.z,blocking('itemget')?2.35:1.7,blocking('itemget')?.6:.82,blocking('itemget')?.74:.6) /* 탈 꼭대기·더듬이 여유까지(사진 모드 몸 범위와 비슷하게) */ /* 획득 연출 동안은 머리 위에 떠 있는 물건까지 */;if(r)L.push(r);
+  const n=speakFn&&speakFn();if(n&&n.root){n.root.getWorldPosition(_b);const q=rectOf(_b.x,_b.y,_b.z,(n.bubbleY||1.4),.6,.5);if(q)L.push(q);}
+  for(const f of EXTRA){try{const q=f();if(q){const [x,y,z,rad]=q,c=rectOf(x,y-rad,z,rad*2,1,1);if(c)L.push(c);}}catch(e){}}return L;}
+const inter=(a,b)=>Math.max(0,Math.min(a[2],b[2])-Math.max(a[0],b[0]))*Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1]));
+/* 글상자 네모 R이 인물들을 얼마나 덮나: 얼굴은 조금만 걸려도 크게, 몸은 넓이 비율 */
+function score(R,C){let s=0;for(const c of C){const A=Math.max(1,(c[2]-c[0])*(c[3]-c[1])),F=[c[0],c[1],c[2],c[4]],FA=Math.max(1,(F[2]-F[0])*(F[3]-F[1]));s+=inter(R,c)/A+3*inter(R,F)/FA;}return s;}
+const avoid=fn=>{EXTRA.add(fn);sig='';return ()=>{EXTRA.delete(fn);};};
+/* 맨 위 단추 줄 아래 끝(쌓기 시작) */
+function rowBottom(){let b=safeT+8;for(const id of ['wlQuest','wlItems','wlMenu','wlTool','dbgBtn']){const e=$(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.3&&r.bottom<innerHeight*.42)b=Math.max(b,r.bottom);}return b;}
+const topEdge=()=>stackBot; // 위쪽 쌓기의 아래 끝(float.js 말풍선·표시가 이 아래에서 자리 잡음)
+/* 대화 카메라가 인물을 넣을 화면 띠 [위, 아래](0~1): 맨 위 단추 줄 아래 ~ 맨 아래로 내려간 대화창 위 */
+function band(){const H=innerHeight||1,d=$('wlDlg');let dh=0;if(d&&shown(d))dh=d.getBoundingClientRect().height;dh=Math.max(dh,coarse?132:118)+22;
+  /* 넓은 화면(가로·컴퓨터)은 가방·메뉴가 구석에 있고 가운데 위에는 할 일 안내만 → 그 아래부터. 좁은 화면(세로)은 단추 줄 전체 아래부터 */
+  let tp=rowBottom();if(innerWidth>700){tp=safeT+8;const q=$('wlQuest');if(q&&shown(q)){const r=q.getBoundingClientRect();if(r.height)tp=r.bottom;}}
+  if(stackBot>tp+12)tp=Math.max(tp,stackBot-8); /* 횟수·띠 카드·안내 문구가 쌓여 있으면 그 아래부터 */
+  return [Math.min(.36,(tp+24)/H),Math.max(.55,1-(safeB+(coarse?14:22)+dh+8)/H)];}
+/* 자리 고르기: 후보 [x0, y0] 가운데 인물을 가장 덜 덮는 것(앞 후보가 거의 안 덮으면 — 0.12 아래 — 그대로) */
+function pick(w,h,C,cands){let best=0,bs=1e9;for(let i=0;i<cands.length;i++){const c=cands[i],sc=score([c[0],c[1],c[0]+w,c[1]+h],C);if(i===0&&sc<=.12)return 0;if(sc+.1<bs){bs=sc;best=i;}}return best;}
+function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(),row=rowBottom();
+  /* 넓은 화면(가로·컴퓨터): 가방·메뉴는 구석에 있으니, 그 사이에 들어가는 가운데 표시는 할 일 칩 바로 아래부터 쌓는다(낮은 화면에서 한 줄이라도 위로 — 원더룹 탈에 닿지 않게) */
+  let y=row+8,cL=0,cR=W;if(W>700){let q=safeT+8;const qe=$('wlQuest');if(qe&&shown(qe)){const r=qe.getBoundingClientRect();if(r.height)q=r.bottom;}y=q+8;
+    for(const id of ['wlItems','wlTool','dbgBtn']){const e=$(id);if(e&&shown(e)){const r=e.getBoundingClientRect();if(r.height&&r.top<H*.3)cL=Math.max(cL,r.right);}}
+    for(const id of ['wlMenu','wlCamBtn']){const e=$(id);if(e&&shown(e)){const r=e.getBoundingClientRect();if(r.height&&r.top<H*.3)cR=Math.min(cR,r.left);}}}
+  const clear=w=>{if((W-w)/2<cL+8||(W+w)/2>cR-8)y=Math.max(y,row+8);}; /* 구석 단추에 걸리는 넓은 것은 단추 줄 아래로 */
+  const dlg=$('wlDlg'),cnt=$('wlCount'),toast=$('wlToast'),strips=['wlStrip','wlGet','wlNotice'].map($).filter(e=>e&&e.classList.contains('on'));
+  const dOn=dlg&&dlg.style.display==='block',cOn=cnt&&cnt.classList.contains('on'),tOn=toast&&toast.classList.contains('on');
+  /* 조이스틱·단추(안 숨겨졌을 때) 위 끝과, 가로 화면에서 그 사이 빈 폭 */
+  const joy=$('wlJoy'),dash=$('wlDash'),ctl=coarse&&!docked&&joy&&shown(joy);let ctlTop=H-safeB-8,gapL=0,gapR=W;
+  if(ctl){const j=joy.getBoundingClientRect(),d=dash&&shown(dash)?dash.getBoundingClientRect():null;ctlTop=Math.min(j.top,d?d.top-16:H)-10;gapL=j.right+8;gapR=(d?d.left:W)-8;}
+  /* 왼쪽 옆자리(가로 화면처럼 위·아래가 모두 인물에 걸릴 때): 가방 칸 아래 ~ 조이스틱 위 */
+  let leftTop=row+8;{const it=$('wlItems');if(it&&shown(it)){const r=it.getBoundingClientRect();leftTop=Math.max(leftTop,r.bottom+8);}}const leftX=safeL+14;
+  if(cOn){clear(cnt.offsetWidth);cnt.style.top=Math.round(y)+'px';y+=cnt.offsetHeight+8;}
+  /* 대화창: 아래(잠겼거나 조이스틱과 단추 사이에 들어가면 맨 아래, 아니면 조이스틱·단추 위) ↔ 위 */
+  let dTop=H,dLeft=W;
+  if(dOn){const r=dlg.getBoundingClientRect(),w=r.width,h=r.height,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
+    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62)cands.push([x0,y]);
+    SLOT.dlg=pick(w,h+tag,C,cands)===1?'top':'bot';
+    if(SLOT.dlg==='top'){dlg.style.top=Math.round(y+tag)+'px';dlg.style.bottom='auto';y+=tag+h+10;dLeft=x0;}
+    else{dlg.style.top='';dlg.style.bottom=`calc(env(safe-area-inset-bottom,0px) + ${bo}px)`;dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
+  else{dlgTopPx=0;if(dlg){dlg.style.top='';dlg.style.bottom='';}}
+  /* 띠 카드·안내 문구: 위 가운데(쌓기) → 왼쪽 옆 → 아래(대화창·조이스틱 위) */
+  const put=(e,stack)=>{const w=e.getBoundingClientRect().width||e.offsetWidth,h=e.offsetHeight,x0=(W-w)/2,floor=Math.min(dTop,ctlTop)-8;clear(w);const cands=[[x0,y]];
+    if(leftX+w<Math.min(W*.48,dLeft-8)&&leftTop+h<floor)cands.push([leftX,leftTop]);
+    if(stack&&floor-h>y+h*.5)cands.push([x0,floor-h]);
+    const fit=cands.filter(c=>c[1]+h<=floor+8),use=fit.length?fit:cands,k=pick(w,h,C,use),c=use[k];e.style.top=Math.round(c[1])+'px';e.style.bottom='auto';e.style.left=c[0]===x0?'':Math.round(c[0]+w/2)+'px';
+    if(c[0]===x0&&c[1]===y)y+=h+8;else if(c[0]===leftX)leftTop+=h+8;return c[0]===leftX?1:c[1]===y?0:2;};
+  for(const e of strips)SLOT.strip=['top','side','bot'][put(e,true)]||'top';
+  if(tOn)put(toast,false);
+  /* 'E …' 안내(컴퓨터, 화면 아래 가운데 — 주민 머리 위에 붙은 때는 dialog가 자리를 잡음): 대화창이 아래에 떠 있으면 숨기고(겹침), 낮은 화면은 발밑으로 내린다 */
+  {const pr=$('wlPrompt');if(pr&&!pr.dataset.at){pr.style.visibility=dOn&&SLOT.dlg==='bot'?'hidden':'';pr.style.bottom=H<700?`calc(env(safe-area-inset-bottom,0px) + 26px)`:'';}else if(pr)pr.style.visibility='';}
+  stackBot=y;}
+function tickLayout(){if(!ctx)return;const now=clock.t,lk=locked();if(lk)dockT=now;const dk=lk||now-dockT<.35;
+  if(dk!==docked){docked=dk;document.body.classList.toggle('wl-dock',dk);if(dk&&input.releaseJoy)input.releaseJoy();sig='';}
+  const dlg=$('wlDlg'),on=id=>{const e=$(id);return e&&e.classList.contains('on')?1:0;};
+  const s=[dlg&&dlg.style.display==='block'?dlg.querySelector('.line').textContent.length+':'+dlg.querySelector('.line').textContent.slice(0,12):0,on('wlStrip'),on('wlGet'),on('wlNotice'),on('wlCount'),on('wlToast'),docked?1:0,innerWidth,innerHeight].join('|');
+  const perf=performance.now();
+  if(s!==sig){sig=s;place();recheck=perf+500;nextAt=perf+500;}
+  else if(recheck&&perf>=recheck){recheck=0;place();}
+  else if(perf>=nextAt){nextAt=perf+500;place();}} /* 0.5초마다 다시(카메라가 움직여 인물 자리가 바뀌면 비켜 감 — 앞 후보가 거의 안 덮으면 그대로라 오락가락하지 않음) */
+function initLayout(c,o){ctx=c;speakFn=o.speaking;talkFn=o.talking;const st=document.createElement('style');st.dataset.wl='layout';st.textContent=css;document.head.appendChild(st);safe();stackBot=rowBottom()+8;
+  addEventListener('resize',()=>{sig='';});}
+const isDocked=()=>docked;
+/* 따라가기 카메라가 원더룹을 둘 화면 띠 [위, 아래](0~1) — 대화창이 아래에 떠 있고(잠긴 동안, 또는 낮은 화면) 그 위로 비켜 줘야 할 때만, 아니면 null (08: 보는 점을 내려 원더룹을 띠 가운데로) */
+function heroBand(){if(!dlgTopPx)return null;const H=innerHeight||1,d=$('wlDlg');if(!d||d.style.display!=='block')return null;const b=band();return [b[0],Math.max(b[0]+.2,(dlgTopPx-8)/H)];}
+export {heroBand,avoid,band,chars,initLayout,isDocked,locked,place as layoutNow,tickLayout,topEdge};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/mission.js">
@@ -4934,6 +5079,7 @@ function enter(){if(on||!ctx||SHOT||blockedNow())return false;build();on=true;co
   input.cam.photo=true;syncZoom();layout();sfx('ui-click');setTimeout(()=>{const s=el.querySelector('.shut');if(s&&!touchDev())s.focus({preventScroll:true});},0);return true;}
 function exit(){if(!on)return;on=false;const cam=ctx.camera;cam.near=PH.near;cam.updateProjectionMatrix();setHints(PH.prevHints);document.body.classList.remove('wl-photo-on');
   el.hidden=true;closeViewer();if(ctx.controls)ctx.controls.enabled=true;input.cam.photo=false;sfx('ui-click');
+  if(RT.rt){RT.rt.depthTexture.dispose();RT.rt.dispose();RT.rt=null;RT.w=RT.h=0;} /* 나가면 후처리 그림판(화면 크기 HalfFloat + 깊이)도 놓는다 — GPU 메모리(2026-11-10 발열 점검: 흐림·미니어처 그리기는 사진 모드 안에서만 돎) */
   if(btn&&!touchDev())btn.focus({preventScroll:true});} // 휴대폰은 초점 테두리를 남기지 않게
 function toggle(){if(on)exit();else enter();}
 /* 보는 점: 멀면 몸 가운데(0.75m), 가까우면 얼굴(머리 뼈) — 4.8m 안으로 들어오며 부드럽게 */
@@ -5360,13 +5506,27 @@ const DEFAULT_KEYS=[
 const RAIN_KEY={top:'#8c98a8',horizon:'#c4c9cd',hemi:'#c9d0d8',ground:'#8d8c82',hemiI:.5,sun:'#d4dae2',sunI:.16,sunDir:[3,-12,4],fill:.2,fog:'#b8bfc5',fogNear:14,fogFar:58,stars:0,milky:0};
 const CKEYS=['top','horizon','hemi','ground','sun','fog'],NKEYS=['hemiI','sunI','fill','fogNear','fogFar','stars','milky'];
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
+const LOW_SKY=(()=>{try{const q=new URLSearchParams(location.search);if(q.has('shot'))return false;const t=q.get('quality');return t?t==='mobile':matchMedia('(pointer:coarse)').matches;}catch(e){return false;}})();
+let PAT=null;
+function bakePattern(){if(PAT)return PAT;const W=256,H=128,d=new Uint8Array(W*H*4),sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);},bn=new THREE.Vector3(.55,.42,.72).normalize();
+  for(let j=0;j<H;j++)for(let i=0;i<W;i++){const u=(i+.5)/W,v=(j+.5)/H,ph=u*Math.PI*2,th=(1-v)*Math.PI,x=-Math.cos(ph)*Math.sin(th),y=Math.cos(th),z=Math.sin(ph)*Math.sin(th);
+    const n=.6+.4*Math.sin(x*23+Math.sin(z*17)*2)*Math.sin(z*19+y*11),n2=.5+.25*Math.sin(x*7+Math.sin(z*5+y*3)*2)*Math.sin(z*6-x*2)+.25*Math.sin(x*17+z*13),bb=x*bn.x+y*bn.y+z*bn.z,m=Math.exp(-bb*bb*28)*sm(.05,.35,y),k=(j*W+i)*4;
+    d[k]=Math.round(n*255);d[k+1]=Math.round(Math.min(1,Math.max(0,n2))*255);d[k+2]=Math.round(m*255);d[k+3]=255;}
+  PAT=new THREE.DataTexture(d,W,H,THREE.RGBAFormat);PAT.wrapS=THREE.RepeatWrapping;PAT.magFilter=PAT.minFilter=THREE.LinearFilter;PAT.needsUpdate=true;return PAT;}
+function domeLow(uni){return new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
+  vertexShader:'varying vec3 vP;varying vec2 vU;void main(){vP=position;vU=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;uniform float cloud;uniform float cloudK;uniform sampler2D uPat;varying vec3 vP;varying vec2 vU;void main(){float h=normalize(vP).y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
+    'if(milky>0.||cloud>0.){vec3 p=texture2D(uPat,vU).rgb;c+=vec3(.16,.19,.3)*p.b*p.r*milky;if(cloud>0.){vec3 cc=mix(vec3(.47,.5,.55),vec3(.72,.74,.77),p.g)*mix(.8,1.,k);c=mix(c,cc*cloudK,cloud*smoothstep(-.1,.12,h));}}'+
+    'gl_FragColor=vec4(c,1.);\n#include <colorspace_fragment>\n}'});}
 function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey=null,space=false}={}){ // space: 우주(공기가 없어 낮에도 별·은하수 — 시간과 상관없이 keys의 stars·milky 그대로, 2026-11-07 무한 우주)
   const RK=Object.assign({},RAIN_KEY,rainKey||{}),RC={};CKEYS.forEach(c=>RC[c]=new THREE.Color(RK[c]));RC.dir=new THREE.Vector3(...RK.sunDir).normalize();
   const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
   // 하늘 둥근 지붕: 지평선 → 위로 색이 바뀐다(땅 아래는 지평선 색). 카메라를 따라다닌다
   const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0},cloud:{value:0},cloudK:{value:1}};
-  const mat=new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
+  /* 휴대폰 단계(2026-11-10 발열): 은하수·비구름 얼룩은 방향만의 함수(시간에 따라 안 변함)라 화소마다 sin 여덟 번을 계산하지 않고 256×128 그림 한 장에 구워(구의 uv — R 은하수 얼룩, G 구름 얼룩, B 은하수 띠) 한 번 읽는다.
+     컴퓨터·촬영 모드는 예전 계산 그대로(기준 화면) */
+  const mat=LOW_SKY?(uni.uPat={value:bakePattern()},domeLow(uni)):new THREE.ShaderMaterial({uniforms:uni,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     // 은하수(milky): 하늘을 비스듬히 가로지르는 옅은 띠 — 가운데가 밝고 잔물결처럼 얼룩진 푸른 흰빛(그리기는 하늘 지붕 그대로 1회)
     fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float milky;uniform float cloud;uniform float cloudK;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;float k=smoothstep(-.02,.55,h);vec3 c=mix(horizon,top,pow(k,.8));'+
@@ -5374,7 +5534,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
       // 비구름(cloud, game/weather — 비 오는 날): 하늘 전체를 얼룩진 회색 구름으로 덮는다(해·달·별은 안 보임)
       'if(cloud>0.){float n2=.5+.25*sin(d.x*7.+sin(d.z*5.+d.y*3.)*2.)*sin(d.z*6.-d.x*2.)+.25*sin(d.x*17.+d.z*13.);vec3 cc=mix(vec3(.47,.5,.55),vec3(.72,.74,.77),n2)*mix(.8,1.,k);c=mix(c,cc*cloudK,cloud*smoothstep(-.1,.12,h));}'+
       'gl_FragColor=vec4(c,1.);\n#include <colorspace_fragment>\n}'});
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,24,12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(radius,LOW_SKY?48:24,LOW_SKY?24:12),mat);dome.renderOrder=-10;dome.frustumCulled=false;dome.name='sky';dome.userData.noMerge=true; // 정적 병합에 묶이면 처음 자리에 붙박여 카메라 먼 거리 밖으로 잘린다(휴대폰에서 하늘이 검게 보이던 원인)
   // 별: 위쪽 하늘에 고르게(지평선 근처는 드물게). 첫별은 따로 크게
   let r=seed;const R=()=>(r=(r*16807)%2147483647)/2147483647;
   const P=new Float32Array(nStars*3);for(let i=0;i<nStars;i++){const a=R()*Math.PI*2,y=.12+.88*Math.sqrt(R()),c=Math.sqrt(1-y*y);P.set([Math.cos(a)*c*radius*.9,y*radius*.9,Math.sin(a)*c*radius*.9],i*3);}
@@ -5456,18 +5616,21 @@ function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webk
   catch(e){ctx=null;}return ctx;}
 const awake=()=>!SHOT&&!S.muted&&ctx&&ctx.state==='running';
 // 소리 깨우기 (개미굴 wakeAudio): 아이폰은 사용자 입력 안에서만 소리가 켜지고, 다른 앱에 다녀오면 멈춰 있을 때가 있다
-function wake(){const c=audio();if(!c||c.state==='running'||c.state==='closed')return;
+function wake(){if(S.muted&&ctx)return;const c=audio();if(!c||c.state==='running'||c.state==='closed')return;
   try{c.resume().then(()=>{try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);}catch(e){}}).catch(()=>{});}catch(e){}}
 try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){} // 아이폰 무음 스위치를 켜도 소리 (사파리 17+)
 ['pointerdown','touchend','keydown'].forEach(ev=>window.addEventListener(ev,wake,true));
 const hooks={onWakeFail:null,onMute:null};
-document.addEventListener('visibilitychange',()=>{if(document.hidden||SHOT)return;wake();
+/* 쓰지 않을 때 소리 처리 멈춤(2026-11-10 발열): 화면이 가려지면(다른 앱·탭) 오디오 처리를 멈추고(배경음·공간음 노드가 안 보이는 동안 계속 돌았다) 돌아오면 깨운다.
+   소리를 끈 동안(M·메뉴)에도 멈춤 — 크기만 0이면 노드는 계속 계산된다. 다시 켜면 wake */
+const rest=()=>{if(ctx&&ctx.state==='running'){try{ctx.suspend();}catch(e){}}};
+document.addEventListener('visibilitychange',()=>{if(SHOT)return;if(document.hidden){rest();return;}if(S.muted)return;wake();
   setTimeout(()=>{if(ctx&&!S.muted&&ctx.state!=='running'&&hooks.onWakeFail)hooks.onWakeFail();},800);});
 window.addEventListener('pageshow',wake);window.addEventListener('focus',wake);
 /* 소리 끄고 켜기 (M 키, 개미굴과 같음) */
 const VOICES=new Set();
 function setMuted(m){S.muted=!!m;if(m){VOICES.forEach(v=>{try{v.stop();}catch(e){}});VOICES.clear();try{speechSynthesis.cancel();}catch(e){}}
-  if(ctx)out.gain.setTargetAtTime(m?0:.85,ctx.currentTime,.05);if(hooks.onMute)hooks.onMute(S.muted);}
+  if(ctx)out.gain.setTargetAtTime(m?0:.85,ctx.currentTime,.05);if(m)setTimeout(()=>{if(S.muted)rest();},400);else wake();if(hooks.onMute)hooks.onMute(S.muted);}
 window.addEventListener('keydown',e=>{if(e.code!=='KeyM'||e.repeat||SHOT||(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)))return;audio();setMuted(!S.muted);});
 function register(map){Object.assign(SRC,map);}
 function synth(map){Object.assign(SYN,map);}
@@ -6196,14 +6359,14 @@ const css=`
 #wlDlg .who{position:absolute;left:-12px;top:-20px;z-index:1;padding:.3rem 1.05rem .35rem;font-size:1rem;font-family:"Jua",sans-serif} /* 민트 마스킹테이프 이름표 — 대화창 왼쪽 위 모서리에 걸쳐 붙임 */
 #wlDlg .line{margin:0;font-size:1.16rem;line-height:1.62;color:var(--f-ink)} /* 대화 본문은 읽기 쉬운 Gowun Dodum */
 #wlDlg .more{margin:.35rem 0 0;text-align:right;font-size:.8rem;color:var(--ink-soft)}
-#wlNotice{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;display:flex;gap:1rem;align-items:center;
+#wlNotice{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 120px);transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;display:flex;gap:1rem;align-items:center;
   width:min(26rem,calc(100vw - 32px));box-sizing:border-box;background:var(--panel);color:var(--ink);border-radius:22px;padding:1.2rem 1.3rem;box-shadow:0 18px 50px rgba(30,14,36,.5);
   transition:transform .4s cubic-bezier(.2,1.5,.4,1),opacity .25s;z-index:21}
 #wlNotice.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
 #wlNotice img{width:72px;height:72px;flex:none}#wlNotice img:not([src]){display:none}
 #wlNotice .k{margin:0;display:inline-block;background:var(--tag);color:var(--tag-ink);border-radius:999px;padding:.15rem .7rem;font-size:.85rem}
 #wlNotice .t{margin:.45rem 0 .3rem;font-size:1.3rem;font-family:"Jua",sans-serif}
-#wlGet{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 110px);width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:center;gap:.9rem;z-index:21;
+#wlGet{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 120px);width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none;display:flex;align-items:center;gap:.9rem;z-index:21;
   background:var(--panel);color:var(--ink);border-radius:20px;padding:.9rem 1.4rem .9rem 1rem;box-shadow:0 14px 40px rgba(30,14,36,.45);transition:transform .38s cubic-bezier(.2,1.6,.4,1),opacity .25s}
 #wlGet.on{opacity:1;transform:translate(-50%,0) scale(1)}
 #wlGet .ic{flex:none;display:grid;place-items:center;width:58px;height:58px;box-sizing:border-box;border-radius:50%;background:#f3ead6;border:1.5px solid #a77a52}#wlGet .ic:has(img:not([src])){display:none}
@@ -6236,21 +6399,18 @@ const css=`
 #wlPrompt.wl-felt:not(#wl_a):not(#wl_b)::before{display:none} /* 'E 말 걸기' 안내: 점선 없이 조금 크게 */
 #wlAct{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .8rem;
   background:#f2b63c;color:#3e2834;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1rem;white-space:nowrap;display:none;place-items:center;z-index:16;touch-action:none;box-sizing:border-box} /* 개미굴 #act: 노란 동그라미(글자가 길면 알약) */ /* 글자가 길면(이슬배 타기) 동그라미가 옆으로 늘어난 알약 모양 — 줄 넘김·삐져나옴 없이 */
-#wlSecret{position:fixed;inset:0;display:none;place-items:center;padding:1.2rem;box-sizing:border-box;background:rgba(30,14,36,.25);z-index:31}
-#wlSecret .card{background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:4px solid #e3ad35;border-radius:22px;padding:1.4rem 1.5rem 1.2rem;width:min(21rem,100%);box-sizing:border-box;text-align:center;
-  box-shadow:inset 0 0 0 3px #fff6d6,0 0 34px rgba(255,196,70,.65),0 18px 50px rgba(30,14,36,.5)}
-/* 비밀 카드 금빛 반짝임(개미굴 비밀 카드처럼, 2026-11-03): 카드 둘레 별 다섯이 차례로 반짝, 카드가 살짝 빛나며 숨쉼, 그림 둘레 금빛 고리 */
-#wlSecret .card{position:relative;animation:wlSecIn .5s cubic-bezier(.2,1.4,.4,1) both,wlSecGlow 2.4s ease-in-out .5s infinite}
-#wlSecret .tw{position:absolute;left:var(--x);top:var(--y);width:26px;height:26px;transform:translate(-50%,-50%) scale(0);pointer-events:none;background:#ffe9a0;
-  clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);filter:drop-shadow(0 0 6px rgba(255,210,90,.95));animation:wlSecTw 2.2s ease-in-out var(--d) infinite}
-#wlSecret img{border-radius:50%;background:#fff8e8;box-shadow:0 0 0 4px #e3ad35,0 0 18px rgba(255,196,70,.8)}
-@keyframes wlSecTw{0%,55%,100%{transform:translate(-50%,-50%) scale(0) rotate(0);opacity:0}70%{transform:translate(-50%,-50%) scale(1) rotate(30deg);opacity:1}85%{transform:translate(-50%,-50%) scale(.4) rotate(50deg);opacity:.6}}
-@keyframes wlSecGlow{0%,100%{box-shadow:inset 0 0 0 3px #fff6d6,0 0 26px rgba(255,196,70,.55),0 18px 50px rgba(30,14,36,.5)}50%{box-shadow:inset 0 0 0 3px #fff6d6,0 0 46px rgba(255,196,70,.9),0 18px 50px rgba(30,14,36,.5)}}
-@keyframes wlSecIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion: reduce){#wlSecret .card{animation:none}#wlSecret .tw{display:none}}
-#wlSecret .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.95rem}#wlSecret img{width:112px;height:112px;margin:.6rem auto 0;display:block;object-fit:contain}#wlSecret img:not([src]){display:none}
-#wlSecret h2{margin:.5rem 0 .4rem;font-size:1.45rem;font-weight:400;font-family:"Jua",sans-serif}#wlSecret .f{margin:0;line-height:1.65}#wlSecret .n{margin:.6rem 0 0;color:#9a6a18;font-size:.9rem}#wlSecret .n:empty{display:none}
-#wlSecret button{display:block;width:100%;margin-top:1rem;text-align:center;border-radius:14px;background:#e3ad35;color:#fffaf2;font-size:1.05rem;padding:.75rem 1.2rem}
+/* 발견 띠 카드(2026-11-10 화면 가림 규칙 3): 숨겨진 비밀·발견은 화면 가운데 큰 카드 대신 위쪽 띠로 떴다가 몇 초 뒤 사라진다(막지 않음 — 걷기·대화 그대로, 자세한 내용은 가방에서). 금빛 테두리 + 작은 별 */
+#wlStrip{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 120px);width:max-content;max-width:min(27rem,calc(100vw - 28px));box-sizing:border-box;transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;display:flex;align-items:center;gap:.8rem;z-index:21;cursor:pointer;
+  background:linear-gradient(170deg,#fffaea,#ffeab8);color:#4a2a2a;border:3px solid #e3ad35;border-radius:18px;padding:.6rem 1.1rem .65rem .7rem;box-shadow:0 0 22px rgba(255,196,70,.55),0 10px 26px rgba(30,14,36,.4);transition:transform .38s cubic-bezier(.2,1.5,.4,1),opacity .25s}
+#wlStrip.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+#wlStrip img{flex:none;width:58px;height:58px;border-radius:50%;background:#fff8e8;box-shadow:0 0 0 2.5px #e3ad35;object-fit:contain}#wlStrip img:not([src]){display:none}
+#wlStrip .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.82rem}#wlStrip .k::before{content:"✦ "}
+#wlStrip .t{margin:.1rem 0 0;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.12rem;line-height:1.25}
+#wlStrip .f{margin:.15rem 0 0;font-size:.88rem;line-height:1.4;color:#6b4a3a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}#wlStrip .f:empty{display:none}
+@media (max-width:600px){#wlStrip img{width:48px;height:48px}#wlStrip .t{font-size:1.04rem}#wlStrip .f{font-size:.84rem}}
+@media (prefers-reduced-motion: reduce){#wlStrip{transition:none}#wlStrip:not(.on){transform:translate(-50%,0)}}
+/* 휴대폰 단계(body.wl-lowfx — 2026-11-10 발열): 늘 떠 있는 칩의 뒤 흐림(backdrop-filter)은 3D 화면을 매 프레임 다시 흐리게 해 GPU를 쓴다 → 끔(바탕이 66% 넘게 불투명해 차이가 거의 없음). 연출용 흐림(귀환 미니어처·우주 지도 띠)은 그대로 */
+body.wl-lowfx #wlQuest,body.wl-lowfx #wlPrompt,body.wl-lowfx #wlToast,body.wl-lowfx #wlTool,body.wl-lowfx .wl-chip{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 body.wl-nohints .wl-hint{visibility:hidden!important}
 .wlg button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 #wlCut{position:fixed;inset:0;display:none;place-items:center;background:#1e0e24;z-index:45;cursor:pointer}#wlCut.on{display:grid;animation:wlCutIn .6s ease-out}
@@ -6277,8 +6437,9 @@ body.wl-nohints .wl-hint{visibility:hidden!important}
 @keyframes wlCutIn{from{opacity:0}to{opacity:1}}
 #wlFade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:44;display:none}
 @media (prefers-reduced-motion: reduce){#wlNotice,#wlGet,#wlToast{transition:none}#wlProf .dcard{animation:none}#wlNotice:not(.on),#wlGet:not(.on){transform:translate(-50%,0)}#wlToast:not(.on){transform:translate(-50%,0)}#wlCut.on{animation:none}}
-@media (max-width:600px){#wlDlg .line{font-size:1.06rem;line-height:1.55}#wlDlg{padding:1.15rem 1.05rem .75rem}#wlDlg .who{font-size:.95rem}}
-@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}#wlGet{bottom:calc(env(safe-area-inset-bottom,0px) + 152px)}} /* 터치 화면: 대화창은 조이스틱·단추 위로, 아이템 획득 카드는 조이스틱(위끝 142px)에 걸치지 않을 만큼만 낮게 — 원더룹을 가리지 않게(2026-11-06 아이폰) */
+@media (max-height:500px){#wlStrip .f,#wlNotice .s{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}#wlStrip{padding:.45rem 1rem .5rem .6rem}#wlStrip img{width:44px;height:44px}#wlNotice{padding:.7rem 1rem;gap:.7rem;border-radius:18px;width:min(24rem,calc(100vw - 32px))}#wlNotice img{width:48px;height:48px}#wlNotice .t{font-size:1.08rem;margin:.25rem 0 .15rem}#wlNotice .s{font-size:.88rem;line-height:1.4}#wlNotice .h{display:none}}
+@media (max-width:600px){#wlNotice{padding:.8rem 1rem;gap:.7rem;border-radius:18px}#wlNotice img{width:52px;height:52px}#wlNotice .t{font-size:1.12rem;margin:.3rem 0 .2rem}#wlNotice .s{font-size:.9rem;line-height:1.45}#wlNotice .h{display:none}#wlGet{padding:.65rem 1.1rem .65rem .8rem;gap:.7rem}#wlGet .t{font-size:1.08rem}#wlGet .s{font-size:.86rem}#wlDlg .line{font-size:1.06rem;line-height:1.55}#wlDlg{padding:1.15rem 1.05rem .75rem}#wlDlg .who{font-size:.95rem}}
+@media (pointer:coarse){#wlDlg{bottom:calc(env(safe-area-inset-bottom,0px) + 206px)}} /* (2026-11-10 화면 가림 규칙: 자리는 game/layout이 정함 — 아래는 예전 메모) 터치 화면: 대화창은 조이스틱·단추 위로, 아이템 획득 카드는 조이스틱(위끝 142px)에 걸치지 않을 만큼만 낮게 — 원더룹을 가리지 않게(2026-11-06 아이폰) */
 #wlBadge{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 11vh);width:min(560px,calc(100vw - 20px));transform:translate(-50%,0);z-index:21;pointer-events:none;display:none}
 #wlBadge.on{display:block;animation:wlbIn .7s cubic-bezier(.25,1.6,.45,1) both}#wlBadge.out{animation:wlbOut .45s ease-in both}
 #wlBadge .bg{position:relative;display:block;width:100%;height:auto;filter:drop-shadow(0 8px 14px rgba(30,14,36,.35))}
@@ -6297,7 +6458,7 @@ root.innerHTML=`<div id="wlDlg" class="wl-felt" role="dialog" aria-live="polite"
 <div id="wlNotice" class="wl-felt" role="alert"><img alt=""><div><p class="k">미션</p><p class="t"></p><p class="s"></p><p class="h"></p></div></div>
 <div id="wlGet" class="wl-felt" role="status" aria-live="polite"><span class="ic"><img alt=""></span><div><p class="t"></p><p class="s"></p></div></div><p id="wlToast" class="wl-hint" role="status" aria-live="polite"></p>
 <div id="wlProf" role="dialog" aria-modal="true" aria-label="새 친구"><div class="dcard wl-pop-body"><p class="k">새 친구</p><span class="ic"><img alt=""></span><h2 class="t"></h2><p class="s"></p><p class="l"></p><p class="q"></p><p class="n"></p><button type="button">반가워요!</button></div></div>
-<div id="wlSecret" role="dialog" aria-live="polite"><div class="card"><i class="tw" style="--x:8%;--y:6%;--d:0s"></i><i class="tw" style="--x:93%;--y:14%;--d:.7s"></i><i class="tw" style="--x:5%;--y:62%;--d:1.3s"></i><i class="tw" style="--x:95%;--y:78%;--d:.35s"></i><i class="tw" style="--x:50%;--y:2%;--d:1.8s"></i><p class="k"></p><img alt=""><h2></h2><p class="f"></p><p class="n"></p><button type="button">좋아요</button></div></div>
+<div id="wlStrip" role="status" aria-live="polite"><img alt=""><div><p class="k"></p><p class="t"></p><p class="f"></p></div></div>
 <div id="wlResult" role="dialog" aria-live="polite"><div class="card wl-felt"><h2></h2><p></p><p class="sec"></p><button class="b1" type="button"></button><button class="b2" type="button"></button></div></div>
 <div id="wlCut" role="img"><img alt=""><p class="wl-hint"></p></div><div id="wlFade" aria-hidden="true"></div>
 <div id="wlBadge" role="status" aria-live="polite"><img class="bg" alt=""><span class="medal" aria-hidden="true"><img alt=""></span><div class="txt"><p class="t"></p><p class="s"></p></div></div>
@@ -6311,10 +6472,13 @@ const coarse=matchMedia('(pointer:coarse)').matches,SHOT_UI=new URLSearchParams(
 const dlg=$('#wlDlg');
 /* 탐험가 이름(탐험가 소개 창에서 바꾼 이름 — localStorage 'wl-look2'.name): 대화창 이름표의 '원더룹'을 그 이름으로. 촬영 모드는 늘 '원더룹' */
 const heroName=()=>{if(SHOT_UI)return '원더룹';try{const n=(JSON.parse(localStorage.getItem('wl-look2')||'{}').name||'').trim();return n||'원더룹';}catch(e){return '원더룹';}};
-function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';stackGet();}
-function hideDialog(){dlg.style.display='none';stackGet();}
+function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';fitDialog();uiHooks.layout&&uiHooks.layout();}
+/* 대화창은 세 줄까지(화면 가림 규칙 1): 넘으면 글자를 조금씩 줄인다(0.86배까지 — 그래도 넘으면 그대로 보여 줌) */
+function fitDialog(){const l=dlg.querySelector('.line');l.style.fontSize='';const cs=getComputedStyle(l),f0=parseFloat(cs.fontSize),lh=parseFloat(cs.lineHeight)/f0||1.6;let f=f0;for(let i=0;i<6&&l.offsetHeight>f*lh*3+2;i++){f*=.97;l.style.fontSize=f+'px';}}
+const uiHooks={layout:null}; /* game/layout이 넣음 — 무엇이 뜨거나 닫힐 때 바로 자리를 다시 잡게 */
+function hideDialog(){dlg.style.display='none';uiHooks.layout&&uiHooks.layout();}
 /* 아이템 획득 카드와 대화창이 함께 뜨면(2026-11-08 — 달떡 카드가 보름 할아버지 대화창 위에 겹쳤다) 카드를 대화창 위로 24px(이름표가 대화창 위로 튀어나온 만큼 더) 띄워 올림, 대화창이 닫히면 제자리 */
-function stackGet(){const gt=document.getElementById('wlGet');if(!gt)return;const on=gt.classList.contains('on')&&dlg.style.display==='block';gt.style.bottom=on?Math.round(innerHeight-dlg.getBoundingClientRect().top+24)+'px':'';}
+function stackGet(){uiHooks.layout&&uiHooks.layout();} /* 자리는 game/layout(화면 가림 규칙)이 정한다 — 띠 카드는 위쪽, 인물을 덮으면 아래(대화창 위) */
 const dialogShown=()=>dlg.style.display==='block';
 /* 카드 자리 하나: 안내 카드·결과창·비밀 카드는 한 번에 하나만 보인다(줄 세우기 — 결과창과 비밀 카드가 겹치지 않게).
    열려 있는 동안 다른 카드를 부르면 줄을 섰다가, 앞 카드가 닫히는 즉시 들어온 순서로 열린다. 각 함수는 그 카드가 닫힐 때 resolve */
@@ -6330,19 +6494,20 @@ const closers={};const cardCloser=(kind,fn)=>{closers[kind]=fn;}; // 다른 모�
 const nt=$('#wlNotice');let ntDone=null,ntCue=null,ntEnd=0;
 function notice({kicker='미션',title='',text='',icon=null}){return enqueue('notice',r=>{ntDone=r;nt.querySelector('.k').textContent=kicker;nt.querySelector('.t').textContent=title;nt.querySelector('.s').textContent=text;
   const img=nt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');nt.querySelector('.h').textContent=coarse?'화면을 누르면 닫혀요':'아무 키나 누르면 닫혀요';
-  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');block('notice',true);ntEnd=clock.t+6;sfx('mission-start');});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
-function closeNotice(why){if(cardOn!=='notice')return;nt.classList.remove('on');endCue(ntCue);ntCue=null;block('notice',false);const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
+  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');uiHooks.layout&&uiHooks.layout();block('notice',true);ntEnd=clock.t+6;sfx('mission-start');});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
+function closeNotice(why){if(cardOn!=='notice')return;nt.classList.remove('on');uiHooks.layout&&uiHooks.layout();endCue(ntCue);ntCue=null;block('notice',false);const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
 const noticeShown=()=>cardOn==='notice';
 /* 비밀 카드 (숨겨진 비밀을 찾았을 때 — 개미굴 도감 비밀 카드 모양): 아무 키나 누르거나 단추로 닫힘 */
-const sc=$('#wlSecret');let scDone=null,scCue=null;
-function secret({kicker='숨겨진 비밀',title='',text='',icon=null,count='',button='좋아요',onOpen=null}){return enqueue('secret',r=>{scDone=r;sc.querySelector('.k').textContent=kicker;sc.querySelector('h2').textContent=title;sc.querySelector('.f').textContent=text;sc.querySelector('button').textContent=button;if(onOpen)try{onOpen();}catch(e){console.error(e);}
-  sc.querySelector('.n').textContent=count;const img=sc.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');
-  scCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});sc.style.display='grid';block('secret',true);});}
-function closeSecret(){if(cardOn!=='secret')return;sc.style.display='none';endCue(scCue);scCue=null;block('secret',false);const d=scDone;scDone=null;cardDone();if(d)d();}
+const sc=$('#wlStrip');let scDone=null,scCue=null,scEnd=0;
+/* 2026-11-10 화면 가림 규칙 3: 위쪽 띠 카드로 — 막지 않고 sec초(기본 글 길이에 따라 4.5~7초, 게임 시간) 뒤 저절로, 띠를 누르거나 Esc로도 닫힘. count는 꼬리표 옆에('숨겨진 비밀 · 2/3'). 닫힐 때 resolve(예전과 같음) */
+function secret({kicker='숨겨진 비밀',title='',text='',icon=null,count='',sec=null,onOpen=null}){return enqueue('secret',r=>{scDone=r;sc.querySelector('.k').textContent=kicker+(count?' · '+count:'');sc.querySelector('.t').textContent=title;sc.querySelector('.f').textContent=text;if(onOpen)try{onOpen();}catch(e){console.error(e);}
+  const img=sc.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');scEnd=clock.t+(sec||Math.min(7,Math.max(4.5,2.5+(title.length+text.length)*.06)));
+  scCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});sc.classList.add('on');uiHooks.layout&&uiHooks.layout();});}
+function closeSecret(){if(cardOn!=='secret')return;sc.classList.remove('on');endCue(scCue);scCue=null;const d=scDone;scDone=null;cardDone();uiHooks.layout&&uiHooks.layout();if(d)d();}
 const secretShown=()=>cardOn==='secret';
-sc.querySelector('button').addEventListener('click',closeSecret);
+sc.addEventListener('pointerdown',e=>{if(performance.now()-cardOpenT>400){e.preventDefault();e.stopPropagation();closeSecret();}});window.addEventListener('keydown',e=>{if(cardOn==='secret'&&e.code==='Escape')closeSecret();});
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,e=>{if(performance.now()-cardOpenT<=(cardOn==='notice'?800:600)||(e.target&&e.target.closest&&e.target.closest('#wlResult,#wlSecret button')))return;
-  if(cardOn==='notice')closeNotice();else if(cardOn==='secret')closeSecret();}));
+  if(cardOn==='notice')closeNotice();}));
 /* 그림 컷 (장면 사이에 넣는 한 장짜리 그림, 예: 오프닝 편지 클로즈업): cut({src, alt, sec, id})
    화면 전체에 그림을 띄우고 sec초(게임 시간 — 촬영 모드에서도 같은 길이) 뒤나 누르면(0.6초 뒤부터) 닫힌다. 카드 자리를 함께 써서 다른 카드와 겹치지 않는다.
    영상에는 그리지 않는다(HTML) → 시점 기록 kind 'card'(who '그림', id)로 남겨 편집 때 같은 그림을 얹는다. 열고 닫을 때 종이 스치는 소리(sfx 'cut'). */
@@ -6419,16 +6584,16 @@ function toastTop(){let b=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBt
 /* 횟수 안내 칩(2026-11-10 — 떡방아 '세 번 찧기'): count({label,n,max}) 화면 위 가운데(맨 위 단추 줄 바로 아래 — 대화창·말풍선과 겹치지 않는 자리), 동그라미 max개 중 n개가 채워짐. count(null)이면 치움.
    안내 문구(toast)는 이 칩이 떠 있으면 그 아래로. 안내 표시(영상에 안 나옴) */
 let cnt=null;
-function count(o){if(!o){if(cnt)cnt.classList.remove('on');return;}
+function count(o){if(!o){if(cnt)cnt.classList.remove('on');uiHooks.layout&&uiHooks.layout();return;}
   if(!cnt){cnt=document.createElement('p');cnt.id='wlCount';cnt.className='wl-hint';cnt.setAttribute('role','status');root.appendChild(cnt);
     const st=document.createElement('style');st.textContent='#wlCount{position:fixed;left:50%;top:120px;transform:translate(-50%,-8px);margin:0;z-index:31;display:flex;align-items:center;gap:.5rem;padding:.4rem .95rem;border-radius:999px;background:rgba(46,28,44,.82);color:#fff4e4;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.08rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}#wlCount.on{opacity:1;transform:translate(-50%,0)}#wlCount i{width:.85rem;height:.85rem;border-radius:50%;border:2px solid #fff4e4;box-sizing:border-box;display:inline-block}#wlCount i.f{background:#f7c948;border-color:#f7c948}#wlCount b{font-weight:400;color:#f7c948}@media (prefers-reduced-motion: reduce){#wlCount{transition:none;transform:translate(-50%,0)}}';document.head.appendChild(st);}
   cnt.innerHTML='';const l=document.createElement('span');l.textContent=o.label||'';cnt.appendChild(l);for(let i=0;i<o.max;i++){const d=document.createElement('i');if(i<o.n)d.className='f';cnt.appendChild(d);}
   const b=document.createElement('b');b.textContent=o.n+'/'+o.max;cnt.appendChild(b);
   let bt=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBtn']){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)bt=Math.max(bt,r.bottom);}
-  cnt.style.top=Math.round((bt||58)+10)+'px';cnt.classList.add('on');}
-function toast(msg,sec=2.8){ts.textContent=msg;toastTop();ts.classList.add('on');tsEnd=clock.t+sec;}
-const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
-  if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;}tickFade();};
+  cnt.style.top=Math.round((bt||58)+10)+'px';cnt.classList.add('on');uiHooks.layout&&uiHooks.layout();}
+function toast(msg,sec=2.8){ts.textContent=msg;if(uiHooks.layout){ts.classList.add('on');uiHooks.layout();}else{toastTop();ts.classList.add('on');}tsEnd=clock.t+sec;}
+const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='secret'&&clock.t>=scEnd)closeSecret();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
+  if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;uiHooks.layout&&uiHooks.layout();}tickFade();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));
 /* 결과 화면: result({title,text,buttons:[{label,act}],note}) → 누른 단추의 번호로 resolve */
@@ -6457,7 +6622,7 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {count,badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {uiHooks,count,badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
 // 소리 안내 (개미굴과 같은 문구): 화면에 돌아왔는데 소리가 깨어나지 않으면, M으로 끄고 켤 때
 soundHooks.onWakeFail=()=>toast('소리가 멈췄다면 화면을 한 번 눌러 주세요');
 soundHooks.onMute=m=>toast(m?'소리 꺼짐 (M으로 다시 켜기)':'소리 켜짐');
@@ -9695,8 +9860,8 @@ let poundCam=null;
 function poundCamStart(){const W=U0(),cam=G.view.camera;if(!W||!cam)return;if(poundCam&&G.view.req&&G.view.req.fn===poundCam.fn)return;
   const P=W.position,ry=W.rotation.y,cp=cam.position,side=[1,-1].map(s=>{const a=ry+s*PI/4;return {a,d:Math.hypot(P.x+Math.sin(a)*3-cp.x,P.z+Math.cos(a)*3-cp.z)};}).sort((p,q)=>p.d-q.d)[0];
   const pc={a:side.a,end:0};pc.fn=()=>{const W=U0();if(!W)return null;if(!poundingNow(W)){pc.end+=1/60;if(pc.end>.1){if(poundCam===pc)poundCam=null;return null;}}else pc.end=0;
-    const k=cam.aspect<1?Math.min(2,1.25/cam.aspect):1,P=W.position,mx=(P.x+MORTAR[0])/2,mz=(P.z+MORTAR[1])/2,d=3.5*k;
-    const at=bentPos({x:mx*.7+P.x*.3,y:P.y+.68-.32*(k-1),z:mz*.7+P.z*.3}) /* 세로 화면은 보는 점을 낮춰 원더룹·절구를 화면 위쪽에(아래는 대사창·조이스틱) */,from=bentPos({x:P.x+Math.sin(pc.a)*d,y:P.y+1.3+.4*(k-1),z:P.z+Math.cos(pc.a)*d});
+    const k=cam.aspect<1?Math.min(2,1.25/cam.aspect):1,P=W.position,mx=(P.x+MORTAR[0])/2,mz=(P.z+MORTAR[1])/2,d=(k>1?3.5:4.1)*k*Math.max(1,Math.min(1.7,600/innerHeight)); /* 낮은 가로 화면은 멀리 — 탈이 위쪽 표시(할 일·횟수)에 닿지 않게 */
+    const at=bentPos({x:mx*.7+P.x*.3,y:P.y+(k>1?.68+.12*(k-1):.78),z:mz*.7+P.z*.3}) /* 화면 가림 규칙(2026-11-10): 횟수는 화면 위쪽 고정 자리라, 보는 점을 조금 올려 탈 꼭대기가 위쪽 쌓기(할 일·횟수) 아래에 오게 — 예전엔 보는 점을 낮춰 탈이 위쪽 표시에 닿았다 */,from=bentPos({x:P.x+Math.sin(pc.a)*d,y:P.y+1.3+.4*(k-1),z:P.z+Math.cos(pc.a)*d});
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};};
   /* 구경 자리(2026-11-10): 카메라에서 볼 때 절구 뒤쪽 반원에(원더룹에게서 1.1m 넘게 떨어진 세 자리) — 정해 둔 자리는 카메라가 그쪽 사선으로 잡히면 토끼가 원더룹·절구 앞을 가렸다(휴대폰에서 특히) */
   {const cx=P.x+Math.sin(pc.a)*3.5,cz=P.z+Math.cos(pc.a)*3.5,b=Math.atan2(MORTAR[0]-cx,MORTAR[1]-cz),sp=[];
@@ -9724,8 +9889,8 @@ function tickBits(dt){let any=false;const GR=.2; // 낮은 중력(지구 9.8의 
 const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(...MORTAR)+.5,MORTAR[1]);root.add(mortarMark);
 const BUN_SAY=[['콩콩','와, 떡이 날아다녀!'],['몽실','천천히 떨어져서 받아먹을 수도 있겠다!'],['보슬','콩! 하고 찧으니까 둥실 올라가!']];
 /* 횟수 표시(2026-11-10 두 번째): 절구 바로 위에 크게(game/float count — 화면 위 가운데 칩도 세로가 낮은 창 1280×632에서 대화창에 가려졌다). 대화창·획득 카드가 뜨면 그 위로 비켜남 */
-let cntEl=null;function cntShow(n){if(n==null){if(cntEl){cntEl.remove();cntEl=null;}return;}
-  if(!cntEl)cntEl=G.float.count({at:[MORTAR[0],groundY(...MORTAR),MORTAR[1]],y:1.5,label:'떡 찧기',n,max:3});else cntEl.set(n);}
+/* 횟수는 화면 위쪽 고정 자리(할 일 안내 바로 아래 — 화면 가림 규칙 4, 2026-11-10: 절구 위에 띄우면 가까이 잡은 카메라에서 원더룹 얼굴에 걸렸다) */
+function cntShow(n){G.ui.count(n==null?null:{label:'떡 찧기',n,max:3});}
 const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
   onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=true;st.cntK=(st.cntK||0)+1;cntShow(PEST.n);},
   onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;const bi=(n-1)%3,say=BUN_SAY[bi];G.float.bubble({root:bunnies[bi].m.root,y:1.02,text:say[1],sec:3}); /* 떡방아 동안 토끼 말은 아래 대화창 대신 머리 위 작은 말풍선(대화창이 횟수·절구를 가렸다) */
@@ -9819,6 +9984,7 @@ const stars=(()=>{const pos=new Float32Array(STAR_N*3),cc=new Float32Array(STAR_
   for(let i=0;i<STAR_N;i++){const az=sr(-1.66,1.66),el=Math.asin(sr(Math.sin(-.35),Math.sin(1.22)));pos.set([Math.sin(az)*Math.cos(el)*D*.99,Math.sin(el)*D*.99,-Math.cos(az)*Math.cos(el)*D*.99],i*3);
     c.set(cols[(sr(0,cols.length))|0]);cc.set([c.r,c.g,c.b],i*3);const q=sr(0,1);sz[i]=q<.6?sr(2,3):q<.88?sr(3.1,4.4):q<.98?sr(4.5,6):sr(6.2,8);ph.set([sr(0,PI*2),sr(.35,1.6)],i*2);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(cc,3));geo.setAttribute('psize',new THREE.BufferAttribute(sz,1));geo.setAttribute('tw',new THREE.BufferAttribute(ph,2));
+  if(MOB)geo.setDrawRange(0,2000); /* 휴대폰은 2000개만 그림(2026-11-10 발열 — 자리는 그대로 두고 그리는 수만 줄여 난수 순서·배치가 안 바뀜) */
   const m=new THREE.ShaderMaterial({uniforms:starU,transparent:true,depthWrite:false,fog:false,
     vertexShader:'uniform float uT,uPR;attribute float psize;attribute vec2 tw;attribute vec3 color;varying vec3 vC;varying float vA;void main(){float w=.5+.5*sin(uT*tw.y+tw.x);float big=step(3.2,psize);vA=mix(.35,1.,w*w)*(.8+.2*big);vC=color;vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;gl_PointSize=psize*uPR*(.82+.3*w);}',
     fragmentShader:'varying vec3 vC;varying float vA;void main(){vec2 d=gl_PointCoord-.5;float r=length(d)*2.;float a=1.-smoothstep(.55,1.,r);if(a<.01)discard;gl_FragColor=vec4(vC*(1.+.35*smoothstep(.45,0.,r)),a*vA);}'});
@@ -9890,7 +10056,7 @@ function quest(q,goal){if(q!==st.lastQ){st.lastQ=q;G.ui.setQuest(q);}G.goal.set(
 function hopDemo(){const W=U0();st.hop={t:0,from:[bobo.root.position.x,bobo.root.position.z],y0:bobo.root.position.y,to:DEMO_LAND};G.state.setFlag(K.demo,true);
   const P=W.position,mid=[(st.hop.from[0]+DEMO_LAND[0])/2,(st.hop.from[1]+DEMO_LAND[1])/2],dx=wd(mid[0]-P.x),dz=wd(mid[1]-P.z),dl=Math.hypot(dx,dz)||1,ux=dx/dl,uz=dz/dl;
   const base={x:P.x-ux*5.5+uz*1.4,z:P.z-uz*5.5-ux*1.4};let tEnd=0;
-  G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:1,b=bobo.root.position,Wp=W.position;
+  G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:Math.max(1,Math.min(1.7,620/innerHeight)) /* 낮은 가로 화면도 멀리(2026-11-10 — 휴대폰 가로에서 원더룹이 화면 아래로 잘렸다) */,b=bobo.root.position,Wp=W.position;
     if(!st.hop){tEnd+=1/60;if(tEnd>1.2)return null;}
     const at=bentPos({x:Wp.x*.35+b.x*.65,y:Math.max(Wp.y,b.y)*.65+1.1,z:Wp.z*.35+b.z*.65}),from=bentPos({x:Wp.x+(base.x-Wp.x)*k,y:Wp.y+3.4*k,z:Wp.z+(base.z-Wp.z)*k});
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};});}
@@ -10338,7 +10504,7 @@ function tickSky(cam,P){if(!cam)return;skyG.position.copy(cam.position);_sd.copy
   const up=P?ss(18,70,P.y):0;phobos.scale.setScalar(4.2*(1+1.8*up));}
 /* ── 먼지: 바람에 날리는 고운 알갱이 + 착지·회오리 붉은 먼지 ── */
 const fineN=MOB?80:160,fine=(()=>{const pos=new Float32Array(fineN*3),ph=new Float32Array(fineN);for(let i=0;i<fineN;i++){pos.set([rnd(-12,12),rnd(.1,3.2),rnd(-12,12)],i*3);ph[i]=rnd(0,6);}
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));if(MOB)geo.setDrawRange(0,56); /* 휴대폰은 56개만 그림(2026-11-10 발열) */
   const m=new THREE.PointsMaterial({color:new THREE.Color('#f8e2cc'),size:.07,transparent:true,opacity:.55,depthWrite:false,sizeAttenuation:true});const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.userData.noMerge=true;root.add(pts);keep.push(pts);
   return {tick(dt,t,P){const a=geo.attributes.position.array;for(let i=0;i<fineN;i++){let x=a[i*3]+dt*(1.3+.4*Math.sin(t+ph[i])),y=a[i*3+1]+Math.sin(t*1.7+ph[i])*dt*.25,z=a[i*3+2]+dt*.35;
       const lx=x-P.x,lz=z-P.z;if(lx>12)x-=24;if(lx<-12)x+=24;if(lz>12)z-=24;if(lz<-12)z+=24;if(y>P.y+3.4||y<P.y-3)y=P.y+.1;a[i*3]=x;a[i*3+1]=y;a[i*3+2]=z;}geo.attributes.position.needsUpdate=true;}};})();
@@ -10632,6 +10798,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {sbMat} from '../../game/storybook.js';
 import {bentY} from '../../game/bend.js';
+const LOWFX=(()=>{try{const q=new URLSearchParams(location.search),t=q.get('quality');return t?t==='mobile':(!q.has('shot')&&matchMedia('(pointer:coarse)').matches);}catch(e){return false;}})();
 const PI=Math.PI;
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 /* 정점 색 덩어리: [geometry(이미 자리 잡은 것), 색] 목록 → 메시 하나 */
@@ -10714,7 +10881,7 @@ export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
   const me=new THREE.Mesh(geo,mat);me.frustumCulled=false;me.userData.noMerge=true;me.renderOrder=3;root.add(me);
   /* 날리는 알갱이: 깔때기 겉을 따라 나선으로 올라가며 도는 모래 알갱이(점 묶음 — 자리는 셰이더가 시간으로 계산, 그리기 1) */
   const NG=big?90:54,sd=new Float32Array(NG*3),pp=new Float32Array(NG*3);for(let i=0;i<NG;i++){sd[i*3]=Math.random();sd[i*3+1]=Math.random();sd[i*3+2]=Math.random();}
-  const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pp,3));gg.setAttribute('seed',new THREE.BufferAttribute(sd,3));
+  const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pp,3));gg.setAttribute('seed',new THREE.BufferAttribute(sd,3));if(LOWFX)gg.setDrawRange(0,Math.round(NG*.7)); /* 휴대폰은 알갱이 70%만(2026-11-10 발열) */
   const gm=new THREE.ShaderMaterial({uniforms:{uT:U.uT,uH:U.uH,uA:U.uA,uR:{value:radius},uS:{value:big?26:20}},transparent:true,depthWrite:false,
     vertexShader:'#include <common>\nattribute vec3 seed;uniform float uT;uniform float uH;uniform float uR;uniform float uS;varying float vA;varying float vK;void main(){float v=fract(seed.x+uT*(.16+.14*seed.y));float a=seed.z*6.2832+uT*(3.2-1.6*v)+v*5.;'+
       'float r=(.25+uR*pow(v,1.35))*(.85+.4*seed.y);vec4 w=modelMatrix*vec4(0.,0.,0.,1.);w.xyz+=vec3(cos(a)*r,v*uH,sin(a)*r);vA=smoothstep(0.,.08,v)*(1.-smoothstep(.75,1.,v));vK=seed.y;'+
