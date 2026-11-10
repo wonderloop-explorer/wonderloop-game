@@ -73,11 +73,12 @@ const ST=MOB?2.1:1.6;
 const XS=axis(-250,-66,70,250,ST,x=>x>-140&&x<80?5:18),ZS=axis(-300,-42,42,170,ST,z=>z<-40&&z>-285?5:18);
 const NX=XS.length,NZ=ZS.length;
 const gPos=new Float32Array(NX*NZ*3),gCol=new Float32Array(NX*NZ*3),gUv=new Float32Array(NX*NZ*2),gIdx=[];
-{const A=new THREE.Color('#e3a07e'),TC=new THREE.Color('#d9805e'),SAND=new THREE.Color('#f2c9a4'),ROCK=new THREE.Color('#c07a62'),WALL1=new THREE.Color('#c86e50'),WALL2=new THREE.Color('#e7a684'),
-   FLOOR=new THREE.Color('#a85e4a'),VOLC=new THREE.Color('#d08a6c'),VOLD=new THREE.Color('#b86c52'),HILLC=new THREE.Color('#ecb593'),t=new THREE.Color();
+/* 색(2026-11-10): 별똥별 착지 때의 파스텔 살구·테라코타 그대로(A·TC·SAND·ROCK — 본편에서 진한 주황으로 바뀌었던 것을 되돌림). 화성 주황 #D9704A는 포인트 색으로만(땅에는 안 씀) */
+{const A=new THREE.Color('#e8aa86'),TC=new THREE.Color('#dc9575'),SAND=new THREE.Color('#f5d0ab'),ROCK=new THREE.Color('#bf8a74'),WALL1=new THREE.Color('#d39478'),WALL2=new THREE.Color('#edbd9f'),
+   FLOOR=new THREE.Color('#bd8570'),VOLC=new THREE.Color('#dba88e'),VOLD=new THREE.Color('#c9907a'),HILLC=new THREE.Color('#f2c6a6'),t=new THREE.Color();
   for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i,x=XS[i],z=ZS[j],y=groundY(x,z);gPos.set([x,y,z],k*3);gUv.set([x/5,z/5],k*2);
     const n1=Math.sin(x*.31+Math.sin(z*.23)*1.7)*Math.cos(z*.27-x*.11),n2=Math.sin((x+z)*.13)*Math.sin(x*.07-z*.19);
-    t.copy(A).lerp(TC,Math.max(0,n2)*.6).lerp(SAND,Math.min(1,Math.max(0,y-.3)*.9)*.7).lerp(ROCK,Math.max(0,n1-.4)*.9);
+    t.copy(A).lerp(TC,Math.max(0,n2)*.55).lerp(SAND,Math.min(1,Math.max(0,y-.25)*1.1)).lerp(ROCK,Math.max(0,n1-.35)*.9);
     const dh=Math.hypot(x-HILL.c[0],z-HILL.c[1]);t.lerp(HILLC,(1-ss(HILL.r0,HILL.r1,dh))*.5);
     if(y<-.4){const dd=Math.min(1,-y/CANYON.depth);t.copy(WALL1).lerp(WALL2,.5+.5*Math.sin(y*1.7+Math.sin(z*.2)*.6)).lerp(FLOOR,ss(.8,1,dd));}
     const dv=Math.hypot(x-VOL.c[0],z-VOL.c[1]);if(dv<VOL.rb){const u=dv/VOL.rb,ang=Math.atan2(z-VOL.c[1],x-VOL.c[0]);t.lerp(VOLC,ss(1,.6,u)).lerp(VOLD,Math.max(0,Math.sin(ang*9+u*7))*.5*(1-u));if(dv<VOL.cr+1)t.lerp(VOLD,.7);}
@@ -87,14 +88,28 @@ const gGeo=new THREE.BufferGeometry();gGeo.setAttribute('position',new THREE.Buf
 gGeo.setIndex(gIdx);gGeo.computeVertexNormals();
 const gMat=sbMat('#ffffff');gMat.vertexColors=true;
 const ground=new THREE.Mesh(gGeo,gMat);ground.receiveShadow=true;ground.name='mars-ground';ground.frustumCulled=false;root.add(ground);keep.push(ground);
+/* ── 화성 흙 텍스처(윗면용, 2026-11-10 — 예전 윗면은 가운데로 모이는 부채꼴 + 매끈한 법선이라 툰 음영이 동심원으로 져 나무 나이테처럼 보였다):
+   고운 모래 알갱이(잔점) + 작은 자갈(밝은 쪽·그림자 쪽) + 바람 자국(비스듬한 옅은 물결 줄) + 색연필 결. 흰 바탕 그림이라 색은 정점 색·재질 색을 곱함(다음 발판 표시는 같은 텍스처에 밝은 색만).
+   윗면(징검다리·둥둥 바위·메사)은 면 법선이 모두 위(평평한 한 톤) — 한 덩어리 TOPS(그리기 1) ── */
+const soilTex=(()=>{const n=256,c=document.createElement('canvas');c.width=c.height=n;const g=c.getContext('2d');let sd=20261110;const R0=()=>((sd=(sd*1103515245+12345)&0x7fffffff)/0x7fffffff),rr=(a,b)=>a+R0()*(b-a);
+  g.fillStyle='#ffffff';g.fillRect(0,0,n,n);const wrap=f=>{for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){g.save();g.translate(ox*n,oy*n);f();g.restore();}};
+  g.lineCap='round';for(let i=0;i<260;i++){const x=rr(0,n),y=rr(0,n),l=rr(8,20),a=rr(0,PI),w=rr(2,5);g.strokeStyle=['#f1e3d6','#fff7ee','#e7d5c6'][i%3];g.globalAlpha=rr(.12,.3);g.lineWidth=w;wrap(()=>{g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();});} // 색연필 결
+  for(let i=0;i<9;i++){const y0=rr(0,n),ph=rr(0,6),amp=rr(3,7);g.strokeStyle=i%2?'#e3cdbb':'#fffaf2';g.globalAlpha=rr(.2,.36);g.lineWidth=rr(1.2,2.4);wrap(()=>{g.beginPath();for(let x=-8;x<=n+8;x+=8){const y=y0+x*.22+Math.sin(x/n*PI*4+ph)*amp;x<0?g.moveTo(x,y):g.lineTo(x,y);}g.stroke();});} // 바람 자국
+  for(let i=0;i<2600;i++){g.globalAlpha=rr(.14,.4);g.fillStyle=['#dcc3ae','#fffdf8','#cdb19c','#f4e6d8'][i%4];g.fillRect(rr(0,n),rr(0,n),rr(.7,1.7),rr(.7,1.7));} // 모래 알갱이
+  for(let i=0;i<26;i++){const x=rr(0,n),y=rr(0,n),a=rr(2.2,5),b=a*rr(.6,.9),ro=rr(0,PI);wrap(()=>{g.globalAlpha=.3;g.fillStyle='#b99c88';g.beginPath();g.ellipse(x+1.2,y+1.5,a,b,ro,0,7);g.fill();
+      g.globalAlpha=.75;g.fillStyle='#e2cbb8';g.beginPath();g.ellipse(x,y,a,b,ro,0,7);g.fill();g.globalAlpha=.55;g.fillStyle='#fffaf3';g.beginPath();g.ellipse(x-a*.25,y-b*.3,a*.4,b*.35,ro,0,7);g.fill();});} // 작은 자갈
+  g.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;})();
+const TOPS=[];
+function topGeo(tris,color){const pos=[],col=[],nor=[],uv=[];for(const p of tris){pos.push(...p);col.push(color.r,color.g,color.b);nor.push(0,1,0);uv.push(p[0]/2.6,p[2]/2.6);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));return g;}
 /* ── 메사: 위가 평평하고 옆면이 깎여 나간 울퉁불퉁한 언덕(층 띠 색, 면마다 각진 로우폴리) — 그리기 1 ── */
-function mesaGeo(x,z,r,h,seed){const SEG=15,RG=6,pos=[],col=[],y0=groundY(x,z)-2;const C1=new THREE.Color('#d98a66'),C2=new THREE.Color('#eaae8c'),C3=new THREE.Color('#c4705a'),TOP=new THREE.Color('#f0c4a0'),c=new THREE.Color();
+function mesaGeo(x,z,r,h,seed){const SEG=15,RG=6,pos=[],col=[],y0=groundY(x,z)-2;const C1=new THREE.Color('#dfa184'),C2=new THREE.Color('#efc3a5'),C3=new THREE.Color('#cb8f77'),TOP=new THREE.Color('#edc3a3'),c=new THREE.Color();
   const rad=(i,j)=>{const a=i/SEG*PI*2,v=j/RG;let k=1.1-.22*v-(j%2?.05:0);k*=1+.15*Math.sin(a*3+seed)+.09*Math.sin(a*7+seed*2.3+j*.8)+.05*Math.sin(a*13+j*1.7+seed);return r*k;};
   const P=(i,j)=>{const a=i/SEG*PI*2,v=j/RG,rr=rad(i,j);return [x+Math.cos(a)*rr,y0+(h+2)*v+(j===RG?.0:Math.sin(a*5+seed+j)*.25),z+Math.sin(a)*rr];};
   const colAt=y=>{const b=.5+.5*Math.sin((y-y0)*1.25+seed);c.copy(C1).lerp(C2,b);if(b<.18)c.lerp(C3,.6);return c;};
   const push=(p)=>{pos.push(...p);const q=colAt(p[1]);col.push(q.r,q.g,q.b);};
   for(let j=0;j<RG;j++)for(let i=0;i<SEG;i++){const a=P(i,j),b=P(i+1,j),cc=P(i,j+1),d=P(i+1,j+1);push(a);push(cc);push(b);push(b);push(cc);push(d);}
-  const top=[x,y0+h+2.15,z];for(let i=0;i<SEG;i++){const a=P(i,RG),b=P(i+1,RG);[a,top,b].forEach(p=>{pos.push(...p);col.push(TOP.r,TOP.g,TOP.b);});}
+  {const top=[x,y0+h+2.15,z],tp=[];for(let i=0;i<SEG;i++){const a=P(i,RG),b=P(i+1,RG);tp.push(a,top,b);}TOPS.push(topGeo(tp,TOP));} /* 윗면은 따로(흙 텍스처 한 덩어리 — TOPS) */
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
   const uv=new Float32Array(pos.length/3*2);for(let i=0;i<pos.length/3;i++){uv[i*2]=(pos[i*3]+pos[i*3+2])/4;uv[i*2+1]=pos[i*3+1]/4;}g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.computeVertexNormals();return g;}
 {const geos=[],add=(x,z,r,h)=>{if(Math.hypot(x-VOL.c[0],z-VOL.c[1])<VOL.rb+r)return;geos.push(mesaGeo(x,z,r,h,rm(0,9)));
@@ -120,17 +135,26 @@ obstacles.push({r:[-300,300,-320,BOUNDS[2]]});
 /* ── 둥둥의 높은 바위 + 징검다리(위가 평평한 울퉁불퉁 기둥, 한 덩어리 — 그리기 1, 카메라와 원더룹 사이에 오면 흐려짐) ── */
 const platforms=[];
 {const geos=[],boxes=[];
-  const pillar=(c,r,top,seed)=>{const SEG=13,RG=5,pos=[],col=[],y0=groundY(c[0],c[1])-1.2;const A=new THREE.Color('#c97a5c'),B=new THREE.Color('#e3a383'),T=new THREE.Color('#efbf9a'),cc=new THREE.Color();
+  const pillar=(c,r,top,seed)=>{const SEG=13,RG=5,pos=[],col=[],y0=groundY(c[0],c[1])-1.2;const A=new THREE.Color('#d49a7d'),B=new THREE.Color('#ebb898'),T=new THREE.Color('#e9b796'),cc=new THREE.Color(); /* 윗면은 땅과 비슷한 모래색 — 다음 발판만 밝게 */
     const P=(i,j)=>{const a=i/SEG*PI*2,v=j/RG,k=(1.06-.08*v)*(1+.1*Math.sin(a*3+seed)+.07*Math.sin(a*7+j+seed));return [c[0]+Math.cos(a)*r*k,y0+(top-y0)*v,c[1]+Math.sin(a)*r*k];};
     const push=p=>{pos.push(...p);cc.copy(A).lerp(B,.5+.5*Math.sin(p[1]*2.1+seed));col.push(cc.r,cc.g,cc.b);};
     for(let j=0;j<RG;j++)for(let i=0;i<SEG;i++){const a=P(i,j),b=P(i+1,j),d=P(i,j+1),e=P(i+1,j+1);[a,d,b,b,d,e].forEach(push);}
-    const t=[c[0],top+.04,c[1]];for(let i=0;i<SEG;i++){const a=P(i,RG),b=P(i+1,RG);[a,t,b].forEach(p=>{pos.push(...p);col.push(T.r,T.g,T.b);});}
+    {const t=[c[0],top,c[1]],tp=[];for(let i=0;i<SEG;i++){const a=P(i,RG),b=P(i+1,RG);tp.push(a,t,b);}TOPS.push(topGeo(tp,T));}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
     const uv=new Float32Array(pos.length/3*2);for(let i=0;i<pos.length/3;i++){uv[i*2]=(pos[i*3]+pos[i*3+2])/2;uv[i*2+1]=pos[i*3+1]/2;}g.setAttribute('uv',new THREE.BufferAttribute(uv,2));const gm=mergeVertices(g);gm.computeVertexNormals();geos.push(gm.toNonIndexed()); /* 매끈한 법선(면마다 평평하면 툰 3단이 바둑판처럼 보였다) */
     platforms.push({c:[c[0],c[1],r*.97],top});boxes.push(new THREE.Box3(new THREE.Vector3(c[0]-r*1.1,y0+1,c[1]-r*1.1),new THREE.Vector3(c[0]+r*1.1,top-.35,c[1]+r*1.1)));};
   pillar(ROCKD.c,ROCKD.r,ROCKD.top,1.3);STONES.forEach((s,i)=>pillar(s.c,s.r,s.top,i*2.1+.4));
   const m=sbMat('#ffffff');m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(geos),m);me.name='mars-stones';me.castShadow=me.receiveShadow=true;me.frustumCulled=false;me.userData.noMerge=true;root.add(me);keep.push(me);
-  G.occlude.add(me,1.5,2.5,{near:true,speed:6,boxes,strict:true});}
+  G.occlude.add(me,1.5,2.5,{near:true,speed:6,boxes}); /* 카메라와 원더룹 사이에 오면 기둥(옆면)이 흐려짐 — 윗면(TOPS)은 그대로라 발판은 늘 보임 */}
+/* 윗면 한 덩어리(흙 텍스처) + 다음 발판 표시: 같은 흙 텍스처에 밝은 모래색만 얹은 판 + 민트 동그라미(안내 표시) */
+{const m=sbMat('#ffffff',{map:soilTex});m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(TOPS),m);me.name='mars-tops';me.receiveShadow=true;me.frustumCulled=false;me.userData.noMerge=true;root.add(me);keep.push(me);}
+const SEQ=[...STONES,ROCKD];
+const nextTop=(()=>{const g=new THREE.CircleGeometry(1,26);g.rotateX(-PI/2);const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*1.1,uv.getY(i)*1.1);
+  const disc=new THREE.Mesh(g,sbMat('#f8dfba',{map:soilTex}));disc.userData.noMerge=true;disc.frustumCulled=false;disc.visible=false;root.add(disc);keep.push(disc);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.5,.62,36).rotateX(-PI/2),new THREE.MeshBasicMaterial({color:new THREE.Color('#5cc4b9'),transparent:true,opacity:.95,depthWrite:false}));ring.material.userData.noStorybook=true;
+  ring.userData.noMerge=true;ring.frustumCulled=false;ring.visible=false;ring.renderOrder=2;root.add(ring);keep.push(ring);G.ui.hint(ring);let cur=-2;
+  return {set(i,t){if(i!==cur){cur=i;const on=i>=0&&i<SEQ.length;disc.visible=on;ring.visible=on&&G.ui.hintsVisible();if(on){const s=SEQ[i],r=(s.r)*.8;disc.position.set(s.c[0],s.top+.025,s.c[1]);disc.scale.set(r,1,r);ring.position.set(s.c[0],s.top+.05,s.c[1]);}}
+      if(cur>=0){const k=1+.1*Math.sin(t*4);const r=SEQ[cur].r*.8;ring.scale.set(r*k,1,r*k);}}};})();
 /* ── 하늘: 낮 버터스카치 → 노을(어둑한 살구·갈색, 해 둘레만 파랗게). 밤 칸은 노을과 같게(쓰지 않음) ── */
 const DAY={top:'#e3bd8f',horizon:'#efc4b4',hemi:'#f6dcc6',ground:'#c98d73',hemiI:.64,sun:'#fff0dc',sunI:.78,sunDir:[-4,-7,-6],fill:.24,fog:'#ecc3b3',fogNear:60,fogFar:330,stars:0,milky:0};
 const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#caa08c',ground:'#7d5248',hemiI:.52,sun:'#d6e6fa',sunI:.46,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:55,fogFar:300,stars:0,milky:0};
@@ -208,12 +232,14 @@ G.dialog.npc({id:'dungdung',name:'둥둥',root:dung.root,bubbleY:2.02,talkR:2.6,
     {when:()=>stage()==='done',lines:['…노을이… 참… 파랗다…']},
     {when:()=>st.scene||!!st.cross||['deliverA','finale'].includes(stage()),lines:[]}]});
 /* 손 상호작용: 녹음하기(삐삐) · 테이프 틀기(둥둥 — 바위 위에서) · 테이프 틀기(삐삐) */
-G.interact.add({root:pipi.root,label:'녹음하기',action:'들여다보기',dur:.35,near:2.3,once:false,when:()=>stage()==='rec'&&!st.scene,onDone:()=>scene(recordA)});
-G.interact.add({root:dung.root,label:'테이프 틀기',action:'들여다보기',dur:.35,near:2.6,once:false,when:()=>{const W=U0();return stage()==='deliverA'&&!st.scene&&W&&onRock(W);},onDone:()=>scene(deliverA)});
-G.interact.add({root:pipi.root,label:'테이프 틀기',action:'들여다보기',dur:.35,near:2.3,once:false,when:()=>stage()==='deliverB'&&!st.scene&&!st.ride,onDone:()=>scene(deliverB)});
+G.interact.add({root:pipi.root,label:'녹음하기',action:'들여다보기',dur:.35,near:2.3,once:false,when:()=>stage()==='rec'&&!st.scene,onDone:()=>scene(recordA,pipi)});
+G.interact.add({root:dung.root,label:'테이프 틀기',action:'들여다보기',dur:.35,near:2.6,once:false,when:()=>{const W=U0();return stage()==='deliverA'&&!st.scene&&W&&onRock(W);},onDone:()=>scene(deliverA,dung)});
+G.interact.add({root:pipi.root,label:'테이프 틀기',action:'들여다보기',dur:.35,near:2.3,once:false,when:()=>stage()==='deliverB'&&!st.scene&&!st.ride,onDone:()=>scene(deliverB,pipi)});
 /* 이야기 장면 감싸기: 원더룹은 서 있고(08 sceneLock — 대사 줄은 그대로 흐름), 끝나면 할 일 안내를 다시 */
-async function scene(fn){if(st.scene)return;const W=U0();if(!W)return;st.scene=true;const U=W.userData;if(U.stopWalk)U.stopWalk();U.sceneLock=true;G.goal.set(null);G.ui.setQuest('');st.lastQ=null;
-  try{await fn(W,U);}catch(e){console.error(e);}finally{U.sceneLock=false;st.scene=false;st.lastQ=null;}}
+/* who(삐삐·둥둥)를 주면 대화 카메라(game/index view.pairCam — 두 얼굴이 다 보이는 옆 사선)로 옮겼다가 끝나면 돌아옴 */
+async function scene(fn,who){if(st.scene)return;const W=U0();if(!W)return;st.scene=true;const U=W.userData;if(U.stopWalk)U.stopWalk();U.sceneLock=true;G.goal.set(null);G.ui.setQuest('');st.lastQ=null;
+  let pc=null;if(who){W.rotation.y=Math.atan2(who.root.position.x-W.position.x,who.root.position.z-W.position.z);pc=G.view.pairCam(who.root,who===dung?2.02:1.12);if(pc)G.view.hold(pc);}
+  try{await fn(W,U);}catch(e){console.error(e);}finally{if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);U.sceneLock=false;st.scene=false;st.lastQ=null;}}
 /* 세로 화면: 연출 카메라도 따라가기처럼 멀리(1.25/화면비, 최대 2 — 03 followDist와 같은 배율) */
 const pk=()=>{const c=G.view.camera;return c&&c.aspect<1.25?Math.min(2,1.25/c.aspect):1;};
 const faceWL=(W,m)=>{W.rotation.y=Math.atan2(m.root.position.x-W.position.x,m.root.position.z-W.position.z);};
@@ -221,7 +247,6 @@ function holdCas(W,on){const U=W.userData;if(on){U.setHeld(cas.g);}else{cas.rec(
 let runIv=null;function tapeRun(on){clearInterval(runIv);runIv=null;cas.run(on);if(on){G.sound.sfx('cassette-run');runIv=setInterval(()=>G.sound.sfx('cassette-run'),1150);}}
 /* ① 착각 — 삐삐가 다가와 말을 검 */
 async function meet(W,U){pipi.mode='idle';faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);
-  G.view.start({at:[(W.position.x+pipi.root.position.x)/2,1,(W.position.z+pipi.root.position.z)/2],from:[(W.position.x+pipi.root.position.x)/2+Math.cos(W.rotation.y)*-5.2,2.4,(W.position.z+pipi.root.position.z)/2+Math.sin(W.rotation.y)*5.2]});
   pipi.mode='talk';mumble(false,1.6);await say('삐삐','어? 너도 우리랑 똑같이 생겼네! 새로 이사 왔어?',3.2);
   pipi.mode='idle';G.react.react('tilt');await wait(1.1);
   pipi.mode='talk';mumble(false,1.8);await say('삐삐','…탈이라고? 그래도 꼭 닮았는걸! 동그란 머리에, 반짝반짝 까만 눈!',3.4);
@@ -365,6 +390,17 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   /* 들어와 처음 조작을 넘겨받을 때 한 번: 화산이 보이도록 조금 내려다봄(그 뒤로는 플레이어 것) */
   if(!st.camOnce){const C=G.controls.input.cam;if(C&&C.on&&C.ready){st.camOnce=true;}}
   if(!st.ready){st.readyT+=dt;if(st.readyT>1.2)st.ready=true;else return;}
+  /* 징검다리 구간(2026-11-10 — 직접 플레이에서 3분 가까이 헤맴: 다음 발판이 안 보이고 기둥이 카메라를 가렸다): 다음에 밟을 발판 윗면을 밝은 모래색 + 민트 동그라미로,
+     카메라는 위로 올려 내려다보게(플레이어가 만지면 그만 — 구간에 다시 들어오면 또), 떨어지면 마지막으로 밟은 발판 위에서 바로 다시 */
+  {const inSt=stage()==='deliverA'&&east(P.x)&&!st.ride&&!U.riding,V=U.vert,air=!!(V&&V.air);
+    if(!inSt){nextTop.set(-1,t);st.stone=-1;st.scU=null;}
+    else{let on=-1;if(!air)SEQ.forEach((q,i)=>{if(Math.hypot(P.x-q.c[0],P.z-q.c[1])<q.r+.2&&P.y>q.top-.35)on=i;});if(on>=0)st.stone=on;
+      const last=st.stone??-1;nextTop.set(last<SEQ.length-1?last+1:-1,t);
+      if(on<0&&!air&&last>=0&&P.y<SEQ[last].top-.6&&!st.scene){const q=SEQ[last];if(U.stopWalk)U.stopWalk();W.position.set(q.c[0],q.top,q.c[1]);G.sound.sfx('event-pop',{gain:.8});
+        for(let i=0;i<10;i++){const a=Math.random()*PI*2;dust.emit(q.c[0]+Math.cos(a)*.3,q.top+.05,q.c[1]+Math.sin(a)*.3,Math.cos(a)*.7,.5,Math.sin(a)*.7,1.1,[.93,.72,.58]);}
+        if(!st.fallSaid){st.fallSaid=true;G.ui.toast('떨어져도 괜찮아요 — 마지막으로 밟은 발판에서 다시 뛰어요',3.6);}}
+      const C=G.controls.input.cam;if(C&&C.on&&P.x>37.5&&Math.abs(P.z-1)<13){if(st.scU==null)st.scU=C.user;
+        if(C.user===st.scU&&!G.view.req&&!G.view.aim){const k=Math.min(1,dt*2.2);C.pitch+=(.88-C.pitch)*k;if(C.dist<10)C.dist+=(10-C.dist)*k;}}else st.scU=null;}}
   /* 회오리 타기: 다가가면 */
   for(const o of [WS,SW])if(!o.armed&&Math.hypot(P.x-o.x,P.z-o.z)>3.2)o.armed=true;
   if(!st.ride&&!st.scene&&!st.cross&&!st.bigTick&&!U.riding){const V=U.vert,ground=!(V&&V.air);
@@ -377,7 +413,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   if(s==='meet'){quest('',null);const r=pipi.root.position,d=Math.hypot(P.x-r.x,P.z-r.z);
     if(!st.pipiCome&&!G.ui.cardShown()){st.pipiCome=true;}
     if(st.pipiCome){if(d>2.1){const s2=Math.min(d-2.1,2.6*dt);place(pipi,pipiOb,r.x+(P.x-r.x)/d*s2,r.z+(P.z-r.z)/d*s2);pipi.mode='walk';faceTo(pipi,P.x,P.z,dt);}
-      else{pipi.mode='idle';if(!G.ui.cardShown())scene(meet);}}return;}
+      else{pipi.mode='idle';if(!G.ui.cardShown())scene(meet,pipi);}}return;}
   if(s==='call'){quest('삐삐를 따라 삐삐의 언덕으로 가요',{at:PIPI_SPOT,y:HILL.h,label:'삐삐의 언덕',style:'ant',h:3});
     if(!st.pipiWalk&&Math.hypot(pipi.root.position.x-PIPI_SPOT[0],pipi.root.position.z-PIPI_SPOT[1])>.3)st.pipiWalk={to:PIPI_SPOT};
     if(!st.pipiWalk&&Math.hypot(P.x-PIPI_SPOT[0],P.z-PIPI_SPOT[1])<4.6&&!G.ui.cardShown()&&!G.dialog.talking())scene(call);return;}

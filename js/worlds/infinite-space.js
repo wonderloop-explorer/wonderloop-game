@@ -31,11 +31,11 @@ function necklace(THREE,{held}){const g=new THREE.Group(),b=new THREE.Group();g.
 /* 목에 걸기(game/mission item.wear): 목걸이 + 숨방울 막. 한 번만 단다(다시 불러도 그대로) */
 function wear(WL,THREE){const U=WL.userData;if(U.breathBubble)return;let neck=null,head=null;WL.traverse(o=>{if(o.isBone&&o.name==='neck')neck=o;if(o.isBone&&o.name==='head')head=o;});if(!neck||!head)return;
   const n=necklace(THREE,{held:true});n.position.set(0,-.36,.0);neck.add(n);
-  const mat=new THREE.MeshBasicMaterial({color:'#bfe8ff',transparent:true,opacity:.13,depthWrite:false});mat.userData.noStorybook=true;
+  const mat=new THREE.MeshBasicMaterial({color:'#bfe8ff',transparent:true,opacity:.018,depthWrite:false}); /* 막은 거의 안 보이게(2026-11-10 — 하얗고 뿌옇게 떠서 몸집이 커 보이고 시야를 가렸다), 테두리 빛만 은은하게 */mat.userData.noStorybook=true;
   const bubble=new THREE.Mesh(new THREE.SphereGeometry(.72,28,20),mat);bubble.position.set(0,.06,-.06);bubble.renderOrder=5;head.add(bubble);
   const rim=new THREE.Mesh(new THREE.SphereGeometry(.735,28,20),new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{},
-    vertexShader:'#include <common>\nvarying float vF;void main(){vec4 w=modelMatrix*vec4(position,1.);vec3 N=normalize(mat3(modelMatrix)*normal),V=normalize(cameraPosition-w.xyz);vF=pow(1.-abs(dot(N,V)),2.2);gl_Position=projectionMatrix*(wlBend.x>0.?viewMatrix*wlBent(w):viewMatrix*w);}',
-    fragmentShader:'varying float vF;void main(){gl_FragColor=vec4(vec3(.62,.86,1.)*vF*.55,1.);}'}));rim.position.copy(bubble.position);rim.renderOrder=6;head.add(rim);
+    vertexShader:'#include <common>\nvarying float vF;void main(){vec4 w=modelMatrix*vec4(position,1.);vec3 N=normalize(mat3(modelMatrix)*normal),V=normalize(cameraPosition-w.xyz);vF=pow(1.-abs(dot(N,V)),4.2);gl_Position=projectionMatrix*(wlBend.x>0.?viewMatrix*wlBent(w):viewMatrix*w);}',
+    fragmentShader:'varying float vF;void main(){gl_FragColor=vec4(vec3(.62,.86,1.)*vF*.3,1.);}'}));rim.position.copy(bubble.position);rim.renderOrder=6;head.add(rim);
   U.breathBubble={necklace:n,bubble,rim};}
 const PLANET=(c,extra='')=>`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="${c}" stroke="#4a2a2a" stroke-width="2"/>${extra}</svg>`;
 export default {

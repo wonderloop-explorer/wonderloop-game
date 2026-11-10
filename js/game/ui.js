@@ -242,7 +242,17 @@ pf.addEventListener('pointerdown',e=>{if(e.target===pf&&performance.now()-cardOp
 const ts=$('#wlToast');let tsEnd=0;
 /* 띄울 때 맨 위 단추 줄(할 일 안내·가방 칸(아래 도구 단추 포함)·메뉴 단추)의 실제 아래 끝을 재서 그 밑 10px에 — 세계마다 단추 수가 달라도 겹치지 않게(CSS 자리는 기본값) */
 function toastTop(){let b=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBtn']){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;
-  const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)b=Math.max(b,r.bottom);}ts.style.top=b?Math.round(b+10)+'px':'';}
+  const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)b=Math.max(b,r.bottom);}if(cnt&&cnt.classList.contains('on'))b=Math.max(b,cnt.getBoundingClientRect().bottom);ts.style.top=b?Math.round(b+10)+'px':'';}
+/* 횟수 안내 칩(2026-11-10 — 떡방아 '세 번 찧기'): count({label,n,max}) 화면 위 가운데(맨 위 단추 줄 바로 아래 — 대화창·말풍선과 겹치지 않는 자리), 동그라미 max개 중 n개가 채워짐. count(null)이면 치움.
+   안내 문구(toast)는 이 칩이 떠 있으면 그 아래로. 안내 표시(영상에 안 나옴) */
+let cnt=null;
+function count(o){if(!o){if(cnt)cnt.classList.remove('on');return;}
+  if(!cnt){cnt=document.createElement('p');cnt.id='wlCount';cnt.className='wl-hint';cnt.setAttribute('role','status');root.appendChild(cnt);
+    const st=document.createElement('style');st.textContent='#wlCount{position:fixed;left:50%;top:120px;transform:translate(-50%,-8px);margin:0;z-index:31;display:flex;align-items:center;gap:.5rem;padding:.4rem .95rem;border-radius:999px;background:rgba(46,28,44,.82);color:#fff4e4;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.08rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}#wlCount.on{opacity:1;transform:translate(-50%,0)}#wlCount i{width:.85rem;height:.85rem;border-radius:50%;border:2px solid #fff4e4;box-sizing:border-box;display:inline-block}#wlCount i.f{background:#f7c948;border-color:#f7c948}#wlCount b{font-weight:400;color:#f7c948}@media (prefers-reduced-motion: reduce){#wlCount{transition:none;transform:translate(-50%,0)}}';document.head.appendChild(st);}
+  cnt.innerHTML='';const l=document.createElement('span');l.textContent=o.label||'';cnt.appendChild(l);for(let i=0;i<o.max;i++){const d=document.createElement('i');if(i<o.n)d.className='f';cnt.appendChild(d);}
+  const b=document.createElement('b');b.textContent=o.n+'/'+o.max;cnt.appendChild(b);
+  let bt=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBtn']){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)bt=Math.max(bt,r.bottom);}
+  cnt.style.top=Math.round((bt||58)+10)+'px';cnt.classList.add('on');}
 function toast(msg,sec=2.8){ts.textContent=msg;toastTop();ts.classList.add('on');tsEnd=clock.t+sec;}
 const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd)closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
   if(tsEnd&&clock.t>=tsEnd){ts.classList.remove('on');tsEnd=0;}tickFade();};
@@ -274,7 +284,7 @@ const hintObjs=new Set();let hintsOn=true;
 function hint(o){if(o.isObject3D){o.layers.enable(HINT_LAYER);o.userData.wlHint=true;o.traverse(c=>c.userData.wlHint=true);hintObjs.add(o);o.visible=o.visible&&hintsOn;}else o.classList.add('wl-hint');return o;}
 function setHints(on){hintsOn=on;document.body.classList.toggle('wl-nohints',!on);hintObjs.forEach(o=>{if(!on){o.userData.wlWasVisible=o.visible;o.visible=false;}else if(o.userData.wlWasVisible!=null)o.visible=o.userData.wlWasVisible;});}
 const hintsVisible=()=>hintsOn;
-export {badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
+export {count,badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
 // 소리 안내 (개미굴과 같은 문구): 화면에 돌아왔는데 소리가 깨어나지 않으면, M으로 끄고 켤 때
 soundHooks.onWakeFail=()=>toast('소리가 멈췄다면 화면을 한 번 눌러 주세요');
 soundHooks.onMute=m=>toast(m?'소리 꺼짐 (M으로 다시 켜기)':'소리 켜짐');

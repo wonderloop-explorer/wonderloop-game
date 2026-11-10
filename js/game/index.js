@@ -9,7 +9,7 @@ import {clearStealth,initStealth,setStealthZone,tickStealth} from './stealth.js'
 import {clearFinale,initFinale,tickFinale} from './finale.js';
 import {clock,cues,tickCore} from './core.js';
 import {bed,stopAll,tickBed,tickNarration} from './sound.js';
-import {clearDialog,clickNPC,initDialog,setDialogZone,tickDialog} from './dialog.js';
+import {clearDialog,clickNPC,initDialog,setDialogZone,tickDialog,talkNPC} from './dialog.js';
 import {clearEvents,initEvents,tickEvents} from './events.js';
 import {clearCards,setPrompt,setQuest,tickCut} from './ui.js';
 import {clearSpots,initCodex,tickCodex} from './codex.js';
@@ -41,9 +41,26 @@ const view={camera:null,aim:null,
   start({from,at=null}){view.aim={from,at,t:0};},
   focus({at,from=null,dist=7,sec=2}){return new Promise(done=>{view.req={at,from,dist,sec,t:0,done};});},
   hold(fn,o){view.req=fn?{fn,t:0,snap:!!(o&&o.snap)}:null;}}; // snap: fn이 지금 카메라 자리에서 시작할 때 — 섞지 않고 바로 그 길로(섞으면 곧은 선으로 질러가 원더룹 머리를 뚫었다, 2026-11-05)
+/* 대화 카메라(2026-11-10 — 모든 세계): 등 뒤 카메라 그대로면 상대 얼굴(특히 키 큰 주민)이 원더룹 탈에 가려졌다 → 대화가 시작되면 두 얼굴이 다 보이는 옆 사선으로 부드럽게 옮기고(view.hold),
+   끝나면 원래 카메라로. 지금 카메라에 가까운 쪽 옆으로, 원더룹 조금 뒤에서(상대 얼굴 3/4 + 원더룹 옆얼굴), 거리는 둘 사이 거리·상대 키에 맞춰, 세로 화면은 따라가기처럼 멀리.
+   플레이어가 카메라를 만지면 08이 연출을 끝내고 넘겨줌(그 대화 동안 다시 잡지 않음). 벽이 있는 방(방 카메라에 가로 범위)·촬영 모드는 하지 않음.
+   view.pairCam(root, 머리 높이)는 구역 이야기 장면(혼잣말 줄로 진행하는 대화)이 같은 구도를 쓸 때 — hold에 넘길 함수를 돌려준다 */
+let HERO=null,TC=null;const SHOT_Q=new URLSearchParams(location.search).has('shot');
+function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
+  root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14],P=W.position;let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
+  /* 거리는 시야각으로 계산: 두 사람의 발끝~머리 위(세로)와 둘 사이 너비(가로)가 화면의 약 60%·70%에 들어오게 — 가까우면 원더룹 큰 탈이 상대를 가렸다. 아래 대화창이 다리를 덮으니 둘을 화면 조금 위쪽에 */
+  const top=Math.max(P.y+1.5,ny+headY+.15),bot=Math.min(P.y,ny),span=top-bot,mx=(P.x+nx)/2,mz=(P.z+nz)/2,my=(top+bot)/2-span*.1;let px=-az,pz=ax;if((cam.position.x-mx)*px+(cam.position.z-mz)*pz<0){px=-px;pz=-pz;}
+  const asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360),D=Math.min(16,Math.max(span/.6,(sep+2.1)/(.72*asp))/tf);
+  let fx=mx+px*D*.99-ax*D*.05,fz=mz+pz*D*.99-az*D*.05;const fy=my+D*.1;
+  if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
+  const o={at:[mx,my,mz],from:[fx,fy,fz]};return ()=>o;}
+view.pairCam=pairCam;
+function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
+  if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
+  else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}}
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});}
-function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);}
+function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});}
+function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog();tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);}
 function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)

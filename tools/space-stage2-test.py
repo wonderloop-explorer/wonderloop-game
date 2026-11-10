@@ -88,7 +88,7 @@ with sync_playwright() as p:
     def hop(c, top, frm=None):
         for k in range(6):
             if frm and k: walk(*frm, 8)
-            pg.evaluate("(c)=>{const P=wlGame.mission.hero().position,C=wlGame.controls.input.cam,dx=c[0]-P.x,dz=c[1]-P.z;C.yaw=Math.atan2(-dx,-dz);C.pitch=.35;C.user=(C.user||0)+1;}", c)
+            pg.evaluate("(c)=>{const P=wlGame.mission.hero().position,C=wlGame.controls.input.cam,dx=c[0]-P.x,dz=c[1]-P.z;C.yaw=Math.atan2(-dx,-dz);}", c)  # 방향만(위아래는 구역이 징검다리 구간에서 내려다보게 맞춤 — 만지면 그만두므로 user는 올리지 않음)
             pg.keyboard.down('w'); pg.wait_for_timeout(80); pg.keyboard.press('Space')
             for _ in range(80):
                 if pg.evaluate("(c)=>{const P=wlGame.mission.hero().position;return Math.hypot(c[0]-P.x,c[1]-P.z)<.45}", c): break
@@ -127,11 +127,12 @@ with sync_playwright() as p:
     # ⑤ 징검다리
     stones = S['stones']; le = S['landE']; mark('징검다리')
     walk(stones[0][0] - 2.2, stones[0][1] - 1.2, 20)
+    pg.wait_for_timeout(1500); shot('stones-start')
     ok = True; prev = [stones[0][0] - 2.2, stones[0][1] - 1.2]
     for s3 in stones:
         ok = hop(s3[:2], s3[2], prev) and ok; prev = s3[:2]
     rk = S['rock']; ok = hop([rk[0] - .4, rk[1] + .6], S['rockTop'], prev) and ok
-    R['바위 위'] = ok; R['바위 위 높이'] = round(hero('U.vert.y'), 2); shot('rock-top')
+    R['바위 위'] = ok; R['바위 위 높이'] = round(hero('U.vert.y'), 2); shot('rock-top'); mark('바위 위'); R['징검다리 구간(초)'] = round(T['바위 위'] - T['징검다리'], 1)
     # 둥둥에게 틀어 줌
     act('테이프 틀기'); pg.wait_for_timeout(2500); shot('dung-tape'); mark('둥둥 테이프')
     readAll(until="wlGame.state.flags['mars:recB']&&!wlZone.cur.state().scene", maxn=120); readAll()

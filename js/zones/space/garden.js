@@ -316,7 +316,7 @@ const boboOb={c:[BOBO[0],BOBO[1],.38]};obstacles.push(boboOb);
 /* ── 아기 토끼 이웃 셋(키 0.65 = 약 0.9m): 마을 둘레를 둥실둥실 뛰어다님(낮은 중력 — 한 번에 1.2~2.2m, 0.55m 높이, 1.1초), 원더룹이 2.4m 안이면 멈춰 바라봄, 가까이 가면 한마디 */
 const GATHER={on:false,until:0,spots:[[MORTAR[0]+.55,MORTAR[1]+1.05],[MORTAR[0]+1.2,MORTAR[1]-.15],[MORTAR[0]+.95,MORTAR[1]+.75]]}; /* 절구 건너편(원더룹 맞은편) — 찧는 동안 사선 카메라 앞을 가리지 않게 */
 const BUN=[{id:'kongkong',name:'콩콩',fur:'#d8d8e0',scarf:'#ff9eb3',way:[[-.6,4.2],[1.0,1.8],[3.2,1.6],[2.6,3.4]],line:'할아버지 지도에 우리 집도 있어!'},
-  {id:'mongsil',name:'몽실',fur:'#ece4d8',scarf:'#9bd46b',way:[[3.0,11.8],[1.2,13.0],[-.6,12.0],[1.8,10.9]],line:'여기선 톡 뛰면 한참 동안 떠 있어. 같이 뛰어 볼래?'},
+  {id:'mongsil',name:'몽실',fur:'#e2d3bd',scarf:'#9bd46b',way:[[3.0,11.8],[1.2,13.0],[-.6,12.0],[1.8,10.9]],line:'여기선 톡 뛰면 한참 동안 떠 있어. 같이 뛰어 볼래?'},
   {id:'bosul',name:'보슬',fur:'#cdc6dc',scarf:'#7fb6e8',way:[[-5.6,8.6],[-4.2,10.8],[-1.8,12.2],[-6.4,11.2]],line:'할아버지 망원경으로 보면 목성 줄무늬가 다 보여!'}];
 const bunBlob=blobMany(BUN.length+1);if(bunBlob){bunBlob.frustumCulled=false;root.add(bunBlob);keep.push(bunBlob);}
 const bunnies=BUN.map((b,i)=>{const m=makeBunny(b.fur,b.scarf);const [x,z]=b.way[0];m.root.position.set(x,groundY(x,z),z);root.add(m.root);keep.push(m.root);
@@ -463,10 +463,11 @@ function tickBits(dt){let any=false;const GR=.2; // 낮은 중력(지구 9.8의 
 const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(...MORTAR)+.5,MORTAR[1]);root.add(mortarMark);
 const BUN_SAY=[['콩콩','와, 떡이 날아다녀!'],['몽실','천천히 떨어져서 받아먹을 수도 있겠다!'],['보슬','콩! 하고 찧으니까 둥실 올라가!']];
 const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
-  onStart:()=>{PEST.hit=false;PEST.idle=0;GATHER.on=true;GATHER.until=1e9;poundCamStart();},
+  onStart:()=>{PEST.hit=false;PEST.idle=0;GATHER.on=true;GATHER.until=1e9;poundCamStart();st.cntOn=true;st.cntK=(st.cntK||0)+1;G.ui.count({label:'떡 찧기',n:PEST.n,max:3});},
   onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;const say=BUN_SAY[(n-1)%3];G.dialog.say('아기 토끼 '+say[0],say[1],2.6);
+    G.ui.count({label:'떡 찧기',n,max:3}); /* 횟수 안내는 화면 위 가운데 칩(아래 'E 찧기'는 아기 토끼 대화창에 가려졌다, 2026-11-10) */
     if(n<3){mortarIt.label=`찧기 (${n}/3)`;return;}
-    mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;}});
+    mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;G.ui.count(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
 function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return;st.cakeT=null;
   if(!F[CAKE_KEY]){G.state.setFlag(CAKE_KEY,true);G.react.react('joy');const it=(SPACE.items||[]).find(i=>i.id==='dalddeok');
     G.ui.itemCard({title:'달떡을 얻었어요!',text:'낮은 중력에서 찧은 쫀득한 달떡 — 가방에 넣었어요',icon:it&&it.icon?it.icon():null,sec:4,sound:'item-get'});}
@@ -619,6 +620,7 @@ const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 const W0=P=>P; // 손 흔들기: 원더룹 자리(할아버지·토끼가 바라볼 곳)
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
+  if(st.cntOn&&dist(P.x,P.z,MORTAR)>4.5){st.cntOn=false;G.ui.count(null);}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
   bobo.tick(dt,t,st.hop,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
@@ -701,7 +703,7 @@ start:{compass:true},world:null,
   sun:ZSUN,lights:[lav],light,rim:.32,
   sky:SK,bend:{sphere:R,wrap:L},gravity:.38,jumpK:1.15,
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
-  update,lateUpdate,dispose(){scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
+  update,lateUpdate,dispose(){G.ui.count(null);scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
 function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
@@ -781,6 +783,9 @@ function FRONT(u,v){return [[u,v,5],[0,0,-1]];}
 function surfHit(target,frame,u,v,off){const T=surfHit.T||(surfHit.T={rc:new THREE.Raycaster(),o:new THREE.Vector3(),d:new THREE.Vector3(),m:new THREE.MeshBasicMaterial({side:THREE.DoubleSide})});
   const [O,D]=frame(u,v);T.o.set(...O);T.d.set(...D).normalize();T.rc.set(T.o,T.d);const h=T.rc.intersectObject(target.userData.rm||(target.userData.rm=new THREE.Mesh(target,T.m)),false)[0];
   const p=h?h.point.clone():T.o.clone().addScaledVector(T.d,5);return p.addScaledVector(T.d,-off);}
+/* 겉면 한 점(가운데 c에서 n 쪽)에 똑바로 내려 붙이는 틀: 그 방향 바깥에서 가운데로 쏨(볼터치처럼 옆면에 붙는 무늬) */
+function radial(c,n){const N=new THREE.Vector3(...n).normalize(),t1=new THREE.Vector3(0,1,0).cross(N).normalize(),t2=N.clone().cross(t1).normalize();
+  return (u,v)=>[[c[0]+N.x*5+t1.x*u+t2.x*v,c[1]+N.y*5+t1.y*u+t2.y*v,c[2]+N.z*5+t1.z*u+t2.z*v],[-N.x,-N.y,-N.z]];}
 function wrapOn(target,shape,frame,eps=.004,bulge=0,ell=null){const pos=[],nr=[];for(const [u,v,w=0] of shape.pts){const p=surfHit(target,frame,u,v,eps+bulge*w);pos.push(p.x,p.y,p.z);
     if(ell){const [cx,cy,cz,a,b,c]=ell,n=new THREE.Vector3((p.x-cx)/(a*a),(p.y-cy)/(b*b),(p.z-cz)/(c*c)).normalize();nr.push(n.x,n.y,n.z);}}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(shape.idx);
@@ -810,12 +815,12 @@ function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?
   const m=sbMat('#ffffff');m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(gs),m);me.castShadow=true;return me;}
 /* 아기 토끼(키 약 0.9m — 원더룹의 0.65): 둥근 몸·큰 머리·쫑긋한 두 귀·목도리·흰 꼬리 — 한 덩어리(그리기 1번). squash(u): 뛰는 동안 늘었다 줄었다 */
 function makeBunny(fur,scarf){const root=new THREE.Group();const S=(r,w=12,h=9)=>new THREE.SphereGeometry(r,w,h);
-  const furD=new THREE.Color(fur).multiplyScalar(.86).getStyle(),cream='#f3ebe0',pink='#f2a7b4',dark='#2a2633';
+  const furD=new THREE.Color(fur).multiplyScalar(.86).getStyle(),lum=(c=>.3*c.r+.59*c.g+.11*c.b)(new THREE.Color(fur).convertLinearToSRGB()),cream=lum>.8?'#ffffff':'#f3ebe0', /* 털이 밝으면 주둥이·배는 흰색 */pink='#f2a7b4',dark='#2a2633';
   const bodyG=S(.2).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.24,0),new THREE.Quaternion(),new THREE.Vector3(1,1.05,.95))),headG=S(.21).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.6,0),new THREE.Quaternion(),new THREE.Vector3(1.05,.95,1)));
   const me=lumpMesh([[S(.2),fur,[0,.24,0],0,[1,1.05,.95]],[wrapOn(bodyG,ellipseShape(0,.21,.095,.125),FRONT,.003,.004,[0,.24,0,.2,.21,.19]),cream],[S(.08,8,6),fur,[-.1,.04,.06],0,[1,.55,1.5]],[S(.08,8,6),fur,[.1,.04,.06],0,[1,.55,1.5]],
     [S(.07,8,6),'#ffffff',[0,.18,-.19]],[new THREE.TorusGeometry(.13,.04,6,16),scarf,[0,.4,0],[PI/2,0,0],[1,1,.9]],[S(.05,8,6),scarf,[.06,.36,.14]],
     [S(.21),fur,[0,.6,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.535,.105,.06),FRONT,.003,.02,[0,.6,0,.2205,.1995,.21]),cream],[S(.025,6,5),pink,[0,.58,.21]],
-    [S(.032,6,5),dark,[-.08,.63,.18],0,[.8,1.2,.5]],[S(.032,6,5),dark,[.08,.63,.18],0,[.8,1.2,.5]],[S(.035,6,5),'#f6a0ac',[-.14,.55,.15],0,[1,.6,.4]],[S(.035,6,5),'#f6a0ac',[.14,.55,.15],0,[1,.6,.4]],
+    [S(.032,6,5),dark,[-.08,.63,.18],0,[.8,1.2,.5]],[S(.032,6,5),dark,[.08,.63,.18],0,[.8,1.2,.5]],...[-1,1].map(sx=>[wrapOn(headG,ellipseShape(0,0,.042,.027,4,20),radial([0,.6,0],[sx*.14,-.05,.15]),.004,0,[0,.6,0,.2205,.1995,.21]),'#f6a0ac']), /* 볼터치: 볼 겉면에 붙은 납작한 타원(예전 공 덩어리는 튀어나와 보였다, 2026-11-10) */
     [S(.055,8,6),fur,[-.08,.9,-.02],[0,0,.18],[1,2.9,.7]],[S(.032,6,5),pink,[-.08,.9,.012],[0,0,.18],[1,2.6,.5]],[S(.055,8,6),fur,[.08,.9,-.02],[0,0,-.18],[1,2.9,.7]],[S(.032,6,5),pink,[.08,.9,.012],[0,0,-.18],[1,2.6,.5]],
     [S(.05,8,6),furD,[-.15,.3,.06]],[S(.05,8,6),furD,[.15,.3,.06]]]);
   root.add(me);root.scale.setScalar(.81); // 키 약 0.86m(귀 끝까지) = 원더룹의 0.62 — 보름 할아버지(1.0)와 확실히 구분
@@ -835,7 +840,7 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
   const head=new THREE.Group();head.position.set(0,.84,0);root.add(head);
   const earBent=new THREE.Group();
   head.add(lump([[S(.29),fur,[0,.12,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.02,.15,.085),FRONT,.004,.03,[0,.12,0,.3045,.2755,.29]),cream],[S(.035,8,6),pink,[0,.08,.29]],
-    [S(.04,8,6),dark,[-.1,.15,.25],0,[.8,1.2,.5]],[S(.045,8,6),'#f6a0ac',[-.18,.04,.21],0,[1,.6,.4]],[S(.045,8,6),'#f6a0ac',[.18,.04,.21],0,[1,.6,.4]],
+    [S(.04,8,6),dark,[-.1,.15,.25],0,[.8,1.2,.5]],...[-1,1].map(sx=>[wrapOn(headG,ellipseShape(0,0,.055,.034,4,20),radial([0,.12,0],[sx*.18,-.08,.21]),.004,0,[0,.12,0,.3045,.2755,.29]),'#f6a0ac']),
     // 오른쪽 눈(원더룹을 보는 쪽 +x) 망원경 안경: 놋쇠 테 + 짧은 통 + 렌즈
     [new THREE.TorusGeometry(.06,.014,6,16),brass,[.1,.15,.27]],[Cy(.045,.05,.12,10),brass,[.1,.15,.33],[PI/2,0,0]],[Cy(.04,.04,.01,10),'#bfe0f0',[.1,.15,.395],[PI/2,0,0]],[S(.02,6,5),dark,[.1,.15,.25]],
     // 쫑긋한 왼귀(−x)
