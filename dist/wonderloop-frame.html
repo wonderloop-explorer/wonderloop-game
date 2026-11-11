@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="9b7998b935";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="e1f24a0828";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 0c89ae8, 버전 86d2c6ba92, 2026-11-11)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 488992a, 버전 d1ae49d0fd, 2026-11-11)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="86d2c6ba92";
-window.WL_BUILD={"commit":"0c89ae8","date":"2026-11-11","stage":"basecamp"};
+window.WL_V="d1ae49d0fd";
+window.WL_BUILD={"commit":"488992a","date":"2026-11-11","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -3156,10 +3156,23 @@ const _p=new THREE.Vector3(),_q=new THREE.Vector3();
 const speakNPC=()=>{if(talk)return talk.n;if(!saying||saying.face===false||!saying.who)return null;const w=saying.who;return NPCS.find(n=>n.root&&n.name&&(w===n.name||w.startsWith(n.name+' ')||n.name.endsWith(' '+w)||n.name.endsWith(' '+w.split(' (')[0])))||null;};
 const speaking=()=>speakNPC();
 const _f=new THREE.Vector3();
-function tickFace(dt){const n=speakNPC();if(!n||n.face===false||!n.root)return;const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);n.root.getWorldPosition(_f);const dx=_f.x-P.x,dz=_f.z-P.z;if(dx*dx+dz*dz<.01)return;
-  const turn=(o,a)=>{o.rotation.y+=Math.atan2(Math.sin(a-o.rotation.y),Math.cos(a-o.rotation.y))*k;};
-  if(n.turn!==false)turn(n.root,Math.atan2(-dx,-dz));
-  if(!(U.isWalking&&U.isWalking())&&!(U.drive&&Math.abs(U.drive.x)+Math.abs(U.drive.z)>.01)&&!U.riding /* drive는 가만히 있어도 {0,0}으로 늘 있다 — 예전엔 !U.drive라 주민 대화에서 원더룹이 상대를 보지 않았다(2026-11-10) */&&!blocking('itemget')&&!(U.reactFace))turn(W,Math.atan2(dx,dz));}
+/* 대화 카메라가 잡힌 동안(2026-11-11 — 말하는 쪽 얼굴 우선, game/index pairCam이 faceHook.pair로 {root, side, phi}를 줌): 둘이 똑바로 마주 보면 옆 카메라에서는 둘 다 옆모습뿐이라,
+   무대 배우처럼 몸을 카메라 쪽으로 조금 열어 선다 — 말하는 쪽은 얼굴이 3/4 넘게(몸·카메라 방향 내적 약 0.75), 듣는 쪽은 옆모습보다 조금 더(약 0.15). 카메라는 듣는 쪽 어깨 쪽으로 살짝 돌아가 있다(phi).
+   원더룹 줄('원더룹')은 반대로. 구역이 주민 방향을 매 프레임 다시 정해도(아기 토끼) 그리기 전에 여기서 덮어쓰고, 말이 끝나면 구역 값으로 부드럽게 돌려보낸다(REL) */
+const faceHook={pair:null};const heroSpeaking=()=>!!(saying&&saying.who==='원더룹');
+const wrapA=a=>Math.atan2(Math.sin(a),Math.cos(a));let FN=null;const REL=[];
+function tickFace(dt){const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);
+  for(let i=REL.length-1;i>=0;i--){const it=REL[i],r=it.root;if(Math.abs(wrapA(r.rotation.y-it.last))<1e-4){REL.splice(i,1);continue;} /* 구역이 방향을 다시 정하지 않는 주민은 그대로 둠 */
+    const off=wrapA(it.last-r.rotation.y)*(1-k);if(Math.abs(off)<.01){REL.splice(i,1);continue;}r.rotation.y+=off;it.last=r.rotation.y;}
+  const pair=faceHook.pair&&faceHook.pair();let n=speakNPC(),heroSp=false;
+  if(!n&&pair&&heroSpeaking()){n=NPCS.find(q=>q.root===pair.root)||null;heroSp=!!n;}
+  if(n!==FN){if(FN&&FN.root&&FN._fy!=null)REL.push({root:FN.root,last:FN._fy});if(FN)FN._fy=null;FN=n;}
+  if(!n||n.face===false||!n.root)return;n.root.getWorldPosition(_f);const dx=_f.x-P.x,dz=_f.z-P.z,L=Math.hypot(dx,dz);if(L<.1)return;const ax=dx/L,az=dz/L;
+  let tn=0,th=0,px=0,pz=0;if(pair&&pair.root===n.root){px=-az*pair.side;pz=ax*pair.side;const m=Math.abs(pair.phi||0); /* 말하는 쪽: 0.85 − 사선, 듣는 쪽: 사선 + 0.15 (라디안, 카메라 쪽으로 여는 각) */
+    if(heroSp){th=Math.max(.2,.85-m);tn=m+.15;}else{tn=Math.max(.2,.85-m);th=m+.15;}}
+  const an=Math.atan2(-ax*Math.cos(tn)+px*Math.sin(tn),-az*Math.cos(tn)+pz*Math.sin(tn)),ah=Math.atan2(ax*Math.cos(th)+px*Math.sin(th),az*Math.cos(th)+pz*Math.sin(th));
+  if(n.turn!==false){if(n._fy==null)n._fy=n.root.rotation.y;n._fy+=wrapA(an-n._fy)*k;n.root.rotation.y=n._fy;}
+  if(!(U.isWalking&&U.isWalking())&&!(U.drive&&Math.abs(U.drive.x)+Math.abs(U.drive.z)>.01)&&!U.riding /* drive는 가만히 있어도 {0,0}으로 늘 있다 — 예전엔 !U.drive라 주민 대화에서 원더룹이 상대를 보지 않았다(2026-11-10) */&&!blocking('itemget')&&!(U.reactFace))W.rotation.y+=wrapA(ah-W.rotation.y)*k;}
 function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   // 대화 중 너무 멀어지면 닫음
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
@@ -3197,7 +3210,7 @@ const talking=()=>!!talk,talkNPC=()=>talk?talk.n:null; /* 지금 이야기하는
 const npcList=()=>NPCS; // 시험 도구(game/devcheck 크기 확인)
 const findNPC=name=>NPCS.find(n=>n.name===name)||null;
 const lineEnd=()=>talk&&talk.h?talk.h.end:null; // 지금 대사(목소리)가 끝나는 게임 시각 — 영상 캡처가 대사를 저절로 넘길 때
-export {speaking,talkNPC,act,setDialogZone,met as npcMet,clearDialog,clickNPC,endTalk,findNPC,npcList,initDialog,lineEnd,linesOf,npc,say,startTalk,talkable,talking,tickDialog};
+export {faceHook,heroSpeaking,speaking,talkNPC,act,setDialogZone,met as npcMet,clearDialog,clickNPC,endTalk,findNPC,npcList,initDialog,lineEnd,linesOf,npc,say,startTalk,talkable,talking,tickDialog};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/events.js">
@@ -4309,7 +4322,7 @@ import {clearDialog,clickNPC,initDialog,setDialogZone,tickDialog,talkNPC} from '
 import {clearEvents,initEvents,tickEvents} from './events.js';
 import {clearCards,setPrompt,setQuest,tickCut} from './ui.js';
 import {clearSpots,initCodex,tickCodex} from './codex.js';
-import {clearOcclude,initOcclude,tickOcclude} from './occlude.js';
+import {clearOcclude,initOcclude,pieceHook,tickOcclude,tickPieces} from './occlude.js';
 import {clearInteract,initInteract,tickInteract} from './interact.js';
 import {clearCourse,initCourse,tickCourse} from './course.js';
 import {clearRide,initRide,tickRide} from './ride.js';
@@ -4323,7 +4336,7 @@ import {applyZone as weatherZone} from './weather.js';
 import {clearIncident,initIncident,tickIncident} from './incident.js';
 import {clearFloat,initFloat,tickFloat} from './float.js';
 import {band,initLayout,layoutNow,tickLayout} from './layout.js';
-import {speaking,talking} from './dialog.js';
+import {faceHook,heroSpeaking,speaking,talking} from './dialog.js';
 import {uiHooks} from './ui.js';
 /* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기)
    view.focus({at:[x,y,z], from:[x,y,z]?, dist, sec}): 따라가기 카메라가 sec초 동안 at을 비췄다가 돌아온다(미션 장소 알려 주기, 2026-11-02).
@@ -4354,30 +4367,35 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
   /* 2026-11-11 더함(아기 토끼처럼 키 작고 움직이던 상대): ① 두 사람은 화면 가로 가운데 70% 안에(몸 너비까지) ② 둘 사이가 벌어져 있으면(말 걸 때 뛰던 토끼가 2~3m 떨어져 멈춤) 멀리 물러나는 대신
      사선을 더 틀어(PHI .3 → 1.05) 화면에서 둘을 가까이 붙임 — 세로 화면은 가로 시야가 좁아 그대로 물러나면 19m 상한에 걸려 둘이 양 끝으로 잘렸다 ③ 키 작은 상대는 카메라를 낮춰 눈높이 가까이
      ④ 옆·사선 네 자리(지금 카메라 쪽 옆 → 반대쪽 옆, 각각 보통 사선 → 더 튼 사선) 가운데 큰 것(집·큰 바위)이 끼지 않는 첫 자리 */
-  const P=W.position;let side=0,B=null,phi=.3,phiMin=.3;const o={at:[0,0,0],from:[0,0,0]};
+  /* 말하는 쪽 얼굴 우선(2026-11-11): 사선은 '듣는 쪽 어깨' 쪽으로 — 주민이 말하면 원더룹 쪽(sg −1), 원더룹 줄이면 주민 쪽(sg +1)으로 0.25라디안. 둘은 몸을 카메라 쪽으로 열어 선다(game/dialog tickFace)
+     → 말하는 쪽 얼굴 3/4, 듣는 쪽 옆모습 조금 넘게. 말하는 사람이 바뀌면 카메라가 천천히 반대쪽 어깨로 넘어간다 */
+  const P=W.position;let side=0,B=null,phi=-.25,phiMin=.25;const o={at:[0,0,0],from:[0,0,0]};
   return ()=>{root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14];let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
     const mx=(P.x+nx)/2,mz=(P.z+nz)/2;
     if(!side){side=((cam.position.x-mx)*-az+(cam.position.z-mz)*ax)<0?-1:1;
       const hitN=(sd,ph)=>{let n=0;const ex=mx+(-az*sd*Math.cos(ph)+ax*Math.sin(ph))*13,ez=mz+(ax*sd*Math.cos(ph)+az*Math.sin(ph))*13,dx=ex-mx,dz=ez-mz,L2=dx*dx+dz*dz;
-        if(Z&&Z.areas)for(const k in Z.areas)for(const ob of Z.areas[k].obstacles||[]){if(!ob.c||ob.c[2]<.9)continue;const [cx,cz,r]=ob.c;if(Math.hypot(cx-nx,cz-nz)<r+.3)continue;const t=Math.min(1,Math.max(.08,((cx-mx)*dx+(cz-mz)*dz)/L2));if(Math.hypot(mx+dx*t-cx,mz+dz*t-cz)<r+.5)n++;}return n;};
-      let best=null,bn=1e9;for(const [sd,ph] of [[side,.3],[-side,.3],[side,.85],[-side,.85]]){const n=hitN(sd,ph);if(n<bn){bn=n;best=[sd,ph];}if(!n)break;}side=best[0];phiMin=best[1];}
+        if(Z&&Z.areas)for(const k in Z.areas)for(const ob of Z.areas[k].obstacles||[]){if(!ob.c||ob.c[2]<.3)continue;const [cx,cz,r]=ob.c;if(Math.hypot(cx-nx,cz-nz)<r+.3||Math.hypot(cx-P.x,cz-P.z)<.2)continue;const big=r>=.9,t=Math.min(big?1:.3,Math.max(.03,((cx-mx)*dx+(cz-mz)*dz)/L2));if(Math.hypot(mx+dx*t-cx,mz+dz*t-cz)<r+(big?.5:.75))n+=big?10:1;}return n;}; /* 큰 것(집·큰 바위)은 카메라까지 가는 길 어디든, 작은 돌(반지름 0.3m~)은 두 사람 바로 앞 4m 안에서만 — 발을 가리는 돌무더기 쪽은 피함 */
+      let best=null,bn=1e9;for(const [sd,ph] of [[side,-.25],[-side,-.25],[side,-.7],[-side,-.7]]){const n=hitN(sd,ph);if(n<bn){bn=n;best=[sd,ph];}if(!n)break;}side=best[0];phiMin=Math.abs(best[1]);}
     const px=-az*side,pz=ax*side;
     if(!B)B=band(); /* 화면 띠는 말을 걸 때 한 번만(대화창이 비켜 가며 띠가 바뀌면 카메라와 대화창이 서로 밀어냄) */
     const [fT,fB]=B,top=Math.max(P.y+1.6,ny+headY+.18),bot=Math.min(P.y,ny)-.05,asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360);
     const Dh=Math.max(5.2,(top-bot)/(Math.max(.2,fB-fT-.1)*.78*tf)),low=Math.min(1,Math.max(0,(headY-.9)/.7)),BW=.72+.3*low /* 두 사람 몸 너비의 절반씩 + 여유 — 키 작은 상대는 몸도 좁다 */,wFit=.70*asp*tf,Dw=ph=>(sep*Math.cos(ph)+BW)/wFit; /* 가로: 둘 사이(화면에 비친 폭) + 몸 너비가 화면 가로 70% 안 */
     const Dt=Math.max(Dh,14.5); /* 이 거리보다 멀어져야 할 때만 사선을 더 틂(상대가 등을 보이게 되니 꼭 필요할 때만) */
-    let want=phiMin;if(Dw(want)>Dt){const c=(Dt*wFit-BW)/sep;want=Math.max(phiMin,Math.min(1.05,c>=1?phiMin:Math.acos(Math.max(.5,c))));}
-    phi+=(want-phi)*.2;const D=Math.min(19,Math.max(Dh,Dw(phi))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
+    let want=phiMin;if(Dw(want)>Dt){const c=(Dt*wFit-BW)/sep;want=Math.max(phiMin,Math.min(.7,c>=1?phiMin:Math.acos(Math.max(.5,c))));} /* 더 틀어도 0.7까지(듣는 쪽이 옆모습 아래로 내려가지 않게 — 몸을 여는 각이 따라감) */
+    const sg=heroSpeaking()?1:-1;phi+=(sg*want-phi)*.07;PAIR.root=root;PAIR.side=side;PAIR.phi=phi;PAIR.y=headY;PAIR.t=clock.t;const D=Math.min(19,Math.max(Dh,Dw(phi))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
     const c=Math.cos(phi),sn=Math.sin(phi);let fx=mx+(px*c+ax*sn)*D,fz=mz+(pz*c+az*sn)*D;const fy=my+D*(.045+.075*low); /* 키 작은 상대(머리 0.9m)는 카메라를 낮춰 내려다보지 않게 */
     if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
     o.at[0]=mx;o.at[1]=my;o.at[2]=mz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
 view.pairCam=pairCam;
+const PAIR={root:null,side:1,phi:0,y:1.4,t:-9},pairNow=()=>clock.t-PAIR.t<.25&&PAIR.root?PAIR:null;
+faceHook.pair=pairNow;
+pieceHook.targets=()=>{const p=pairNow();if(!p||!HERO)return null;const e=p.root.matrixWorld.elements,P=HERO.position;return [[P.x,P.y,P.z,1.55],[e[12],e[13],e[14],p.y]];};
 function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
   else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}}
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
 function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking,talkCam:()=>!!(TC&&TC.fn&&view.req&&view.req.fn===TC.fn)});uiHooks.layout=layoutNow;}
-function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}
+function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickPieces(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}
 function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();clearFloat();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)
@@ -5006,9 +5024,32 @@ function xray(on){if(!ctx)return;xrOn=!!on;if(xrOn)xrBuild();ctx.WL.traverse(m=>
 function tickXray(dt){xrT+=dt;scanT+=dt;if(xrOn&&xrT>1){xrT=0;xrBuild();}if(cutOn&&scanT>1){scanT=0;scan();}} // 탈·물건·병합 메시가 새로 붙으면 1초 안에
 /* 잠깐 끄기(소개 카드 전신 찍기 등): const resume=cutPaused(true); … resume(); */
 function cutPaused(){const w=CUT.value.w;CUT.value.w=0;return()=>{CUT.value.w=w;};}
-function clearOcclude(){LIST.length=0;cutOn=false;cutRoot=null;CUT.value.w=0;CUT_MATS.clear();}
+function clearOcclude(){PIECES.length=0;LIST.length=0;cutOn=false;cutRoot=null;CUT.value.w=0;CUT_MATS.clear();}
 const list=()=>LIST; // 시험용: 지금 흐려진 물체 보기
-export {add,clearOcclude,cut,cutPaused,hideFaded,prepass,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};
+/* 조각 흐리기(2026-11-11 — 대화 중 카메라와 두 사람 사이에 낀 작은 소품: 기둥·깃발·의자·탁자·우체통 …, 작아도 카메라 앞에 오면 화면에서 제일 커진다):
+   pieces({meshes:[한 덩어리로 합친 소품 메시…], boxes:{조각 번호: Box3}}) — 메시 정점에 wlPiece(조각 번호, 0 = 안 흐림)가 적혀 있어야 한다(구역이 만들 때).
+   재질에 셰이더 몇 줄을 끼워, 조각마다 흐림 값(wlFadeA[번호], 1 = 그대로)보다 촘촘한 점무늬로 화소를 버린다(반투명 섞기가 아니라 그리기·정렬이 그대로 — 드로우콜 0 추가).
+   대화 카메라가 잡힌 동안만(pieceHook.targets() — game/index가 원더룹·상대 자리를 줌) 카메라 → 두 사람 몸으로 가는 시선이 조각 상자를 지나면 0.18까지 약 0.2초에 흐리고,
+   대화가 끝나면 되돌린다. 집처럼 큰 건물은 대상이 아니다(대화 카메라가 막히지 않는 쪽을 고름). 구역을 떠나면 clearOcclude가 비운다 */
+const PIECES=[],pieceHook={targets:null},_pr=new THREE.Ray(),_pb=new THREE.Box3(),_pt=new THREE.Vector3(),_ph=new THREE.Vector3();
+function patchPieces(m,U){if(m.userData.wlPieceU){return;}m.userData.wlPieceU=U;const prev=m.onBeforeCompile;
+  m.onBeforeCompile=function(sh,r){if(prev)prev.call(this,sh,r);sh.uniforms.wlFadeA=U;
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float wlPiece;uniform float wlFadeA[64];varying float vWlFade;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWlFade=wlFadeA[int(wlPiece+.5)];');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vWlFade;').replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(vWlFade<.995&&fract(dot(floor(gl_FragCoord.xy),vec2(.7548776662,.5698402910)))>vWlFade)discard;');};
+  const key=m.customProgramCacheKey;m.customProgramCacheKey=function(){return (key?key.call(this):'')+'|wlPiece';};m.needsUpdate=true;}
+function pieces({meshes,boxes}){const m0=meshes.find(m=>m),U=(m0&&m0.material.userData.wlPieceU)||{value:new Float32Array(64).fill(1)};U.value.fill(1); /* 재질을 구역 사이에 다시 쓰면(캐시) 같은 표를 이어 씀 */
+  const list=Object.keys(boxes).map(k=>({id:+k,box:boxes[k],v:1})).filter(o=>o.id>0&&o.id<64);
+  for(const me of meshes){if(!me)continue;patchPieces(me.material,U);me.userData.wlFade=U.value;}const it={U,list,live:false};PIECES.push(it);return it;}
+function tickPieces(dt){if(!PIECES.length||!ctx)return;const T=pieceHook.targets&&pieceHook.targets(),cam=ctx.camera.position,k=Math.min(1,dt*8);
+  for(const it of PIECES){if(!T&&!it.live)continue;let live=false;
+    for(const o of it.list){let goal=1;if(T){_pb.copy(o.box).expandByScalar(.14);
+        const dc=_pb.distanceToPoint(cam);
+        if(dc<.5)goal=.18;
+        else if(dc<3.4&&(()=>{o.box.getCenter(_ph);_ph.y=Math.min(Math.max(cam.y,o.box.min.y),o.box.max.y);_ph.project(ctx.camera);return _ph.z<1&&Math.abs(_ph.x)<1.08&&Math.abs(_ph.y)<1.2;})())goal=.18; /* 시선에 걸리지 않아도 카메라 3.4m 안에서 화면에 들어온 소품(화면 가장자리를 가로지르는 기둥) */
+        else for(const [x,y,z,h] of T){for(const f of [.15,.5,.85]){_pt.set(x,y+h*f,z).sub(cam);const L=_pt.length();_pr.set(cam,_pt.divideScalar(L));if(_pr.intersectBox(_pb,_ph)&&_ph.distanceTo(cam)<L-.3){goal=.18;break;}}if(goal<1)break;}}
+      o.v+=(goal-o.v)*k;if(Math.abs(o.v-goal)<.004)o.v=goal;it.U.value[o.id]=o.v;if(o.v<.999)live=true;}
+    it.live=live;}}
+export {pieces,pieceHook,tickPieces,add,clearOcclude,cut,cutPaused,hideFaded,prepass,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/photo.js">
@@ -9565,7 +9606,10 @@ function put(geo,color,{pos=[0,0,0],rot=[0,0,0],s=[1,1,1],smooth=false}={},into=
   if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));
   g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...pos),new THREE.Quaternion().setFromEuler(new THREE.Euler(...rot)),new THREE.Vector3(...s)));if(!smooth)g.computeVertexNormals();
   const n=g.attributes.position.count,cc=new Float32Array(n*3),C=col(color);for(let i=0;i<n;i++){cc[i*3]=C.r;cc[i*3+1]=C.g;cc[i*3+2]=C.b;}g.setAttribute('color',new THREE.BufferAttribute(cc,3));
-  const u=g.attributes.uv;for(let i=0;i<n;i++)u.setXY(i,u.getX(i)*2,u.getY(i)*2);into.push(g);return g;}
+  const u=g.attributes.uv;for(let i=0;i<n;i++)u.setXY(i,u.getX(i)*2,u.getY(i)*2);
+  g.setAttribute('wlPiece',new THREE.BufferAttribute(new Float32Array(n).fill(PIECE),1));if(PIECE){g.computeBoundingBox();(PBOX[PIECE]||(PBOX[PIECE]=new THREE.Box3())).union(g.boundingBox);}into.push(g);return g;}
+/* 작은 소품 조각(2026-11-11 — 대화 중 카메라와 두 사람 사이에 끼면 흐려지는 것: 기둥·깃발·의자·탁자·우체통 … game/occlude pieces): piece()부터 pieceEnd()까지 put한 것이 한 조각(정점 wlPiece 번호 + 조각 상자) */
+let PIECE=0,PN=0;const PBOX={},piece=()=>{PIECE=++PN;},pieceEnd=()=>{PIECE=0;};
 /* 두 점 사이 막대(줄·다리·끈) */
 function rod(a,b,r,color,into=parts,n=6){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=B.clone().sub(A),len=d.length();
   const geo=new THREE.CylinderGeometry(r,r,len,n);geo.translate(0,len/2,0);geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()));geo.translate(A.x,A.y,A.z);return put(geo,color,{},into);}
@@ -9663,7 +9707,7 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
   for(let k=0;k<3;k++)put(new THREE.CylinderGeometry(.24,.26,.06,8),'#c7c0c6',{pos:at(2.0+k*.6,.03,(k%2?.12:-.12))});
   obstacles.push({c:[hx,hz,1.55]});}
 // 작은 천문대 망원경: 둥근 나무 단 + 세 다리 + 하늘을 향한 연보라 통(놋쇠 테) + 작은 접이 의자
-{const [sx,sz]=SCOPE,y=gy(sx,sz);put(new THREE.CylinderGeometry(.95,1.0,.14,12),'#b88a62',{pos:[sx,y+.07,sz]});put(new THREE.TorusGeometry(.96,.04,5,24),woodD,{pos:[sx,y+.14,sz],rot:[PI/2,0,0]});
+{piece();const [sx,sz]=SCOPE,y=gy(sx,sz);put(new THREE.CylinderGeometry(.95,1.0,.14,12),'#b88a62',{pos:[sx,y+.07,sz]});put(new THREE.TorusGeometry(.96,.04,5,24),woodD,{pos:[sx,y+.14,sz],rot:[PI/2,0,0]});
   const top=[sx,y+1.18,sz];for(let k=0;k<3;k++){const a=k/3*PI*2+.4;rod([sx+Math.cos(a)*.55,y+.14,sz+Math.sin(a)*.55],top,.03,woodD);}
   const dir=new THREE.Vector3(-.35,.62,-.7).normalize(),q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
   const tube=(r1,r2,len,off,c)=>{const g=new THREE.CylinderGeometry(r1,r2,len,12);g.translate(0,off,0);g.applyQuaternion(q);g.translate(...top);put(g,c);};
@@ -9674,7 +9718,7 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
   const cx=sx+.62,cz=sz+.5;put(new THREE.BoxGeometry(.3,.04,.26),wood,{pos:[cx,y+.42,cz]});rod([cx-.12,y+.14,cz-.1],[cx+.12,y+.42,cz+.1],.018,woodD);rod([cx+.12,y+.14,cz-.1],[cx-.12,y+.42,cz+.1],.018,woodD);
   obstacles.push({c:[sx,sz,.75]});}
 // 지도를 널어 말리는 빨랫줄: 기둥 둘 + 처진 줄 + 지도 셋(집게)
-{const [a,b]=LINE,ya=gy(...a),yb=gy(...b),H=1.62;rod([a[0],ya,a[1]],[a[0],ya+H+.1,a[1]],.045,wood);rod([b[0],yb,b[1]],[b[0],yb+H+.1,b[1]],.045,wood);
+{piece();const [a,b]=LINE,ya=gy(...a),yb=gy(...b),H=1.62;rod([a[0],ya,a[1]],[a[0],ya+H+.1,a[1]],.045,wood);rod([b[0],yb,b[1]],[b[0],yb+H+.1,b[1]],.045,wood);
   put(new THREE.SphereGeometry(.07,8,6),woodD,{pos:[a[0],ya+H+.14,a[1]]});put(new THREE.SphereGeometry(.07,8,6),woodD,{pos:[b[0],yb+H+.14,b[1]]});
   const pt=u=>[a[0]+(b[0]-a[0])*u,ya+(yb-ya)*u+H-Math.sin(PI*u)*.22,a[1]+(b[1]-a[1])*u];for(let k=0;k<8;k++)rod(pt(k/8),pt((k+1)/8),.012,'#efe6d6');
   const ry=Math.atan2(b[0]-a[0],b[1]-a[1])+PI/2;
@@ -9685,42 +9729,44 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
     [-.18,.18].forEach(dx=>put(new THREE.BoxGeometry(.03,.09,.03),'#d9a066',{pos:[cx+Math.sin(ry)*dx,p[1]-.03,cz+Math.cos(ry)*dx],rot:[0,ry,0]}));});}
 // 다녀온 곳마다 꽂은 색색의 작은 깃발 핀: 마을 둘레 반원(길은 비움) + 망원경 옆 몇
 {const cols=['#ff9eb3','#7fb6e8','#ffe07a','#9bd46b','#c9a6e0','#ffb86b'];let k=0;
-  const pin=(x,z,h)=>{const y=gy(x,z),c=cols[k++%cols.length];rod([x,y,z],[x,y+h,z],.016,'#f2ead8');put(new THREE.SphereGeometry(.035,6,5),c,{pos:[x,y+h+.02,z]});
+  const pin=(x,z,h)=>{piece();const y=gy(x,z),c=cols[k++%cols.length];rod([x,y,z],[x,y+h,z],.016,'#f2ead8');put(new THREE.SphereGeometry(.035,6,5),c,{pos:[x,y+h+.02,z]});
     const g=new THREE.BufferGeometry(),v=new Float32Array([0,0,0, .24,-.06,0, 0,-.13,0, 0,0,0, 0,-.13,0, .24,-.06,0]);g.setAttribute('position',new THREE.BufferAttribute(v,3));
     put(g,c,{pos:[x+.016,y+h-.02,z],rot:[0,RR(-PI,PI),0]});};
   for(let i=0;i<15;i++){const a=-.6+i/14*(PI*1.55),r=RR(6.6,7.6),x=VIL[0]+Math.cos(a)*r,z=VIL[1]+Math.sin(a)*r;if(nearTrail.some(([p,q])=>Math.hypot(p-x,q-z)<1.1))continue;pin(x,z,RR(.5,.75));}
   [[-2.0,5.9],[-2.3,6.3],[-1.7,6.4]].forEach(([x,z])=>pin(x,z,RR(.45,.6)));}
 // 우편함: 나무 기둥 + 둥근 지붕 함(빨강) + 노란 깃발
-{const [x,z]=MAIL,y=gy(x,z);rod([x,y,z],[x,y+.78,z],.045,wood);put(new THREE.BoxGeometry(.34,.24,.46),'#d4554a',{pos:[x,y+.9,z]});
+{piece();const [x,z]=MAIL,y=gy(x,z);rod([x,y,z],[x,y+.78,z],.045,wood);put(new THREE.BoxGeometry(.34,.24,.46),'#d4554a',{pos:[x,y+.9,z]});
   put(new THREE.CylinderGeometry(.17,.17,.46,12,1,false,0,PI),'#d4554a',{pos:[x,y+1.02,z],rot:[PI/2,0,PI/2]});put(new THREE.BoxGeometry(.3,.2,.01),'#5a2a28',{pos:[x,y+.94,z+.235]});
   rod([x+.18,y+.86,z+.05],[x+.18,y+1.18,z+.05],.014,'#5a3826');put(new THREE.BoxGeometry(.01,.1,.16),'#ffd34e',{pos:[x+.19,y+1.12,z+.12]});
   put(new THREE.BoxGeometry(.2,.03,.14),paper,{pos:[x,y+1.0,z+.25],rot:[.3,0,0]});}
 // 작은 탁자와 의자 둘: 둥근 상판(0.5m) + 가운데 다리, 찻잔 둘·말아 둔 지도, 낮은 의자(앉는 높이 0.3m)
-{const [x,z]=TABLE,y=gy(x,z);put(new THREE.CylinderGeometry(.46,.46,.05,16),'#c99a6e',{pos:[x,y+.52,z]});put(new THREE.CylinderGeometry(.05,.07,.5,8),woodD,{pos:[x,y+.26,z]});put(new THREE.CylinderGeometry(.24,.26,.04,12),woodD,{pos:[x,y+.02,z]});
+{piece();const [x,z]=TABLE,y=gy(x,z);put(new THREE.CylinderGeometry(.46,.46,.05,16),'#c99a6e',{pos:[x,y+.52,z]});put(new THREE.CylinderGeometry(.05,.07,.5,8),woodD,{pos:[x,y+.26,z]});put(new THREE.CylinderGeometry(.24,.26,.04,12),woodD,{pos:[x,y+.02,z]});
   [[.15,.1,'#f2ead8'],[-.17,.06,'#c9e2f2']].forEach(([dx,dz,c])=>{put(new THREE.CylinderGeometry(.05,.04,.08,10),c,{pos:[x+dx,y+.59,z+dz]});put(new THREE.TorusGeometry(.025,.008,4,8),c,{pos:[x+dx+.06,y+.59,z+dz]});});
   put(new THREE.CylinderGeometry(.035,.035,.34,8),paper,{pos:[x,y+.58,z-.2],rot:[0,0,PI/2]});
-  [[-.8,.25,0],[.75,-.2,PI]].forEach(([dx,dz,f])=>{const cx=x+dx,cz=z+dz,ry=Math.atan2(x-cx,z-cz),sx=Math.cos(ry),sz=-Math.sin(ry),bx=-Math.sin(ry)*.15,bz=-Math.cos(ry)*.15;
+  [[-.8,.25,0],[.75,-.2,PI]].forEach(([dx,dz,f])=>{piece();const cx=x+dx,cz=z+dz,ry=Math.atan2(x-cx,z-cz),sx=Math.cos(ry),sz=-Math.sin(ry),bx=-Math.sin(ry)*.15,bz=-Math.cos(ry)*.15;
     put(new THREE.BoxGeometry(.32,.05,.3),'#c99a6e',{pos:[cx,y+.3,cz],rot:[0,ry,0]});
     [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,b])=>rod([cx+sx*.12*a+(-bx)*.8*b,y,cz+sz*.12*a+(-bz)*.8*b],[cx+sx*.12*a+(-bx)*.8*b,y+.3,cz+sz*.12*a+(-bz)*.8*b],.02,woodD));
     put(new THREE.BoxGeometry(.32,.32,.04),'#c99a6e',{pos:[cx+bx,y+.48,cz+bz],rot:[-.12,ry,0]});});}
 // 따뜻한 노란 줄 조명: 집 지붕 끝 → 마을 기둥(꼭대기 별), 처진 전선 + 전구 14
-{const [px,pz]=POLE,py=gy(px,pz);rod([px,py,pz],[px,py+2.3,pz],.05,wood);put(new THREE.OctahedronGeometry(.13,0),'#ffe59a',{pos:[px,py+2.42,pz],s:[1,1,.4]},glow);
-  const A=[HUT[0]-1.1,gy(...HUT)+2.05,HUT[1]-.6],B=[px,py+2.2,pz],pt=u=>[A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u-Math.sin(PI*u)*.55,A[2]+(B[2]-A[2])*u];
+{piece();const [px,pz]=POLE,py=gy(px,pz);rod([px,py,pz],[px,py+2.3,pz],.05,wood);put(new THREE.OctahedronGeometry(.13,0),'#ffe59a',{pos:[px,py+2.42,pz],s:[1,1,.4]},glow);
+  pieceEnd();const A=[HUT[0]-1.1,gy(...HUT)+2.05,HUT[1]-.6],B=[px,py+2.2,pz],pt=u=>[A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u-Math.sin(PI*u)*.55,A[2]+(B[2]-A[2])*u];
   for(let k=0;k<12;k++)rod(pt(k/12),pt((k+1)/12),.01,'#5a3826');
   for(let k=1;k<15;k++){const p=pt(k/15);put(new THREE.SphereGeometry(.065,8,6),k%3?'#ffd56a':'#ffb98a',{pos:[p[0],p[1]-.09,p[2]],s:[1,1.25,1]},glow);halos.push({x:p[0],z:p[2],y:p[1]-.09,c:'#ffd98a',s:.75,lamp:1});}
   // 두 번째 줄: 기둥 → 빨랫줄 기둥 쪽은 너무 멀어 집 → 망원경 단 위로 짧게
   const C2=[SCOPE[0]+.2,gy(...SCOPE)+1.9,SCOPE[1]+.9],pt2=u=>[B[0]+(C2[0]-B[0])*u,B[1]-.05+(C2[1]-B[1]+.05)*u-Math.sin(PI*u)*.35,B[2]+(C2[2]-B[2])*u];
-  rod([C2[0],gy(...SCOPE)+.14,C2[2]],[C2[0],C2[1]+.05,C2[2]],.035,wood);for(let k=0;k<6;k++)rod(pt2(k/6),pt2((k+1)/6),.01,'#5a3826');
+  piece();rod([C2[0],gy(...SCOPE)+.14,C2[2]],[C2[0],C2[1]+.05,C2[2]],.035,wood);pieceEnd();for(let k=0;k<6;k++)rod(pt2(k/6),pt2((k+1)/6),.01,'#5a3826');
   for(let k=1;k<6;k++){const p=pt2(k/6);put(new THREE.SphereGeometry(.06,8,6),k%2?'#ffd56a':'#ffb98a',{pos:[p[0],p[1]-.08,p[2]],s:[1,1.25,1]},glow);halos.push({x:p[0],z:p[2],y:p[1]-.08,c:'#ffd98a',s:.7,lamp:1});}}
 // 구석의 떡방아 절구(숨은 재미): 나무 절구 + 기대 세운 떡메 + 접시에 하얀 떡 셋
-{const [x,z]=MORTAR,y=gy(x,z);put(new THREE.CylinderGeometry(.3,.26,.24,12),wood,{pos:[x,y+.36,z]});put(new THREE.CylinderGeometry(.22,.3,.26,12),wood,{pos:[x,y+.13,z]});
+{piece();const [x,z]=MORTAR,y=gy(x,z);put(new THREE.CylinderGeometry(.3,.26,.24,12),wood,{pos:[x,y+.36,z]});put(new THREE.CylinderGeometry(.22,.3,.26,12),wood,{pos:[x,y+.13,z]});
   put(new THREE.TorusGeometry(.28,.035,5,16),woodD,{pos:[x,y+.48,z],rot:[PI/2,0,0]});put(new THREE.CircleGeometry(.24,14),'#f6f1e6',{pos:[x,y+.47,z],rot:[-PI/2,0,0]});
   const px=x-.62,pz=z+.22;put(new THREE.CylinderGeometry(.2,.17,.04,14),'#e8d6ea',{pos:[px,gy(px,pz)+.04,pz]});
   [[0,0],[.09,.06],[-.06,.08]].forEach(([dx,dz],k)=>put(new THREE.SphereGeometry(.07,10,6),k===1?'#f7e0e6':'#fbf8f0',{pos:[px+dx,gy(px,pz)+.1,pz+dz],s:[1,.7,1]}));}
+pieceEnd();
 // 마을 돌담 몇(둥근 돌 낮게 줄지어 — 앞쪽 겹)
 [[[-4.4,9.6],[-4.8,7.2]],[[8.2,5.2],[8.4,2.6]],[[2.6,12.4],[5.4,12.0]]].forEach(([a,b],w)=>{for(let k=0;k<=5;k++){const u=k/5,x=a[0]+(b[0]-a[0])*u+RR(-.1,.1),z=a[1]+(b[1]-a[1])*u+RR(-.1,.1),s=RR(.26,.36);put(lumpy(s,1,k+w*7),rockCols[(k+w)%5],{pos:[x,gy(x,z)+s*.55,z],rot:[0,RR(0,PI),0],s:[1,.75,1]});}});
 const pMat=pMatW();
-const props=new THREE.Mesh(mergeGeometries(parts),pMat);props.castShadow=props.receiveShadow=true;root.add(props);keep.push(props);parts=[];
+const props=new THREE.Mesh(mergeGeometries(parts),pMat);props.name='garden-props';props.castShadow=props.receiveShadow=true;root.add(props);keep.push(props);parts=[];
+G.occlude.pieces({meshes:[props],boxes:PBOX});
 /* 빛나는 덩어리: 툰 + 흰 발광(파스텔이 스스로 빛나 보임) */
 {const m=sbMat('#ffffff',{emissive:'#ffffff',ei:.5});m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(glow),m);root.add(me);keep.push(me);}
 /* ── 빛 웅덩이(땅에 붙은 은은한 빛, 더하기 섞기 — 그리기 1번): 그늘 분화구 푸른 빛·마을 줄 조명 아래 따뜻한 빛·출구 노란 빛·망원경 단 */
