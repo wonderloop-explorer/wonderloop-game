@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="59781a1e68";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="111ff3c7b9";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 f519828, 버전 a4b017ec60, 2026-11-11)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 9785d72, 버전 0a66241956, 2026-11-11)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="a4b017ec60";
-window.WL_BUILD={"commit":"f519828","date":"2026-11-11","stage":"basecamp"};
+window.WL_V="0a66241956";
+window.WL_BUILD={"commit":"9785d72","date":"2026-11-11","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -3215,7 +3215,10 @@ function placePrompt(n){const el=document.getElementById('wlPrompt');if(!el)retu
   n.root.getWorldPosition(_pp);_pp.y+=(n.bubbleY||1.4);const b=bentPos({x:_pp.x,y:_pp.y,z:_pp.z});_pp.set(b.x,b.y,b.z).project(cam);
   if(_pp.z>1||Math.abs(_pp.x)>.95||_pp.y>.95||_pp.y<-.9){if(el.dataset.at){el.style.left=el.style.top=el.style.bottom=el.style.transform='';delete el.dataset.at;}
     if(n.name)el.textContent='E '+n.name+'에게 말 걸기';return;} /* 상대가 화면 밖이면 아래 가운데에 누구인지 이름을 붙여서 */
-  const x=(_pp.x+1)/2*innerWidth,y=(1-_pp.y)/2*innerHeight-innerHeight*.11;el.dataset.at='1';
+  let x=(_pp.x+1)/2*innerWidth,y=(1-_pp.y)/2*innerHeight-innerHeight*.11;el.dataset.at='1';
+  /* 원더룹 탈·얼굴 위에 얹히지 않게(2026-11-11 — 바로 옆 아기 토끼의 'E 말 걸기'가 원더룹 탈을 덮었다): 안내 상자가 원더룹 몸 네모와 겹치면 탈 꼭대기 위로 올린다 */
+  {const P=ctx.WL.position,pj=h=>{const q=bentPos({x:P.x,y:P.y+h,z:P.z});return _pp.set(q.x,q.y,q.z).project(cam);},t=pj(1.9),tx=(t.x+1)/2*innerWidth,ty=(1-t.y)/2*innerHeight,f=pj(0),fy=(1-f.y)/2*innerHeight,hw=Math.abs(fy-ty)*.36+(el.offsetWidth||150)/2;
+    if(t.z<1&&Math.abs(x-tx)<hw&&y>ty-14&&y-(el.offsetHeight||44)<fy){if(ty-14>=130+(el.offsetHeight||44))y=ty-14;else x=tx+(x>=tx?1:-1)*(hw+8);}} /* 위에 자리가 없으면(낮은 화면) 옆으로 */
   el.style.left=Math.round(Math.min(innerWidth-90,Math.max(90,x)))+'px';el.style.top=Math.round(Math.max(130,y))+'px';el.style.bottom='auto';el.style.transform='translate(-50%,-100%)';}
 function initDialog(c){ctx=c;makeBubble(c.scene);
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});
@@ -10164,7 +10167,9 @@ function hopDemo(){const W=U0();st.hop={t:0,from:[bobo.root.position.x,bobo.root
   const base={x:P.x-ux*5.5+uz*1.4,z:P.z-uz*5.5-ux*1.4};let tEnd=0;
   G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:Math.max(1,Math.min(1.7,620/innerHeight)) /* 낮은 가로 화면도 멀리(2026-11-10 — 휴대폰 가로에서 원더룹이 화면 아래로 잘렸다) */,b=bobo.root.position,Wp=W.position;
     if(!st.hop){tEnd+=1/60;if(tEnd>1.2)return null;}
-    const at=bentPos({x:Wp.x*.35+b.x*.65,y:Math.max(Wp.y,b.y)*.65+1.1,z:Wp.z*.35+b.z*.65}),from=bentPos({x:Wp.x+(base.x-Wp.x)*k,y:Wp.y+3.4*k,z:Wp.z+(base.z-Wp.z)*k});
+    /* 가로 화면(2026-11-11): 떠오르는 할아버지를 따라 고개를 들면 원더룹이 화면 아래로 잘리고 아래로 내려온 대화창에 덮였다 → 올려다보지 않고 1.2배 물러나 보는 높이를 고정(원더룹 발 ~ 떠오른 할아버지 꼭대기가 한 화면에 — 대사는 뛰기 전에 끝남). 세로 화면은 그대로 */
+    const wide=!(cam&&cam.aspect<1),kk=wide?Math.max(1.2,k):k;
+    const at=bentPos({x:Wp.x*.35+b.x*.65,y:wide?Wp.y+1.7:Math.max(Wp.y,b.y)*.65+1.1,z:Wp.z*.35+b.z*.65}),from=bentPos({x:Wp.x+(base.x-Wp.x)*kk,y:Wp.y+3.4*kk,z:Wp.z+(base.z-Wp.z)*kk});
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};});}
 let fpLast=null;
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
@@ -10195,7 +10200,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   // 둥실 뛰기 익히기
   if(!F[K.demo]){quest('보름 할아버지에게 돌아가요',{at:[bobo.root.position.x,bobo.root.position.z],label:'보름 할아버지',style:'ant',h:3});
     if(!st.demoQ&&dist(P.x,P.z,[bobo.root.position.x,bobo.root.position.z])<4.2&&!G.ui.cardShown()&&!st.hop){st.demoQ=true;U.stopWalk&&U.stopWalk();
-      G.dialog.say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.5);setTimeout(hopDemo,900);}return;}
+      G.dialog.say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.5).then(ok=>{if(ok&&!F[K.demo])hopDemo();});}return;} /* 대사가 끝난 뒤에 뜀(2026-11-11 — 대사 0.9초 뒤에 뛰면 떠오른 할아버지가 위쪽 대화창 뒤로 들어가고, 대화창이 아래로 피하면 원더룹을 덮었다) */
   if(!F[K.rock]){if(!st.hop)quest('할아버지처럼 둥실 뛰어 높은 바위에 올라요 (점프)',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
     const V=U.vert;if(V&&V.y>ROCK_TOP-.2&&dist(P.x,P.z,ROCK.c)<ROCK.r+.2){G.state.setFlag(K.rock,true);G.react.react('joy');
       G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()});}return;}
