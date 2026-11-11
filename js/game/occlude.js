@@ -133,6 +133,29 @@ function xray(on){if(!ctx)return;xrOn=!!on;if(xrOn)xrBuild();ctx.WL.traverse(m=>
 function tickXray(dt){xrT+=dt;scanT+=dt;if(xrOn&&xrT>1){xrT=0;xrBuild();}if(cutOn&&scanT>1){scanT=0;scan();}} // 탈·물건·병합 메시가 새로 붙으면 1초 안에
 /* 잠깐 끄기(소개 카드 전신 찍기 등): const resume=cutPaused(true); … resume(); */
 function cutPaused(){const w=CUT.value.w;CUT.value.w=0;return()=>{CUT.value.w=w;};}
-function clearOcclude(){LIST.length=0;cutOn=false;cutRoot=null;CUT.value.w=0;CUT_MATS.clear();}
+function clearOcclude(){PIECES.length=0;LIST.length=0;cutOn=false;cutRoot=null;CUT.value.w=0;CUT_MATS.clear();}
 const list=()=>LIST; // 시험용: 지금 흐려진 물체 보기
-export {add,clearOcclude,cut,cutPaused,hideFaded,prepass,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};
+/* 조각 흐리기(2026-11-11 — 대화 중 카메라와 두 사람 사이에 낀 작은 소품: 기둥·깃발·의자·탁자·우체통 …, 작아도 카메라 앞에 오면 화면에서 제일 커진다):
+   pieces({meshes:[한 덩어리로 합친 소품 메시…], boxes:{조각 번호: Box3}}) — 메시 정점에 wlPiece(조각 번호, 0 = 안 흐림)가 적혀 있어야 한다(구역이 만들 때).
+   재질에 셰이더 몇 줄을 끼워, 조각마다 흐림 값(wlFadeA[번호], 1 = 그대로)보다 촘촘한 점무늬로 화소를 버린다(반투명 섞기가 아니라 그리기·정렬이 그대로 — 드로우콜 0 추가).
+   대화 카메라가 잡힌 동안만(pieceHook.targets() — game/index가 원더룹·상대 자리를 줌) 카메라 → 두 사람 몸으로 가는 시선이 조각 상자를 지나면 0.18까지 약 0.2초에 흐리고,
+   대화가 끝나면 되돌린다. 집처럼 큰 건물은 대상이 아니다(대화 카메라가 막히지 않는 쪽을 고름). 구역을 떠나면 clearOcclude가 비운다 */
+const PIECES=[],pieceHook={targets:null},_pr=new THREE.Ray(),_pb=new THREE.Box3(),_pt=new THREE.Vector3(),_ph=new THREE.Vector3();
+function patchPieces(m,U){if(m.userData.wlPieceU){return;}m.userData.wlPieceU=U;const prev=m.onBeforeCompile;
+  m.onBeforeCompile=function(sh,r){if(prev)prev.call(this,sh,r);sh.uniforms.wlFadeA=U;
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float wlPiece;uniform float wlFadeA[64];varying float vWlFade;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWlFade=wlFadeA[int(wlPiece+.5)];');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vWlFade;').replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(vWlFade<.995&&fract(dot(floor(gl_FragCoord.xy),vec2(.7548776662,.5698402910)))>vWlFade)discard;');};
+  const key=m.customProgramCacheKey;m.customProgramCacheKey=function(){return (key?key.call(this):'')+'|wlPiece';};m.needsUpdate=true;}
+function pieces({meshes,boxes}){const m0=meshes.find(m=>m),U=(m0&&m0.material.userData.wlPieceU)||{value:new Float32Array(64).fill(1)};U.value.fill(1); /* 재질을 구역 사이에 다시 쓰면(캐시) 같은 표를 이어 씀 */
+  const list=Object.keys(boxes).map(k=>({id:+k,box:boxes[k],v:1})).filter(o=>o.id>0&&o.id<64);
+  for(const me of meshes){if(!me)continue;patchPieces(me.material,U);me.userData.wlFade=U.value;}const it={U,list,live:false};PIECES.push(it);return it;}
+function tickPieces(dt){if(!PIECES.length||!ctx)return;const T=pieceHook.targets&&pieceHook.targets(),cam=ctx.camera.position,k=Math.min(1,dt*8);
+  for(const it of PIECES){if(!T&&!it.live)continue;let live=false;
+    for(const o of it.list){let goal=1;if(T){_pb.copy(o.box).expandByScalar(.14);
+        const dc=_pb.distanceToPoint(cam);
+        if(dc<.5)goal=.18;
+        else if(dc<3.4&&(()=>{o.box.getCenter(_ph);_ph.y=Math.min(Math.max(cam.y,o.box.min.y),o.box.max.y);_ph.project(ctx.camera);return _ph.z<1&&Math.abs(_ph.x)<1.08&&Math.abs(_ph.y)<1.2;})())goal=.18; /* 시선에 걸리지 않아도 카메라 3.4m 안에서 화면에 들어온 소품(화면 가장자리를 가로지르는 기둥) */
+        else for(const [x,y,z,h] of T){for(const f of [.15,.5,.85]){_pt.set(x,y+h*f,z).sub(cam);const L=_pt.length();_pr.set(cam,_pt.divideScalar(L));if(_pr.intersectBox(_pb,_ph)&&_ph.distanceTo(cam)<L-.3){goal=.18;break;}}if(goal<1)break;}}
+      o.v+=(goal-o.v)*k;if(Math.abs(o.v-goal)<.004)o.v=goal;it.U.value[o.id]=o.v;if(o.v<.999)live=true;}
+    it.live=live;}}
+export {pieces,pieceHook,tickPieces,add,clearOcclude,cut,cutPaused,hideFaded,prepass,initOcclude,list,overlayPass,prepCut,tickOcclude,xray};

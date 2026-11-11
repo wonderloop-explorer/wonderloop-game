@@ -100,7 +100,10 @@ function put(geo,color,{pos=[0,0,0],rot=[0,0,0],s=[1,1,1],smooth=false}={},into=
   if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));
   g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...pos),new THREE.Quaternion().setFromEuler(new THREE.Euler(...rot)),new THREE.Vector3(...s)));if(!smooth)g.computeVertexNormals();
   const n=g.attributes.position.count,cc=new Float32Array(n*3),C=col(color);for(let i=0;i<n;i++){cc[i*3]=C.r;cc[i*3+1]=C.g;cc[i*3+2]=C.b;}g.setAttribute('color',new THREE.BufferAttribute(cc,3));
-  const u=g.attributes.uv;for(let i=0;i<n;i++)u.setXY(i,u.getX(i)*2,u.getY(i)*2);into.push(g);return g;}
+  const u=g.attributes.uv;for(let i=0;i<n;i++)u.setXY(i,u.getX(i)*2,u.getY(i)*2);
+  g.setAttribute('wlPiece',new THREE.BufferAttribute(new Float32Array(n).fill(PIECE),1));if(PIECE){g.computeBoundingBox();(PBOX[PIECE]||(PBOX[PIECE]=new THREE.Box3())).union(g.boundingBox);}into.push(g);return g;}
+/* 작은 소품 조각(2026-11-11 — 대화 중 카메라와 두 사람 사이에 끼면 흐려지는 것: 기둥·깃발·의자·탁자·우체통 … game/occlude pieces): piece()부터 pieceEnd()까지 put한 것이 한 조각(정점 wlPiece 번호 + 조각 상자) */
+let PIECE=0,PN=0;const PBOX={},piece=()=>{PIECE=++PN;},pieceEnd=()=>{PIECE=0;};
 /* 두 점 사이 막대(줄·다리·끈) */
 function rod(a,b,r,color,into=parts,n=6){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=B.clone().sub(A),len=d.length();
   const geo=new THREE.CylinderGeometry(r,r,len,n);geo.translate(0,len/2,0);geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()));geo.translate(A.x,A.y,A.z);return put(geo,color,{},into);}
@@ -198,7 +201,7 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
   for(let k=0;k<3;k++)put(new THREE.CylinderGeometry(.24,.26,.06,8),'#c7c0c6',{pos:at(2.0+k*.6,.03,(k%2?.12:-.12))});
   obstacles.push({c:[hx,hz,1.55]});}
 // 작은 천문대 망원경: 둥근 나무 단 + 세 다리 + 하늘을 향한 연보라 통(놋쇠 테) + 작은 접이 의자
-{const [sx,sz]=SCOPE,y=gy(sx,sz);put(new THREE.CylinderGeometry(.95,1.0,.14,12),'#b88a62',{pos:[sx,y+.07,sz]});put(new THREE.TorusGeometry(.96,.04,5,24),woodD,{pos:[sx,y+.14,sz],rot:[PI/2,0,0]});
+{piece();const [sx,sz]=SCOPE,y=gy(sx,sz);put(new THREE.CylinderGeometry(.95,1.0,.14,12),'#b88a62',{pos:[sx,y+.07,sz]});put(new THREE.TorusGeometry(.96,.04,5,24),woodD,{pos:[sx,y+.14,sz],rot:[PI/2,0,0]});
   const top=[sx,y+1.18,sz];for(let k=0;k<3;k++){const a=k/3*PI*2+.4;rod([sx+Math.cos(a)*.55,y+.14,sz+Math.sin(a)*.55],top,.03,woodD);}
   const dir=new THREE.Vector3(-.35,.62,-.7).normalize(),q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
   const tube=(r1,r2,len,off,c)=>{const g=new THREE.CylinderGeometry(r1,r2,len,12);g.translate(0,off,0);g.applyQuaternion(q);g.translate(...top);put(g,c);};
@@ -209,7 +212,7 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
   const cx=sx+.62,cz=sz+.5;put(new THREE.BoxGeometry(.3,.04,.26),wood,{pos:[cx,y+.42,cz]});rod([cx-.12,y+.14,cz-.1],[cx+.12,y+.42,cz+.1],.018,woodD);rod([cx+.12,y+.14,cz-.1],[cx-.12,y+.42,cz+.1],.018,woodD);
   obstacles.push({c:[sx,sz,.75]});}
 // 지도를 널어 말리는 빨랫줄: 기둥 둘 + 처진 줄 + 지도 셋(집게)
-{const [a,b]=LINE,ya=gy(...a),yb=gy(...b),H=1.62;rod([a[0],ya,a[1]],[a[0],ya+H+.1,a[1]],.045,wood);rod([b[0],yb,b[1]],[b[0],yb+H+.1,b[1]],.045,wood);
+{piece();const [a,b]=LINE,ya=gy(...a),yb=gy(...b),H=1.62;rod([a[0],ya,a[1]],[a[0],ya+H+.1,a[1]],.045,wood);rod([b[0],yb,b[1]],[b[0],yb+H+.1,b[1]],.045,wood);
   put(new THREE.SphereGeometry(.07,8,6),woodD,{pos:[a[0],ya+H+.14,a[1]]});put(new THREE.SphereGeometry(.07,8,6),woodD,{pos:[b[0],yb+H+.14,b[1]]});
   const pt=u=>[a[0]+(b[0]-a[0])*u,ya+(yb-ya)*u+H-Math.sin(PI*u)*.22,a[1]+(b[1]-a[1])*u];for(let k=0;k<8;k++)rod(pt(k/8),pt((k+1)/8),.012,'#efe6d6');
   const ry=Math.atan2(b[0]-a[0],b[1]-a[1])+PI/2;
@@ -220,42 +223,44 @@ const gy=(x,z)=>groundY(x,z),wood='#9a6a46',woodD='#6e4630',brass='#d8a24a',pape
     [-.18,.18].forEach(dx=>put(new THREE.BoxGeometry(.03,.09,.03),'#d9a066',{pos:[cx+Math.sin(ry)*dx,p[1]-.03,cz+Math.cos(ry)*dx],rot:[0,ry,0]}));});}
 // 다녀온 곳마다 꽂은 색색의 작은 깃발 핀: 마을 둘레 반원(길은 비움) + 망원경 옆 몇
 {const cols=['#ff9eb3','#7fb6e8','#ffe07a','#9bd46b','#c9a6e0','#ffb86b'];let k=0;
-  const pin=(x,z,h)=>{const y=gy(x,z),c=cols[k++%cols.length];rod([x,y,z],[x,y+h,z],.016,'#f2ead8');put(new THREE.SphereGeometry(.035,6,5),c,{pos:[x,y+h+.02,z]});
+  const pin=(x,z,h)=>{piece();const y=gy(x,z),c=cols[k++%cols.length];rod([x,y,z],[x,y+h,z],.016,'#f2ead8');put(new THREE.SphereGeometry(.035,6,5),c,{pos:[x,y+h+.02,z]});
     const g=new THREE.BufferGeometry(),v=new Float32Array([0,0,0, .24,-.06,0, 0,-.13,0, 0,0,0, 0,-.13,0, .24,-.06,0]);g.setAttribute('position',new THREE.BufferAttribute(v,3));
     put(g,c,{pos:[x+.016,y+h-.02,z],rot:[0,RR(-PI,PI),0]});};
   for(let i=0;i<15;i++){const a=-.6+i/14*(PI*1.55),r=RR(6.6,7.6),x=VIL[0]+Math.cos(a)*r,z=VIL[1]+Math.sin(a)*r;if(nearTrail.some(([p,q])=>Math.hypot(p-x,q-z)<1.1))continue;pin(x,z,RR(.5,.75));}
   [[-2.0,5.9],[-2.3,6.3],[-1.7,6.4]].forEach(([x,z])=>pin(x,z,RR(.45,.6)));}
 // 우편함: 나무 기둥 + 둥근 지붕 함(빨강) + 노란 깃발
-{const [x,z]=MAIL,y=gy(x,z);rod([x,y,z],[x,y+.78,z],.045,wood);put(new THREE.BoxGeometry(.34,.24,.46),'#d4554a',{pos:[x,y+.9,z]});
+{piece();const [x,z]=MAIL,y=gy(x,z);rod([x,y,z],[x,y+.78,z],.045,wood);put(new THREE.BoxGeometry(.34,.24,.46),'#d4554a',{pos:[x,y+.9,z]});
   put(new THREE.CylinderGeometry(.17,.17,.46,12,1,false,0,PI),'#d4554a',{pos:[x,y+1.02,z],rot:[PI/2,0,PI/2]});put(new THREE.BoxGeometry(.3,.2,.01),'#5a2a28',{pos:[x,y+.94,z+.235]});
   rod([x+.18,y+.86,z+.05],[x+.18,y+1.18,z+.05],.014,'#5a3826');put(new THREE.BoxGeometry(.01,.1,.16),'#ffd34e',{pos:[x+.19,y+1.12,z+.12]});
   put(new THREE.BoxGeometry(.2,.03,.14),paper,{pos:[x,y+1.0,z+.25],rot:[.3,0,0]});}
 // 작은 탁자와 의자 둘: 둥근 상판(0.5m) + 가운데 다리, 찻잔 둘·말아 둔 지도, 낮은 의자(앉는 높이 0.3m)
-{const [x,z]=TABLE,y=gy(x,z);put(new THREE.CylinderGeometry(.46,.46,.05,16),'#c99a6e',{pos:[x,y+.52,z]});put(new THREE.CylinderGeometry(.05,.07,.5,8),woodD,{pos:[x,y+.26,z]});put(new THREE.CylinderGeometry(.24,.26,.04,12),woodD,{pos:[x,y+.02,z]});
+{piece();const [x,z]=TABLE,y=gy(x,z);put(new THREE.CylinderGeometry(.46,.46,.05,16),'#c99a6e',{pos:[x,y+.52,z]});put(new THREE.CylinderGeometry(.05,.07,.5,8),woodD,{pos:[x,y+.26,z]});put(new THREE.CylinderGeometry(.24,.26,.04,12),woodD,{pos:[x,y+.02,z]});
   [[.15,.1,'#f2ead8'],[-.17,.06,'#c9e2f2']].forEach(([dx,dz,c])=>{put(new THREE.CylinderGeometry(.05,.04,.08,10),c,{pos:[x+dx,y+.59,z+dz]});put(new THREE.TorusGeometry(.025,.008,4,8),c,{pos:[x+dx+.06,y+.59,z+dz]});});
   put(new THREE.CylinderGeometry(.035,.035,.34,8),paper,{pos:[x,y+.58,z-.2],rot:[0,0,PI/2]});
-  [[-.8,.25,0],[.75,-.2,PI]].forEach(([dx,dz,f])=>{const cx=x+dx,cz=z+dz,ry=Math.atan2(x-cx,z-cz),sx=Math.cos(ry),sz=-Math.sin(ry),bx=-Math.sin(ry)*.15,bz=-Math.cos(ry)*.15;
+  [[-.8,.25,0],[.75,-.2,PI]].forEach(([dx,dz,f])=>{piece();const cx=x+dx,cz=z+dz,ry=Math.atan2(x-cx,z-cz),sx=Math.cos(ry),sz=-Math.sin(ry),bx=-Math.sin(ry)*.15,bz=-Math.cos(ry)*.15;
     put(new THREE.BoxGeometry(.32,.05,.3),'#c99a6e',{pos:[cx,y+.3,cz],rot:[0,ry,0]});
     [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,b])=>rod([cx+sx*.12*a+(-bx)*.8*b,y,cz+sz*.12*a+(-bz)*.8*b],[cx+sx*.12*a+(-bx)*.8*b,y+.3,cz+sz*.12*a+(-bz)*.8*b],.02,woodD));
     put(new THREE.BoxGeometry(.32,.32,.04),'#c99a6e',{pos:[cx+bx,y+.48,cz+bz],rot:[-.12,ry,0]});});}
 // 따뜻한 노란 줄 조명: 집 지붕 끝 → 마을 기둥(꼭대기 별), 처진 전선 + 전구 14
-{const [px,pz]=POLE,py=gy(px,pz);rod([px,py,pz],[px,py+2.3,pz],.05,wood);put(new THREE.OctahedronGeometry(.13,0),'#ffe59a',{pos:[px,py+2.42,pz],s:[1,1,.4]},glow);
-  const A=[HUT[0]-1.1,gy(...HUT)+2.05,HUT[1]-.6],B=[px,py+2.2,pz],pt=u=>[A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u-Math.sin(PI*u)*.55,A[2]+(B[2]-A[2])*u];
+{piece();const [px,pz]=POLE,py=gy(px,pz);rod([px,py,pz],[px,py+2.3,pz],.05,wood);put(new THREE.OctahedronGeometry(.13,0),'#ffe59a',{pos:[px,py+2.42,pz],s:[1,1,.4]},glow);
+  pieceEnd();const A=[HUT[0]-1.1,gy(...HUT)+2.05,HUT[1]-.6],B=[px,py+2.2,pz],pt=u=>[A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u-Math.sin(PI*u)*.55,A[2]+(B[2]-A[2])*u];
   for(let k=0;k<12;k++)rod(pt(k/12),pt((k+1)/12),.01,'#5a3826');
   for(let k=1;k<15;k++){const p=pt(k/15);put(new THREE.SphereGeometry(.065,8,6),k%3?'#ffd56a':'#ffb98a',{pos:[p[0],p[1]-.09,p[2]],s:[1,1.25,1]},glow);halos.push({x:p[0],z:p[2],y:p[1]-.09,c:'#ffd98a',s:.75,lamp:1});}
   // 두 번째 줄: 기둥 → 빨랫줄 기둥 쪽은 너무 멀어 집 → 망원경 단 위로 짧게
   const C2=[SCOPE[0]+.2,gy(...SCOPE)+1.9,SCOPE[1]+.9],pt2=u=>[B[0]+(C2[0]-B[0])*u,B[1]-.05+(C2[1]-B[1]+.05)*u-Math.sin(PI*u)*.35,B[2]+(C2[2]-B[2])*u];
-  rod([C2[0],gy(...SCOPE)+.14,C2[2]],[C2[0],C2[1]+.05,C2[2]],.035,wood);for(let k=0;k<6;k++)rod(pt2(k/6),pt2((k+1)/6),.01,'#5a3826');
+  piece();rod([C2[0],gy(...SCOPE)+.14,C2[2]],[C2[0],C2[1]+.05,C2[2]],.035,wood);pieceEnd();for(let k=0;k<6;k++)rod(pt2(k/6),pt2((k+1)/6),.01,'#5a3826');
   for(let k=1;k<6;k++){const p=pt2(k/6);put(new THREE.SphereGeometry(.06,8,6),k%2?'#ffd56a':'#ffb98a',{pos:[p[0],p[1]-.08,p[2]],s:[1,1.25,1]},glow);halos.push({x:p[0],z:p[2],y:p[1]-.08,c:'#ffd98a',s:.7,lamp:1});}}
 // 구석의 떡방아 절구(숨은 재미): 나무 절구 + 기대 세운 떡메 + 접시에 하얀 떡 셋
-{const [x,z]=MORTAR,y=gy(x,z);put(new THREE.CylinderGeometry(.3,.26,.24,12),wood,{pos:[x,y+.36,z]});put(new THREE.CylinderGeometry(.22,.3,.26,12),wood,{pos:[x,y+.13,z]});
+{piece();const [x,z]=MORTAR,y=gy(x,z);put(new THREE.CylinderGeometry(.3,.26,.24,12),wood,{pos:[x,y+.36,z]});put(new THREE.CylinderGeometry(.22,.3,.26,12),wood,{pos:[x,y+.13,z]});
   put(new THREE.TorusGeometry(.28,.035,5,16),woodD,{pos:[x,y+.48,z],rot:[PI/2,0,0]});put(new THREE.CircleGeometry(.24,14),'#f6f1e6',{pos:[x,y+.47,z],rot:[-PI/2,0,0]});
   const px=x-.62,pz=z+.22;put(new THREE.CylinderGeometry(.2,.17,.04,14),'#e8d6ea',{pos:[px,gy(px,pz)+.04,pz]});
   [[0,0],[.09,.06],[-.06,.08]].forEach(([dx,dz],k)=>put(new THREE.SphereGeometry(.07,10,6),k===1?'#f7e0e6':'#fbf8f0',{pos:[px+dx,gy(px,pz)+.1,pz+dz],s:[1,.7,1]}));}
+pieceEnd();
 // 마을 돌담 몇(둥근 돌 낮게 줄지어 — 앞쪽 겹)
 [[[-4.4,9.6],[-4.8,7.2]],[[8.2,5.2],[8.4,2.6]],[[2.6,12.4],[5.4,12.0]]].forEach(([a,b],w)=>{for(let k=0;k<=5;k++){const u=k/5,x=a[0]+(b[0]-a[0])*u+RR(-.1,.1),z=a[1]+(b[1]-a[1])*u+RR(-.1,.1),s=RR(.26,.36);put(lumpy(s,1,k+w*7),rockCols[(k+w)%5],{pos:[x,gy(x,z)+s*.55,z],rot:[0,RR(0,PI),0],s:[1,.75,1]});}});
 const pMat=pMatW();
-const props=new THREE.Mesh(mergeGeometries(parts),pMat);props.castShadow=props.receiveShadow=true;root.add(props);keep.push(props);parts=[];
+const props=new THREE.Mesh(mergeGeometries(parts),pMat);props.name='garden-props';props.castShadow=props.receiveShadow=true;root.add(props);keep.push(props);parts=[];
+G.occlude.pieces({meshes:[props],boxes:PBOX});
 /* 빛나는 덩어리: 툰 + 흰 발광(파스텔이 스스로 빛나 보임) */
 {const m=sbMat('#ffffff',{emissive:'#ffffff',ei:.5});m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(glow),m);root.add(me);keep.push(me);}
 /* ── 빛 웅덩이(땅에 붙은 은은한 빛, 더하기 섞기 — 그리기 1번): 그늘 분화구 푸른 빛·마을 줄 조명 아래 따뜻한 빛·출구 노란 빛·망원경 단 */

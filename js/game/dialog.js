@@ -73,10 +73,23 @@ const _p=new THREE.Vector3(),_q=new THREE.Vector3();
 const speakNPC=()=>{if(talk)return talk.n;if(!saying||saying.face===false||!saying.who)return null;const w=saying.who;return NPCS.find(n=>n.root&&n.name&&(w===n.name||w.startsWith(n.name+' ')||n.name.endsWith(' '+w)||n.name.endsWith(' '+w.split(' (')[0])))||null;};
 const speaking=()=>speakNPC();
 const _f=new THREE.Vector3();
-function tickFace(dt){const n=speakNPC();if(!n||n.face===false||!n.root)return;const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);n.root.getWorldPosition(_f);const dx=_f.x-P.x,dz=_f.z-P.z;if(dx*dx+dz*dz<.01)return;
-  const turn=(o,a)=>{o.rotation.y+=Math.atan2(Math.sin(a-o.rotation.y),Math.cos(a-o.rotation.y))*k;};
-  if(n.turn!==false)turn(n.root,Math.atan2(-dx,-dz));
-  if(!(U.isWalking&&U.isWalking())&&!(U.drive&&Math.abs(U.drive.x)+Math.abs(U.drive.z)>.01)&&!U.riding /* drive는 가만히 있어도 {0,0}으로 늘 있다 — 예전엔 !U.drive라 주민 대화에서 원더룹이 상대를 보지 않았다(2026-11-10) */&&!blocking('itemget')&&!(U.reactFace))turn(W,Math.atan2(dx,dz));}
+/* 대화 카메라가 잡힌 동안(2026-11-11 — 말하는 쪽 얼굴 우선, game/index pairCam이 faceHook.pair로 {root, side, phi}를 줌): 둘이 똑바로 마주 보면 옆 카메라에서는 둘 다 옆모습뿐이라,
+   무대 배우처럼 몸을 카메라 쪽으로 조금 열어 선다 — 말하는 쪽은 얼굴이 3/4 넘게(몸·카메라 방향 내적 약 0.75), 듣는 쪽은 옆모습보다 조금 더(약 0.15). 카메라는 듣는 쪽 어깨 쪽으로 살짝 돌아가 있다(phi).
+   원더룹 줄('원더룹')은 반대로. 구역이 주민 방향을 매 프레임 다시 정해도(아기 토끼) 그리기 전에 여기서 덮어쓰고, 말이 끝나면 구역 값으로 부드럽게 돌려보낸다(REL) */
+const faceHook={pair:null};const heroSpeaking=()=>!!(saying&&saying.who==='원더룹');
+const wrapA=a=>Math.atan2(Math.sin(a),Math.cos(a));let FN=null;const REL=[];
+function tickFace(dt){const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);
+  for(let i=REL.length-1;i>=0;i--){const it=REL[i],r=it.root;if(Math.abs(wrapA(r.rotation.y-it.last))<1e-4){REL.splice(i,1);continue;} /* 구역이 방향을 다시 정하지 않는 주민은 그대로 둠 */
+    const off=wrapA(it.last-r.rotation.y)*(1-k);if(Math.abs(off)<.01){REL.splice(i,1);continue;}r.rotation.y+=off;it.last=r.rotation.y;}
+  const pair=faceHook.pair&&faceHook.pair();let n=speakNPC(),heroSp=false;
+  if(!n&&pair&&heroSpeaking()){n=NPCS.find(q=>q.root===pair.root)||null;heroSp=!!n;}
+  if(n!==FN){if(FN&&FN.root&&FN._fy!=null)REL.push({root:FN.root,last:FN._fy});if(FN)FN._fy=null;FN=n;}
+  if(!n||n.face===false||!n.root)return;n.root.getWorldPosition(_f);const dx=_f.x-P.x,dz=_f.z-P.z,L=Math.hypot(dx,dz);if(L<.1)return;const ax=dx/L,az=dz/L;
+  let tn=0,th=0,px=0,pz=0;if(pair&&pair.root===n.root){px=-az*pair.side;pz=ax*pair.side;const m=Math.abs(pair.phi||0); /* 말하는 쪽: 0.85 − 사선, 듣는 쪽: 사선 + 0.15 (라디안, 카메라 쪽으로 여는 각) */
+    if(heroSp){th=Math.max(.2,.85-m);tn=m+.15;}else{tn=Math.max(.2,.85-m);th=m+.15;}}
+  const an=Math.atan2(-ax*Math.cos(tn)+px*Math.sin(tn),-az*Math.cos(tn)+pz*Math.sin(tn)),ah=Math.atan2(ax*Math.cos(th)+px*Math.sin(th),az*Math.cos(th)+pz*Math.sin(th));
+  if(n.turn!==false){if(n._fy==null)n._fy=n.root.rotation.y;n._fy+=wrapA(an-n._fy)*k;n.root.rotation.y=n._fy;}
+  if(!(U.isWalking&&U.isWalking())&&!(U.drive&&Math.abs(U.drive.x)+Math.abs(U.drive.z)>.01)&&!U.riding /* drive는 가만히 있어도 {0,0}으로 늘 있다 — 예전엔 !U.drive라 주민 대화에서 원더룹이 상대를 보지 않았다(2026-11-10) */&&!blocking('itemget')&&!(U.reactFace))W.rotation.y+=wrapA(ah-W.rotation.y)*k;}
 function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   // 대화 중 너무 멀어지면 닫음
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
@@ -114,4 +127,4 @@ const talking=()=>!!talk,talkNPC=()=>talk?talk.n:null; /* 지금 이야기하는
 const npcList=()=>NPCS; // 시험 도구(game/devcheck 크기 확인)
 const findNPC=name=>NPCS.find(n=>n.name===name)||null;
 const lineEnd=()=>talk&&talk.h?talk.h.end:null; // 지금 대사(목소리)가 끝나는 게임 시각 — 영상 캡처가 대사를 저절로 넘길 때
-export {speaking,talkNPC,act,setDialogZone,met as npcMet,clearDialog,clickNPC,endTalk,findNPC,npcList,initDialog,lineEnd,linesOf,npc,say,startTalk,talkable,talking,tickDialog};
+export {faceHook,heroSpeaking,speaking,talkNPC,act,setDialogZone,met as npcMet,clearDialog,clickNPC,endTalk,findNPC,npcList,initDialog,lineEnd,linesOf,npc,say,startTalk,talkable,talking,tickDialog};
