@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="f4652293cb";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="07db85fda7";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 49924fa, 버전 5d25819d83, 2026-11-10)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 65e1d4d, 버전 acccd5f1e7, 2026-11-11)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="5d25819d83";
-window.WL_BUILD={"commit":"49924fa","date":"2026-11-10","stage":"basecamp"};
+window.WL_V="acccd5f1e7";
+window.WL_BUILD={"commit":"65e1d4d","date":"2026-11-11","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -2805,11 +2805,15 @@ function initControls(ctx){build();if(SHOT)return;
   const cv=ctx.renderer.domElement;let drag=null,pinch=null;const pts=new Map();
   const span=()=>{const [a,b]=[...pts.values()];return Math.hypot(a.x-b.x,a.y-b.y);};
   cv.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(pts.size===2){drag=null;pinch={d:span(),dist:input.cam.dist};input.pinching=true;}else if(pts.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
+    if(pts.size===2){drag=null;pinch={d:span(),dist:input.cam.dist};input.pinching=true;}else if(pts.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY,ox:e.clientX,oy:e.clientY,go:false};});
   cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(p){p.x=e.clientX;p.y=e.clientY;}
     if(pinch&&pts.size>=2){if(input.cam.on){const d=span();if(d>10)input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,pinch.dist*pinch.d/d));input.cam.user=(input.cam.user||0)+1;}return;} // 벌리면 가까이, 오므리면 멀리
     if(drag&&drag.id===e.pointerId&&input.dragHook){const dx=e.clientX-drag.x;drag.x=e.clientX;drag.y=e.clientY;input.dragHook(dx);return;} // 옷 갈아입기: 끌면 원더룹이 돈다(카메라는 그대로)
-    if(!drag||drag.id!==e.pointerId||!input.cam.on)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+    if(!drag||drag.id!==e.pointerId||!input.cam.on)return;
+    /* 누르기와 끌기 나누기(2026-11-11): 누른 자리에서 8화소(손가락 12) 넘게 움직여야 끌기 — 대사를 넘기려고 화면을 누를 때 손가락이 조금 떨려도 카메라 조작으로 치지 않는다
+       (그 떨림에 08이 대화 카메라 연출을 끝내 버려, 카메라가 원더룹 어깨 뒤로 돌아가 탈 뒤통수가 화면을 덮었다) */
+    if(!drag.go){if(Math.hypot(e.clientX-drag.ox,e.clientY-drag.oy)<(e.pointerType==='touch'?12:8))return;drag.go=true;drag.x=e.clientX;drag.y=e.clientY;return;}
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
     if(dx||dy)input.cam.user=(input.cam.user||0)+1;input.cam.yaw-=dx*CAM.yawPx;input.cam.pitch=Math.min(CAM.pitchMax,Math.max(CAM.pitchMin,input.cam.pitch+dy*CAM.pitchPx));});
   const endDrag=e=>{pts.delete(e.pointerId);if(drag&&drag.id===e.pointerId)drag=null;if(pts.size<2&&pinch){pinch=null;drag=null;} // 두 손가락을 떼는 동안 남은 손가락으로 카메라가 튀지 않게
     if(!pts.size&&input.pinching)setTimeout(()=>{input.pinching=false;},0);}; // 다 뗄 때까지는 '눌러서 걷기'로 보지 않는다(08)
@@ -4343,15 +4347,26 @@ const view={camera:null,aim:null,
    view.pairCam(root, 머리 높이)는 구역 이야기 장면(혼잣말 줄로 진행하는 대화)이 같은 구도를 쓸 때 — hold에 넘길 함수를 돌려준다 */
 let HERO=null,TC=null;const SHOT_Q=new URLSearchParams(location.search).has('shot');
 function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
-  root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14],P=W.position;let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
-  /* 화면 가림 규칙 2(2026-11-10): 인물을 넣을 화면 띠 = 맨 위 단추 줄 아래(fT) ~ 맨 아래로 내려간 대화창 위(fB). 그 띠 안에 두 사람의 머리 위~발끝을 넣고,
-     낮은 쪽 얼굴(작은 주민)도 화면 위쪽 절반(fF ≤ 0.44)에 오게 — 거리는 시야각으로: 세로(얼굴 위·아래 각각)와 가로(둘 사이 너비) 가운데 가장 먼 것 */
-  const [fT,fB]=band(),fF=Math.min(.38,fT+(fB-fT)*.45),top=Math.max(P.y+1.52,ny+headY+.15),bot=Math.min(P.y,ny),face=Math.min(P.y+.95,ny+headY-Math.min(.35,headY*.3));
-  const mx=(P.x+nx)/2,mz=(P.z+nz)/2;let px=-az,pz=ax;if((cam.position.x-mx)*px+(cam.position.z-mz)*pz<0){px=-px;pz=-pz;}
-  const asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360),vis=Math.max((top-face)/Math.max(.08,fF-fT-.02),(face-bot)/Math.max(.08,fB-fF-.015),(sep+1.5)/(.86*asp)),D=Math.min(19,vis/tf),my=face-(.5-fF)*D*tf*1.02;
-  let fx=mx+px*D*.99-ax*D*.05,fz=mz+pz*D*.99-az*D*.05;const fy=my+D*.1;
-  if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
-  const o={at:[mx,my,mz],from:[fx,fy,fz]};return ()=>o;}
+  /* 2026-11-11 다시: 두 사람의 몸 전체(발 ~ 머리 위)가 화면 띠(맨 위 단추 줄 아래 ~ 내려간 대화창 위) 안에 들어오는 가장 가까운 거리 — 키 큰 상대(둥둥)는 저절로 더 멀리.
+     방향은 둘을 잇는 선의 옆에서 상대 쪽으로 PHI만큼 돌아간 사선 → 원더룹 얼굴이 옆모습보다 더 보이고(얼굴·카메라 방향 내적 ≈ sin PHI + 여유), 상대는 옆모습.
+     (예전엔 '낮은 쪽 얼굴을 화면 위 38%에'를 거리로 풀어서 띠가 좁으면 19m까지 물러났고, 원더룹 조금 뒤에서 봐 탈 뒤통수 쪽이 보였다.)
+     옆(왼쪽·오른쪽)은 처음에 한 번 지금 카메라에 가까운 쪽으로 정하고, 자리는 매번 다시 계산(말 걸 때 아직 움직이던 주민을 따라감) */
+  const PHI=.3,P=W.position;let side=0,B=null;
+  const o={at:[0,0,0],from:[0,0,0]};
+  return ()=>{root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14];let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
+    const mx=(P.x+nx)/2,mz=(P.z+nz)/2;
+    if(!side){side=((cam.position.x-mx)*-az+(cam.position.z-mz)*ax)<0?-1:1;
+      /* 그쪽 옆에 큰 것(집·큰 바위 — 반지름 0.9m 넘는 둥근 장애물)이 카메라와 두 사람 사이에 서 있으면 반대쪽 옆으로(반대쪽이 트여 있을 때만) */
+      const hitN=sd=>{let n=0;const ex=mx+(-az*sd*Math.cos(PHI)+ax*Math.sin(PHI))*9,ez=mz+(ax*sd*Math.cos(PHI)+az*Math.sin(PHI))*9,dx=ex-mx,dz=ez-mz,L2=dx*dx+dz*dz;
+        if(Z&&Z.areas)for(const k in Z.areas)for(const ob of Z.areas[k].obstacles||[]){if(!ob.c||ob.c[2]<.9)continue;const [cx,cz,r]=ob.c;if(Math.hypot(cx-nx,cz-nz)<r+.3)continue;const t=Math.min(1,Math.max(.08,((cx-mx)*dx+(cz-mz)*dz)/L2));if(Math.hypot(mx+dx*t-cx,mz+dz*t-cz)<r+.5)n++;}return n;};
+      if(hitN(side)>0&&hitN(-side)===0)side=-side;}
+    const px=-az*side,pz=ax*side;
+    if(!B)B=band(); /* 화면 띠는 말을 걸 때 한 번만(대화창이 비켜 가며 띠가 바뀌면 카메라와 대화창이 서로 밀어냄) */
+    const [fT,fB]=B,top=Math.max(P.y+1.6,ny+headY+.18),bot=Math.min(P.y,ny)-.05,asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360);
+    const wide=sep*Math.cos(PHI)+1.5,D=Math.min(19,Math.max(5.2,(top-bot)/(Math.max(.2,fB-fT-.1)*.78*tf),wide/(.88*asp*tf))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
+    const c=Math.cos(PHI),s=Math.sin(PHI);let fx=mx+(px*c+ax*s)*D,fz=mz+(pz*c+az*s)*D;const fy=my+D*.12;
+    if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
+    o.at[0]=mx;o.at[1]=my;o.at[2]=mz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
 view.pairCam=pairCam;
 function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
@@ -4610,10 +4625,12 @@ import {blocking,clock} from './core.js';
 import {input} from './controls.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let dlgTopPx=0;
-let ctx=null,speakFn=null,talkFn=null,dockT=-9,docked=false,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
+let ctx=null,speakFn=null,talkFn=null,dockT=-9,docked=false,dockAt=0,stackTop=0,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
 const EXTRA=new Set(),SLOT={dlg:'bot',strip:'top'},_a=new THREE.Vector3(),_b=new THREE.Vector3();
 const css=`body.wl-dock #wlJoy,body.wl-dock #wlJump,body.wl-dock #wlDash,body.wl-dock #wlAct{visibility:hidden!important;pointer-events:none!important}
-body.wl-dock #wlDlg{width:min(34rem,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}`;
+body.wl-dock #wlDlg{width:min(34rem,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}
+.wl-mv{transition:transform .38s cubic-bezier(.2,1.5,.4,1),opacity .25s,top .3s ease,left .3s ease!important}
+@media (prefers-reduced-motion: reduce){.wl-mv{transition:none!important}}`;
 const $=id=>document.getElementById(id);
 const shown=e=>{if(!e)return false;const cs=getComputedStyle(e);return cs.display!=='none'&&cs.visibility!=='hidden';};
 function safe(){if(!probe){probe=document.createElement('div');probe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)';document.body.appendChild(probe);}
@@ -4629,6 +4646,16 @@ function chars(){const L=[];if(!ctx||!ctx.camera)return L;const P=ctx.WL.positio
 const inter=(a,b)=>Math.max(0,Math.min(a[2],b[2])-Math.max(a[0],b[0]))*Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1]));
 /* 글상자 네모 R이 인물들을 얼마나 덮나: 얼굴은 조금만 걸려도 크게, 몸은 넓이 비율 */
 function score(R,C){let s=0;for(const c of C){const A=Math.max(1,(c[2]-c[0])*(c[3]-c[1])),F=[c[0],c[1],c[2],c[4]],FA=Math.max(1,(F[2]-F[0])*(F[3]-F[1]));s+=inter(R,c)/A+3*inter(R,F)/FA;}return s;}
+/* 자리 넣기(2026-11-11): 처음 뜰 때는 그 자리에서 바로(움직임 없이 나타나기만), 떠 있는 동안 자리가 바뀌면(인물을 피해 비켜 가거나 위쪽 쌓기가 밀릴 때) 0.3초에 걸쳐 부드럽게.
+   크기는 offsetWidth·offsetHeight로 — 나타나는 동안 scale(.6~.7)이 걸려 있어 getBoundingClientRect는 작게 나온다(그 폭으로 왼쪽 옆자리를 잡아 카드가 화면 밖으로 잘렸다) */
+let snapAll=false;
+/* 처음 뜨는 것은 한 프레임 숨겨 두고(같은 순간 할 일 안내 글이 바뀌어 단추 줄 높이가 달라지는 것까지 본 뒤) 다음 화면 갱신에 자리를 한 번 더 잡은 다음 보인다 — 처음 보이는 프레임부터 제자리 */
+const fresh=new Set();let freshRaf=0;
+function hold1(e){e._wlNew=true;e.style.visibility='hidden';fresh.add(e);if(!freshRaf)freshRaf=requestAnimationFrame(()=>{freshRaf=0;try{place();}catch(err){}for(const q of fresh){q._wlNew=false;q.style.visibility='';}fresh.clear();});}
+function setPos(e,top,left,snap){top=Math.round(top)+'px';left=left==null?'':Math.round(left)+'px';if(!e._wlOn)hold1(e);const first=!e._wlOn||snapAll||e._wlNew||snap;e._wlOn=true;
+  if(e.style.top===top&&e.style.left===left&&e.style.bottom==='auto')return;
+  if(first)e.classList.remove('wl-mv');else{e.classList.add('wl-mv');clearTimeout(e._wlMv);e._wlMv=setTimeout(()=>e.classList.remove('wl-mv'),340);}
+  e.style.top=top;e.style.bottom='auto';e.style.left=left;}
 const avoid=fn=>{EXTRA.add(fn);sig='';return ()=>{EXTRA.delete(fn);};};
 /* 맨 위 단추 줄 아래 끝(쌓기 시작) */
 function rowBottom(){let b=safeT+8;for(const id of ['wlQuest','wlItems','wlMenu','wlTool','dbgBtn']){const e=$(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.3&&r.bottom<innerHeight*.42)b=Math.max(b,r.bottom);}return b;}
@@ -4637,10 +4664,11 @@ const topEdge=()=>stackBot; // 위쪽 쌓기의 아래 끝(float.js 말풍선·�
 function band(){const H=innerHeight||1,d=$('wlDlg');let dh=0;if(d&&shown(d))dh=d.getBoundingClientRect().height;dh=Math.max(dh,coarse?132:118)+22;
   /* 넓은 화면(가로·컴퓨터)은 가방·메뉴가 구석에 있고 가운데 위에는 할 일 안내만 → 그 아래부터. 좁은 화면(세로)은 단추 줄 전체 아래부터 */
   let tp=rowBottom();if(innerWidth>700){tp=safeT+8;const q=$('wlQuest');if(q&&shown(q)){const r=q.getBoundingClientRect();if(r.height)tp=r.bottom;}}
-  if(stackBot>tp+12)tp=Math.max(tp,stackBot-8); /* 횟수·띠 카드·안내 문구가 쌓여 있으면 그 아래부터 */
+  if(stackTop>tp+12)tp=Math.max(tp,stackTop-8); /* 횟수가 떠 있으면 그 아래부터(위로 비켜 간 대화창·띠 카드는 빼고 — 카메라가 인물을 띠에 넣으면 대화창은 아래로 돌아온다) */
   return [Math.min(.36,(tp+24)/H),Math.max(.55,1-(safeB+(coarse?14:22)+dh+8)/H)];}
 /* 자리 고르기: 후보 [x0, y0] 가운데 인물을 가장 덜 덮는 것(앞 후보가 거의 안 덮으면 — 0.12 아래 — 그대로) */
-function pick(w,h,C,cands){let best=0,bs=1e9;for(let i=0;i<cands.length;i++){const c=cands[i],sc=score([c[0],c[1],c[0]+w,c[1]+h],C);if(i===0&&sc<=.12)return 0;if(sc+.1<bs){bs=sc;best=i;}}return best;}
+function pick(w,h,C,cands,keep=0){const S=cands.map(c=>score([c[0],c[1],c[0]+w,c[1]+h],C));if(keep>0&&keep<cands.length&&S[keep]<=.12)return keep; /* 한번 비켜 간 자리는 거기가 덮이지 않는 한 그대로(오락가락하지 않게) */
+  let best=0,bs=1e9;for(let i=0;i<cands.length;i++){if(i===0&&S[0]<=.12)return 0;if(S[i]+.1<bs){bs=S[i];best=i;}}return best;}
 function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(),row=rowBottom();
   /* 넓은 화면(가로·컴퓨터): 가방·메뉴는 구석에 있으니, 그 사이에 들어가는 가운데 표시는 할 일 칩 바로 아래부터 쌓는다(낮은 화면에서 한 줄이라도 위로 — 원더룹 탈에 닿지 않게) */
   let y=row+8,cL=0,cR=W;if(W>700){let q=safeT+8;const qe=$('wlQuest');if(qe&&shown(qe)){const r=qe.getBoundingClientRect();if(r.height)q=r.bottom;}y=q+8;
@@ -4654,28 +4682,29 @@ function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(
   if(ctl){const j=joy.getBoundingClientRect(),d=dash&&shown(dash)?dash.getBoundingClientRect():null;ctlTop=Math.min(j.top,d?d.top-16:H)-10;gapL=j.right+8;gapR=(d?d.left:W)-8;}
   /* 왼쪽 옆자리(가로 화면처럼 위·아래가 모두 인물에 걸릴 때): 가방 칸 아래 ~ 조이스틱 위 */
   let leftTop=row+8;{const it=$('wlItems');if(it&&shown(it)){const r=it.getBoundingClientRect();leftTop=Math.max(leftTop,r.bottom+8);}}const leftX=safeL+14;
-  if(cOn){clear(cnt.offsetWidth);cnt.style.top=Math.round(y)+'px';y+=cnt.offsetHeight+8;}
+  for(const id of ['wlCount','wlToast','wlStrip','wlGet','wlNotice']){const e=$(id);if(e&&!e.classList.contains('on')){e._wlOn=false;e._slot=0;}}if(dlg&&!dOn){dlg._wlOn=false;dlg._slot=0;}
+  if(cOn){clear(cnt.offsetWidth);setPos(cnt,y,null);y+=cnt.offsetHeight+8;}stackTop=y;
   /* 대화창: 아래(잠겼거나 조이스틱과 단추 사이에 들어가면 맨 아래, 아니면 조이스틱·단추 위) ↔ 위 */
   let dTop=H,dLeft=W;
-  if(dOn){const r=dlg.getBoundingClientRect(),w=r.width,h=r.height,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
-    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62)cands.push([x0,y]);
-    SLOT.dlg=pick(w,h+tag,C,cands)===1?'top':'bot';
-    if(SLOT.dlg==='top'){dlg.style.top=Math.round(y+tag)+'px';dlg.style.bottom='auto';y+=tag+h+10;dLeft=x0;}
-    else{dlg.style.top='';dlg.style.bottom=`calc(env(safe-area-inset-bottom,0px) + ${bo}px)`;dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
-  else{dlgTopPx=0;if(dlg){dlg.style.top='';dlg.style.bottom='';}}
+  if(dOn){const w=dlg.offsetWidth,h=dlg.offsetHeight,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
+    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62&&!(docked&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
+    const k=pick(w,h+tag,C,cands,0),was=dlg._slot;dlg._slot=k;SLOT.dlg=k===1?'top':'bot';const dsnap=was===k; /* 아래 ↔ 위로 비켜 갈 때만 부드럽게(대사가 바뀌어 높이가 달라질 때는 바로) */
+    if(SLOT.dlg==='top'){setPos(dlg,y+tag,null,dsnap);y+=tag+h+10;dLeft=x0;}
+    else{setPos(dlg,yB,null,dsnap);dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
+  else{dlgTopPx=0;if(dlg){dlg.style.top='';dlg.style.bottom='';dlg.classList.remove('wl-mv');}}
   /* 띠 카드·안내 문구: 위 가운데(쌓기) → 왼쪽 옆 → 아래(대화창·조이스틱 위) */
-  const put=(e,stack)=>{const w=e.getBoundingClientRect().width||e.offsetWidth,h=e.offsetHeight,x0=(W-w)/2,floor=Math.min(dTop,ctlTop)-8;clear(w);const cands=[[x0,y]];
+  const put=(e,stack)=>{const w=e.offsetWidth,h=e.offsetHeight,x0=(W-w)/2,floor=Math.min(dTop,ctlTop)-8;clear(w);const cands=[[x0,y]];
     if(leftX+w<Math.min(W*.48,dLeft-8)&&leftTop+h<floor)cands.push([leftX,leftTop]);
     if(stack&&floor-h>y+h*.5)cands.push([x0,floor-h]);
-    const fit=cands.filter(c=>c[1]+h<=floor+8),use=fit.length?fit:cands,k=pick(w,h,C,use),c=use[k];e.style.top=Math.round(c[1])+'px';e.style.bottom='auto';e.style.left=c[0]===x0?'':Math.round(c[0]+w/2)+'px';
+    const fit=cands.filter(c=>c[1]+h<=floor+8),use=fit.length?fit:cands,kind=c=>c[0]===leftX?1:c[1]===y?0:2,keep=e._slot?use.findIndex(c=>kind(c)===e._slot):0,k=pick(w,h,C,use,keep),c=use[k];e._slot=kind(c);setPos(e,c[1],c[0]===x0?null:c[0]+w/2);
     if(c[0]===x0&&c[1]===y)y+=h+8;else if(c[0]===leftX)leftTop+=h+8;return c[0]===leftX?1:c[1]===y?0:2;};
   for(const e of strips)SLOT.strip=['top','side','bot'][put(e,true)]||'top';
   if(tOn)put(toast,false);
   /* 'E …' 안내(컴퓨터, 화면 아래 가운데 — 주민 머리 위에 붙은 때는 dialog가 자리를 잡음): 대화창이 아래에 떠 있으면 숨기고(겹침), 낮은 화면은 발밑으로 내린다 */
   {const pr=$('wlPrompt');if(pr&&!pr.dataset.at){pr.style.visibility=dOn&&SLOT.dlg==='bot'?'hidden':'';pr.style.bottom=H<700?`calc(env(safe-area-inset-bottom,0px) + 26px)`:'';}else if(pr)pr.style.visibility='';}
-  stackBot=y;}
+  stackBot=y;snapAll=false;}
 function tickLayout(){if(!ctx)return;const now=clock.t,lk=locked();if(lk)dockT=now;const dk=lk||now-dockT<.35;
-  if(dk!==docked){docked=dk;document.body.classList.toggle('wl-dock',dk);if(dk&&input.releaseJoy)input.releaseJoy();sig='';}
+  if(dk!==docked){docked=dk;if(dk)dockAt=performance.now();document.body.classList.toggle('wl-dock',dk);if(dk&&input.releaseJoy)input.releaseJoy();sig='';}
   const dlg=$('wlDlg'),on=id=>{const e=$(id);return e&&e.classList.contains('on')?1:0;};
   const s=[dlg&&dlg.style.display==='block'?dlg.querySelector('.line').textContent.length+':'+dlg.querySelector('.line').textContent.slice(0,12):0,on('wlStrip'),on('wlGet'),on('wlNotice'),on('wlCount'),on('wlToast'),docked?1:0,innerWidth,innerHeight].join('|');
   const perf=performance.now();
@@ -4683,7 +4712,9 @@ function tickLayout(){if(!ctx)return;const now=clock.t,lk=locked();if(lk)dockT=n
   else if(recheck&&perf>=recheck){recheck=0;place();}
   else if(perf>=nextAt){nextAt=perf+500;place();}} /* 0.5초마다 다시(카메라가 움직여 인물 자리가 바뀌면 비켜 감 — 앞 후보가 거의 안 덮으면 그대로라 오락가락하지 않음) */
 function initLayout(c,o){ctx=c;speakFn=o.speaking;talkFn=o.talking;const st=document.createElement('style');st.dataset.wl='layout';st.textContent=css;document.head.appendChild(st);safe();stackBot=rowBottom()+8;
-  addEventListener('resize',()=>{sig='';});}
+  addEventListener('resize',()=>{sig='';snapAll=true;});
+  /* 글꼴이 늦게 불러와져 글상자 크기가 바뀌면(첫 화면에서 특히) 자리를 다시 — 움직임 없이 바로 */
+  if(document.fonts){const re=()=>{sig='';snapAll=true;};try{document.fonts.addEventListener('loadingdone',re);document.fonts.ready.then(re);}catch(e){}}}
 const isDocked=()=>docked;
 /* 따라가기 카메라가 원더룹을 둘 화면 띠 [위, 아래](0~1) — 대화창이 아래에 떠 있고(잠긴 동안, 또는 낮은 화면) 그 위로 비켜 줘야 할 때만, 아니면 null (08: 보는 점을 내려 원더룹을 띠 가운데로) */
 function heroBand(){if(!dlgTopPx)return null;const H=innerHeight||1,d=$('wlDlg');if(!d||d.style.display!=='block')return null;const b=band();return [b[0],Math.max(b[0]+.2,(dlgTopPx-8)/H)];}
@@ -6377,7 +6408,7 @@ const css=`
 /* 안내 문구: 개미굴 #toast처럼 어두운 반투명 알약 + 크림색 Gowun Dodum(2026-11-03 — 펠트 테두리는 너무 튀었다) */
 /* 자리(2026-11-08): 맨 위 단추 줄(할 일 안내·가방·메뉴) 아래 — 가방 칩 위치(14 + max(58, 할 일 높이 --qh)) + 칩 높이 40 + 틈 10, 노치(안전 영역) 포함.
    좁은 화면에서는 줄바꿈해 화면 폭(양옆 14px·안전 영역) 안에(예전엔 한 줄로 넘쳐 아이폰에서 가방·메뉴 단추 밑에 깔리고 화면 밖으로 나갔다) */
-#wlToast{font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)) + 50px);width:max-content;max-width:calc(100vw - 28px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));box-sizing:border-box;text-align:center;line-height:1.4;transform:translate(-50%,-10px);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:22;
+#wlToast{font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)) + 50px);width:max-content;max-width:calc(100vw - 28px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));box-sizing:border-box;text-align:center;line-height:1.4;transform:translate(-50%,0);opacity:0;transition:opacity .3s;pointer-events:none;z-index:22;
   background:rgba(46,28,44,.72);color:#fff4e4;border-radius:999px;padding:.5rem 1.15rem;font-size:1rem;margin:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:normal;word-break:keep-all;box-shadow:none}
 @media (max-width:700px){#wlToast{border-radius:18px;font-size:.95rem}} /* 두 줄이 되면 알약보다 둥근 네모가 자연스럽게 */
 #wlToast.on{opacity:1;transform:translate(-50%,0)}
@@ -6586,7 +6617,7 @@ function toastTop(){let b=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBt
 let cnt=null;
 function count(o){if(!o){if(cnt)cnt.classList.remove('on');uiHooks.layout&&uiHooks.layout();return;}
   if(!cnt){cnt=document.createElement('p');cnt.id='wlCount';cnt.className='wl-hint';cnt.setAttribute('role','status');root.appendChild(cnt);
-    const st=document.createElement('style');st.textContent='#wlCount{position:fixed;left:50%;top:120px;transform:translate(-50%,-8px);margin:0;z-index:31;display:flex;align-items:center;gap:.5rem;padding:.4rem .95rem;border-radius:999px;background:rgba(46,28,44,.82);color:#fff4e4;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.08rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}#wlCount.on{opacity:1;transform:translate(-50%,0)}#wlCount i{width:.85rem;height:.85rem;border-radius:50%;border:2px solid #fff4e4;box-sizing:border-box;display:inline-block}#wlCount i.f{background:#f7c948;border-color:#f7c948}#wlCount b{font-weight:400;color:#f7c948}@media (prefers-reduced-motion: reduce){#wlCount{transition:none;transform:translate(-50%,0)}}';document.head.appendChild(st);}
+    const st=document.createElement('style');st.textContent='#wlCount{position:fixed;left:50%;top:120px;transform:translate(-50%,0);margin:0;z-index:31;display:flex;align-items:center;gap:.5rem;padding:.4rem .95rem;border-radius:999px;background:rgba(46,28,44,.82);color:#fff4e4;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.08rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s}#wlCount.on{opacity:1}#wlCount i{width:.85rem;height:.85rem;border-radius:50%;border:2px solid #fff4e4;box-sizing:border-box;display:inline-block}#wlCount i.f{background:#f7c948;border-color:#f7c948}#wlCount b{font-weight:400;color:#f7c948}@media (prefers-reduced-motion: reduce){#wlCount{transition:none;transform:translate(-50%,0)}}';document.head.appendChild(st);}
   cnt.innerHTML='';const l=document.createElement('span');l.textContent=o.label||'';cnt.appendChild(l);for(let i=0;i<o.max;i++){const d=document.createElement('i');if(i<o.n)d.className='f';cnt.appendChild(d);}
   const b=document.createElement('b');b.textContent=o.n+'/'+o.max;cnt.appendChild(b);
   let bt=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBtn']){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)bt=Math.max(bt,r.bottom);}
@@ -10481,7 +10512,7 @@ const nextTop=(()=>{const g=new THREE.CircleGeometry(1,26);g.rotateX(-PI/2);cons
       if(cur>=0){const k=1+.1*Math.sin(t*4);const r=SEQ[cur].r*.8;ring.scale.set(r*k,1,r*k);}}};})();
 /* ── 하늘: 낮 버터스카치 → 노을(어둑한 살구·갈색, 해 둘레만 파랗게). 밤 칸은 노을과 같게(쓰지 않음) ── */
 const DAY={top:'#e3bd8f',horizon:'#efc4b4',hemi:'#f6dcc6',ground:'#c98d73',hemiI:.64,sun:'#fff0dc',sunI:.78,sunDir:[-4,-7,-6],fill:.24,fog:'#ecc3b3',fogNear:60,fogFar:330,stars:0,milky:0};
-const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#caa08c',ground:'#7d5248',hemiI:.52,sun:'#d6e6fa',sunI:.46,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:55,fogFar:300,stars:0,milky:0};
+const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#f0cdb6',ground:'#7d5248',hemiI:.74,sun:'#d6e6fa',sunI:.66,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:150,fogFar:680,stars:0,milky:0}; /* 노을 안개(2026-11-11): 55~300이면 60~130m 메사·바위가 갈색 안개에 묻혀 화면이 갈색 한 장처럼 됐다 → 시작 150m·끝 680m(카메라 먼 거리 310m에서도 30%) — 가까운 땅·바위·메사는 안개 0, 화산만 옅게. 하늘 색은 그대로 */
 const SK=G.sky.sky({parent:root,keys:[DAY,DUSK,DUSK],t:0,nStars:20,starSize:2});
 const ZSUN={dir:new THREE.Vector3(...DAY.sunDir).normalize(),shadow:14,follow:true};
 /* 해·파란 빛무리·작은 달 둘: 카메라를 따라다니는 하늘 판(해 자리는 지금 햇빛 방향의 반대 — 낮엔 높이, 노을엔 서쪽 낮게) */
