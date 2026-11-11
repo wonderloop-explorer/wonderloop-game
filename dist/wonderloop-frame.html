@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="07db85fda7";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="9b7998b935";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 65e1d4d, 버전 acccd5f1e7, 2026-11-11)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 0c89ae8, 버전 86d2c6ba92, 2026-11-11)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="acccd5f1e7";
-window.WL_BUILD={"commit":"65e1d4d","date":"2026-11-11","stage":"basecamp"};
+window.WL_V="86d2c6ba92";
+window.WL_BUILD={"commit":"0c89ae8","date":"2026-11-11","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -4351,20 +4351,24 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
      방향은 둘을 잇는 선의 옆에서 상대 쪽으로 PHI만큼 돌아간 사선 → 원더룹 얼굴이 옆모습보다 더 보이고(얼굴·카메라 방향 내적 ≈ sin PHI + 여유), 상대는 옆모습.
      (예전엔 '낮은 쪽 얼굴을 화면 위 38%에'를 거리로 풀어서 띠가 좁으면 19m까지 물러났고, 원더룹 조금 뒤에서 봐 탈 뒤통수 쪽이 보였다.)
      옆(왼쪽·오른쪽)은 처음에 한 번 지금 카메라에 가까운 쪽으로 정하고, 자리는 매번 다시 계산(말 걸 때 아직 움직이던 주민을 따라감) */
-  const PHI=.3,P=W.position;let side=0,B=null;
-  const o={at:[0,0,0],from:[0,0,0]};
+  /* 2026-11-11 더함(아기 토끼처럼 키 작고 움직이던 상대): ① 두 사람은 화면 가로 가운데 70% 안에(몸 너비까지) ② 둘 사이가 벌어져 있으면(말 걸 때 뛰던 토끼가 2~3m 떨어져 멈춤) 멀리 물러나는 대신
+     사선을 더 틀어(PHI .3 → 1.05) 화면에서 둘을 가까이 붙임 — 세로 화면은 가로 시야가 좁아 그대로 물러나면 19m 상한에 걸려 둘이 양 끝으로 잘렸다 ③ 키 작은 상대는 카메라를 낮춰 눈높이 가까이
+     ④ 옆·사선 네 자리(지금 카메라 쪽 옆 → 반대쪽 옆, 각각 보통 사선 → 더 튼 사선) 가운데 큰 것(집·큰 바위)이 끼지 않는 첫 자리 */
+  const P=W.position;let side=0,B=null,phi=.3,phiMin=.3;const o={at:[0,0,0],from:[0,0,0]};
   return ()=>{root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14];let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
     const mx=(P.x+nx)/2,mz=(P.z+nz)/2;
     if(!side){side=((cam.position.x-mx)*-az+(cam.position.z-mz)*ax)<0?-1:1;
-      /* 그쪽 옆에 큰 것(집·큰 바위 — 반지름 0.9m 넘는 둥근 장애물)이 카메라와 두 사람 사이에 서 있으면 반대쪽 옆으로(반대쪽이 트여 있을 때만) */
-      const hitN=sd=>{let n=0;const ex=mx+(-az*sd*Math.cos(PHI)+ax*Math.sin(PHI))*9,ez=mz+(ax*sd*Math.cos(PHI)+az*Math.sin(PHI))*9,dx=ex-mx,dz=ez-mz,L2=dx*dx+dz*dz;
+      const hitN=(sd,ph)=>{let n=0;const ex=mx+(-az*sd*Math.cos(ph)+ax*Math.sin(ph))*13,ez=mz+(ax*sd*Math.cos(ph)+az*Math.sin(ph))*13,dx=ex-mx,dz=ez-mz,L2=dx*dx+dz*dz;
         if(Z&&Z.areas)for(const k in Z.areas)for(const ob of Z.areas[k].obstacles||[]){if(!ob.c||ob.c[2]<.9)continue;const [cx,cz,r]=ob.c;if(Math.hypot(cx-nx,cz-nz)<r+.3)continue;const t=Math.min(1,Math.max(.08,((cx-mx)*dx+(cz-mz)*dz)/L2));if(Math.hypot(mx+dx*t-cx,mz+dz*t-cz)<r+.5)n++;}return n;};
-      if(hitN(side)>0&&hitN(-side)===0)side=-side;}
+      let best=null,bn=1e9;for(const [sd,ph] of [[side,.3],[-side,.3],[side,.85],[-side,.85]]){const n=hitN(sd,ph);if(n<bn){bn=n;best=[sd,ph];}if(!n)break;}side=best[0];phiMin=best[1];}
     const px=-az*side,pz=ax*side;
     if(!B)B=band(); /* 화면 띠는 말을 걸 때 한 번만(대화창이 비켜 가며 띠가 바뀌면 카메라와 대화창이 서로 밀어냄) */
     const [fT,fB]=B,top=Math.max(P.y+1.6,ny+headY+.18),bot=Math.min(P.y,ny)-.05,asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360);
-    const wide=sep*Math.cos(PHI)+1.5,D=Math.min(19,Math.max(5.2,(top-bot)/(Math.max(.2,fB-fT-.1)*.78*tf),wide/(.88*asp*tf))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
-    const c=Math.cos(PHI),s=Math.sin(PHI);let fx=mx+(px*c+ax*s)*D,fz=mz+(pz*c+az*s)*D;const fy=my+D*.12;
+    const Dh=Math.max(5.2,(top-bot)/(Math.max(.2,fB-fT-.1)*.78*tf)),low=Math.min(1,Math.max(0,(headY-.9)/.7)),BW=.72+.3*low /* 두 사람 몸 너비의 절반씩 + 여유 — 키 작은 상대는 몸도 좁다 */,wFit=.70*asp*tf,Dw=ph=>(sep*Math.cos(ph)+BW)/wFit; /* 가로: 둘 사이(화면에 비친 폭) + 몸 너비가 화면 가로 70% 안 */
+    const Dt=Math.max(Dh,14.5); /* 이 거리보다 멀어져야 할 때만 사선을 더 틂(상대가 등을 보이게 되니 꼭 필요할 때만) */
+    let want=phiMin;if(Dw(want)>Dt){const c=(Dt*wFit-BW)/sep;want=Math.max(phiMin,Math.min(1.05,c>=1?phiMin:Math.acos(Math.max(.5,c))));}
+    phi+=(want-phi)*.2;const D=Math.min(19,Math.max(Dh,Dw(phi))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
+    const c=Math.cos(phi),sn=Math.sin(phi);let fx=mx+(px*c+ax*sn)*D,fz=mz+(pz*c+az*sn)*D;const fy=my+D*(.045+.075*low); /* 키 작은 상대(머리 0.9m)는 카메라를 낮춰 내려다보지 않게 */
     if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
     o.at[0]=mx;o.at[1]=my;o.at[2]=mz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
 view.pairCam=pairCam;
@@ -4372,7 +4376,7 @@ function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
   else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}}
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
-function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking});uiHooks.layout=layoutNow;}
+function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking,talkCam:()=>!!(TC&&TC.fn&&view.req&&view.req.fn===TC.fn)});uiHooks.layout=layoutNow;}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}
 function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();clearFloat();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
@@ -4625,7 +4629,7 @@ import {blocking,clock} from './core.js';
 import {input} from './controls.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let dlgTopPx=0;
-let ctx=null,speakFn=null,talkFn=null,dockT=-9,docked=false,dockAt=0,stackTop=0,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
+let ctx=null,speakFn=null,talkFn=null,camFn=null,dockT=-9,docked=false,dockAt=0,stackTop=0,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
 const EXTRA=new Set(),SLOT={dlg:'bot',strip:'top'},_a=new THREE.Vector3(),_b=new THREE.Vector3();
 const css=`body.wl-dock #wlJoy,body.wl-dock #wlJump,body.wl-dock #wlDash,body.wl-dock #wlAct{visibility:hidden!important;pointer-events:none!important}
 body.wl-dock #wlDlg{width:min(34rem,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}
@@ -4687,7 +4691,7 @@ function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(
   /* 대화창: 아래(잠겼거나 조이스틱과 단추 사이에 들어가면 맨 아래, 아니면 조이스틱·단추 위) ↔ 위 */
   let dTop=H,dLeft=W;
   if(dOn){const w=dlg.offsetWidth,h=dlg.offsetHeight,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
-    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62&&!(docked&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
+    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62&&!(docked&&camFn&&camFn()&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
     const k=pick(w,h+tag,C,cands,0),was=dlg._slot;dlg._slot=k;SLOT.dlg=k===1?'top':'bot';const dsnap=was===k; /* 아래 ↔ 위로 비켜 갈 때만 부드럽게(대사가 바뀌어 높이가 달라질 때는 바로) */
     if(SLOT.dlg==='top'){setPos(dlg,y+tag,null,dsnap);y+=tag+h+10;dLeft=x0;}
     else{setPos(dlg,yB,null,dsnap);dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
@@ -4711,7 +4715,7 @@ function tickLayout(){if(!ctx)return;const now=clock.t,lk=locked();if(lk)dockT=n
   if(s!==sig){sig=s;place();recheck=perf+500;nextAt=perf+500;}
   else if(recheck&&perf>=recheck){recheck=0;place();}
   else if(perf>=nextAt){nextAt=perf+500;place();}} /* 0.5초마다 다시(카메라가 움직여 인물 자리가 바뀌면 비켜 감 — 앞 후보가 거의 안 덮으면 그대로라 오락가락하지 않음) */
-function initLayout(c,o){ctx=c;speakFn=o.speaking;talkFn=o.talking;const st=document.createElement('style');st.dataset.wl='layout';st.textContent=css;document.head.appendChild(st);safe();stackBot=rowBottom()+8;
+function initLayout(c,o){ctx=c;speakFn=o.speaking;talkFn=o.talking;camFn=o.talkCam||null; /* 대화 카메라가 실제로 잡혔을 때만 '잠긴 직후 아래 그대로'(다른 연출 카메라가 돌고 있으면 평소처럼 비켜 감) */const st=document.createElement('style');st.dataset.wl='layout';st.textContent=css;document.head.appendChild(st);safe();stackBot=rowBottom()+8;
   addEventListener('resize',()=>{sig='';snapAll=true;});
   /* 글꼴이 늦게 불러와져 글상자 크기가 바뀌면(첫 화면에서 특히) 자리를 다시 — 움직임 없이 바로 */
   if(document.fonts){const re=()=>{sig='';snapAll=true;};try{document.fonts.addEventListener('loadingdone',re);document.fonts.ready.then(re);}catch(e){}}}
@@ -5792,22 +5796,29 @@ export {addEmotion,addTension,clearStage,initStage,setStageZone,setTestLight,sta
    flags.compass: 여왕개미에게 더듬이 나침반을 받았는지 → 받은 뒤에만 배낭 키링이 보인다(07).
    다른 아이템도 flags[id]로 받았는지를 남긴다 → 나침반 옆 키링(06 addCharm, 07). 아이템 목록은 items.js.
    구역은 start:{compass:true}처럼 "처음 들어올 때 이미 그런 상태"를 적는다(02 loadZone이 적용). 산타 마을은 받은 상태로 시작.
+   완료 후 상태(2026-11-11 — docs/series-rules.md '끝낸 뒤의 모습'): 스테이지를 끝낸 뒤 다시 열거나 다시 와도 이야기와 맞는 모습이 남게, 구역마다 한 덩어리를 저장한다.
+     saveAfter(구역 id, {time: 하늘 시간(0 낮·1 해 질 녘·2 밤), who:{주민 id:[x,z,바라보는 각]}, …구역이 더 넣고 싶은 값}) — 끝나는 순간 구역이 부른다.
+     afterOf(구역 id) → 그 덩어리 또는 null — 구역이 만들 때 읽어 주민을 그 자리에 세우고, 구역 정보 after:()=>afterOf(id)로 내주면 game/weather가 그날 날씨 대신 그 시간으로 연다.
+     '처음부터 하기'·진행 초기화 때 함께 지워진다.
    저장: localStorage 'wl-state'. 촬영 모드(?shot)에서는 저장된 값을 읽지도 쓰지도 않는다(매번 같은 그림). */
 const KEY='wl-state',SHOT=new URLSearchParams(location.search).has('shot');
 let saved={};if(!SHOT)try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}
 const flags=Object.assign({compass:false,umbrella:false},saved.flags);
 const order=Array.isArray(saved.order)?saved.order:[]; // 켜진 순서(탐험 가방이 얻은 순서대로 늘어놓는다, 2026-11-04)
+const afters=saved.after&&typeof saved.after==='object'?saved.after:{}; // 구역 id → 완료 후 상태
 const listeners=new Set();
-function save(){if(SHOT)return;try{localStorage.setItem(KEY,JSON.stringify({flags,order}));}catch(e){}}
+function save(){if(SHOT)return;try{localStorage.setItem(KEY,JSON.stringify({flags,order,after:afters}));}catch(e){}}
 function setFlag(k,v=true){if(flags[k]===v)return;flags[k]=v;if(v===true&&!order.includes(k))order.push(k);save();listeners.forEach(f=>{try{f(k,v);}catch(e){console.error(e);}});}
 function onFlag(f){listeners.add(f);return()=>listeners.delete(f);}
 function applyStart(start){if(start)for(const k in start)setFlag(k,start[k]);}
 /* 진행 초기화(톱니 메뉴 '진행 초기화'): 저장된 진행·도감을 지운다 — 08이 지운 뒤 페이지를 다시 연다 */
 function resetProgress(){try{localStorage.removeItem(KEY);localStorage.removeItem('wl-codex');localStorage.removeItem('wl-pics');}catch(e){}}
 /* 첫 화면 '처음부터'(game/front): 저장도 지우고 지금 값도 처음으로 — 페이지를 다시 열지 않고 첫 구역을 다시 만든다 */
-function resetAll(){resetProgress();for(const k of Object.keys(flags))delete flags[k];order.length=0;Object.assign(flags,{compass:false,umbrella:false});}
+function resetAll(){resetProgress();for(const k of Object.keys(flags))delete flags[k];order.length=0;for(const k of Object.keys(afters))delete afters[k];Object.assign(flags,{compass:false,umbrella:false});}
+function saveAfter(id,o){afters[id]=o;save();}
+const afterOf=id=>afters[id]||null;
 const gotAt=k=>{const i=order.indexOf(k);return i<0?1e9:i;}; // 얻은 순서(없으면 맨 뒤)
-export {applyStart,flags,gotAt,onFlag,resetAll,resetProgress,setFlag};
+export {afterOf,saveAfter,applyStart,flags,gotAt,onFlag,resetAll,resetProgress,setFlag};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/stealth.js">
@@ -6693,11 +6704,12 @@ function initWeather(c,W){ctx=c;cur=pick(W);ctx.world=W||null;return cur;}
 const weather=()=>cur;
 const weatherName=w=>NAME[w||cur];
 const timeOf=w=>TIME[w||cur];
-function setWeather(w){if(!ALL.includes(w))return;cur=w;const Z=ctx&&ctx.zone&&ctx.zone();if(Z&&Z.sky){Z.sky.to(TIME[w],1.5);}}
+function setWeather(w){if(!ALL.includes(w))return;cur=w;const Z=ctx&&ctx.zone&&ctx.zone();if(Z&&Z.sky){Z.sky.to(TIME[w],1.5);}} // 톱니 '날씨' 단추(시험용) — 끝낸 뒤의 시간도 덮어씀
 function nextWeather(){const L=list.includes(cur)?list:ALL;setWeather(L[(L.indexOf(cur)+1)%L.length]);return cur;}
 const isIndoor=Z=>!Z||!Z.sky||!!Z.indoor;
 /* 구역에 들어갈 때(08 zoneLook 뒤): 하늘 시간을 이 날씨로 */
-function applyZone(Z){if(Z&&Z.sky){Z.sky.set(TIME[cur]);Z.sky.rain=!Z.indoor&&cur==='rain'?1:0;}rainK=Z&&Z.sky&&!Z.indoor&&cur==='rain'?1:0;}
+/* 끝낸 스테이지는 그날 날씨 대신 '끝낸 뒤의 시간'으로(구역 정보 after() — game/state saveAfter, 2026-11-11: 노을을 같이 본 화성이 다시 열면 낮이었다) */
+function applyZone(Z){if(Z&&Z.sky){const a=Z.after&&Z.after();Z.sky.set(a&&a.time!=null?a.time:TIME[cur]);Z.sky.rain=!Z.indoor&&cur==='rain'?1:0;}rainK=Z&&Z.sky&&!Z.indoor&&cur==='rain'?1:0;}
 /* 실내 조명(08이 하늘 없는 구역에서 해·하늘빛 계산 뒤에): 밤은 08 '저녁'(night 1)에 더 푸르고 어둡게, 노을은 반쯤 저녁 + 창으로 들어오는 주황빛, 비는 회청색으로 조금 어둡게 */
 const cBlue=new THREE.Color(),cGrey=new THREE.Color();
 function indoorNight(){return {day:0,sunset:.5,night:1,rain:.35}[cur]??0;}
@@ -10561,12 +10573,19 @@ function light(){}
 const F=G.state.flags;
 G.profile.setup({world:WID,cards:SPACE.cards});
 const st={lastQ:null,scene:false,ready:false,readyT:0,pipiWalk:null,pipiMode:'idle',dungMode:'idle',ride:null,big:null,seenWhirl:false,arrDone:false,camOnce:false};
+/* 끝낸 뒤의 모습(game/state saveAfter — 2026-11-11): 셋이 노을을 같이 본 뒤의 화성은 다시 열어도 노을, 삐삐·둥둥은 노을 쪽을 보며 나란히 선 마지막 자리 그대로.
+   예전 저장(완료 표시만 있고 완료 후 상태가 없는 것)은 여기서 한 번 만들어 둔다 */
+const ZID='space-mars';
+const saveAfterMars=()=>G.state.saveAfter(ZID,{time:1,who:{pipi:[pipi.root.position.x,pipi.root.position.z,SUNSET.face],dung:[dung.root.position.x,dung.root.position.z,SUNSET.face]}});
+let AF=G.state.afterOf(ZID);
 if(F[K.told]){SK.set(1);}
 /* 처음 자리: 삐삐는 착지 자리 곁(만난 뒤면 언덕), 둥둥은 바위 위(노을을 같이 본 뒤면 언덕) */
 if(F[K.met])place(pipi,pipiOb,...(F[K.told]?SUNSET.pipi:PIPI_SPOT));else place(pipi,pipiOb,...PIPI0);
 if(F[K.told]){place(dung,dungOb,...SUNSET.dung);}else{place(dung,null,ROCKD.c[0]-.6,ROCKD.c[1]+.4,ROCKD.top);dungOb.c[0]=-999;}
 faceTo(pipi,SPAWN[0],SPAWN[1]);dung.root.rotation.y=-PI/2;
 if(F[K.told]){pipi.root.rotation.y=dung.root.rotation.y=SUNSET.face;}
+if(F[K.clear]&&!AF){saveAfterMars();AF=G.state.afterOf(ZID);}
+if(AF&&AF.who){for(const [m,ob,w] of [[pipi,pipiOb,AF.who.pipi],[dung,dungOb,AF.who.dung]])if(w){place(m,ob,w[0],w[1]);m.root.rotation.y=w[2];}SK.set(AF.time??1);}
 const stage=()=>!F[K.met]?'meet':!F[K.call]?'call':!F[K.recA]?'rec':!F[K.recB]?'deliverA':!F[K.told]?'deliverB':!F[K.clear]?'finale':'done';
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 const east=x=>x>CANYON.x;
@@ -10700,7 +10719,7 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
       whirlDust(big,bo,dt,MOB?18:30);
       if(ph===1&&k>4.6&&!st.bigCard){st.bigCard=true;G.sound.sfx('mission-clear');
         Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 금성 구름',icon:SPACE.icons.map(),sec:3.6,sound:null,who:'완료'}),new Promise(r=>setTimeout(r,4200))])
-          .then(()=>{G.state.setFlag(K.clear,true);ph=2;liftT=G.clock.t-T0;});}
+          .then(()=>{G.state.setFlag(K.clear,true);saveAfterMars();ph=2;liftT=G.clock.t-T0;});}
       if(ph===2&&k>3.3){W.position.set(P0.x,gy,P0.z);W.rotation.z=0;lockOff(G,W);G.sound.sfx('land');puffAt(P0.x,P0.z,16);st.bigTick=null;
         const b=big;let f=1;const fade=setInterval(()=>{f-=.05;b.mat.uniforms.uA.value=.16*f;if(f<=0){clearInterval(fade);b.dispose();}},50);st.big=null;pipi.mode='idle';dung.mode='idle';st.lookWL=false;st.sunFace=true;res();}}};});}
 const discN=()=>Object.values(DISC).filter(k=>F[k]).length;
@@ -10794,7 +10813,7 @@ return {
   areas:{field:{bounds:[BOUNDS[0],BOUNDS[1],-300,BOUNDS[3]],obstacles,camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
   platforms,
   sun:ZSUN,light,
-  sky:SK,far:310,bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
+  sky:SK,after:()=>G.state.afterOf(ZID),far:310,bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
   spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,sunsetWL:SUNSET.wl,volcano:VOL.c},
