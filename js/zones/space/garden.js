@@ -641,7 +641,9 @@ function hopDemo(){const W=U0();st.hop={t:0,from:[bobo.root.position.x,bobo.root
   const base={x:P.x-ux*5.5+uz*1.4,z:P.z-uz*5.5-ux*1.4};let tEnd=0;
   G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:Math.max(1,Math.min(1.7,620/innerHeight)) /* 낮은 가로 화면도 멀리(2026-11-10 — 휴대폰 가로에서 원더룹이 화면 아래로 잘렸다) */,b=bobo.root.position,Wp=W.position;
     if(!st.hop){tEnd+=1/60;if(tEnd>1.2)return null;}
-    const at=bentPos({x:Wp.x*.35+b.x*.65,y:Math.max(Wp.y,b.y)*.65+1.1,z:Wp.z*.35+b.z*.65}),from=bentPos({x:Wp.x+(base.x-Wp.x)*k,y:Wp.y+3.4*k,z:Wp.z+(base.z-Wp.z)*k});
+    /* 가로 화면(2026-11-11): 떠오르는 할아버지를 따라 고개를 들면 원더룹이 화면 아래로 잘리고 아래로 내려온 대화창에 덮였다 → 올려다보지 않고 1.2배 물러나 보는 높이를 고정(원더룹 발 ~ 떠오른 할아버지 꼭대기가 한 화면에 — 대사는 뛰기 전에 끝남). 세로 화면은 그대로 */
+    const wide=!(cam&&cam.aspect<1),kk=wide?Math.max(1.2,k):k;
+    const at=bentPos({x:Wp.x*.35+b.x*.65,y:wide?Wp.y+1.7:Math.max(Wp.y,b.y)*.65+1.1,z:Wp.z*.35+b.z*.65}),from=bentPos({x:Wp.x+(base.x-Wp.x)*kk,y:Wp.y+3.4*kk,z:Wp.z+(base.z-Wp.z)*kk});
     return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};});}
 let fpLast=null;
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
@@ -672,7 +674,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   // 둥실 뛰기 익히기
   if(!F[K.demo]){quest('보름 할아버지에게 돌아가요',{at:[bobo.root.position.x,bobo.root.position.z],label:'보름 할아버지',style:'ant',h:3});
     if(!st.demoQ&&dist(P.x,P.z,[bobo.root.position.x,bobo.root.position.z])<4.2&&!G.ui.cardShown()&&!st.hop){st.demoQ=true;U.stopWalk&&U.stopWalk();
-      G.dialog.say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.5);setTimeout(hopDemo,900);}return;}
+      G.dialog.say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.5).then(ok=>{if(ok&&!F[K.demo])hopDemo();});}return;} /* 대사가 끝난 뒤에 뜀(2026-11-11 — 대사 0.9초 뒤에 뛰면 떠오른 할아버지가 위쪽 대화창 뒤로 들어가고, 대화창이 아래로 피하면 원더룹을 덮었다) */
   if(!F[K.rock]){if(!st.hop)quest('할아버지처럼 둥실 뛰어 높은 바위에 올라요 (점프)',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
     const V=U.vert;if(V&&V.y>ROCK_TOP-.2&&dist(P.x,P.z,ROCK.c)<ROCK.r+.2){G.state.setFlag(K.rock,true);G.react.react('joy');
       G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()});}return;}

@@ -132,7 +132,10 @@ function placePrompt(n){const el=document.getElementById('wlPrompt');if(!el)retu
   n.root.getWorldPosition(_pp);_pp.y+=(n.bubbleY||1.4);const b=bentPos({x:_pp.x,y:_pp.y,z:_pp.z});_pp.set(b.x,b.y,b.z).project(cam);
   if(_pp.z>1||Math.abs(_pp.x)>.95||_pp.y>.95||_pp.y<-.9){if(el.dataset.at){el.style.left=el.style.top=el.style.bottom=el.style.transform='';delete el.dataset.at;}
     if(n.name)el.textContent='E '+n.name+'에게 말 걸기';return;} /* 상대가 화면 밖이면 아래 가운데에 누구인지 이름을 붙여서 */
-  const x=(_pp.x+1)/2*innerWidth,y=(1-_pp.y)/2*innerHeight-innerHeight*.11;el.dataset.at='1';
+  let x=(_pp.x+1)/2*innerWidth,y=(1-_pp.y)/2*innerHeight-innerHeight*.11;el.dataset.at='1';
+  /* 원더룹 탈·얼굴 위에 얹히지 않게(2026-11-11 — 바로 옆 아기 토끼의 'E 말 걸기'가 원더룹 탈을 덮었다): 안내 상자가 원더룹 몸 네모와 겹치면 탈 꼭대기 위로 올린다 */
+  {const P=ctx.WL.position,pj=h=>{const q=bentPos({x:P.x,y:P.y+h,z:P.z});return _pp.set(q.x,q.y,q.z).project(cam);},t=pj(1.9),tx=(t.x+1)/2*innerWidth,ty=(1-t.y)/2*innerHeight,f=pj(0),fy=(1-f.y)/2*innerHeight,hw=Math.abs(fy-ty)*.36+(el.offsetWidth||150)/2;
+    if(t.z<1&&Math.abs(x-tx)<hw&&y>ty-14&&y-(el.offsetHeight||44)<fy){if(ty-14>=130+(el.offsetHeight||44))y=ty-14;else x=tx+(x>=tx?1:-1)*(hw+8);}} /* 위에 자리가 없으면(낮은 화면) 옆으로 */
   el.style.left=Math.round(Math.min(innerWidth-90,Math.max(90,x)))+'px';el.style.top=Math.round(Math.max(130,y))+'px';el.style.bottom='auto';el.style.transform='translate(-50%,-100%)';}
 function initDialog(c){ctx=c;makeBubble(c.scene);
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});
