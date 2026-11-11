@@ -206,12 +206,19 @@ function light(){}
 const F=G.state.flags;
 G.profile.setup({world:WID,cards:SPACE.cards});
 const st={lastQ:null,scene:false,ready:false,readyT:0,pipiWalk:null,pipiMode:'idle',dungMode:'idle',ride:null,big:null,seenWhirl:false,arrDone:false,camOnce:false};
+/* 끝낸 뒤의 모습(game/state saveAfter — 2026-11-11): 셋이 노을을 같이 본 뒤의 화성은 다시 열어도 노을, 삐삐·둥둥은 노을 쪽을 보며 나란히 선 마지막 자리 그대로.
+   예전 저장(완료 표시만 있고 완료 후 상태가 없는 것)은 여기서 한 번 만들어 둔다 */
+const ZID='space-mars';
+const saveAfterMars=()=>G.state.saveAfter(ZID,{time:1,who:{pipi:[pipi.root.position.x,pipi.root.position.z,SUNSET.face],dung:[dung.root.position.x,dung.root.position.z,SUNSET.face]}});
+let AF=G.state.afterOf(ZID);
 if(F[K.told]){SK.set(1);}
 /* 처음 자리: 삐삐는 착지 자리 곁(만난 뒤면 언덕), 둥둥은 바위 위(노을을 같이 본 뒤면 언덕) */
 if(F[K.met])place(pipi,pipiOb,...(F[K.told]?SUNSET.pipi:PIPI_SPOT));else place(pipi,pipiOb,...PIPI0);
 if(F[K.told]){place(dung,dungOb,...SUNSET.dung);}else{place(dung,null,ROCKD.c[0]-.6,ROCKD.c[1]+.4,ROCKD.top);dungOb.c[0]=-999;}
 faceTo(pipi,SPAWN[0],SPAWN[1]);dung.root.rotation.y=-PI/2;
 if(F[K.told]){pipi.root.rotation.y=dung.root.rotation.y=SUNSET.face;}
+if(F[K.clear]&&!AF){saveAfterMars();AF=G.state.afterOf(ZID);}
+if(AF&&AF.who){for(const [m,ob,w] of [[pipi,pipiOb,AF.who.pipi],[dung,dungOb,AF.who.dung]])if(w){place(m,ob,w[0],w[1]);m.root.rotation.y=w[2];}SK.set(AF.time??1);}
 const stage=()=>!F[K.met]?'meet':!F[K.call]?'call':!F[K.recA]?'rec':!F[K.recB]?'deliverA':!F[K.told]?'deliverB':!F[K.clear]?'finale':'done';
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 const east=x=>x>CANYON.x;
@@ -345,7 +352,7 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
       whirlDust(big,bo,dt,MOB?18:30);
       if(ph===1&&k>4.6&&!st.bigCard){st.bigCard=true;G.sound.sfx('mission-clear');
         Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 금성 구름',icon:SPACE.icons.map(),sec:3.6,sound:null,who:'완료'}),new Promise(r=>setTimeout(r,4200))])
-          .then(()=>{G.state.setFlag(K.clear,true);ph=2;liftT=G.clock.t-T0;});}
+          .then(()=>{G.state.setFlag(K.clear,true);saveAfterMars();ph=2;liftT=G.clock.t-T0;});}
       if(ph===2&&k>3.3){W.position.set(P0.x,gy,P0.z);W.rotation.z=0;lockOff(G,W);G.sound.sfx('land');puffAt(P0.x,P0.z,16);st.bigTick=null;
         const b=big;let f=1;const fade=setInterval(()=>{f-=.05;b.mat.uniforms.uA.value=.16*f;if(f<=0){clearInterval(fade);b.dispose();}},50);st.big=null;pipi.mode='idle';dung.mode='idle';st.lookWL=false;st.sunFace=true;res();}}};});}
 const discN=()=>Object.values(DISC).filter(k=>F[k]).length;
@@ -439,7 +446,7 @@ return {
   areas:{field:{bounds:[BOUNDS[0],BOUNDS[1],-300,BOUNDS[3]],obstacles,camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
   platforms,
   sun:ZSUN,light,
-  sky:SK,far:310,bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
+  sky:SK,after:()=>G.state.afterOf(ZID),far:310,bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
   spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,sunsetWL:SUNSET.wl,volcano:VOL.c},

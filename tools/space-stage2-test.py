@@ -173,6 +173,12 @@ with sync_playwright() as p:
     for i in range(4):
         pg.evaluate("i=>{wlGame.controls.input.cam.yaw+=Math.PI/2;}", i); pg.keyboard.down('w'); pg.wait_for_timeout(1600); pg.keyboard.up('w'); pg.wait_for_timeout(500); shot('dusk-walk%d' % i)
     R['노을 뒤 안개'] = pg.evaluate("(()=>{let s=wlGame.mission.hero();while(s.parent)s=s.parent;const f=s.fog,c=wlGame.view.camera;return {near:+f.near.toFixed(1),far:+f.far.toFixed(1),color:'#'+f.color.getHexString(),camFar:c.far,sky:wlZone.cur.state().sky}})()")
+    # 끝낸 뒤의 모습(2026-11-11): 게임을 다시 열어도 노을·삐삐·둥둥 마지막 자리 그대로인지 — 다시 연 직후(착지 자리)와 노을 언덕에서 한 장씩
+    import re as _re
+    u2 = pg.url; u2 = _re.sub(r'zone=[^&]*', 'zone=space-mars', u2) if 'zone=' in u2 else u2 + ('&' if '?' in u2 else '?') + 'zone=space-mars'; u2 = _re.sub(r'&time=\d', '', u2)
+    pg.goto('about:blank'); pg.goto(u2); pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots&&wlZone.cur.spots.sunsetWL', timeout=120000); pg.wait_for_timeout(3500); shot('reopen-spawn')
+    pg.evaluate("(()=>{const W=wlGame.mission.hero(),s=wlZone.cur.spots.sunsetWL;W.position.x=s[0]+3.2;W.position.z=s[1];W.rotation.y=-Math.PI/2;const I=wlGame.controls.input;I.cam.yaw=Math.PI/2;I.cam.pitch=.22;})()"); pg.wait_for_timeout(2500); shot('reopen-hill')
+    R['다시 열기'] = pg.evaluate("(()=>{const s=wlZone.cur.state(),a=wlGame.state.afterOf('space-mars');let sc=wlGame.mission.hero();while(sc.parent)sc=sc.parent;return {sky:s.sky,pipi:s.pipi,dung:s.dung,after:a,fog:'#'+sc.fog.color.getHexString()}})()")
     cl = pg.evaluate('window.__clip||[]'); R['잘림 기록 프레임'] = len(cl)
     R['잘린 프레임(1% 넘게)'] = {k: sum(1 for x in cl if x[0] == k and x[1] > .01) for k in ('ride', 'cross', 'sunset', 'big')}
     R['잘림 최대'] = max([x[1] for x in cl] or [0])

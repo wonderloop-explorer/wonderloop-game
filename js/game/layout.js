@@ -19,7 +19,7 @@ import {blocking,clock} from './core.js';
 import {input} from './controls.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let dlgTopPx=0;
-let ctx=null,speakFn=null,talkFn=null,dockT=-9,docked=false,dockAt=0,stackTop=0,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
+let ctx=null,speakFn=null,talkFn=null,camFn=null,dockT=-9,docked=false,dockAt=0,stackTop=0,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
 const EXTRA=new Set(),SLOT={dlg:'bot',strip:'top'},_a=new THREE.Vector3(),_b=new THREE.Vector3();
 const css=`body.wl-dock #wlJoy,body.wl-dock #wlJump,body.wl-dock #wlDash,body.wl-dock #wlAct{visibility:hidden!important;pointer-events:none!important}
 body.wl-dock #wlDlg{width:min(34rem,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}
@@ -81,7 +81,7 @@ function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(
   /* 대화창: 아래(잠겼거나 조이스틱과 단추 사이에 들어가면 맨 아래, 아니면 조이스틱·단추 위) ↔ 위 */
   let dTop=H,dLeft=W;
   if(dOn){const w=dlg.offsetWidth,h=dlg.offsetHeight,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
-    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62&&!(docked&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
+    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62&&!(docked&&camFn&&camFn()&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
     const k=pick(w,h+tag,C,cands,0),was=dlg._slot;dlg._slot=k;SLOT.dlg=k===1?'top':'bot';const dsnap=was===k; /* 아래 ↔ 위로 비켜 갈 때만 부드럽게(대사가 바뀌어 높이가 달라질 때는 바로) */
     if(SLOT.dlg==='top'){setPos(dlg,y+tag,null,dsnap);y+=tag+h+10;dLeft=x0;}
     else{setPos(dlg,yB,null,dsnap);dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
@@ -105,7 +105,7 @@ function tickLayout(){if(!ctx)return;const now=clock.t,lk=locked();if(lk)dockT=n
   if(s!==sig){sig=s;place();recheck=perf+500;nextAt=perf+500;}
   else if(recheck&&perf>=recheck){recheck=0;place();}
   else if(perf>=nextAt){nextAt=perf+500;place();}} /* 0.5초마다 다시(카메라가 움직여 인물 자리가 바뀌면 비켜 감 — 앞 후보가 거의 안 덮으면 그대로라 오락가락하지 않음) */
-function initLayout(c,o){ctx=c;speakFn=o.speaking;talkFn=o.talking;const st=document.createElement('style');st.dataset.wl='layout';st.textContent=css;document.head.appendChild(st);safe();stackBot=rowBottom()+8;
+function initLayout(c,o){ctx=c;speakFn=o.speaking;talkFn=o.talking;camFn=o.talkCam||null; /* 대화 카메라가 실제로 잡혔을 때만 '잠긴 직후 아래 그대로'(다른 연출 카메라가 돌고 있으면 평소처럼 비켜 감) */const st=document.createElement('style');st.dataset.wl='layout';st.textContent=css;document.head.appendChild(st);safe();stackBot=rowBottom()+8;
   addEventListener('resize',()=>{sig='';snapAll=true;});
   /* 글꼴이 늦게 불러와져 글상자 크기가 바뀌면(첫 화면에서 특히) 자리를 다시 — 움직임 없이 바로 */
   if(document.fonts){const re=()=>{sig='';snapAll=true;};try{document.fonts.addEventListener('loadingdone',re);document.fonts.ready.then(re);}catch(e){}}}

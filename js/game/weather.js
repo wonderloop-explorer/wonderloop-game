@@ -30,11 +30,12 @@ function initWeather(c,W){ctx=c;cur=pick(W);ctx.world=W||null;return cur;}
 const weather=()=>cur;
 const weatherName=w=>NAME[w||cur];
 const timeOf=w=>TIME[w||cur];
-function setWeather(w){if(!ALL.includes(w))return;cur=w;const Z=ctx&&ctx.zone&&ctx.zone();if(Z&&Z.sky){Z.sky.to(TIME[w],1.5);}}
+function setWeather(w){if(!ALL.includes(w))return;cur=w;const Z=ctx&&ctx.zone&&ctx.zone();if(Z&&Z.sky){Z.sky.to(TIME[w],1.5);}} // 톱니 '날씨' 단추(시험용) — 끝낸 뒤의 시간도 덮어씀
 function nextWeather(){const L=list.includes(cur)?list:ALL;setWeather(L[(L.indexOf(cur)+1)%L.length]);return cur;}
 const isIndoor=Z=>!Z||!Z.sky||!!Z.indoor;
 /* 구역에 들어갈 때(08 zoneLook 뒤): 하늘 시간을 이 날씨로 */
-function applyZone(Z){if(Z&&Z.sky){Z.sky.set(TIME[cur]);Z.sky.rain=!Z.indoor&&cur==='rain'?1:0;}rainK=Z&&Z.sky&&!Z.indoor&&cur==='rain'?1:0;}
+/* 끝낸 스테이지는 그날 날씨 대신 '끝낸 뒤의 시간'으로(구역 정보 after() — game/state saveAfter, 2026-11-11: 노을을 같이 본 화성이 다시 열면 낮이었다) */
+function applyZone(Z){if(Z&&Z.sky){const a=Z.after&&Z.after();Z.sky.set(a&&a.time!=null?a.time:TIME[cur]);Z.sky.rain=!Z.indoor&&cur==='rain'?1:0;}rainK=Z&&Z.sky&&!Z.indoor&&cur==='rain'?1:0;}
 /* 실내 조명(08이 하늘 없는 구역에서 해·하늘빛 계산 뒤에): 밤은 08 '저녁'(night 1)에 더 푸르고 어둡게, 노을은 반쯤 저녁 + 창으로 들어오는 주황빛, 비는 회청색으로 조금 어둡게 */
 const cBlue=new THREE.Color(),cGrey=new THREE.Color();
 function indoorNight(){return {day:0,sunset:.5,night:1,rain:.35}[cur]??0;}
