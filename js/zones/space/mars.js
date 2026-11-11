@@ -290,7 +290,7 @@ async function recordA(W,U){faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi
 async function deliverA(W,U){faceTo(dung,W.position.x,W.position.z);faceWL(W,dung);
   dung.mode='talk';mumble(true,2.6);await say('둥둥','…응? …작은… 친구네… 너도… 우리랑… 닮았구나.',3.6);dung.mode='idle';
   holdCas(W,true);await wait(.4);G.sound.sfx('cassette-rewind');cas.run(true);await wait(.95);cas.run(false);G.sound.sfx('cassette-click');tapeRun(true);
-  mumble(false,3.4,{tape:true});await say('삐삐 (카세트)',LINE_A,4.6);tapeRun(false);G.sound.sfx('cassette-click');
+  mumble(false,3.4,{tape:true});await say('삐삐 (카세트)',LINE_A,4.6,{to:dung.root}); /* 카세트 소리를 둥둥에게 들려줌 — 마주 보는 상대는 둥둥 */tapeRun(false);G.sound.sfx('cassette-click');
   dung.mode='talk';mumble(true,3);await say('둥둥','…삐삐… 목소리가… 이렇게… 또렷하게… 들리는 건… 처음이야.',4.4);
   mumble(true,3);await say('둥둥','…나도… 삐삐한테… 할 말이… 있어. …녹음해… 줄래?',4);dung.mode='idle';
   G.sound.sfx('cassette-click');cas.rec(true);tapeRun(true);await wait(.35);
@@ -301,7 +301,7 @@ async function deliverA(W,U){faceTo(dung,W.position.x,W.position.z);faceWL(W,dun
 /* ⑥ 삐삐에게 틀어 줌 → 서로 다른 언덕에서 기다렸다는 게 드러남 → 둥둥이 회오리를 타고 건너옴 → ⑦ 노을 */
 async function deliverB(W,U){faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);
   holdCas(W,true);await wait(.4);G.sound.sfx('cassette-rewind');cas.run(true);await wait(.95);cas.run(false);G.sound.sfx('cassette-click');tapeRun(true);
-  mumble(true,5.2,{tape:true});await say('둥둥 (카세트)',LINE_B,6);tapeRun(false);G.sound.sfx('cassette-click');await wait(.3);holdCas(W,false);
+  mumble(true,5.2,{tape:true});await say('둥둥 (카세트)',LINE_B,6,{to:pipi.root});tapeRun(false);G.sound.sfx('cassette-click');await wait(.3);holdCas(W,false);
   pipi.mode='talk';mumble(false,1.4);await say('삐삐','…바위에서? 계속 기다렸다고?',2.8);
   G.react.react('startle',{sound:null});mumble(false,2.6);await say('삐삐','나는 여기, 내 언덕에서 기다렸는데! 우리… 서로 다른 언덕에서 기다리고 있었던 거야?!',4.4);
   mumble(false,2);await say('삐삐','오늘은 한 언덕에서 같이 보자! 둥둥아—! 이리 와!',3.4);
@@ -326,17 +326,28 @@ async function finale(W,U){SK.to(1,9);G.sound.bedLevel(.55,3);
   dung.root.rotation.y=SUNSET.face;
   /* 카메라: 셋 뒤 비스듬히 위에서 서쪽(해 쪽)을 — 셋과 낮게 걸린 파란 해가 한 화면에(처음 각도만, 그 뒤로는 플레이어 것) */
   const c=[SUNSET.wl[0],groundY(...SUNSET.wl),SUNSET.wl[1]];G.view.start({at:[c[0]-3,c[1]+2.4,c[2]],from:[c[0]+7.4,c[1]+1.7,c[2]-.6]}); /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
-  await wait(3);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{face:false});pipi.mode='idle';
-  await wait(1.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','…같이… 보니까… 더… 파랗다…',3.4,{face:false});dung.mode='idle';
+  await wait(3);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
+  await wait(1.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','…같이… 보니까… 더… 파랗다…',3.4,{look:'노을'});dung.mode='idle';
   G.ui.toast('사진 찍기 좋은 순간이에요 — 사진 단추(C)로 남겨 보세요',4.6);await wait(4.2);
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
     await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
-  pipi.mode='talk';mumble(false,2.4); /* 말하는 삐삐와 원더룹이 서로 돌아봄(game/dialog 마주 보기 — 부드럽게) */
-  await say('삐삐','우리 둘이 같이 노을을 본 건 네 덕분이야. 이거 받아! 파란 노을이 굳어 생긴 유리 조각이래.',4.6);pipi.mode='idle';
-  if(!F[K.glass]){const gl=makeGlass();const p=pipi.root.position;gl.position.set(p.x,p.y+.55,p.z);root.add(gl);G.sound.sfx('event-sparkle');
+  /* 유리 조각 건네기(2026-11-11): 노을을 보며 하는 말은 위 두 줄까지 — 여기부터 삐삐가 원더룹 쪽으로 돌아서 한 걸음 다가와 두 손으로 유리 조각을 내밀고, 원더룹도 삐삐를 보고,
+     카메라는 대화 카메라(말하는 삐삐 얼굴이 보이는 어깨 너머 — view.pairCam)로. 둥둥의 작별도 같은 식으로 원더룹을 보며. 끝나면 셋 다 다시 노을 쪽(st.sunFace) */
+  let gl=null;const give=!F[K.glass];
+  {const p=pipi.root.position,dx=W.position.x-p.x,dz=W.position.z-p.z,d=Math.hypot(dx,dz)||1,step=Math.max(0,Math.min(.6,d-1.15)),x0=p.x,z0=p.z,t0=G.clock.t;
+    const pc=G.view.pairCam(pipi.root,1.12);if(pc)G.view.hold(pc);st.pc=pc;pipi.mode='walk';
+    await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/.7),e=u*u*(3-2*u);place(pipi,pipiOb,x0+dx/d*step*e,z0+dz/d*step*e);faceTo(pipi,W.position.x,W.position.z,1/20);
+      const a=Math.atan2(p.x-W.position.x,p.z-W.position.z)-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(a),Math.cos(a))*.14;return u>=1;},2);
+    if(give){gl=makeGlass();gl.scale.setScalar(.7);gl.position.set(...pipi.give);pipi.body.add(gl);G.sound.sfx('event-sparkle');}pipi.mode=give?'give':'talk';}
+  mumble(false,2.4);
+  await say('삐삐','우리 둘이 같이 노을을 본 건 네 덕분이야. 이거 받아! 파란 노을이 굳어 생긴 유리 조각이래.',4.6);
+  if(give){const wp=new THREE.Vector3();gl.getWorldPosition(wp);gl.removeFromParent();gl.scale.setScalar(1);gl.position.copy(wp);root.add(gl);pipi.mode='idle';
     await G.itemget.itemGet({obj:gl,to:'bag',giver:pipi.root,card:{title:'파란 노을 유리 조각을 얻었어요!',text:'파란 노을빛을 닮은 유리 조각 — 가방에 넣었어요',icon:glassIcon()},scale:1.4,top:1.95});
     G.state.setFlag(K.glass,true);gl.removeFromParent();}
+  pipi.mode='idle';
+  {const pc=G.view.pairCam(dung.root,2.02);if(pc)G.view.hold(pc);st.pc=pc;}
   dung.mode='talk';mumble(true,3);await say('둥둥','…언젠가… 그 유리에… 좋은 빛을… 담아 보렴.',4);dung.mode='idle';
+  if(st.pc&&G.view.req&&G.view.req.fn===st.pc)G.view.hold(null);st.pc=null;
   /* 작별 인사가 끝나면 둘은 다시 노을 쪽으로 돌아 나란히 서고(부드럽게), 원더룹도 노을을 봄 */
   st.sunFace=true;{const t0=G.clock.t;await G.core.until(()=>{const d=SUNSET.face-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.12;return G.clock.t-t0>1.1;},2);}
   await bigLift(W,U);}

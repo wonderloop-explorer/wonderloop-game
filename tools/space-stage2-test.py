@@ -28,6 +28,11 @@ with sync_playwright() as p:
     CX = o['viewport']['width'] // 2
     c = b.new_context(**o)
     if COVER: c.add_init_script(open(os.path.join(ROOT, 'tools/cover-probe.js')).read())
+    c.add_init_script(open(os.path.join(ROOT, 'tools/face-probe.js')).read())  # 마주 보기 전수 검사(대사 한 줄마다 서로를 향한 각도) — 늘 잼
+    FACE = []
+    def faceDump():
+        try: FACE.extend(pg.evaluate('window.__face?window.__face.report().list:[]'))
+        except Exception: pass
     V0 = time.time(); pg = c.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
     pg.on('console', lambda m: m.type == 'error' and '404' not in m.text and errs.append(m.text[:300]))
@@ -176,6 +181,7 @@ with sync_playwright() as p:
     # 끝낸 뒤의 모습(2026-11-11): 게임을 다시 열어도 노을·삐삐·둥둥 마지막 자리 그대로인지 — 다시 연 직후(착지 자리)와 노을 언덕에서 한 장씩
     import re as _re
     u2 = pg.url; u2 = _re.sub(r'zone=[^&]*', 'zone=space-mars', u2) if 'zone=' in u2 else u2 + ('&' if '?' in u2 else '?') + 'zone=space-mars'; u2 = _re.sub(r'&time=\d', '', u2)
+    faceDump(); CV0 = pg.evaluate('window.__cover?window.__cover.report():null') if COVER else None  # 다시 열면 재던 값이 지워지므로 그 전에 받아 둠
     pg.goto('about:blank'); pg.goto(u2); pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots&&wlZone.cur.spots.sunsetWL', timeout=120000); pg.wait_for_timeout(3500); shot('reopen-spawn')
     pg.evaluate("(()=>{const W=wlGame.mission.hero(),s=wlZone.cur.spots.sunsetWL;W.position.x=s[0]+3.2;W.position.z=s[1];W.rotation.y=-Math.PI/2;const I=wlGame.controls.input;I.cam.yaw=Math.PI/2;I.cam.pitch=.22;})()"); pg.wait_for_timeout(2500); shot('reopen-hill')
     R['다시 열기'] = pg.evaluate("(()=>{const s=wlZone.cur.state(),a=wlGame.state.afterOf('space-mars');let sc=wlGame.mission.hero();while(sc.parent)sc=sc.parent;return {sky:s.sky,pipi:s.pipi,dung:s.dung,after:a,fog:'#'+sc.fog.color.getHexString()}})()")
@@ -187,7 +193,9 @@ with sync_playwright() as p:
     R['오류'] = errs; R['시각(초)'] = T
     vid = pg.video.path() if VIDEO else None
     if COVER:
-        cv = pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered']}; json.dump(cv, open(os.path.join(OUT, pre + 'cover.json'), 'w'), ensure_ascii=False, indent=1)
+        cv = CV0 or pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered']}; json.dump(cv, open(os.path.join(OUT, pre + 'cover.json'), 'w'), ensure_ascii=False, indent=1)
+    faceDump(); bad = [x for x in FACE if x['flag'] == '어긋남']; R['마주 보기'] = {'대사': len(FACE), '45도 넘게 어긋남': len(bad), '예외(보는 곳 표시)': sum(1 for x in FACE if x['flag'].startswith('예외')), '어긋난 줄': [x['who'] + ': ' + x['text'][:22] for x in bad]}
+    json.dump(FACE, open(os.path.join(OUT, pre + 'face-s2-' + (a[a.index('--face') + 1] if '--face' in a else 'after') + '.json'), 'w'), ensure_ascii=False, indent=1)
     c.close(); b.close()
     if vid: shutil.move(vid, os.path.join(OUT, pre + 'stage2.webm')); shutil.rmtree(os.path.join(OUT, 'vid-' + pre[:-1]), ignore_errors=True)
 json.dump(R, open(os.path.join(OUT, pre + 'result.json'), 'w'), ensure_ascii=False, indent=1)

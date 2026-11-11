@@ -20,7 +20,7 @@ function initProfile(c){ctx=c;}
 function setup({world,cards}){W=world||'';CARDS=cards||{};}
 const seen=id=>!!flags['meet:'+W+':'+id];
 function portrait(root,{side=.42,lift=.12,w=512,h=512}={}){if(!ctx||!ctx.renderer)return null;const {renderer}=ctx;
-  const par=root.parent,pos=root.position.clone(),quat=root.quaternion.clone(),scl=root.scale.clone();
+  const par=root.parent,pos=root.position.clone(),rot=root.rotation.clone(),scl=root.scale.clone(); /* 방향은 오일러 값 그대로 되돌린다(2026-11-11) — 쿼터니언으로 되돌리면 90도 넘게 돌아 있던 주민의 오일러가 (π, π−y, π)로 바뀌어, 그 뒤 rotation.y로 '원더룹 쪽 보기'를 하면 반대쪽을 봤다(소개 카드가 뜬 뒤의 삐삐·둥둥·보름 할아버지·아기 토끼) */
   const stage=new THREE.Scene();stage.add(root);root.position.set(0,0,0);root.quaternion.identity();root.updateMatrixWorld(true); // 캐릭터만 따로(제자리 방향은 정면 = +z)
   const hid=[];root.traverse(o=>{if((o.isSprite||o.userData.wlHint)&&o.visible){o.visible=false;hid.push(o);}});
   const op=[];root.traverse(m=>{if(!m.isMesh)return;[].concat(m.material).forEach(mt=>{const u=mt&&mt.userData;if(u&&u.o0!==undefined){op.push([mt,mt.opacity,mt.depthWrite,mt.transparent]);mt.opacity=u.o0;mt.depthWrite=u.d0;mt.transparent=u.t0;}});});
@@ -38,7 +38,7 @@ function portrait(root,{side=.42,lift=.12,w=512,h=512}={}){if(!ctx||!ctx.rendere
     g.putImageData(im,0,0);url=cv.toDataURL('image/png');}
   catch(e){console.warn('원더룹: 소개 카드 초상 렌더링 실패',e);}
   finally{renderer.setRenderTarget(prev);renderer.setClearColor(cc,ca);resume();resumeBend();hid.forEach(o=>o.visible=true);op.forEach(([mt,o,d,t])=>{mt.opacity=o;mt.depthWrite=d;if(mt.transparent!==t){mt.transparent=t;mt.needsUpdate=true;}});rt.dispose();
-    if(par)par.add(root);else stage.remove(root);root.position.copy(pos);root.quaternion.copy(quat);root.scale.copy(scl);root.updateMatrixWorld(true);}
+    if(par)par.add(root);else stage.remove(root);root.position.copy(pos);root.rotation.copy(rot);root.scale.copy(scl);root.updateMatrixWorld(true);}
   return url;}
 /* 도는 물건 그림(2026-11-04 — 아이템 획득 창이 아이콘 대신 그 물건이 천천히 도는 모습): 물건만 따로 비춰 n장(한 바퀴)을 투명 배경 PNG로 — 한 번만 찍고 창이 차례로 보여 준다 */
 function spinFrames(obj,{n=24,w=160,h=160,lift=.3}={}){if(!ctx||!ctx.renderer||!obj)return null;const {renderer}=ctx;const stage=new THREE.Scene(),pv=new THREE.Group();stage.add(pv);pv.add(obj);obj.traverse(o=>{if(o.isSprite)o.visible=false;});obj.updateMatrixWorld(true); // 빛무리(스프라이트)는 빼고 물건만

@@ -1,6 +1,6 @@
 /* 공통 시스템(js/game/) 규칙 자동 시험 — http://localhost:8000/?shot&zonetest&zone=sample-indoor 에서 (페이지가 다 뜬 뒤)
    (await import('/tools/game-tests.js')).run()  →  [{규칙, 통과, 내용}]
-   규칙 14개(대사 묶음·혼잣말·이벤트 줄·위협 멈춤·나레이션 다시·나레이션 기다림·프레임 오류·안내 표시·나침반 키링·영역 트리거·카드 줄 세우기·도감과 비밀·손 상호작용·대화 중간에 그만두기).
+   규칙 15개(대사 묶음·혼잣말·이벤트 줄·위협 멈춤·나레이션 다시·나레이션 기다림·프레임 오류·안내 표시·나침반 키링·영역 트리거·카드 줄 세우기·도감과 비밀·손 상호작용·대화 중간에 그만두기·마주 보기).
    촬영 모드라 게임 시간은 wlShot.step(n)으로만 흐른다(1/60초씩) → 매번 같은 결과. 견본 실내의 NPC·이벤트·먼지 뭉치를 쓴다. */
 const STEP = 1 / 60;
 export async function run() {
@@ -115,6 +115,22 @@ export async function run() {
     stand(Z.guest); press(); sec(.3); const L = G.dialog.linesOf(n).length; for (let i = 0; i < L; i++) { press(); sec(.3); }
     const doneOnce = done === 1 && !G.dialog.talking(); if (G.ui.cardShown() === 'dex') G.codex.closeDex(); n.onDone = od; sec(.2);
     ok('대화를 중간에 그만두면 진행 안 함', first && closed && noDone && bubbleBack && doneOnce, `대화 중 멀어짐 → 닫힘 ${closed}, onDone 안 불림 ${noDone}, 말풍선 되돌림 ${bubbleBack} / 끝까지 넘기면 onDone 한 번 ${doneOnce}`); }
+
+  // 15. 마주 보기(game/dialog tickFace — 모든 대사): 주민 대화·주민 이름으로 나오는 장면 대사·원더룹 줄 모두 말하는 쪽과 원더룹이 서로를 45도 안으로 본다.
+  //     '보는 곳' 표시(look)가 달린 줄만 예외 — 이름만이면 보던 곳 그대로, 자리를 주면 둘 다 그곳을 본다. 세계 스테이지는 tools/face-probe.js로 모든 대사를 같은 자로 잰다.
+  { await reset(); const n = G.dialog.findNPC('견본 손님'), g = n.root, gp = g.getWorldPosition(WL.position.clone()), deg = a => Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 180 / Math.PI;
+    const aH = () => deg(Math.atan2(gp.x - WL.position.x, gp.z - WL.position.z) - WL.rotation.y), aN = () => deg(Math.atan2(WL.position.x - gp.x, WL.position.z - gp.z) - g.rotation.y);
+    const away = () => { WL.position.set(gp.x + 1.1, 0, gp.z); WL.rotation.y = Math.PI / 2; g.rotation.y = -Math.PI / 2; sec(.05); }; const ry0 = g.rotation.y, notes = [], clear = async () => { for (let i = 0; i < 60 && G.dialog.lineInfo(); i++) sec(.25); await flush(); sec(.1); }; /* 대사는 목소리 길이만큼 떠 있다 — 사라질 때까지 */
+    away(); press(); sec(1); const t1 = [aN(), aH()]; const L = G.dialog.linesOf(n).length; for (let i = 0; i < L; i++) { press(); sec(.2); } if (G.ui.cardShown() === 'dex') G.codex.closeDex(); sec(.3); notes.push(`주민 대화 ${t1.map(Math.round)}`);
+    away(); G.dialog.say('견본 손님', '장면 대사 한 줄.', 1.2); sec(1); const t2 = [aN(), aH()], i2 = G.dialog.lineInfo(); await clear(); notes.push(`장면 대사 ${t2.map(Math.round)}`);
+    away(); G.dialog.say('원더룹', '원더룹이 대답하는 줄.', 1.2); sec(1); const t3 = [aN(), aH()]; await clear(); notes.push(`원더룹 줄 ${t3.map(Math.round)}`);
+    away(); G.dialog.say('견본 손님', '창밖을 보며 하는 말.', 1.2, undefined, { look: '창밖' }); sec(1); const t4 = [aN(), aH()], i4 = G.dialog.lineInfo(); await clear(); notes.push(`보는 곳(이름만) ${t4.map(Math.round)} "${i4 && i4.look}"`);
+    away(); const at = [gp.x + .5, gp.z + 6]; G.dialog.say('견본 손님', '저기를 봐.', 1.2, undefined, { look: { at, name: '저기' } }); sec(1);
+    const t5 = [deg(Math.atan2(at[0] - gp.x, at[1] - gp.z) - g.rotation.y), deg(Math.atan2(at[0] - WL.position.x, at[1] - WL.position.z) - WL.rotation.y)]; await clear(); notes.push(`보는 곳(자리) ${t5.map(Math.round)}`);
+    // 소개 카드 초상을 찍은 뒤에도 방향 값이 그대로(90도 넘게 돌아 있던 주민의 오일러가 뒤집히면 그 뒤 '원더룹 쪽 보기'가 반대쪽이 된다 — 2026-11-11 삐삐)
+    g.rotation.set(0, 2.6, 0); G.profile.portrait(g, { w: 32, h: 32 }); const pr = [g.rotation.x, g.rotation.y, g.rotation.z].map(v => +v.toFixed(2)); notes.push(`초상 뒤 방향 ${pr}`);
+    g.rotation.set(0, ry0, 0); const in45 = t => t[0] < 45 && t[1] < 45;
+    ok('마주 보기(모든 대사)', in45(t1) && in45(t2) && i2 && i2.npc === n && in45(t3) && t4[0] > 120 && t4[1] > 120 && i4 && i4.look === '창밖' && in45(t5) && pr[0] === 0 && pr[1] === 2.6 && pr[2] === 0, notes.join(' / ') + ' (주민·원더룹이 어긋난 각도, 도)'); }
 
   return out;
 }

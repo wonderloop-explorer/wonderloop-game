@@ -59,19 +59,20 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
     const me=lump([[new THREE.CylinderGeometry(torso*.3,torso*.26,armLen,6).applyMatrix4(M4([0,-armLen/2,0])),skin],[sph(torso*.5,8,6).applyMatrix4(M4([0,-armLen,0])),skin]]);g.add(me);
     g.rotation.z=s*.32;g.userData.s=s;return g;});
   const st={mode:'idle',t:Math.random()*5,walk:0,head:0};
-  /* mode: idle 서서 살랑 · walk 걷기(콩콩) · call 두 손을 입가로 모아 부르기 · wave 한 손 흔들기 · talk 고개 끄덕 · spin 회오리에 실려 빙글 · sit 나란히 앉아 노을 보기 */
+  /* mode: idle 서서 살랑 · walk 걷기(콩콩) · call 두 손을 입가로 모아 부르기 · wave 한 손 흔들기 · talk 고개 끄덕 · give 두 손 내밀기 · spin 회오리에 실려 빙글 · sit 나란히 앉아 노을 보기 */
   function tick(dt,t,mode){st.t+=dt;const m=mode||st.mode,T=st.t;let ax=[0,0],az=[.32,.32],bob=0,tilt=0,nod=0;
     if(m==='walk'){st.walk+=dt*9;bob=Math.abs(Math.sin(st.walk))*.07;tilt=Math.sin(st.walk)*.08;ax=[Math.sin(st.walk)*.5,-Math.sin(st.walk)*.5];}
     else if(m==='call'){const k=.5+.5*Math.sin(T*6);ax=[-1.9,-1.9];az=[-.55,-.55];nod=-.12-.06*k;bob=.02*k;}
     else if(m==='wave'){ax=[0,-2.6+Math.sin(T*8)*.35];az=[.32,.5+Math.sin(T*8)*.25];bob=Math.abs(Math.sin(T*4))*.03;}
     else if(m==='talk'){nod=Math.sin(T*7)*.06;ax=[Math.sin(T*3)*.25,-.4+Math.sin(T*3.4)*.25];}
     else if(m==='spin'){az=[1.3,1.3];bob=Math.sin(T*5)*.05;}
+    else if(m==='give'){ax=[-1.25,-1.25];az=[-.06,-.06];nod=.05+Math.sin(T*5)*.03;bob=Math.abs(Math.sin(T*3))*.012;} /* 두 손을 앞으로 모아 내밀기(물건 건네기 — give 자리에 물건) */
     else if(m==='hop'){bob=Math.abs(Math.sin(T*6))*.16;ax=[-2.4,-2.4];az=[.4,.4];}
     else {bob=Math.sin(T*1.6)*.012;tilt=Math.sin(T*.7)*.04;nod=Math.sin(T*.9)*.03;}
     body.position.y+=(bob-body.position.y)*Math.min(1,dt*14);body.rotation.z+=(tilt-body.rotation.z)*Math.min(1,dt*8);
     arms.forEach((a,i)=>{const s=a.userData.s;a.rotation.x+=(ax[i]-a.rotation.x)*Math.min(1,dt*9);a.rotation.z+=(s*az[i]-a.rotation.z)*Math.min(1,dt*9);});
     bodyMesh.rotation.x+=(nod-bodyMesh.rotation.x)*Math.min(1,dt*8);}
-  return {root,body,arms,st,tick,height,headY:hc[1],
+  return {root,body,arms,st,tick,height,headY:hc[1],give:[0,tTop-.02-armLen*Math.cos(1.25)+torso*.25,armLen*Math.sin(1.25)+torso*.6], /* 내민 두 손 위(몸 기준 자리) */
     set mode(v){st.mode=v;},get mode(){return st.mode;},
     dispose(){root.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}};}
 export const makePipi=()=>makeMartian({name:'pipi',skin:'#E8946A',height:.966,headR:.25,torso:.075,legs:.2,armLen:.27,mouth:'o'});

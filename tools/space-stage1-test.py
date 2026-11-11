@@ -25,6 +25,11 @@ with sync_playwright() as p:
     CX = o['viewport']['width'] // 2
     c = b.new_context(**o)
     if COVER: c.add_init_script(open(os.path.join(ROOT, 'tools/cover-probe.js')).read())
+    c.add_init_script(open(os.path.join(ROOT, 'tools/face-probe.js')).read())  # 마주 보기 전수 검사(대사 한 줄마다 서로를 향한 각도) — 늘 잼
+    FACE = []
+    def faceDump():
+        try: FACE.extend(pg.evaluate('window.__face?window.__face.report().list:[]'))
+        except Exception: pass
     V0 = time.time(); pg = c.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
     pg.on('console', lambda m: m.type == 'error' and '404' not in m.text and errs.append(m.text[:300]))
@@ -143,6 +148,8 @@ with sync_playwright() as p:
     vid = pg.video.path() if VIDEO else None
     if COVER:
         cv = pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered']}; json.dump(cv, open(os.path.join(OUT, pre + 'cover.json'), 'w'), ensure_ascii=False, indent=1)
+    faceDump(); bad = [x for x in FACE if x['flag'] == '어긋남']; R['마주 보기'] = {'대사': len(FACE), '45도 넘게 어긋남': len(bad), '예외(보는 곳 표시)': sum(1 for x in FACE if x['flag'].startswith('예외')), '어긋난 줄': [x['who'] + ': ' + x['text'][:22] for x in bad]}
+    json.dump(FACE, open(os.path.join(OUT, pre + 'face-s1-' + (args[args.index('--face') + 1] if '--face' in args else 'after') + '.json'), 'w'), ensure_ascii=False, indent=1)
     c.close(); b.close()
     if vid: shutil.move(vid, os.path.join(OUT, pre + 'stage1.webm')); shutil.rmtree(os.path.join(OUT, 'vid'), ignore_errors=True)
 json.dump(R, open(os.path.join(OUT, pre + 'result.json'), 'w'), ensure_ascii=False, indent=1)
