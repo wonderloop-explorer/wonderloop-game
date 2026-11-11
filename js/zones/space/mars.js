@@ -157,7 +157,7 @@ const nextTop=(()=>{const g=new THREE.CircleGeometry(1,26);g.rotateX(-PI/2);cons
       if(cur>=0){const k=1+.1*Math.sin(t*4);const r=SEQ[cur].r*.8;ring.scale.set(r*k,1,r*k);}}};})();
 /* ── 하늘: 낮 버터스카치 → 노을(어둑한 살구·갈색, 해 둘레만 파랗게). 밤 칸은 노을과 같게(쓰지 않음) ── */
 const DAY={top:'#e3bd8f',horizon:'#efc4b4',hemi:'#f6dcc6',ground:'#c98d73',hemiI:.64,sun:'#fff0dc',sunI:.78,sunDir:[-4,-7,-6],fill:.24,fog:'#ecc3b3',fogNear:60,fogFar:330,stars:0,milky:0};
-const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#caa08c',ground:'#7d5248',hemiI:.52,sun:'#d6e6fa',sunI:.46,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:55,fogFar:300,stars:0,milky:0};
+const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#f0cdb6',ground:'#7d5248',hemiI:.74,sun:'#d6e6fa',sunI:.66,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:150,fogFar:680,stars:0,milky:0}; /* 노을 안개(2026-11-11): 55~300이면 60~130m 메사·바위가 갈색 안개에 묻혀 화면이 갈색 한 장처럼 됐다 → 시작 150m·끝 680m(카메라 먼 거리 310m에서도 30%) — 가까운 땅·바위·메사는 안개 0, 화산만 옅게. 하늘 색은 그대로 */
 const SK=G.sky.sky({parent:root,keys:[DAY,DUSK,DUSK],t:0,nStars:20,starSize:2});
 const ZSUN={dir:new THREE.Vector3(...DAY.sunDir).normalize(),shadow:14,follow:true};
 /* 해·파란 빛무리·작은 달 둘: 카메라를 따라다니는 하늘 판(해 자리는 지금 햇빛 방향의 반대 — 낮엔 높이, 노을엔 서쪽 낮게) */

@@ -51,15 +51,26 @@ const view={camera:null,aim:null,
    view.pairCam(root, 머리 높이)는 구역 이야기 장면(혼잣말 줄로 진행하는 대화)이 같은 구도를 쓸 때 — hold에 넘길 함수를 돌려준다 */
 let HERO=null,TC=null;const SHOT_Q=new URLSearchParams(location.search).has('shot');
 function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
-  root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14],P=W.position;let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
-  /* 화면 가림 규칙 2(2026-11-10): 인물을 넣을 화면 띠 = 맨 위 단추 줄 아래(fT) ~ 맨 아래로 내려간 대화창 위(fB). 그 띠 안에 두 사람의 머리 위~발끝을 넣고,
-     낮은 쪽 얼굴(작은 주민)도 화면 위쪽 절반(fF ≤ 0.44)에 오게 — 거리는 시야각으로: 세로(얼굴 위·아래 각각)와 가로(둘 사이 너비) 가운데 가장 먼 것 */
-  const [fT,fB]=band(),fF=Math.min(.38,fT+(fB-fT)*.45),top=Math.max(P.y+1.52,ny+headY+.15),bot=Math.min(P.y,ny),face=Math.min(P.y+.95,ny+headY-Math.min(.35,headY*.3));
-  const mx=(P.x+nx)/2,mz=(P.z+nz)/2;let px=-az,pz=ax;if((cam.position.x-mx)*px+(cam.position.z-mz)*pz<0){px=-px;pz=-pz;}
-  const asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360),vis=Math.max((top-face)/Math.max(.08,fF-fT-.02),(face-bot)/Math.max(.08,fB-fF-.015),(sep+1.5)/(.86*asp)),D=Math.min(19,vis/tf),my=face-(.5-fF)*D*tf*1.02;
-  let fx=mx+px*D*.99-ax*D*.05,fz=mz+pz*D*.99-az*D*.05;const fy=my+D*.1;
-  if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
-  const o={at:[mx,my,mz],from:[fx,fy,fz]};return ()=>o;}
+  /* 2026-11-11 다시: 두 사람의 몸 전체(발 ~ 머리 위)가 화면 띠(맨 위 단추 줄 아래 ~ 내려간 대화창 위) 안에 들어오는 가장 가까운 거리 — 키 큰 상대(둥둥)는 저절로 더 멀리.
+     방향은 둘을 잇는 선의 옆에서 상대 쪽으로 PHI만큼 돌아간 사선 → 원더룹 얼굴이 옆모습보다 더 보이고(얼굴·카메라 방향 내적 ≈ sin PHI + 여유), 상대는 옆모습.
+     (예전엔 '낮은 쪽 얼굴을 화면 위 38%에'를 거리로 풀어서 띠가 좁으면 19m까지 물러났고, 원더룹 조금 뒤에서 봐 탈 뒤통수 쪽이 보였다.)
+     옆(왼쪽·오른쪽)은 처음에 한 번 지금 카메라에 가까운 쪽으로 정하고, 자리는 매번 다시 계산(말 걸 때 아직 움직이던 주민을 따라감) */
+  const PHI=.3,P=W.position;let side=0,B=null;
+  const o={at:[0,0,0],from:[0,0,0]};
+  return ()=>{root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14];let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
+    const mx=(P.x+nx)/2,mz=(P.z+nz)/2;
+    if(!side){side=((cam.position.x-mx)*-az+(cam.position.z-mz)*ax)<0?-1:1;
+      /* 그쪽 옆에 큰 것(집·큰 바위 — 반지름 0.9m 넘는 둥근 장애물)이 카메라와 두 사람 사이에 서 있으면 반대쪽 옆으로(반대쪽이 트여 있을 때만) */
+      const hitN=sd=>{let n=0;const ex=mx+(-az*sd*Math.cos(PHI)+ax*Math.sin(PHI))*9,ez=mz+(ax*sd*Math.cos(PHI)+az*Math.sin(PHI))*9,dx=ex-mx,dz=ez-mz,L2=dx*dx+dz*dz;
+        if(Z&&Z.areas)for(const k in Z.areas)for(const ob of Z.areas[k].obstacles||[]){if(!ob.c||ob.c[2]<.9)continue;const [cx,cz,r]=ob.c;if(Math.hypot(cx-nx,cz-nz)<r+.3)continue;const t=Math.min(1,Math.max(.08,((cx-mx)*dx+(cz-mz)*dz)/L2));if(Math.hypot(mx+dx*t-cx,mz+dz*t-cz)<r+.5)n++;}return n;};
+      if(hitN(side)>0&&hitN(-side)===0)side=-side;}
+    const px=-az*side,pz=ax*side;
+    if(!B)B=band(); /* 화면 띠는 말을 걸 때 한 번만(대화창이 비켜 가며 띠가 바뀌면 카메라와 대화창이 서로 밀어냄) */
+    const [fT,fB]=B,top=Math.max(P.y+1.6,ny+headY+.18),bot=Math.min(P.y,ny)-.05,asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360);
+    const wide=sep*Math.cos(PHI)+1.5,D=Math.min(19,Math.max(5.2,(top-bot)/(Math.max(.2,fB-fT-.1)*.78*tf),wide/(.88*asp*tf))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
+    const c=Math.cos(PHI),s=Math.sin(PHI);let fx=mx+(px*c+ax*s)*D,fz=mz+(pz*c+az*s)*D;const fy=my+D*.12;
+    if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
+    o.at[0]=mx;o.at[1]=my;o.at[2]=mz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
 view.pairCam=pairCam;
 function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}

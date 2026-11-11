@@ -19,10 +19,12 @@ import {blocking,clock} from './core.js';
 import {input} from './controls.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let dlgTopPx=0;
-let ctx=null,speakFn=null,talkFn=null,dockT=-9,docked=false,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
+let ctx=null,speakFn=null,talkFn=null,dockT=-9,docked=false,dockAt=0,stackTop=0,sig='',nextAt=0,recheck=0,safeB=0,safeT=0,safeL=0,probe=null,stackBot=0;
 const EXTRA=new Set(),SLOT={dlg:'bot',strip:'top'},_a=new THREE.Vector3(),_b=new THREE.Vector3();
 const css=`body.wl-dock #wlJoy,body.wl-dock #wlJump,body.wl-dock #wlDash,body.wl-dock #wlAct{visibility:hidden!important;pointer-events:none!important}
-body.wl-dock #wlDlg{width:min(34rem,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}`;
+body.wl-dock #wlDlg{width:min(34rem,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}
+.wl-mv{transition:transform .38s cubic-bezier(.2,1.5,.4,1),opacity .25s,top .3s ease,left .3s ease!important}
+@media (prefers-reduced-motion: reduce){.wl-mv{transition:none!important}}`;
 const $=id=>document.getElementById(id);
 const shown=e=>{if(!e)return false;const cs=getComputedStyle(e);return cs.display!=='none'&&cs.visibility!=='hidden';};
 function safe(){if(!probe){probe=document.createElement('div');probe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)';document.body.appendChild(probe);}
@@ -38,6 +40,16 @@ function chars(){const L=[];if(!ctx||!ctx.camera)return L;const P=ctx.WL.positio
 const inter=(a,b)=>Math.max(0,Math.min(a[2],b[2])-Math.max(a[0],b[0]))*Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1]));
 /* 글상자 네모 R이 인물들을 얼마나 덮나: 얼굴은 조금만 걸려도 크게, 몸은 넓이 비율 */
 function score(R,C){let s=0;for(const c of C){const A=Math.max(1,(c[2]-c[0])*(c[3]-c[1])),F=[c[0],c[1],c[2],c[4]],FA=Math.max(1,(F[2]-F[0])*(F[3]-F[1]));s+=inter(R,c)/A+3*inter(R,F)/FA;}return s;}
+/* 자리 넣기(2026-11-11): 처음 뜰 때는 그 자리에서 바로(움직임 없이 나타나기만), 떠 있는 동안 자리가 바뀌면(인물을 피해 비켜 가거나 위쪽 쌓기가 밀릴 때) 0.3초에 걸쳐 부드럽게.
+   크기는 offsetWidth·offsetHeight로 — 나타나는 동안 scale(.6~.7)이 걸려 있어 getBoundingClientRect는 작게 나온다(그 폭으로 왼쪽 옆자리를 잡아 카드가 화면 밖으로 잘렸다) */
+let snapAll=false;
+/* 처음 뜨는 것은 한 프레임 숨겨 두고(같은 순간 할 일 안내 글이 바뀌어 단추 줄 높이가 달라지는 것까지 본 뒤) 다음 화면 갱신에 자리를 한 번 더 잡은 다음 보인다 — 처음 보이는 프레임부터 제자리 */
+const fresh=new Set();let freshRaf=0;
+function hold1(e){e._wlNew=true;e.style.visibility='hidden';fresh.add(e);if(!freshRaf)freshRaf=requestAnimationFrame(()=>{freshRaf=0;try{place();}catch(err){}for(const q of fresh){q._wlNew=false;q.style.visibility='';}fresh.clear();});}
+function setPos(e,top,left,snap){top=Math.round(top)+'px';left=left==null?'':Math.round(left)+'px';if(!e._wlOn)hold1(e);const first=!e._wlOn||snapAll||e._wlNew||snap;e._wlOn=true;
+  if(e.style.top===top&&e.style.left===left&&e.style.bottom==='auto')return;
+  if(first)e.classList.remove('wl-mv');else{e.classList.add('wl-mv');clearTimeout(e._wlMv);e._wlMv=setTimeout(()=>e.classList.remove('wl-mv'),340);}
+  e.style.top=top;e.style.bottom='auto';e.style.left=left;}
 const avoid=fn=>{EXTRA.add(fn);sig='';return ()=>{EXTRA.delete(fn);};};
 /* 맨 위 단추 줄 아래 끝(쌓기 시작) */
 function rowBottom(){let b=safeT+8;for(const id of ['wlQuest','wlItems','wlMenu','wlTool','dbgBtn']){const e=$(id);if(!e||!shown(e))continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.3&&r.bottom<innerHeight*.42)b=Math.max(b,r.bottom);}return b;}
@@ -46,10 +58,11 @@ const topEdge=()=>stackBot; // 위쪽 쌓기의 아래 끝(float.js 말풍선·�
 function band(){const H=innerHeight||1,d=$('wlDlg');let dh=0;if(d&&shown(d))dh=d.getBoundingClientRect().height;dh=Math.max(dh,coarse?132:118)+22;
   /* 넓은 화면(가로·컴퓨터)은 가방·메뉴가 구석에 있고 가운데 위에는 할 일 안내만 → 그 아래부터. 좁은 화면(세로)은 단추 줄 전체 아래부터 */
   let tp=rowBottom();if(innerWidth>700){tp=safeT+8;const q=$('wlQuest');if(q&&shown(q)){const r=q.getBoundingClientRect();if(r.height)tp=r.bottom;}}
-  if(stackBot>tp+12)tp=Math.max(tp,stackBot-8); /* 횟수·띠 카드·안내 문구가 쌓여 있으면 그 아래부터 */
+  if(stackTop>tp+12)tp=Math.max(tp,stackTop-8); /* 횟수가 떠 있으면 그 아래부터(위로 비켜 간 대화창·띠 카드는 빼고 — 카메라가 인물을 띠에 넣으면 대화창은 아래로 돌아온다) */
   return [Math.min(.36,(tp+24)/H),Math.max(.55,1-(safeB+(coarse?14:22)+dh+8)/H)];}
 /* 자리 고르기: 후보 [x0, y0] 가운데 인물을 가장 덜 덮는 것(앞 후보가 거의 안 덮으면 — 0.12 아래 — 그대로) */
-function pick(w,h,C,cands){let best=0,bs=1e9;for(let i=0;i<cands.length;i++){const c=cands[i],sc=score([c[0],c[1],c[0]+w,c[1]+h],C);if(i===0&&sc<=.12)return 0;if(sc+.1<bs){bs=sc;best=i;}}return best;}
+function pick(w,h,C,cands,keep=0){const S=cands.map(c=>score([c[0],c[1],c[0]+w,c[1]+h],C));if(keep>0&&keep<cands.length&&S[keep]<=.12)return keep; /* 한번 비켜 간 자리는 거기가 덮이지 않는 한 그대로(오락가락하지 않게) */
+  let best=0,bs=1e9;for(let i=0;i<cands.length;i++){if(i===0&&S[0]<=.12)return 0;if(S[i]+.1<bs){bs=S[i];best=i;}}return best;}
 function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(),row=rowBottom();
   /* 넓은 화면(가로·컴퓨터): 가방·메뉴는 구석에 있으니, 그 사이에 들어가는 가운데 표시는 할 일 칩 바로 아래부터 쌓는다(낮은 화면에서 한 줄이라도 위로 — 원더룹 탈에 닿지 않게) */
   let y=row+8,cL=0,cR=W;if(W>700){let q=safeT+8;const qe=$('wlQuest');if(qe&&shown(qe)){const r=qe.getBoundingClientRect();if(r.height)q=r.bottom;}y=q+8;
@@ -63,28 +76,29 @@ function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(
   if(ctl){const j=joy.getBoundingClientRect(),d=dash&&shown(dash)?dash.getBoundingClientRect():null;ctlTop=Math.min(j.top,d?d.top-16:H)-10;gapL=j.right+8;gapR=(d?d.left:W)-8;}
   /* 왼쪽 옆자리(가로 화면처럼 위·아래가 모두 인물에 걸릴 때): 가방 칸 아래 ~ 조이스틱 위 */
   let leftTop=row+8;{const it=$('wlItems');if(it&&shown(it)){const r=it.getBoundingClientRect();leftTop=Math.max(leftTop,r.bottom+8);}}const leftX=safeL+14;
-  if(cOn){clear(cnt.offsetWidth);cnt.style.top=Math.round(y)+'px';y+=cnt.offsetHeight+8;}
+  for(const id of ['wlCount','wlToast','wlStrip','wlGet','wlNotice']){const e=$(id);if(e&&!e.classList.contains('on')){e._wlOn=false;e._slot=0;}}if(dlg&&!dOn){dlg._wlOn=false;dlg._slot=0;}
+  if(cOn){clear(cnt.offsetWidth);setPos(cnt,y,null);y+=cnt.offsetHeight+8;}stackTop=y;
   /* 대화창: 아래(잠겼거나 조이스틱과 단추 사이에 들어가면 맨 아래, 아니면 조이스틱·단추 위) ↔ 위 */
   let dTop=H,dLeft=W;
-  if(dOn){const r=dlg.getBoundingClientRect(),w=r.width,h=r.height,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
-    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62)cands.push([x0,y]);
-    SLOT.dlg=pick(w,h+tag,C,cands)===1?'top':'bot';
-    if(SLOT.dlg==='top'){dlg.style.top=Math.round(y+tag)+'px';dlg.style.bottom='auto';y+=tag+h+10;dLeft=x0;}
-    else{dlg.style.top='';dlg.style.bottom=`calc(env(safe-area-inset-bottom,0px) + ${bo}px)`;dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
-  else{dlgTopPx=0;if(dlg){dlg.style.top='';dlg.style.bottom='';}}
+  if(dOn){const w=dlg.offsetWidth,h=dlg.offsetHeight,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
+    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62&&!(docked&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
+    const k=pick(w,h+tag,C,cands,0),was=dlg._slot;dlg._slot=k;SLOT.dlg=k===1?'top':'bot';const dsnap=was===k; /* 아래 ↔ 위로 비켜 갈 때만 부드럽게(대사가 바뀌어 높이가 달라질 때는 바로) */
+    if(SLOT.dlg==='top'){setPos(dlg,y+tag,null,dsnap);y+=tag+h+10;dLeft=x0;}
+    else{setPos(dlg,yB,null,dsnap);dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
+  else{dlgTopPx=0;if(dlg){dlg.style.top='';dlg.style.bottom='';dlg.classList.remove('wl-mv');}}
   /* 띠 카드·안내 문구: 위 가운데(쌓기) → 왼쪽 옆 → 아래(대화창·조이스틱 위) */
-  const put=(e,stack)=>{const w=e.getBoundingClientRect().width||e.offsetWidth,h=e.offsetHeight,x0=(W-w)/2,floor=Math.min(dTop,ctlTop)-8;clear(w);const cands=[[x0,y]];
+  const put=(e,stack)=>{const w=e.offsetWidth,h=e.offsetHeight,x0=(W-w)/2,floor=Math.min(dTop,ctlTop)-8;clear(w);const cands=[[x0,y]];
     if(leftX+w<Math.min(W*.48,dLeft-8)&&leftTop+h<floor)cands.push([leftX,leftTop]);
     if(stack&&floor-h>y+h*.5)cands.push([x0,floor-h]);
-    const fit=cands.filter(c=>c[1]+h<=floor+8),use=fit.length?fit:cands,k=pick(w,h,C,use),c=use[k];e.style.top=Math.round(c[1])+'px';e.style.bottom='auto';e.style.left=c[0]===x0?'':Math.round(c[0]+w/2)+'px';
+    const fit=cands.filter(c=>c[1]+h<=floor+8),use=fit.length?fit:cands,kind=c=>c[0]===leftX?1:c[1]===y?0:2,keep=e._slot?use.findIndex(c=>kind(c)===e._slot):0,k=pick(w,h,C,use,keep),c=use[k];e._slot=kind(c);setPos(e,c[1],c[0]===x0?null:c[0]+w/2);
     if(c[0]===x0&&c[1]===y)y+=h+8;else if(c[0]===leftX)leftTop+=h+8;return c[0]===leftX?1:c[1]===y?0:2;};
   for(const e of strips)SLOT.strip=['top','side','bot'][put(e,true)]||'top';
   if(tOn)put(toast,false);
   /* 'E …' 안내(컴퓨터, 화면 아래 가운데 — 주민 머리 위에 붙은 때는 dialog가 자리를 잡음): 대화창이 아래에 떠 있으면 숨기고(겹침), 낮은 화면은 발밑으로 내린다 */
   {const pr=$('wlPrompt');if(pr&&!pr.dataset.at){pr.style.visibility=dOn&&SLOT.dlg==='bot'?'hidden':'';pr.style.bottom=H<700?`calc(env(safe-area-inset-bottom,0px) + 26px)`:'';}else if(pr)pr.style.visibility='';}
-  stackBot=y;}
+  stackBot=y;snapAll=false;}
 function tickLayout(){if(!ctx)return;const now=clock.t,lk=locked();if(lk)dockT=now;const dk=lk||now-dockT<.35;
-  if(dk!==docked){docked=dk;document.body.classList.toggle('wl-dock',dk);if(dk&&input.releaseJoy)input.releaseJoy();sig='';}
+  if(dk!==docked){docked=dk;if(dk)dockAt=performance.now();document.body.classList.toggle('wl-dock',dk);if(dk&&input.releaseJoy)input.releaseJoy();sig='';}
   const dlg=$('wlDlg'),on=id=>{const e=$(id);return e&&e.classList.contains('on')?1:0;};
   const s=[dlg&&dlg.style.display==='block'?dlg.querySelector('.line').textContent.length+':'+dlg.querySelector('.line').textContent.slice(0,12):0,on('wlStrip'),on('wlGet'),on('wlNotice'),on('wlCount'),on('wlToast'),docked?1:0,innerWidth,innerHeight].join('|');
   const perf=performance.now();
@@ -92,7 +106,9 @@ function tickLayout(){if(!ctx)return;const now=clock.t,lk=locked();if(lk)dockT=n
   else if(recheck&&perf>=recheck){recheck=0;place();}
   else if(perf>=nextAt){nextAt=perf+500;place();}} /* 0.5초마다 다시(카메라가 움직여 인물 자리가 바뀌면 비켜 감 — 앞 후보가 거의 안 덮으면 그대로라 오락가락하지 않음) */
 function initLayout(c,o){ctx=c;speakFn=o.speaking;talkFn=o.talking;const st=document.createElement('style');st.dataset.wl='layout';st.textContent=css;document.head.appendChild(st);safe();stackBot=rowBottom()+8;
-  addEventListener('resize',()=>{sig='';});}
+  addEventListener('resize',()=>{sig='';snapAll=true;});
+  /* 글꼴이 늦게 불러와져 글상자 크기가 바뀌면(첫 화면에서 특히) 자리를 다시 — 움직임 없이 바로 */
+  if(document.fonts){const re=()=>{sig='';snapAll=true;};try{document.fonts.addEventListener('loadingdone',re);document.fonts.ready.then(re);}catch(e){}}}
 const isDocked=()=>docked;
 /* 따라가기 카메라가 원더룹을 둘 화면 띠 [위, 아래](0~1) — 대화창이 아래에 떠 있고(잠긴 동안, 또는 낮은 화면) 그 위로 비켜 줘야 할 때만, 아니면 null (08: 보는 점을 내려 원더룹을 띠 가운데로) */
 function heroBand(){if(!dlgTopPx)return null;const H=innerHeight||1,d=$('wlDlg');if(!d||d.style.display!=='block')return null;const b=band();return [b[0],Math.max(b[0]+.2,(dlgTopPx-8)/H)];}

@@ -169,6 +169,10 @@ with sync_playwright() as p:
     R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.mission.hero().userData.sceneLock")
     P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
     R['완료 뒤 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
+    # 노을 뒤 돌아다니기(2026-11-11 — 안개가 짙어 갈색 화면이 됐다): 네 방향을 보며 한 장씩 + 안개 값
+    for i in range(4):
+        pg.evaluate("i=>{wlGame.controls.input.cam.yaw+=Math.PI/2;}", i); pg.keyboard.down('w'); pg.wait_for_timeout(1600); pg.keyboard.up('w'); pg.wait_for_timeout(500); shot('dusk-walk%d' % i)
+    R['노을 뒤 안개'] = pg.evaluate("(()=>{let s=wlGame.mission.hero();while(s.parent)s=s.parent;const f=s.fog,c=wlGame.view.camera;return {near:+f.near.toFixed(1),far:+f.far.toFixed(1),color:'#'+f.color.getHexString(),camFar:c.far,sky:wlZone.cur.state().sky}})()")
     cl = pg.evaluate('window.__clip||[]'); R['잘림 기록 프레임'] = len(cl)
     R['잘린 프레임(1% 넘게)'] = {k: sum(1 for x in cl if x[0] == k and x[1] > .01) for k in ('ride', 'cross', 'sunset', 'big')}
     R['잘림 최대'] = max([x[1] for x in cl] or [0])

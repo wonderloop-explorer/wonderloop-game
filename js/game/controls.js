@@ -133,11 +133,15 @@ function initControls(ctx){build();if(SHOT)return;
   const cv=ctx.renderer.domElement;let drag=null,pinch=null;const pts=new Map();
   const span=()=>{const [a,b]=[...pts.values()];return Math.hypot(a.x-b.x,a.y-b.y);};
   cv.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(pts.size===2){drag=null;pinch={d:span(),dist:input.cam.dist};input.pinching=true;}else if(pts.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
+    if(pts.size===2){drag=null;pinch={d:span(),dist:input.cam.dist};input.pinching=true;}else if(pts.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY,ox:e.clientX,oy:e.clientY,go:false};});
   cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(p){p.x=e.clientX;p.y=e.clientY;}
     if(pinch&&pts.size>=2){if(input.cam.on){const d=span();if(d>10)input.cam.dist=Math.min(CAM.distMax,Math.max(input.cam.minD||CAM.distMin,pinch.dist*pinch.d/d));input.cam.user=(input.cam.user||0)+1;}return;} // 벌리면 가까이, 오므리면 멀리
     if(drag&&drag.id===e.pointerId&&input.dragHook){const dx=e.clientX-drag.x;drag.x=e.clientX;drag.y=e.clientY;input.dragHook(dx);return;} // 옷 갈아입기: 끌면 원더룹이 돈다(카메라는 그대로)
-    if(!drag||drag.id!==e.pointerId||!input.cam.on)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+    if(!drag||drag.id!==e.pointerId||!input.cam.on)return;
+    /* 누르기와 끌기 나누기(2026-11-11): 누른 자리에서 8화소(손가락 12) 넘게 움직여야 끌기 — 대사를 넘기려고 화면을 누를 때 손가락이 조금 떨려도 카메라 조작으로 치지 않는다
+       (그 떨림에 08이 대화 카메라 연출을 끝내 버려, 카메라가 원더룹 어깨 뒤로 돌아가 탈 뒤통수가 화면을 덮었다) */
+    if(!drag.go){if(Math.hypot(e.clientX-drag.ox,e.clientY-drag.oy)<(e.pointerType==='touch'?12:8))return;drag.go=true;drag.x=e.clientX;drag.y=e.clientY;return;}
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
     if(dx||dy)input.cam.user=(input.cam.user||0)+1;input.cam.yaw-=dx*CAM.yawPx;input.cam.pitch=Math.min(CAM.pitchMax,Math.max(CAM.pitchMin,input.cam.pitch+dy*CAM.pitchPx));});
   const endDrag=e=>{pts.delete(e.pointerId);if(drag&&drag.id===e.pointerId)drag=null;if(pts.size<2&&pinch){pinch=null;drag=null;} // 두 손가락을 떼는 동안 남은 손가락으로 카메라가 튀지 않게
     if(!pts.size&&input.pinching)setTimeout(()=>{input.pinching=false;},0);}; // 다 뗄 때까지는 '눌러서 걷기'로 보지 않는다(08)
