@@ -70,6 +70,11 @@ const TRAIL=[[2.4,4.6],[1.6,0],...[[-.6,-5.5],[-2.6,-10.6]].map(sc),shd(-3.4,-14
 function trailPts(step){const out=[];for(let i=0;i<TRAIL.length-1;i++){const [ax,az]=TRAIL[i],[bx,bz]=TRAIL[i+1],P0=TRAIL[Math.max(0,i-1)],P3=TRAIL[Math.min(TRAIL.length-1,i+2)];
     const n=Math.ceil(Math.hypot(bx-ax,bz-az)/step);for(let k=0;k<n;k++){const t=k/n,t2=t*t,t3=t2*t,cr=(p0,p1,p2,p3)=>.5*(2*p1+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);
       out.push([cr(P0[0],ax,bx,P3[0]),cr(P0[1],az,bz,P3[1])]);}}return out;}
+/* 달 배경음 되풀이 구간(초): 박자가 자유로운 곡(루바토)이라 박자 계산 대신 소리가 잦아드는 구절 경계를 소리에서 찾음 — 1:27.07에 끝 구절이 내림마장조 으뜸화음으로 풀리는데,
+   0:14.47에서 같은 화음(E♭·B♭·G)으로 시작하는 구절이 있어 그 바로 앞(둘 다 음이 나오기 30ms 전, −23·−31dB로 잦아든 자리)을 잇는다. 72.6초. 셋째 값 = 이음매에서 섞는 길이(초).
+   체감 크기는 그 구간을 잰 값(LUFS, ffmpeg ebur128) — game/sound MIX.target에 맞춰 틀어짐 */
+const MOON_LOOP=[14.44,87.04,.12],MOON_LUFS=-13.8;
+
 export function build({root}){
 const rnd=(()=>{const r=rng('space-garden:props');return (a,b)=>a+(b-a)*r();})();
 const rv=(()=>{const r=rng('space-garden:village');return (a,b)=>a+(b-a)*r();})(); // 채우기(마을·지형)는 새 이름 난수 — 앞 소품 자리는 그대로
@@ -657,6 +662,9 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}
   if(!G.core||G.front.frontShown&&G.front.frontShown())return;
+  /* 달 배경음(2026-11-13, 수노 '02.무한우주_달 배경음(회색 정원 탐방)' → assets/audio/moon-bgm.mp3): 첫 화면·탐험 준비·이야기 소개는 세계 곡(space-title, 코드 — 보관) 그대로, 게임이 시작되면 이 곡으로 2초 크로스페이드.
+     처음 올 때만 도입(0초)부터, 그 뒤로는 MOON_LOOP만 되풀이(화성 배경음과 같은 방식). 예전 곡으로 듣기 ?moonBgm=code */
+  if(!st.bgm){st.bgm=1;if(!/[?&]moonBgm=code/.test(location.search)){const first=!G.state.flags['moon:bgm-intro'];if(first)G.state.setFlag('moon:bgm-intro',true);G.sound.zoneMusic({id:'moon-bgm',fade:2,loop:MOON_LOOP,intro:first,lufs:MOON_LUFS});}}
   /* 처음 조작을 넘겨받을 때 한 번: 카메라를 조금 낮춰 지평선이 화면 위쪽 3분의 1쯤(하늘 그림판이 원더룹 뒤로 보이게) — 1.2초에 걸쳐, 플레이어가 만지면 그만 */
   {const C=G.controls.input.cam;if(st.cam<1.2&&C&&C.on&&C.ready&&!G.view.aim&&!G.view.req){if(st.cam===0)st.camUser=C.user;if(C.user!==st.camUser)st.cam=9;else{st.cam+=dt;const goal=(cam.aspect<1?.58:.5)-(S-1)*.2; /* 지평선이 화면 위쪽 3분의 1(행성이 클수록 지평선이 덜 떨어져 조금 덜 내려다봄 — 24m: .42·세로 .5) */C.pitch+=(goal-C.pitch)*Math.min(1,dt*3);}}}
   // 할아버지 둥실 건너뛰기(시범)

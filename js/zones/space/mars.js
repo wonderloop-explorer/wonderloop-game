@@ -602,4 +602,4 @@ const MARS_SONG={name:'화성 붉은 모래 언덕(임시)',bpm:60,lead:'celesta
    처음 화성에 올 때(flags 'mars:bgm-intro' 전)는 도입(0초)부터, 그 뒤로는 주 선율~대비 선율 구간만 되풀이 — 마디 시작 17.97초 → 53.72초(14마디 35.75초, 소리에서 박자·이음매를 재서 맞춤).
    코드로 만든 임시 곡(mars-bgm-code)은 지우지 않음 — 파일이 없거나 주소에 ?marsBgm=code면 그 곡 */
 const BGM_LOOP=[17.97,53.72];
-async function probeBgm(){if(/[?&]marsBgm=code/.test(location.search))return;try{const r=await fetch('assets/audio/mars-bgm.mp3'+'?v='+(window.WL_V||''),{method:'HEAD'});if(r.ok&&r.headers.get('content-type')!=='text/html'){const first=!G.state.flags['mars:bgm-intro'];if(first)G.state.setFlag('mars:bgm-intro',true);G.sound.zoneMusic({id:'mars-bgm',fade:2,loop:BGM_LOOP,intro:first});}}catch(e){}}
+async function probeBgm(){if(/[?&]marsBgm=code/.test(location.search))return;try{const r=await fetch('assets/audio/mars-bgm.mp3'+'?v='+(window.WL_V||''),{method:'HEAD'});if(r.ok&&r.headers.get('content-type')!=='text/html'){const first=!G.state.flags['mars:bgm-intro'];if(first)G.state.setFlag('mars:bgm-intro',true);G.sound.zoneMusic({id:'mars-bgm',fade:2,loop:BGM_LOOP,intro:first,lufs:-15.7});}}catch(e){}}

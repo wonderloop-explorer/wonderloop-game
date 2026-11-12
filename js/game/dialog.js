@@ -13,7 +13,7 @@
    - say()는 끝까지 보여 주면 true, 구역을 바꿔 지워지면 false로 끝난다 — 이어지는 진행은 결과를 보고(.then(ok=>ok&&…)). */
 import * as THREE from 'three';
 import {block,blocking,blockedOnlyBy,clock} from './core.js';
-import {sfx,voice} from './sound.js';
+import {sfx,voice,soundHooks} from './sound.js';
 import {hideDialog,hint,hintsVisible,setPrompt,showDialog,uiHooks} from './ui.js';
 import {flags,setFlag} from './state.js';
 import {bentPos} from './bend.js';
@@ -137,7 +137,7 @@ function placePrompt(n){const el=document.getElementById('wlPrompt');if(!el)retu
   {const P=ctx.WL.position,pj=h=>{const q=bentPos({x:P.x,y:P.y+h,z:P.z});return _pp.set(q.x,q.y,q.z).project(cam);},t=pj(1.9),tx=(t.x+1)/2*innerWidth,ty=(1-t.y)/2*innerHeight,f=pj(0),fy=(1-f.y)/2*innerHeight,hw=Math.abs(fy-ty)*.36+(el.offsetWidth||150)/2;
     if(t.z<1&&Math.abs(x-tx)<hw&&y>ty-14&&y-(el.offsetHeight||44)<fy){if(ty-14>=130+(el.offsetHeight||44))y=ty-14;else x=tx+(x>=tx?1:-1)*(hw+8);}} /* 위에 자리가 없으면(낮은 화면) 옆으로 */
   el.style.left=Math.round(Math.min(innerWidth-90,Math.max(90,x)))+'px';el.style.top=Math.round(Math.max(130,y))+'px';el.style.bottom='auto';el.style.transform='translate(-50%,-100%)';}
-function initDialog(c){ctx=c;makeBubble(c.scene);uiHooks.dialogBusy=()=>!!(talk||saying||sayQ.length); /* 미션 카드는 대화·기다리는 대사가 끝난 뒤에(ui notice) */
+function initDialog(c){ctx=c;makeBubble(c.scene);soundHooks.talkBusy=()=>!!(talk||saying); /* 대화창이 떠 있는 동안 배경음을 줄인 채로(game/sound MIX) */uiHooks.dialogBusy=()=>!!(talk||saying||sayQ.length); /* 미션 카드는 대화·기다리는 대사가 끝난 뒤에(ui notice) */
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});
   document.getElementById('wlAct').addEventListener('pointerdown',e=>{e.preventDefault();act();});
   document.getElementById('wlDlg').addEventListener('pointerdown',e=>{if(talk){e.preventDefault();e.stopPropagation();advance();}});} // 대화창을 눌러도 다음

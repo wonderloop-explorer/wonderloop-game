@@ -144,7 +144,7 @@ export default {
      구역 사이 예고 한 줄(나레이션 자리 — 지금은 자막만), 지나온 스테이지에서 발견한 것(flag가 켜진 것만 작은 그림으로) */
   /* 이동 테마 = 수노 '02.무한우주_이동 테마(오르골 왈츠)'(2026-11-09, 원본 WAV는 wonderloop-studio/infinite-space/audio/) — D장조 3/4, 0:13 현악 합류 → 0:17~0:28 절정 → 0:32 E♭으로 비켜 갔다
      0:33.5 D장조로 해결 → 0:37까지 울림. 한 마디 1.3765초(한 박 0.459초), 마디 자리 12.35초 기준, 늘이거나 줄이는 자리는 절정 안 24.74초 마디 경계 */
-  travel:{theme:{file:'assets/audio/travel-theme.mp3',from:13,to:37,resolve:33.5,bar:1.3765,beat0:12.35,jumpAt:25},
+  travel:{theme:{file:'assets/audio/travel-theme.mp3',lufs:-13.1,from:13,to:37,resolve:33.5,bar:1.3765,beat0:12.35,jumpAt:25},
     map:{bodies:[{id:'sun',name:'해',color:'#F6C85A',r:.06,glow:true},{id:'venus',name:'금성',color:'#C9A6E0',r:.05,zone:'space-venus'},{id:'moon',name:'달',color:'#BFC3CC',r:.05,zone:'space-garden'},
       {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true}]},
     lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파래대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'}},

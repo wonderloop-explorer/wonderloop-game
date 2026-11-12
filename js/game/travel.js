@@ -17,7 +17,7 @@
      o: {bodies:[{id,name,color,r,ring?,glow?}], from:id, to:id, facts:[{img(데이터 주소)|draw(g,s)}], line:'예고 한 줄', lineId, sec}
      세계 설정 travel.map.bodies, travel.lines['<지나온 구역>><다음 구역>'] — 세계마다 행성·문구만 바꿔 쓴다.
    촬영 모드(?shot)는 소리를 틀지 않음(sound가 막음), 지도 장면은 그대로 그림. */
-import {sfx,bedLevel,travelOut,quietBuf} from './sound.js';
+import {sfx,bedLevel,travelOut,quietBuf,lufsGain,MIX} from './sound.js';
 import {cue,clock} from './core.js';
 const PI=Math.PI,mf=m=>440*Math.pow(2,(m-69)/12);
 let CFG={},T=null;
@@ -81,11 +81,13 @@ function devBox(){if(document.getElementById('travelThemeBox'))return;const afte
   const show=()=>d.querySelectorAll('button').forEach(b=>{b.style.fontWeight=b.dataset.m===themeMode()?'700':'400';b.style.textDecoration=b.dataset.m===themeMode()?'underline':'none';});
   d.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{try{localStorage.setItem('wl-travel-theme',b.dataset.m);}catch(e){}show();}));show();after.after(d);}
 /* ── 한 번의 이동 ── o: {id, expect(착지까지 남은 초 — 곡 파일을 마디 단위로 맞출 때)} */
+/* 곡 파일 크기 맞추기: theme.lufs(잰 체감 크기)가 있으면 배경음과 같은 크기(sound MIX.target)로 */
+function themeBus(out,th){if(th.lufs==null)return out.bus;const g=out.ctx.createGain();g.gain.value=lufsGain(th.lufs,MIX.travelBus);g.connect(out.bus);return g;}
 export async function begin(o={}){if(T)end(true);const t={id:o.id||'travel',wind:.4,spark:1,landed:false,theme:null,bedT:null};T=t;
   bedLevel(0,1);const mode=themeMode();
   const th=Object.assign({},CFG.theme||{},o.theme||{});cue({kind:'music',id:'travel-theme',file:mode==='file'?th.file||null:null,dur:0});
   const out=travelOut();if(out){const t0=out.ctx.currentTime,buf=mode==='file'&&th.file?await quietBuf(th.file):null;if(T!==t)return t;const ex=o.expect?o.expect-(out.ctx.currentTime-t0):0;
-    t.theme=buf?fileTheme(out.ctx,out.bus,buf,th,ex):codeTheme(out.ctx,out.bus);LOG.kind=t.theme.kind;LOG.begin=out.ctx.currentTime;LOG.expect=o.expect||null;}
+    t.theme=buf?fileTheme(out.ctx,themeBus(out,th),buf,th,ex):codeTheme(out.ctx,out.bus);LOG.kind=t.theme.kind;LOG.begin=out.ctx.currentTime;LOG.expect=o.expect||null;}
   return t;}
 /* 비행 동안(매 프레임): 잔잔한 바람 + 꼬리 반짝이(작게) */
 export function tick(dt,phase){const t=T;if(!t||phase!=='fly')return;t.wind-=dt;if(t.wind<=0){t.wind=2.1;sfx('event-wind',{gain:.6,minor:true,cue:false});}
