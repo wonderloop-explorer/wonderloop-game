@@ -401,7 +401,7 @@ async function flagScene(W,U){ /* 꽂은 뒤: 뿌듯한 폴짝 → 한 바퀴 �
   if(U.setExpr)U.setExpr('신남');G.react.react('hop');await wait(1.3);G.react.react('joy',{sound:null});
   /* 한 바퀴: 원더룹과 깃발 가운데를 보며 지금 카메라 방향에서 시작해 천천히(10초) — 땅에 묻히지 않게 높이는 그 자리 땅 위로 */
   {const cx=(W.position.x+FLAGSPOT[0])/2,cz=(W.position.z+FLAGSPOT[1])/2,cy=groundY(cx,cz),cam=G.view.camera,a0=Math.atan2(cam.position.x-cx,cam.position.z-cz),t0=G.clock.t,D=10,C=G.controls.input.cam,cu=C?C.user:0;
-    const fn=()=>{const u=Math.min(1,(G.clock.t-t0)/D),e=u*u*(3-2*u),a=a0+e*PI*2,k=pk(),r=6.4*k,x=cx+Math.sin(a)*r,z=cz+Math.cos(a)*r;return {at:[cx,cy+1.25,cz],from:[x,Math.max(cy+2.3*k,groundY(x,z)+1.4),z]};};
+    const fn=()=>{const u=Math.min(1,(G.clock.t-t0)/D),e=u*u*(3-2*u),a=a0+e*PI*2,k=pk(),r=8*k,x=cx+Math.sin(a)*r,z=cz+Math.cos(a)*r;return {at:[cx,cy-.5,cz],from:[x,Math.max(cy+5*k,groundY(x,z)+1.4),z]};}; /* 높이 올려 내려다봄(2026-11-12 — 낮게 돌면 85m 아래 화성 땅이 화면 밖이라 분홍 하늘만 보였다): 원더룹·깃발 너머로 붉은 땅·협곡·메사 */
     G.view.hold(fn);await G.core.until(()=>G.clock.t-t0>D||(C&&C.user!==cu)||!(G.view.req&&G.view.req.fn===fn),D+2);if(G.view.req&&G.view.req.fn===fn)G.view.hold(null);}
   if(U.setExpr)U.setExpr('기본');
   G.ui.toast('사진 찍기 좋은 순간이에요 — 사진 단추(C)로 남겨 보세요',4.6);await wait(1.6);if(st.summit)st.summit.t=0;
@@ -424,6 +424,8 @@ const pend=RIDE.pending;RIDE.pending=null;let arr=null,started=false;
 function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)return;const U=W.userData,P=W.position;
   if(pend&&!started&&G.view.camera){started=true;arr=arrival({G,root,WL:W,groundY,mob:MOB,dust,onDone:()=>{st.arrDone=true;G.ui.toast('붉은 화성에 도착했어요! 화성 중력은 지구의 약 38%예요',4.2);}});}
   if(arr)arr.tick(dt,t);dust.tick(dt);fine.tick(dt,t,P);
+  /* 꼭대기에 있는 동안 먼지 안개를 걷는다(2026-11-12 — 85m 위라 '먼지 위로 올라온' 자리: 낮 안개 60~330m → 190~950m, 올라가고 내려오는 동안 천천히) */
+  {const hi=st.summit||(st.ride&&W.position.y>30)?1:0;st.clearK=(st.clearK||0)+(hi-(st.clearK||0))*Math.min(1,dt*.8);const k=st.clearK;SK.fogPush=k>.002?[130*k,620*k]:null;} /* 하늘 모듈이 키 값을 복사해 쓰므로 밀어내는 값으로(game/sky fogPush) */
   whirl.tick(dt);secretW.tick(dt);wander(WS,WS.side==='w'?WHOME.w:WHOME.e,t,1.3);wander(SW,st.summit?SUMMIT_W:SECRET_HOME,t,4.1);
   if(!WS.busy){whirl.setBase(WS.x,groundY(WS.x,WS.z),WS.z);whirl.setHeight(6);}if(!SW.busy){secretW.setBase(SW.x,groundY(SW.x,SW.z),SW.z);secretW.setHeight(5);}
   whirlDust(whirl,WS,dt,MOB?7:12);whirlDust(secretW,SW,dt,MOB?5:9);
