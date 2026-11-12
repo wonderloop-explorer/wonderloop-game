@@ -12,9 +12,9 @@
      이야기가 진행돼 대사 묶음이 바뀌었으면(variants) 새 대사를 처음부터. 이름이 같은 주민이 여럿이면 등록 순서로 #2, #3을 붙인다(구역은 늘 같은 순서로 만든다).
    - say()는 끝까지 보여 주면 true, 구역을 바꿔 지워지면 false로 끝난다 — 이어지는 진행은 결과를 보고(.then(ok=>ok&&…)). */
 import * as THREE from 'three';
-import {block,blocking,clock} from './core.js';
+import {block,blocking,blockedOnlyBy,clock} from './core.js';
 import {sfx,voice} from './sound.js';
-import {hideDialog,hint,hintsVisible,setPrompt,showDialog} from './ui.js';
+import {hideDialog,hint,hintsVisible,setPrompt,showDialog,uiHooks} from './ui.js';
 import {flags,setFlag} from './state.js';
 import {bentPos} from './bend.js';
 import {act as handAct,prompt as handPrompt} from './interact.js'; // 말 걸 상대가 없으면 손으로 하는 상호작용(E·터치 단추)
@@ -110,7 +110,7 @@ function tickFace(dt){const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt|
 function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   // 대화 중 너무 멀어지면 닫음
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
-  near=null;let nd=1.7;if(!talk&&!blocking())for(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
+  near=null;let nd=1.7;if(!talk&&(!blocking()||blockedOnlyBy('notice')))for /* 미션 카드만 떠 있으면 말을 걸 수 있다 — 걸면 카드가 먼저 닫힘(ui showDialog) */(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=talk.L;setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
   else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
   placePrompt(talk?null:near);
@@ -137,7 +137,7 @@ function placePrompt(n){const el=document.getElementById('wlPrompt');if(!el)retu
   {const P=ctx.WL.position,pj=h=>{const q=bentPos({x:P.x,y:P.y+h,z:P.z});return _pp.set(q.x,q.y,q.z).project(cam);},t=pj(1.9),tx=(t.x+1)/2*innerWidth,ty=(1-t.y)/2*innerHeight,f=pj(0),fy=(1-f.y)/2*innerHeight,hw=Math.abs(fy-ty)*.36+(el.offsetWidth||150)/2;
     if(t.z<1&&Math.abs(x-tx)<hw&&y>ty-14&&y-(el.offsetHeight||44)<fy){if(ty-14>=130+(el.offsetHeight||44))y=ty-14;else x=tx+(x>=tx?1:-1)*(hw+8);}} /* 위에 자리가 없으면(낮은 화면) 옆으로 */
   el.style.left=Math.round(Math.min(innerWidth-90,Math.max(90,x)))+'px';el.style.top=Math.round(Math.max(130,y))+'px';el.style.bottom='auto';el.style.transform='translate(-50%,-100%)';}
-function initDialog(c){ctx=c;makeBubble(c.scene);
+function initDialog(c){ctx=c;makeBubble(c.scene);uiHooks.dialogBusy=()=>!!(talk||saying||sayQ.length); /* 미션 카드는 대화·기다리는 대사가 끝난 뒤에(ui notice) */
   window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat&&!(e.target&&e.target.tagName==='INPUT'))act();});
   document.getElementById('wlAct').addEventListener('pointerdown',e=>{e.preventDefault();act();});
   document.getElementById('wlDlg').addEventListener('pointerdown',e=>{if(talk){e.preventDefault();e.stopPropagation();advance();}});} // 대화창을 눌러도 다음

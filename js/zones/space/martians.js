@@ -166,3 +166,38 @@ export function jumbleBubble({camera,obj,y,text,tone='hi',hint}){const el=docume
       el.style.left=((v.x+1)/2*innerWidth)+'px';el.style.top=((1-v.y)/2*innerHeight-6)+'px';},
     remove(){el.classList.remove('on');setTimeout(()=>el.remove(),300);}};}
 export {lump,M4,sph};
+
+/* ── 원더룹 깃발(makeFlag, 2026-11-12 — 화성 큰 화산 꼭대기 '깃발 꽂기') ── 나무 깃대 + 크림색 천(노란 별 ✦과 동그란 탈 무늬) — 한 덩어리(그리기 1번):
+   깃대·천이 그림 한 장을 같이 쓰고(아래 띠 = 나무색), 천 꼭짓점(10×6)만 매 프레임 물결(tech-lab 목도리처럼 깃대에서 멀수록 크게 출렁) — 가벼운 CPU 계산.
+   원점 = 땅에 꽂히는 깃대 밑(밑동 12cm는 땅속). tick(dt,t,카메라 자리): 카메라가 멀면 조금씩 키워(26m부터, 최대 8배) 화성 어디서든 꼭대기에 작게 보이고, 깃대 끝 반짝임(화면 크기 고정 스프라이트 1번)이 은은하게 깜빡인다 */
+export function makeFlag(){const g=new THREE.Group();g.name='wl-flag';const H=1.5,CW=.66,CH=.44,NX=9,NY=5,PR=.024;
+  const cv=document.createElement('canvas');cv.width=256;cv.height=256;const c=cv.getContext('2d');
+  c.fillStyle='#f6ecd8';c.fillRect(0,0,256,192);for(let i=0;i<260;i++){c.strokeStyle=`rgba(${i%3?196:232},${i%3?170:214},${i%3?130:176},.16)`;c.lineWidth=1.2;const x=Math.random()*256,y=Math.random()*192;c.beginPath();c.moveTo(x,y);c.lineTo(x+8+Math.random()*10,y+2-Math.random()*4);c.stroke();}
+  c.strokeStyle='#e7c9a0';c.lineWidth=7;c.strokeRect(5,5,246,182);
+  /* 동그란 탈(원더룹 탈처럼 둥근 머리 + 얼굴 구멍 + 눈 둘·볼) */
+  c.fillStyle='#8fcf9a';c.beginPath();c.arc(96,100,58,0,7);c.fill();c.fillStyle='#f8dcc4';c.beginPath();c.ellipse(96,112,38,34,0,0,7);c.fill();
+  c.fillStyle='#4a2a2a';for(const x of [82,110]){c.beginPath();c.arc(x,108,4.6,0,7);c.fill();}c.fillStyle='#f4a3a0';for(const x of [72,120]){c.beginPath();c.ellipse(x,122,6.5,4.5,0,0,7);c.fill();}
+  c.strokeStyle='#4a2a2a';c.lineWidth=3;c.lineCap='round';c.beginPath();c.arc(96,120,7,.25,Math.PI-.25);c.stroke();
+  /* 별 ✦ (네 갈래) */
+  const star=(x,y,r,col)=>{c.fillStyle=col;c.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,q=i%2?r*.3:r;c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}c.closePath();c.fill();};
+  star(196,64,34,'#f2b63c');star(214,132,15,'#f6cf6e');star(168,146,9,'#f2b63c');
+  c.fillStyle='#9a6a44';c.fillRect(0,196,256,60);for(let i=0;i<40;i++){c.fillStyle=`rgba(90,56,38,${.1+Math.random()*.15})`;c.fillRect(Math.random()*256,196+Math.random()*60,26,2);}
+  const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;
+  const pole=new THREE.CylinderGeometry(PR*.8,PR,H+.12,6).applyMatrix4(M4([0,(H-.12)/2,0])),knob=sph(PR*2,8,6).applyMatrix4(M4([0,H+.01,0]));
+  for(const q of [pole,knob]){const uv=q.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,.1+uv.getX(i)*.8,.03+uv.getY(i)*.16);}
+  const cloth=new THREE.PlaneGeometry(CW,CH,NX,NY).applyMatrix4(M4([CW/2+PR,H-CH/2-.03,0]));{const uv=cloth.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i),.25+uv.getY(i)*.75);}
+  const parts=[pole.toNonIndexed(),knob.toNonIndexed(),cloth.toNonIndexed()],n=parts.reduce((a,q)=>a+q.attributes.position.count,0),pos=new Float32Array(n*3),uvs=new Float32Array(n*2);let o=0,c0=0;
+  parts.forEach((q,i)=>{if(i===2)c0=o;pos.set(q.attributes.position.array,o*3);uvs.set(q.attributes.uv.array,o*2);o+=q.attributes.position.count;q.dispose();});
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.BufferAttribute(uvs,2));geo.computeVertexNormals();
+  const rest=pos.slice(c0*3),mat=sbMat('#ffffff',{map:tex});mat.side=THREE.DoubleSide;
+  const mesh=new THREE.Mesh(geo,mat);mesh.name='wl-flag-mesh';mesh.frustumCulled=false;mesh.castShadow=true;g.add(mesh);
+  const sm=new THREE.SpriteMaterial({map:dotTex(),color:0xfff0b8,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,sizeAttenuation:false,opacity:0});
+  const spark=new THREE.Sprite(sm);spark.position.set(0,H+.06,0);spark.renderOrder=6;g.add(spark);
+  let wind=0,T=Math.random()*9;
+  function tick(dt,t,cam){T+=dt;wind+=((1)-wind)*Math.min(1,dt*1.5);const d=cam?Math.hypot(cam.x-g.position.x,cam.y-g.position.y,cam.z-g.position.z):0,k=Math.max(1,Math.min(8,d/26)),w=1+Math.min(1.2,Math.max(0,k-1)*.2);g.scale.set(k*w,k,k*w).multiplyScalar(g.userData.pop??1); /* 멀수록 크게(26m부터, 최대 8배)·조금 더 굵게 — 180m 밖에서도 천과 깃대가 읽히게 */
+    sm.opacity=Math.max(0,.3+.22*Math.sin(T*2.3)+.14*Math.sin(T*5.1))*Math.min(1,Math.max(.3,d/40));spark.scale.setScalar((.011+.004*Math.sin(T*3.1))/Math.max(1,g.scale.y)); /* 화면에서 늘 작은 점(부모가 커진 만큼 나눔) */
+    if(d>140)return; /* 멀리서는 물결을 쉬고 모양만 */
+    const P=geo.attributes.position.array;for(let i=0;i<rest.length;i+=3){const x=rest[i],y=rest[i+1],u=Math.max(0,(x-PR)/CW),w=u*wind;
+      const z=(Math.sin(u*5.2-T*5.4+y*1.6)*.085+Math.sin(u*9.5-T*8.1+y*3.1)*.03)*w;P[c0*3+i]=x-u*u*.05*wind+Math.cos(u*5.2-T*5.4)*.012*w;P[c0*3+i+1]=y-u*u*.06+Math.sin(u*4-T*3.3)*.02*w;P[c0*3+i+2]=z;}
+    geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();}
+  return {root:g,tick,height:H,dispose(){geo.dispose();mat.dispose();tex.dispose();sm.map&&sm.map.dispose();sm.dispose();}};}

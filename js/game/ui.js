@@ -7,7 +7,7 @@
    모양·크기·색은 개미굴 편 CSS 값 그대로(#dlg·#mission·#getCard·#toast, 어두운 화면 설정이면 개미굴 어두운 색):
    대화창 = 화면 아래 가운데(터치 화면은 단추 위로 206px), 미션 카드 = notice(열 때 sus 소리, 6초 뒤 저절로·0.8초 뒤부터 눌러 닫기),
    아이템 획득 카드 = itemCard(itemget 소리, 2.8초), 안내 문구 = toast(위 가운데 칩, 2.8초), 결과창 = result(열 때 success 소리, 단추 click). */
-import {block,clock,cue} from './core.js';
+import {block,clock,cue,until,wait} from './core.js';
 import {sfx,soundHooks} from './sound.js';
 import {injectFelt} from './felt.js';
 import {popShown} from './popup.js';
@@ -136,7 +136,7 @@ const coarse=matchMedia('(pointer:coarse)').matches,SHOT_UI=new URLSearchParams(
 const dlg=$('#wlDlg');
 /* 탐험가 이름(탐험가 소개 창에서 바꾼 이름 — localStorage 'wl-look2'.name): 대화창 이름표의 '원더룹'을 그 이름으로. 촬영 모드는 늘 '원더룹' */
 const heroName=()=>{if(SHOT_UI)return '원더룹';try{const n=(JSON.parse(localStorage.getItem('wl-look2')||'{}').name||'').trim();return n||'원더룹';}catch(e){return '원더룹';}};
-function showDialog(who,text,more){if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';fitDialog();uiHooks.layout&&uiHooks.layout();}
+function showDialog(who,text,more){if(cardOn==='notice')closeNotice('dialog'); /* 미션 카드가 떠 있는데 대화가 시작되면 카드를 먼저 닫는다(동시에 뜨지 않게 — 2026-11-12) */if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';fitDialog();uiHooks.layout&&uiHooks.layout();}
 /* 대화창은 세 줄까지(화면 가림 규칙 1): 넘으면 글자를 조금씩 줄인다(0.86배까지 — 그래도 넘으면 그대로 보여 줌) */
 function fitDialog(){const l=dlg.querySelector('.line');l.style.fontSize='';const cs=getComputedStyle(l),f0=parseFloat(cs.fontSize),lh=parseFloat(cs.lineHeight)/f0||1.6;let f=f0;for(let i=0;i<6&&l.offsetHeight>f*lh*3+2;i++){f*=.97;l.style.fontSize=f+'px';}}
 const uiHooks={layout:null}; /* game/layout이 넣음 — 무엇이 뜨거나 닫힐 때 바로 자리를 다시 잡게 */
@@ -151,15 +151,22 @@ const endCue=c=>{if(c)c.dur=+(clock.t-c.t).toFixed(4);};
 function enqueue(kind,open){return new Promise(r=>{CQ.push({kind,open,r});pump();});}
 function pump(){if(cardOn||!CQ.length)return;const c=CQ.shift();cardOn=c.kind;cardOpenT=performance.now();c.open(c.r);}
 function cardDone(){cardOn=null;pump();}
-const cardShown=()=>cardOn;
+const cardShown=()=>cardOn||(ntPend>0?'notice':null); /* 차례를 기다리는 미션 카드도 '떠 있는 것'으로 — 구역이 그사이 대사를 시작하지 않게 */
 const cardsQueued=()=>CQ.length;
 const closers={};const cardCloser=(kind,fn)=>{closers[kind]=fn;}; // 다른 모듈의 카드(도감·엔딩)를 닫는 방법 — 구역을 떠날 때·영상 캡처 자동 넘김
 /* 안내 카드 (미션·알림): 아무 키나 누르면 닫힘 */
-const nt=$('#wlNotice');let ntDone=null,ntCue=null,ntEnd=0;
-function notice({kicker='미션',title='',text='',icon=null}){return enqueue('notice',r=>{ntDone=r;nt.querySelector('.k').textContent=kicker;nt.querySelector('.t').textContent=title;nt.querySelector('.s').textContent=text;
+/* 미션 카드와 대화창은 동시에 뜨지 않는다(2026-11-12, 모든 세계 — docs/series-rules.md '미션 카드와 대화창'):
+   - 대화(주민 대화·장면 대사·기다리는 대사)가 진행 중이면 카드는 대화가 끝난 뒤에 뜬다. after(Promise)를 주면 그것도 기다린다(모험 시작 카메라가 내려오는 동안).
+   - 카드가 떠 있는 동안 대화가 시작되면 카드를 먼저 닫는다(showDialog). 장면 대사(say)는 카드가 닫힐 때까지 줄을 선다(game/dialog — 카드가 막는 동안 기다림).
+   - 화면 위 가운데는 미션 카드 자리(game/layout — 비켜 가지 않음, 카드가 있는 동안 대화창은 위로 못 올라감) */
+const nt=$('#wlNotice');let ntDone=null,ntCue=null,ntEnd=0,ntPend=0,ntGen=0;
+function notice({kicker='미션',title='',text='',icon=null,after=null,onOpen=null}){const gen=ntGen,busy=()=>dlg.style.display==='block'||!!(uiHooks.dialogBusy&&uiHooks.dialogBusy());
+  const open=()=>enqueue('notice',r=>{ntDone=r;if(onOpen)try{onOpen();}catch(e){console.error(e);}nt.querySelector('.k').textContent=kicker;nt.querySelector('.t').textContent=title;nt.querySelector('.s').textContent=text;
   const img=nt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');nt.querySelector('.h').textContent=coarse?'화면을 누르면 닫혀요':'아무 키나 누르면 닫혀요';
-  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');uiHooks.layout&&uiHooks.layout();block('notice',true);ntEnd=clock.t+6;sfx('mission-start');});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
-function closeNotice(why){if(cardOn!=='notice')return;nt.classList.remove('on');uiHooks.layout&&uiHooks.layout();endCue(ntCue);ntCue=null;block('notice',false);const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
+  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');uiHooks.layout&&uiHooks.layout();block('notice',true);ntEnd=clock.t+6;sfx('mission-start');});
+  if(!after&&!busy())return open(); /* 기다릴 것이 없으면 예전처럼 바로 줄에(카드 줄 순서 그대로) */
+  ntPend++;return Promise.resolve(after).then(()=>busy()?until(()=>!busy(),120):0).then(()=>{ntPend=Math.max(0,ntPend-1);return gen!==ntGen?-1:open();});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
+function closeNotice(why){if(cardOn!=='notice')return;nt.classList.remove('on');uiHooks.layout&&uiHooks.layout();endCue(ntCue);ntCue=null;if(why==='dialog'||SHOT_UI)block('notice',false);else wait(.32).then(()=>{if(cardOn!=='notice')block('notice',false);}); /* 게임 시간으로(촬영 모드는 예전처럼 바로 — 기준 촬영·규칙 시험 그대로) */ /* 사라지는 0.3초 동안은 기다리던 대사가 뜨지 않게(카드와 대화창이 겹쳐 보였다) — 대화가 카드를 닫은 때는 바로 */const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
 const noticeShown=()=>cardOn==='notice';
 /* 비밀 카드 (숨겨진 비밀을 찾았을 때 — 개미굴 도감 비밀 카드 모양): 아무 키나 누르거나 단추로 닫힘 */
 const sc=$('#wlStrip');let scDone=null,scCue=null,scEnd=0;
@@ -271,7 +278,7 @@ function result({title,text,buttons=[],note='',sound='mission-clear'}){return en
 const resultShown=()=>cardOn==='result';
 function chooseResult(i=0){if(!resultShown())return false;const b=rs.querySelector(i?'.b2':'.b1');if(b.style.display==='none'||!b.onclick)return false;b.onclick();return true;} // 영상 캡처·시험용
 /* 구역을 떠날 때: 열린 카드를 닫고 줄을 비운다(기다리던 것은 그대로 끝난 것으로) */
-function clearCards(){CQ.splice(0).forEach(c=>c.r(-1));closeNotice();closeSecret();closeItemCard();closeProfile();if(cardOn&&closers[cardOn])closers[cardOn]();if(resultShown()){rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;cardOn=null;}}
+function clearCards(){ntGen++;ntPend=0;CQ.splice(0).forEach(c=>c.r(-1));closeNotice();closeSecret();closeItemCard();closeProfile();if(cardOn&&closers[cardOn])closers[cardOn]();if(resultShown()){rs.style.display='none';block('result',false);endCue(rsCue);rsCue=null;cardOn=null;}}
 /* 할 일 문구·말 걸기 안내 */
 const quest=$('#wlQuest'),prompt=$('#wlPrompt'),act=$('#wlAct');
 /* 할 일 안내(개미굴 #chase와 같은 자리·모양 — 맨 위 가운데 어두운 반투명 칩, 휴대폰은 폭을 다 써서 줄바꿈). 휴대폰에서 화면 폭을 다 쓰면 그 높이를 --qh로 알려

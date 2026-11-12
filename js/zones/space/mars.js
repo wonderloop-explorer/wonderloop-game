@@ -24,7 +24,7 @@ import {PI,QUALITY,rng,blobMany} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {RIDE,arrival,redDust,points,lockOn,lockOff} from './meteor-ride.js';
-import {makePipi,makeDungdung,makeWhirl,makeCassette,makeGlass,glassIcon,jumbleBubble,dotTex} from './martians.js';
+import {makePipi,makeDungdung,makeWhirl,makeCassette,makeGlass,glassIcon,jumbleBubble,dotTex,makeFlag} from './martians.js';
 import SPACE from '../../worlds/infinite-space.js';
 const WID=SPACE.id;
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
@@ -37,7 +37,7 @@ const ROCKD={c:[54,-4],r:3,top:6.2},STONES=[{c:[42.5,3.6],r:1.4,top:1.5},{c:[46.
 const WHOME={w:[18.5,-7],e:[41,-10]},LAND={w:[17.5,-2.5],e:[41,-5]};
 const SECRET_HOME=[-36,-26];
 const VOL={c:[-30,-178],rb:96,h:85,cr:11,cd:6};
-const SUMMIT=(()=>{const dx=-VOL.c[0],dz=-VOL.c[1],d=Math.hypot(dx,dz);return [VOL.c[0]+dx/d*13.5,VOL.c[1]+dz/d*13.5];})();
+const SUMMIT=(()=>{const dx=-VOL.c[0],dz=-VOL.c[1],d=Math.hypot(dx,dz);return [VOL.c[0]+dx/d*VOL.cr,VOL.c[1]+dz/d*VOL.cr];})(); /* 분화구 가장자리 마루(가장 높은 곳 — 2026-11-12, 예전엔 13.5m 바깥 비탈) */
 /* 노을을 나란히 볼 자리(언덕 꼭대기 서쪽 가장자리, 해 쪽 = 서쪽 −x를 봄): 둥둥 · 원더룹 · 삐삐 */
 const SUNSET={dung:[7.2,3.9],wl:[7.1,5.75],pipi:[7.2,7.5],face:-PI/2};
 const CROSS_TO=[16.4,3.4]; /* 둥둥이 회오리에서 내려서는 자리(삐삐 언덕 동쪽 가장자리 — 원더룹 앞) */
@@ -46,7 +46,7 @@ const BOUNDS=[-62,64,-38,38];
 const LINE_A='둥둥아! 노을 같이 보기로 한 날, 왜 안 왔어? 나 우리 언덕에서 한참 기다렸단 말이야!';
 const LINE_B='삐삐야… 노을은… 저녁에… 파랗게 와. 나는… 내 바위에서… 계속… 기다렸어.';
 const DISC={sound:'secret:'+WID+':marssound',blue:'secret:'+WID+':bluesunset',vol:'secret:'+WID+':volcano'},DISC_TOTAL=3;
-const K={met:'mars:met',call:'mars:call',recA:'mars:recA',recB:'mars:recB',told:'mars:told',clear:'clear:space-mars',glass:'item:'+WID+':bluesunset-glass'};
+const K={met:'mars:met',call:'mars:call',recA:'mars:recA',recB:'mars:recB',told:'mars:told',clear:'clear:space-mars',glass:'item:'+WID+':bluesunset-glass',flag:'mars:flag'}; /* flag: 화산 꼭대기에 깃발을 꽂음(저장 — 다시 열어도 그대로, 끝낸 뒤의 모습에도) */
 /* 땅 높이(평평한 좌표): 바람에 누운 모래 언덕 + 삐삐의 언덕 + 협곡(층진 벽) + 북쪽 큰 화산 */
 function groundY(x,z){
   const d0=Math.hypot(x-SPAWN[0],z-SPAWN[1]),flat=ss(4,12,d0);
@@ -209,7 +209,7 @@ const st={lastQ:null,scene:false,ready:false,readyT:0,pipiWalk:null,pipiMode:'id
 /* 끝낸 뒤의 모습(game/state saveAfter — 2026-11-11): 셋이 노을을 같이 본 뒤의 화성은 다시 열어도 노을, 삐삐·둥둥은 노을 쪽을 보며 나란히 선 마지막 자리 그대로.
    예전 저장(완료 표시만 있고 완료 후 상태가 없는 것)은 여기서 한 번 만들어 둔다 */
 const ZID='space-mars';
-const saveAfterMars=()=>G.state.saveAfter(ZID,{time:1,who:{pipi:[pipi.root.position.x,pipi.root.position.z,SUNSET.face],dung:[dung.root.position.x,dung.root.position.z,SUNSET.face]}});
+const saveAfterMars=()=>G.state.saveAfter(ZID,{time:1,flag:!!F[K.flag],who:{pipi:[pipi.root.position.x,pipi.root.position.z,SUNSET.face],dung:[dung.root.position.x,dung.root.position.z,SUNSET.face]}});
 let AF=G.state.afterOf(ZID);
 if(F[K.told]){SK.set(1);}
 /* 처음 자리: 삐삐는 착지 자리 곁(만난 뒤면 언덕), 둥둥은 바위 위(노을을 같이 본 뒤면 언덕) */
@@ -379,13 +379,42 @@ function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝
     if(Math.floor(T/2.1)!==wi){wi=Math.floor(T/2.1);G.sound.sfx('event-whirl',{gain:.95});}
     if(T>=D&&!landed){landed=true;W.position.set(to[0],gy1,to[1]);W.rotation.z=0;st.ride=null;wo.busy=false;wo.armed=false;w.setHeight(o.h0||6);w.clear(false);lockOff(G,W);G.sound.sfx('land');G.sound.sfx('event-dust');puffAt(to[0],to[1],18);
       G.react.react('joy',{bounce:false});if(o.onEnd)o.onEnd();}}};}
-/* 비밀: 화산 꼭대기(갔다가 머물고 돌아옴) */
-function secretRide(W){const back=[SECRET_HOME[0]+2,SECRET_HOME[1]+3];
-  ride(W,{whirl:secretW,wo:SW,to:SUMMIT,dur:11,peak:26,h0:5,onEnd:async()=>{const U=W.userData;U.sceneLock=true;st.scene=true;W.rotation.y=Math.atan2(-SUMMIT[0],-SUMMIT[1]);
-    G.ui.toast('먼지 위로 올라왔어요! 화성 땅과 작은 달 포보스가 가까이 보여요',4.2);await wait(2.2);
-    if(!F[DISC.vol]){G.state.setFlag(DISC.vol,true);}G.react.react('awe',{sound:'card-secret'});
-    await G.ui.secret({kicker:'숨겨진 비밀',title:'큰 화산 꼭대기',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 에베레스트보다 약 2.5배 높아서, 꼭대기에 서면 먼지 위로 화성 하늘이 활짝 열려요.',count:`발견 ${discN()}/${DISC_TOTAL}`});
-    await wait(1.4);U.sceneLock=false;st.scene=false;ride(W,{whirl:secretW,wo:SW,to:back,dur:11,peak:18,h0:5});}});}
+/* 비밀: 화산 꼭대기 — 깃발 꽂기(2026-11-12). 올라가면 조작을 돌려주고(꼭대기 둘레 6m 안), 깃발 자리(민트 빛기둥·동그라미 + 한 줄 안내)에서 '깃발 꽂기' →
+   배낭에서 꺼낸 깃발을 두 손으로 꾹 꽂음(07 '떡메 찧기' 동작 — 내려치는 순간 땅에 꽂힘, 먼지·반짝이·소리) → 폴짝 리액션 → 카메라가 원더룹·깃발·화성 풍경을 한 바퀴(만지면 그만)
+   → 사진 안내 → 비밀 띠 카드(큰 화산 꼭대기 — 깃발을 꽂은 뒤에). 내려가기: 옆에서 기다리는 회오리를 타면 돌아감(깃발을 안 꽂아도 됨 — 비밀이라 진행과 무관).
+   깃발은 저장(K.flag)돼 다시 올라가도·다시 열어도 그대로, 화성 어디서든 꼭대기에 작게 보임(martians makeFlag — 멀면 키움 + 깃대 끝 반짝임) */
+/* 꼭대기 땅은 걷는 곳이 아니라(가파른 화산) 원더룹은 내려앉은 마루에 서 있고, 깃발 자리는 바로 옆(마루를 따라 0.72m — 같은 높이) */
+const FLAGSPOT=(()=>{const dx=SUMMIT[0]-VOL.c[0],dz=SUMMIT[1]-VOL.c[1],l=Math.hypot(dx,dz);return [SUMMIT[0]-dz/l*.72,SUMMIT[1]+dx/l*.72];})();
+const SUMMIT_W=(()=>{const dx=SUMMIT[0]-VOL.c[0],dz=SUMMIT[1]-VOL.c[1],l=Math.hypot(dx,dz);return [SUMMIT[0]+dz/l*5.4+dx/l*1.5,SUMMIT[1]-dx/l*5.4+dz/l*1.5];})(); /* 회오리가 기다리는 자리(깃발 반대쪽 옆 5.4m — 저절로 닿지 않게) */
+const flag=makeFlag();flag.root.visible=false;root.add(flag.root);keep.push(flag.root);
+const flagMark=new THREE.Object3D();flagMark.position.set(FLAGSPOT[0],groundY(...FLAGSPOT),FLAGSPOT[1]);root.add(flagMark);
+function setFlagPlanted(){flag.root.visible=true;flag.root.userData.pop=1;flag.root.position.set(FLAGSPOT[0],groundY(...FLAGSPOT),FLAGSPOT[1]);flag.root.rotation.set(0,Math.atan2(-VOL.c[0]+FLAGSPOT[0],-VOL.c[1]+FLAGSPOT[1])+PI/2,0);st.flagHeld=false;}
+if(F[K.flag])setFlagPlanted();
+const downMark=new THREE.Object3D();downMark.position.set(SUMMIT[0],groundY(...SUMMIT),SUMMIT[1]);root.add(downMark);
+G.interact.add({root:flagMark,at:SUMMIT,face:FLAGSPOT,label:'깃발 꽂기',action:'떡메 찧기',dur:1.2,near:2.4,once:false,when:()=>!!st.summit&&!F[K.flag]&&!st.scene&&!st.ride,
+  onStart:()=>{st.flagHeld=true;st.flagT=0;flag.root.visible=true;flag.root.userData.pop=.01;G.sound.sfx('item-pickup',{gain:.7});},
+  onDone:()=>{const W=U0();if(W)scene(()=>flagScene(W,W.userData));}});
+G.interact.add({root:downMark,at:SUMMIT,label:'회오리 타고 내려가기',action:'손 흔들기',dur:.5,near:2.4,once:false,when:()=>!!st.summit&&!!F[K.flag]&&!st.scene&&!st.ride,onDone:()=>{const W=U0();if(W&&st.summit)summitDown(W);}});
+async function flagScene(W,U){ /* 꽂은 뒤: 뿌듯한 폴짝 → 한 바퀴 카메라 → 사진 안내 → 비밀 띠 카드 */
+  if(!F[K.flag])plantNow();G.goal.set(null);
+  {const a=Math.atan2(G.view.camera.position.x-W.position.x,G.view.camera.position.z-W.position.z),t0=G.clock.t;await G.core.until(()=>{const d=a-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.18;return G.clock.t-t0>.35;},1);}
+  if(U.setExpr)U.setExpr('신남');G.react.react('hop');await wait(1.3);G.react.react('joy',{sound:null});
+  /* 한 바퀴: 원더룹과 깃발 가운데를 보며 지금 카메라 방향에서 시작해 천천히(10초) — 땅에 묻히지 않게 높이는 그 자리 땅 위로 */
+  {const cx=(W.position.x+FLAGSPOT[0])/2,cz=(W.position.z+FLAGSPOT[1])/2,cy=groundY(cx,cz),cam=G.view.camera,a0=Math.atan2(cam.position.x-cx,cam.position.z-cz),t0=G.clock.t,D=10,C=G.controls.input.cam,cu=C?C.user:0;
+    const fn=()=>{const u=Math.min(1,(G.clock.t-t0)/D),e=u*u*(3-2*u),a=a0+e*PI*2,k=pk(),r=6.4*k,x=cx+Math.sin(a)*r,z=cz+Math.cos(a)*r;return {at:[cx,cy+1.25,cz],from:[x,Math.max(cy+2.3*k,groundY(x,z)+1.4),z]};};
+    G.view.hold(fn);await G.core.until(()=>G.clock.t-t0>D||(C&&C.user!==cu)||!(G.view.req&&G.view.req.fn===fn),D+2);if(G.view.req&&G.view.req.fn===fn)G.view.hold(null);}
+  if(U.setExpr)U.setExpr('기본');
+  G.ui.toast('사진 찍기 좋은 순간이에요 — 사진 단추(C)로 남겨 보세요',4.6);await wait(1.6);if(st.summit)st.summit.t=0;
+  if(!F[DISC.vol]){G.state.setFlag(DISC.vol,true);G.react.react('awe',{sound:'card-secret'});
+    G.ui.secret({kicker:'숨겨진 비밀',title:'큰 화산 꼭대기',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 에베레스트보다 약 2.5배 높아서, 꼭대기에 서면 먼지 위로 화성 하늘이 활짝 열려요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
+  st.lastQ=null;}
+function plantNow(){G.state.setFlag(K.flag,true);setFlagPlanted();st.flagPop=0;G.sound.sfx('land',{gain:.8});G.sound.sfx('event-sparkle');G.sound.sfx('event-dust');puffAt(FLAGSPOT[0],FLAGSPOT[1],14);
+  {const y=groundY(...FLAGSPOT);for(let i=0;i<12;i++){const a=Math.random()*PI*2,v=.5+Math.random()*.9;dust.emit(FLAGSPOT[0],y+.9+Math.random()*.6,FLAGSPOT[1],Math.cos(a)*v,.9+Math.random()*.8,Math.sin(a)*v,1.2+Math.random()*.6,[1,.93,.62]);}}
+  if(F[K.clear])saveAfterMars(); /* 끝낸 뒤의 모습에도 깃발 */}
+function secretRide(W){
+  ride(W,{whirl:secretW,wo:SW,to:SUMMIT,dur:11,peak:26,h0:5,onEnd:()=>{st.summit={t:0,said:false};W.rotation.y=Math.atan2(-SUMMIT[0],-SUMMIT[1]);st.lastQ=null;
+    G.ui.toast('먼지 위로 올라왔어요! 화성 땅과 작은 달 포보스가 가까이 보여요',4.2);}});}
+function summitDown(W){const back=[SECRET_HOME[0]+2,SECRET_HOME[1]+3];st.summit=null;G.goal.set(null);st.lastQ=null;ride(W,{whirl:secretW,wo:SW,to:back,dur:11,peak:18,h0:5});}
 /* ── 매 프레임 ── */
 if(SPACE.music)G.sound.songs({[SPACE.music.id]:SPACE.music.song});
 G.sound.songs({'mars-bgm-code':MARS_SONG});
@@ -395,7 +424,7 @@ const pend=RIDE.pending;RIDE.pending=null;let arr=null,started=false;
 function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)return;const U=W.userData,P=W.position;
   if(pend&&!started&&G.view.camera){started=true;arr=arrival({G,root,WL:W,groundY,mob:MOB,dust,onDone:()=>{st.arrDone=true;G.ui.toast('붉은 화성에 도착했어요! 화성 중력은 지구의 약 38%예요',4.2);}});}
   if(arr)arr.tick(dt,t);dust.tick(dt);fine.tick(dt,t,P);
-  whirl.tick(dt);secretW.tick(dt);wander(WS,WS.side==='w'?WHOME.w:WHOME.e,t,1.3);wander(SW,SECRET_HOME,t,4.1);
+  whirl.tick(dt);secretW.tick(dt);wander(WS,WS.side==='w'?WHOME.w:WHOME.e,t,1.3);wander(SW,st.summit?SUMMIT_W:SECRET_HOME,t,4.1);
   if(!WS.busy){whirl.setBase(WS.x,groundY(WS.x,WS.z),WS.z);whirl.setHeight(6);}if(!SW.busy){secretW.setBase(SW.x,groundY(SW.x,SW.z),SW.z);secretW.setHeight(5);}
   whirlDust(whirl,WS,dt,MOB?7:12);whirlDust(secretW,SW,dt,MOB?5:9);
   /* 친구들 */
@@ -429,9 +458,14 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   if(!st.ride&&!st.scene&&!st.cross&&!st.bigTick&&!U.riding){const V=U.vert,ground=!(V&&V.air);
     if(ground&&!WS.busy&&WS.armed&&Math.hypot(P.x-WS.x,P.z-WS.z)<1.7&&stage()!=='meet'){const toE=WS.side==='w';WS.side=toE?'e':'w';
       ride(W,{whirl,wo:WS,to:toE?LAND.e:LAND.w,dur:7.2,peak:5.5,h0:6});return;}
-    if(ground&&!SW.busy&&SW.armed&&Math.hypot(P.x-SW.x,P.z-SW.z)<1.6&&stage()!=='meet'){secretRide(W);return;}}
+    if(ground&&!SW.busy&&SW.armed&&Math.hypot(P.x-SW.x,P.z-SW.z)<1.6&&stage()!=='meet'){if(st.summit)summitDown(W);else secretRide(W);return;}}
   if(!st.seenWhirl&&Math.hypot(P.x-WS.x,P.z-WS.z)<16&&stage()!=='meet'&&!G.ui.cardShown()){st.seenWhirl=true;if(!st.whirlToast){st.whirlToast=true;G.ui.toast('화성에는 먼지 회오리가 자주 돌아다녀요 — 가까이 가면 둥실 실려 가요',4.4);}}
   if(st.scene||st.cross||st.ride||st.bigTick||U.riding)return;
+  if(st.summit){const S=st.summit;S.t+=dt; /* 화산 꼭대기에 머무는 동안(걷는 땅이 아니라 제자리): 깃발 자리 안내 → 꽂은 뒤엔 '내려가기' 단추. 안 꽂고 30초 있으면 회오리가 데리러 옴(비밀이라 안 꽂아도 됨) */
+    if(!F[K.flag]){quest('깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});
+      if(!S.warn&&S.t>22){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 곧 회오리가 데리러 와요',4);}if(S.t>30){summitDown(W);return;}}
+    else quest('다 봤으면 회오리를 타고 내려가요',null);
+    return;}
   const s=stage();
   if(s==='meet'){quest('',null);const r=pipi.root.position,d=Math.hypot(P.x-r.x,P.z-r.z);
     if(!st.pipiCome&&!G.ui.cardShown()){st.pipiCome=true;}
@@ -450,7 +484,14 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     if(Math.hypot(P.x-SUNSET.wl[0],P.z-SUNSET.wl[1])<5&&!G.ui.cardShown())scene(finale);return;}
   quest('',null);}
 function platformTop(x,z){for(const p of platforms)if(Math.hypot(x-p.c[0],z-p.c[1])<p.c[2])return p.top;return groundY(x,z);}
-function lateUpdate(dt,t){if(arr)arr.late(dt,t);cas.tick(dt);}
+let foreR=null,foreL=null;const _fR=new THREE.Vector3(),_fL=new THREE.Vector3();
+function lateUpdate(dt,t){if(arr)arr.late(dt,t);cas.tick(dt);
+  /* 깃발: 꽂는 동작 동안은 두 손 사이에 세워 들고(배낭에서 꺼내듯 0.25초에 커짐), 내려치는 순간(0.6초) 땅에 꽂힘 → 통 튀며 자리 잡음. 그 뒤로는 펄럭임·멀리서 키우기 */
+  const W=U0();if(st.flagHeld&&W){st.flagT+=dt;if(!foreR){foreR=W.getObjectByName('forearm.R');foreL=W.getObjectByName('forearm.L');}
+    if(st.flagT>=.6)plantNow();else if(foreR){W.updateMatrixWorld(true);foreR.localToWorld(_fR.set(0,-.19,.03));foreL.localToWorld(_fL.set(0,-.19,.03));
+      flag.root.position.set((_fR.x+_fL.x)/2,(_fR.y+_fL.y)/2-.62,(_fR.z+_fL.z)/2);flag.root.rotation.set(0,W.rotation.y+PI/2,0);flag.root.userData.pop=Math.min(1,st.flagT/.25);}}
+  if(st.flagPop!=null){st.flagPop+=dt;const u=Math.min(1,st.flagPop/.5);flag.root.userData.pop=1+Math.sin(u*PI)*.16*(1-u);flag.root.position.y=groundY(...FLAGSPOT)-.1*Math.max(0,1-u*3);if(u>=1){st.flagPop=null;flag.root.userData.pop=1;}}
+  if(flag.root.visible){const c=G.view.camera;flag.tick(dt,t,c&&c.position);}}
 return {
   name:'붉은 모래 언덕',kind:'outdoor',start:{compass:true},world:null,
   spawn:{x:SPAWN[0],z:SPAWN[1],ry:PI/2},
@@ -460,9 +501,9 @@ return {
   sky:SK,after:()=>G.state.afterOf(ZID),far:310,bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
-  spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,sunsetWL:SUNSET.wl,volcano:VOL.c},
-  state:()=>({stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
-  update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}cas.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
+  spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,flagSpot:FLAGSPOT,summitWhirl:SUMMIT_W,sunsetWL:SUNSET.wl,volcano:VOL.c},
+  state:()=>({summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
+  update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
 };
 }
 /* 화성 배경음(임시, 코드): 느린 60bpm, 넓은 패드 + 바람 스침 + 가끔 반짝이는 종, 낮은 베이스 — D 도리안 느낌(잔잔하고 넓게) */

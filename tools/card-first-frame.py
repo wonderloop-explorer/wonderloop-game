@@ -19,6 +19,7 @@ LOG = """(()=>{const IDS=['wlNotice','wlStrip','wlGet','wlToast','wlCount','wlDl
    let o=L.open[id];if(op>.02){const r=e.getBoundingClientRect();const p=[t,+((r.left+r.right)/2).toFixed(1),+((r.top+r.bottom)/2).toFixed(1),e.offsetWidth,e.offsetHeight,+op.toFixed(2)];
      if(!o){o=L.open[id]={id,text:(e.textContent||'').trim().slice(0,24),f:[]};L.rows.push(o);}if(o.f.length<400)o.f.push(p);}
    else if(o)delete L.open[id];}
+  if(L.open.wlNotice&&L.open.wlDlg)L.both=(L.both||0)+1; /* 미션 카드와 대화창이 함께 떠 있던 프레임 수(0이어야 함 — 2026-11-12) */
   requestAnimationFrame(step);};requestAnimationFrame(step);})()"""
 REPORT = """()=>window.__cf.rows.map(o=>{const f=o.f,a=f[0],W=innerWidth;const win=f.filter(p=>p[0]-a[0]<=700),end=win[win.length-1];let mx=0;for(const p of win)mx=Math.max(mx,Math.hypot(p[1]-end[1],p[2]-end[2]));
  const fin=f[f.length-1];let late=0;for(const p of f)late=Math.max(late,Math.hypot(p[1]-fin[1],p[2]-fin[2]));
@@ -50,12 +51,13 @@ with sync_playwright() as p:
         pg.evaluate("wlGame.ui.itemCard({title:'시험 물건',text:'획득 카드 시험',sec:2.2});0"); pg.wait_for_timeout(3400)
         pg.evaluate("wlGame.dialog.say('원더룹','혼잣말 대화창이 처음부터 제자리인지 보는 줄이에요.');0"); pg.wait_for_timeout(1500); pg.screenshot(path=os.path.join(OUT, '%s-%s-say.png' % (TAG, vk))); pg.wait_for_timeout(2500)
         rows = pg.evaluate(REPORT); bad = [r for r in rows if r['moveIn07'] > 3 or r['offscreen'] > 1]
-        R[vk] = {'나타남': len(rows), '옮겨 감·잘림': len(bad), '목록': rows, '오류': errs[:5]}
+        both = pg.evaluate('window.__cf.both||0')
+        R[vk] = {'미션 카드·대화창 함께 뜬 프레임': both, '나타남': len(rows), '옮겨 감·잘림': len(bad), '목록': rows, '오류': errs[:5]}
         v = pg.video; c.close()
         try: os.replace(v.path(), os.path.join(OUT, '%s-%s.webm' % (TAG, vk)))
         except Exception: pass
     b.close()
 json.dump(R, open(os.path.join(OUT, TAG + '.json'), 'w'), ensure_ascii=False, indent=1)
 for vk, r in R.items():
-    print(vk, '나타남', r['나타남'], '옮겨 감·잘림', r['옮겨 감·잘림'], r['오류'])
+    print(vk, '카드·대화창 함께', r['미션 카드·대화창 함께 뜬 프레임'], '나타남', r['나타남'], '옮겨 감·잘림', r['옮겨 감·잘림'], r['오류'])
     for x in r['목록']: print('  ', x['id'], x['text'][:14], '처음', x['first'], '0.7초 뒤', x['after07'], '움직임', x['moveIn07'], '전체', x['moveAll'], '밖', x['offscreen'])

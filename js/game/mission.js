@@ -13,6 +13,7 @@ import {set as setGoal} from './goal.js';
 import {preload,register,sfx,voice} from './sound.js';
 import {setTool} from './controls.js';
 import {flags,setFlag} from './state.js';
+import {wait} from './core.js';
 import {itemGet} from './itemget.js';
 const coarse=matchMedia('(pointer:coarse)').matches;
 let ctx=null,M=null,obj=null,t=0,vo=null,voTok=0,light=null,pool=null,lampOn=false,lampK=0;
@@ -41,8 +42,9 @@ function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;cons
   setQuest(F.quest||'');
   setGoal({at:M.at,label:F.goal&&F.goal.label||it.name,style:'ant',h:3.4});
   const P=F.popup||{};
-  notice({kicker:P.kicker||'미션',title:P.title||'',text:P.text||'',icon:it.icon?it.icon():null}).then(w=>{if(w!=='auto'&&M&&!M.got)stopVO();}); // 개미굴처럼: 키·화면을 눌러 닫으면 나레이션도 멈추고, 6초 뒤 저절로 닫히면 끝까지
-  if(F.narration)sayVO('mission:'+W.id,F.narration.vo,F.narration.text||((P.title||'')+' '+(P.text||'')));
+  /* 카드는 모험 시작 카메라가 등 뒤로 내려온 뒤에(0.9초 — 내려오는 동안은 원더룹이 화면 위 가운데에 있어 카드 자리와 겹쳤다, 2026-11-12), 나레이션은 카드가 뜰 때 */
+  const nar=()=>{if(M&&!M.got&&F.narration)sayVO('mission:'+W.id,F.narration.vo,F.narration.text||((P.title||'')+' '+(P.text||'')));};
+  notice({kicker:P.kicker||'미션',title:P.title||'',text:P.text||'',icon:it.icon?it.icon():null,after:SHOT?null:wait(.9),onOpen:nar}).then(w=>{if(w!=='auto'&&M&&!M.got)stopVO();}); // 개미굴처럼: 키·화면을 눌러 닫으면 나레이션도 멈추고, 6초 뒤 저절로 닫히면 끝까지
   return true;}
 function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
   if(obj){obj.rotation.y+=dt*1.3;obj.position.y=obj.userData.y0+Math.sin(t*2)*.15;if(obj.userData.tick)obj.userData.tick(t);}

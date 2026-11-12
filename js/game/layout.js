@@ -69,7 +69,8 @@ function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(
     for(const id of ['wlItems','wlTool','dbgBtn']){const e=$(id);if(e&&shown(e)){const r=e.getBoundingClientRect();if(r.height&&r.top<H*.3)cL=Math.max(cL,r.right);}}
     for(const id of ['wlMenu','wlCamBtn']){const e=$(id);if(e&&shown(e)){const r=e.getBoundingClientRect();if(r.height&&r.top<H*.3)cR=Math.min(cR,r.left);}}}
   const clear=w=>{if((W-w)/2<cL+8||(W+w)/2>cR-8)y=Math.max(y,row+8);}; /* 구석 단추에 걸리는 넓은 것은 단추 줄 아래로 */
-  const dlg=$('wlDlg'),cnt=$('wlCount'),toast=$('wlToast'),strips=['wlStrip','wlGet','wlNotice'].map($).filter(e=>e&&e.classList.contains('on'));
+  const dlg=$('wlDlg'),cnt=$('wlCount'),toast=$('wlToast'),strips=['wlNotice','wlStrip','wlGet'].map($).filter(e=>e&&e.classList.contains('on'));
+  const ntOn=strips.some(e=>e.id==='wlNotice'); /* 미션 카드: 위 가운데가 제자리(예약) — 비켜 가지 않고, 떠 있는 동안 대화창은 위로 못 올라간다(2026-11-12) */
   const dOn=dlg&&dlg.style.display==='block',cOn=cnt&&cnt.classList.contains('on'),tOn=toast&&toast.classList.contains('on');
   /* 조이스틱·단추(안 숨겨졌을 때) 위 끝과, 가로 화면에서 그 사이 빈 폭 */
   const joy=$('wlJoy'),dash=$('wlDash'),ctl=coarse&&!docked&&joy&&shown(joy);let ctlTop=H-safeB-8,gapL=0,gapR=W;
@@ -81,15 +82,16 @@ function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(
   /* 대화창: 아래(잠겼거나 조이스틱과 단추 사이에 들어가면 맨 아래, 아니면 조이스틱·단추 위) ↔ 위 */
   let dTop=H,dLeft=W;
   if(dOn){const w=dlg.offsetWidth,h=dlg.offsetHeight,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
-    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(y+tag+h<H*.62&&!(docked&&camFn&&camFn()&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
+    const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(!ntOn&&y+tag+h<H*.62&&!(docked&&camFn&&camFn()&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
     const k=pick(w,h+tag,C,cands,0),was=dlg._slot;dlg._slot=k;SLOT.dlg=k===1?'top':'bot';const dsnap=was===k; /* 아래 ↔ 위로 비켜 갈 때만 부드럽게(대사가 바뀌어 높이가 달라질 때는 바로) */
     if(SLOT.dlg==='top'){setPos(dlg,y+tag,null,dsnap);y+=tag+h+10;dLeft=x0;}
     else{setPos(dlg,yB,null,dsnap);dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
   else{dlgTopPx=0;if(dlg){dlg.style.top='';dlg.style.bottom='';dlg.classList.remove('wl-mv');}}
   /* 띠 카드·안내 문구: 위 가운데(쌓기) → 왼쪽 옆 → 아래(대화창·조이스틱 위) */
   const put=(e,stack)=>{const w=e.offsetWidth,h=e.offsetHeight,x0=(W-w)/2,floor=Math.min(dTop,ctlTop)-8;clear(w);const cands=[[x0,y]];
-    if(leftX+w<Math.min(W*.48,dLeft-8)&&leftTop+h<floor)cands.push([leftX,leftTop]);
-    if(stack&&floor-h>y+h*.5)cands.push([x0,floor-h]);
+    const fixed=e.id==='wlNotice';
+    if(!fixed&&leftX+w<Math.min(W*.48,dLeft-8)&&leftTop+h<floor)cands.push([leftX,leftTop]);
+    if(!fixed&&stack&&floor-h>y+h*.5)cands.push([x0,floor-h]);
     const fit=cands.filter(c=>c[1]+h<=floor+8),use=fit.length?fit:cands,kind=c=>c[0]===leftX?1:c[1]===y?0:2,keep=e._slot?use.findIndex(c=>kind(c)===e._slot):0,k=pick(w,h,C,use,keep),c=use[k];e._slot=kind(c);setPos(e,c[1],c[0]===x0?null:c[0]+w/2);
     if(c[0]===x0&&c[1]===y)y+=h+8;else if(c[0]===leftX)leftTop+=h+8;return c[0]===leftX?1:c[1]===y?0:2;};
   for(const e of strips)SLOT.strip=['top','side','bot'][put(e,true)]||'top';

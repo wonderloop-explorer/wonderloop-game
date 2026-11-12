@@ -117,10 +117,18 @@ with sync_playwright() as p:
     readAll(until="wlZone.cur.state().stage!=='meet'&&!wlZone.cur.state().scene"); readAll()
     R['삐삐 만남'] = pg.evaluate("!!wlGame.state.flags['mars:met']")
     if SECRET:
-        rideWhirl('secretWhirl'); pg.wait_for_timeout(500); shot('summit')
-        readAll(until="wlZone.cur.state().ride"); rideWhirl('secretWhirl') if not st()['ride'] else None
+        rideWhirl('secretWhirl')  # 꼭대기: 깃발 꽂기(2026-11-12) → 리액션·한 바퀴 카메라·사진 안내·비밀 띠 카드 → '회오리 타고 내려가기'
+        for _ in range(120):
+            if st()['summit'] and not st()['ride']: break
+            pg.wait_for_timeout(250)
+        pg.wait_for_timeout(1500); shot('summit'); act('깃발 꽂기'); pg.wait_for_timeout(3000); shot('summit-flag')
+        for _ in range(120):
+            if st()['flag'] and not st()['scene'] and not pg.evaluate('wlGame.ui.cardShown()'): break
+            pg.wait_for_timeout(500)
+        R['깃발 꽂음'] = st()['flag']; act('내려가기')
         for _ in range(200):
-            if not st()['ride'] and not st()['scene']: break
+            s = st()
+            if not s['ride'] and not s['scene'] and not s['summit']: break
             pg.wait_for_timeout(250)
         R['비밀 화산'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:volcano']")
     # ② 언덕 → 부르기

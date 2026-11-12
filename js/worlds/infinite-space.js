@@ -96,6 +96,12 @@ export default {
     bunnies:{name:'아기 토끼들',where:'STAGE 1 회색 정원',intro:'보름 할아버지 마을에서 둥실둥실 뛰노는 콩콩·몽실·보슬',likes:'떡방아 구경',quote:'여기선 톡 뛰면 한참 동안 떠 있어!',bg:'#e6e4f0',portrait:{side:.45,lift:.1}},
     pipi:{name:'삐삐',where:'STAGE 2 붉은 모래 언덕',intro:'말이 먼저 도착하는 작은 화성 친구',likes:'파란 노을',quote:'둥둥아! …둥둥아? 내 말 들려?',bg:'#fbe3d2',portrait:{side:.45,lift:.08}},
     dungdung:{name:'둥둥',where:'STAGE 2 붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은… 항상… 조금… 늦어.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
+  /* 가방 '숨겨진 비밀·발견'(game/front — flag는 구역이 켜는 발견 깃발, note = 덧붙는 한 줄) */
+  finds:[{flag:'secret:infinite-space:telescope',name:'망원경으로 본 목성',where:'STAGE 1 회색 정원',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.'},
+    {flag:'secret:infinite-space:icecave',name:'그늘 분화구의 얼음 동굴',where:'STAGE 1 회색 정원',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 오래오래 남은 곳이에요.'},
+    {flag:'secret:infinite-space:marssound',name:'화성의 두 가지 소리 빠르기',where:'STAGE 2 붉은 모래 언덕',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요.'},
+    {flag:'secret:infinite-space:bluesunset',name:'화성의 노을은 파래요',where:'STAGE 2 붉은 모래 언덕',text:'해 질 녘엔 해 둘레가 파랗게 물들어요.'},
+    {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}}],
   map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:null}],
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,

@@ -9,9 +9,10 @@ function cue(c){const e=Object.assign({t:+clock.t.toFixed(4)},c);cues.push(e);re
 const blockers=new Set();
 const block=(k,on)=>{if(on)blockers.add(k);else blockers.delete(k);};
 const blocking=k=>k?blockers.has(k):blockers.size>0; // blocking('fade'): 그것 하나만
+const blockedOnlyBy=k=>blockers.size===1&&blockers.has(k); // 막는 것이 그것 하나뿐(미션 카드만 떠 있을 때 주민에게 말 걸기 — game/dialog)
 /* 게임 시간 기다리기 (이벤트 안에서 await wait(1.5)) */
 const waits=[];
 const wait=s=>new Promise(r=>waits.push({at:clock.t+s,r}));
 const until=(fn,max=600)=>new Promise(r=>waits.push({fn,at:clock.t+max,r}));
 function tickCore(dt){clock.t+=dt;for(let i=waits.length-1;i>=0;i--){const w=waits[i];if(clock.t>=w.at||(w.fn&&w.fn())){waits.splice(i,1);w.r();}}}
-export {block,blocking,clock,cue,cues,tickCore,until,wait};
+export {block,blocking,blockedOnlyBy,clock,cue,cues,tickCore,until,wait};
