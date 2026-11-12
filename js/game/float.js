@@ -6,7 +6,7 @@
      prio가 높은 것부터 자리를 잡고, 낮은 것은 겹치면 그 아래로 비켜난다(횟수 표시 > 말풍선).
    bubble({root, y, text, sec}) 머리 위 작은 말풍선(크림색 둥근 네모 + 꼬리) — sec초 뒤 사라짐. 체험 중 구경꾼 한마디처럼 아래 대화창을 쓰면 화면을 가리는 곳에.
    count({root | at, y, label, n, max}) 물건 바로 위에 크게 띄우는 횟수('떡 찧기 ●●○ 2/3') → {set(n), remove()}.
-   mark({root | at, y, far}) 멀리서도 보이는 반짝이 표시(✦ 금빛, 천천히 숨쉼) — 해 볼 수 있는 체험 자리. 가까이(near, 기본 2.6m) 가면 숨는다(그때는 발밑 동그라미·안내 문구 차례).
+   mark({root | at, y, far}) 조금 떨어진 곳에서도 보이는 반짝이 표시(흰빛 작은 ✦ 셋이 번갈아 반짝, 14m 안) — 해 볼 수 있는 체험 자리. 그 물건 위 제자리에만 뜨고, 화면 끝이나 다른 표시에 밀려 옮겨 가야 하면 숨는다. 가까이(near, 기본 2.6m) 가면 숨는다(그때는 발밑 동그라미·안내 문구 차례).
    모두 안내 표시(ui.hint — 영상 캡처·사진 모드에서는 숨김). 구역을 떠나면 clearFloat(). 움직임 줄이기면 숨쉬기·튀기 없음. */
 import * as THREE from 'three';
 import {bentPos} from './bend.js';
@@ -21,9 +21,13 @@ const CSS=`.wl-float{position:fixed;left:0;top:0;z-index:41;pointer-events:none;
 .wl-fcnt{display:flex;align-items:center;gap:.5rem;padding:.45rem 1.05rem;border-radius:999px;background:rgba(46,28,44,.9);color:#fff4e4;font-family:"Jua","Gowun Dodum",sans-serif;font-size:clamp(19px,3.9vh,27px);white-space:nowrap;box-shadow:0 3px 0 rgba(30,14,36,.45)}
 .wl-fcnt i{width:.8em;height:.8em;border-radius:50%;border:2.5px solid #fff4e4;box-sizing:border-box;display:inline-block}.wl-fcnt i.f{background:#f7c948;border-color:#f7c948}.wl-fcnt b{font-weight:400;color:#f7c948}
 .wl-fcnt.pop{animation:wlFPop .32s ease}@keyframes wlFPop{0%{scale:1}45%{scale:1.16}100%{scale:1}}
-.wl-fmark{font-size:clamp(26px,5.2vh,38px);line-height:1;color:#ffd84a;text-shadow:0 0 10px #fff3b0,0 0 3px #b8860b;font-style:normal;animation:wlFMark 1.6s ease-in-out infinite}
-@keyframes wlFMark{0%,100%{scale:.82;rotate:0deg}50%{scale:1.18;rotate:18deg}}
-@media (prefers-reduced-motion: reduce){.wl-fmark,.wl-fcnt.pop{animation:none}}`;
+.wl-fmark{width:clamp(64px,11vh,86px);height:clamp(46px,8vh,62px)}
+.wl-fmark i{position:absolute;font-style:normal;line-height:1;color:#fff;text-shadow:0 0 8px #fff,0 0 3px rgba(255,255,255,.9);opacity:0;animation:wlFTw 2.4s ease-in-out infinite}
+.wl-fmark i:nth-child(1){left:8%;top:38%;font-size:clamp(22px,4.2vh,30px);animation-delay:0s}
+.wl-fmark i:nth-child(2){left:44%;top:2%;font-size:clamp(17px,3.2vh,23px);animation-delay:.8s}
+.wl-fmark i:nth-child(3){left:68%;top:46%;font-size:clamp(14px,2.7vh,19px);animation-delay:1.6s}
+@keyframes wlFTw{0%,100%{opacity:0;scale:.4}35%{opacity:1;scale:1.1}55%{opacity:.9;scale:.9}80%{opacity:0;scale:.5}}
+@media (prefers-reduced-motion: reduce){.wl-fmark i{animation:none;opacity:.9}.wl-fcnt.pop{animation:none}}`;
 function initFloat(c){ctx=c;}
 function add(o){if(!css){css=true;const s=document.createElement('style');s.textContent=CSS;document.head.appendChild(s);}
   const el=document.createElement('div');el.className='wl-float '+(o.cls||'');el.setAttribute('aria-hidden','true');if(o.html!=null)el.innerHTML=o.html;else el.textContent=o.text||'';
@@ -35,7 +39,7 @@ const bubble=o=>add({cls:'wl-fbub',prio:1,sec:2.6,far:22,...o});
 function count(o){const draw=n=>{let h='<span></span>';for(let i=0;i<o.max;i++)h+=i<n?'<i class="f"></i>':'<i></i>';return h+'<b>'+n+'/'+o.max+'</b>';};
   const it=add({cls:'wl-fcnt',prio:5,far:30,clamp:true,...o,html:draw(o.n||0)});it.el.firstChild.textContent=o.label||'';
   const set=n=>{it.html(draw(n));it.el.firstChild.textContent=o.label||'';it.el.classList.remove('pop');void it.el.offsetWidth;it.el.classList.add('pop');};return {el:it.el,set,remove:it.remove,show:it.show};}
-const mark=o=>add({cls:'wl-fmark',text:'✦',prio:0,far:26,near:2.6,...o});
+const mark=o=>add({cls:'wl-fmark',html:'<i>✦</i><i>✦</i><i>✦</i>',prio:0,far:14,near:2.6,stay:true,...o}); /* 흰빛 작은 반짝이 셋이 그 자리 위에서 번갈아 반짝(2026-11-12 — 예전 노란 큰 별 하나가 커졌다 돌며 움직이는 것처럼 보였다) */ /* stay: 제자리에서만 — 화면 끝·다른 표시에 밀려 옮겨 가야 하면 숨는다(2026-11-12 — 망원경 반짝이가 화면 가장자리에 붙어 숨방울 미션까지 따라오고, 비켜 가느라 두 자리를 오갔다) */
 const shown=e=>{const cs=getComputedStyle(e);return cs.display!=='none'&&cs.visibility!=='hidden'&&+cs.opacity>.05;}; /* 고정 자리 요소는 offsetParent가 늘 null이라 스타일로 본다 */
 const hit=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
 function tickFloat(){if(!ctx||!L.length)return;const cam=ctx.camera,W=ctx.WL,P=W.position,vis=hintsVisible(),iw=innerWidth,ih=innerHeight,placed=[];
@@ -51,8 +55,12 @@ function tickFloat(){if(!ctx||!L.length)return;const cam=ctx.camera,W=ctx.WL,P=W
     if(ok){const b=bentPos({x,y:y+(o.y||0),z});_p.set(b.x,b.y,b.z).project(cam);if(_p.z>1||(!o.clamp&&(Math.abs(_p.x)>1.15||Math.abs(_p.y)>1.25)))ok=false;}
     if(!ok){el.classList.remove('on');continue;}
     const w=el.offsetWidth,h=el.offsetHeight;let sx=(_p.x+1)/2*iw,sy=(1-_p.y)/2*ih; /* 붙는 점 = 표시의 아래 가운데 */
-    sx=Math.min(iw-w/2-8,Math.max(w/2+8,sx));let ty=Math.min(bot-h,Math.max(top,sy-h-(o.cls&&o.cls.includes('fbub')?10:4)));
+    const sx0=sx,ty0=sy-h-(o.cls&&o.cls.includes('fbub')?10:4);
+    sx=Math.min(iw-w/2-8,Math.max(w/2+8,sx));let ty=Math.min(bot-h,Math.max(top,ty0));
     let r=[sx-w/2,ty,sx+w/2,ty+h];for(let k=0;k<3;k++){const q=placed.find(q=>hit(r,q));if(!q)break;ty=q[3]+6;if(ty+h>bot)ty=Math.max(top,q[1]-h-6);r=[sx-w/2,ty,sx+w/2,ty+h];}
+    if(o.stay){ /* 제자리 표시: 위쪽 쌓기 한계에 맞춰 내리지 않고 그 물건 위 그대로 — 화면 밖(맨 위 단추 줄 높이 포함)이거나 다른 표시·원더룹 얼굴과 겹치면 숨김 */
+      const r0=[sx0-w/2,ty0,sx0+w/2,ty0+h];if(sx0<w/2+8||sx0>iw-w/2-8||ty0<8||ty0+h>bot||placed.some(q=>hit(r0,q))){el.classList.remove('on');continue;}
+      placed.push(r0);el.style.transform=`translate(${Math.round(sx0-w/2)}px,${Math.round(ty0)}px)`;el.classList.add('on');continue;}
     placed.push(r);el.style.transform=`translate(${Math.round(sx-w/2)}px,${Math.round(ty)}px)`;el.classList.add('on');}}
 function clearFloat(){L.splice(0).forEach(it=>it.el.remove());}
 export {add,bubble,clearFloat,count,initFloat,mark,tickFloat};

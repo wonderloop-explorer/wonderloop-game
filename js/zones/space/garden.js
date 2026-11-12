@@ -487,11 +487,11 @@ function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return
   setTimeout(()=>{GATHER.on=false;},9000);}
 /* ── 체험 안내(2026-11-10 — 떡방아·망원경을 그냥 지나치기 쉬웠다): 아직 안 해 본 체험 자리 위에 멀리서도 보이는 반짝이 표시(game/float mark, 그리기 0),
    7m 안이면 설 자리 발밑에 민트 동그라미(안내 표시 — 영상에 안 나옴), 3.4m 안이면 한 줄 안내, 가까이 왔다가 그냥 멀어지면(10m) 보름 할아버지·아기 토끼가 한 번 불러 세움(판마다 한 번). 해 보면 모두 사라짐 */
-const TRY=[{key:DISC.scope,at:SCOPE,stand:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],h:2.5,msg:'망원경으로 하늘을 볼 수 있어요',
+const TRY=[{key:DISC.scope,at:SCOPE,stand:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],h:2.15,msg:'망원경으로 하늘을 볼 수 있어요',
     call:()=>G.dialog.say('보름 할아버지','얘야, 망원경으로 하늘 한번 보고 가렴. 목성이 아주 잘 보인단다.',4.2)},
-  {key:CAKE_KEY,at:MORTAR,stand:MSTAND,h:2.1,msg:'떡방아를 찧어 볼 수 있어요',
+  {key:CAKE_KEY,at:MORTAR,stand:MSTAND,h:1.75,msg:'떡방아를 찧어 볼 수 있어요',
     call:()=>{G.float.bubble({root:bunnies[0].m.root,y:1.02,text:'떡방아 찧고 가!',sec:3.4});G.dialog.say('아기 토끼 콩콩','원더룹! 떡방아 한번 찧어 보고 가! 떡이 둥실둥실 날아다녀!',4);}}];
-TRY.forEach(q=>{q.mark=G.float.mark({at:[q.at[0],groundY(...q.at),q.at[1]],y:q.h,when:()=>!F[q.key]&&!st.cntOn});
+TRY.forEach(q=>{q.mark=G.float.mark({at:[q.at[0],groundY(...q.at),q.at[1]],y:q.h,far:11, /* 그 물건 둘레 11m 안에서만(이 작은 행성은 26m면 지평선 너머까지 — 숨방울 미션 자리에서도 하늘에 떠 보였다, 2026-11-12) */when:()=>!F[q.key]&&!st.cntOn});
   const g=new THREE.RingGeometry(.5,.66,30);g.rotateX(-PI/2);const m=new THREE.MeshBasicMaterial({color:new THREE.Color('#5cc4b9'),transparent:true,opacity:.9,depthWrite:false});m.userData.noStorybook=true;
   q.ring=new THREE.Mesh(g,m);q.ring.position.set(q.stand[0],groundY(...q.stand)+.05,q.stand[1]);q.ring.visible=false;q.ring.frustumCulled=false;q.ring.userData.noMerge=true;q.ring.renderOrder=2;G.ui.hint(q.ring);root.add(q.ring);keep.push(q.ring);});
 function tickTry(dt,t,P){for(const q of TRY){const done=!!F[q.key],d=dist(P.x,P.z,q.at),on=!done&&d<7&&!st.cntOn&&!GATHER.on&&G.ui.hintsVisible();
