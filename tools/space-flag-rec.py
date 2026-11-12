@@ -31,7 +31,7 @@ with sync_playwright() as p:
         return pg.evaluate("""(()=>{const G=wlGame,c=G.view.camera;let sc=G.mission.hero();while(sc.parent)sc=sc.parent;const f=sc.getObjectByName('wl-flag');if(!f||!f.visible)return null;const V=f.position.constructor,a=f.position.clone().project(c),b=new V(f.position.x,f.position.y+1.5*f.scale.y,f.position.z).project(c);
           return {h:+(Math.abs(a.y-b.y)/2*innerHeight).toFixed(1),x:+((b.x+1)/2).toFixed(3),y:+((1-b.y)/2).toFixed(3),front:b.z<1,scale:+f.scale.y.toFixed(2)}})()""")
     def look(at, name):  # at에 서서 화산 쪽을 봄
-        pg.evaluate("([x,z,vx,vz])=>{const W=wlGame.mission.hero();W.userData.stopWalk&&W.userData.stopWalk();W.position.x=x;W.position.z=z;const a=Math.atan2(vx-x,vz-z);W.rotation.y=a;const I=wlGame.controls.input;I.cam.yaw=a+Math.PI;I.cam.pitch=-.5;I.cam.dist=4.5; /* 플레이어가 할 수 있는 만큼: 가까이 당겨 올려다봄(멀리 두면 카메라가 땅에 걸려 꼭대기가 화면 위로 나감) */I.cam.user=(I.cam.user||0)+1;}", [at[0], at[1]] + S['volcano'][:2])
+        pg.evaluate("([x,z,vx,vz])=>{const W=wlGame.mission.hero();W.userData.stopWalk&&W.userData.stopWalk();W.position.x=x;W.position.z=z;const a=Math.atan2(vx-x,vz-z);W.rotation.y=a;const I=wlGame.controls.input;I.cam.yaw=a+Math.PI+(innerWidth<innerHeight?.13:.3);I.cam.pitch=.12;I.cam.dist=9; /* 평소 카메라 그대로, 원더룹이 화산을 가리지 않게 옆으로 조금 */I.cam.user=(I.cam.user||0)+1;}", [at[0], at[1]] + S['volcano'][:2])
         pg.wait_for_timeout(2600); shot(name); return flagPx()
     # 비밀 회오리 → 꼭대기
     sw = st()['secretWhirl']; pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.x=x+2.6;W.position.z=z;}", sw); pg.wait_for_timeout(600)
@@ -44,7 +44,11 @@ with sync_playwright() as p:
         pg.wait_for_timeout(250)
     R['꼭대기 도착'] = st()['summit']; pg.wait_for_timeout(3200); shot('summit-arrive'); perf.append(stats())
     R['할 일 안내'] = pg.evaluate("(document.getElementById('wlQuest')||{}).textContent||''")
-    fs = S['flagSpot']
+    # 깃발 자리로 걸어감 → 꽂기
+    fs = S['flagSpot']; pg.evaluate("([x,z,sx,sz])=>{const W=wlGame.mission.hero();let dx=sx-x,dz=sz-z;const l=Math.hypot(dx,dz)||1;W.userData.walkTo(x+dx/l*1.3,z+dz/l*1.3);}", fs + S['summit'])
+    for _ in range(40):
+        pg.wait_for_timeout(250)
+        if not pg.evaluate('wlGame.mission.hero().userData.isWalking()'): break
     pg.wait_for_timeout(500); R['단추 글자'] = pg.evaluate("(document.getElementById('wlPrompt')||{}).textContent||''") if not PHONE else pg.evaluate("(document.getElementById('wlAct')||{}).textContent||''")
     R['깃발 자리까지(m)'] = pg.evaluate("([x,z])=>{const P=wlGame.mission.hero().position;return +Math.hypot(P.x-x,P.z-z).toFixed(2)}", fs); R['막힘'] = pg.evaluate('[wlGame.core.blocking(),wlGame.ui.cardShown(),wlZone.cur.state().scene]')
     shot('flag-spot')
@@ -61,12 +65,12 @@ with sync_playwright() as p:
         if not pg.evaluate('wlGame.ui.cardShown()') and not st()['scene']: break
         pg.wait_for_timeout(500)
     pg.wait_for_timeout(600); R['꽂은 뒤 할 일 안내'] = pg.evaluate("(document.getElementById('wlQuest')||{}).textContent||''"); shot('after-plant')
-    # 내려가기('회오리 타고 내려가기' 단추)
-    R['내려가기 단추'] = pg.evaluate("(document.getElementById('wlPrompt')||{}).textContent||''") if not PHONE else pg.evaluate("(document.getElementById('wlAct')||{}).textContent||''")
-    if PHONE:
-        try: pg.locator('#wlAct').tap(timeout=1500)
-        except Exception: pg.keyboard.press('e')
-    else: pg.keyboard.press('e')
+    pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", S['volcano'][:2]); pg.wait_for_timeout(3500); R['분화구 가운데까지(m) — 돌 턱에서 멈춤'] = pg.evaluate("([x,z])=>{const P=wlGame.mission.hero().position;return +Math.hypot(P.x-x,P.z-z).toFixed(1)}", S['volcano'][:2]); shot('caldera-edge')
+    # 고원을 걸어 내려가는 회오리로
+    for _ in range(80):
+        s = st()
+        if s['ride'] or not s['summit']: break
+        pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", s['secretWhirl']); pg.wait_for_timeout(400)
     for _ in range(120):
         s = st()
         if not s['ride'] and not s['summit']: break

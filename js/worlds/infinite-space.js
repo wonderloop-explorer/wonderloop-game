@@ -101,7 +101,7 @@ export default {
     {flag:'secret:infinite-space:icecave',name:'그늘 분화구의 얼음 동굴',where:'STAGE 1 회색 정원',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 오래오래 남은 곳이에요.'},
     {flag:'secret:infinite-space:marssound',name:'화성의 두 가지 소리 빠르기',where:'STAGE 2 붉은 모래 언덕',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요.'},
     {flag:'secret:infinite-space:bluesunset',name:'화성의 노을은 파래요',where:'STAGE 2 붉은 모래 언덕',text:'해 질 녘엔 해 둘레가 파랗게 물들어요.'},
-    {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}}],
+    {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}}],
   map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:null}],
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,

@@ -121,11 +121,15 @@ with sync_playwright() as p:
         for _ in range(120):
             if st()['summit'] and not st()['ride']: break
             pg.wait_for_timeout(250)
-        pg.wait_for_timeout(1500); shot('summit'); act('깃발 꽂기'); pg.wait_for_timeout(3000); shot('summit-flag')
+        pg.wait_for_timeout(1500); shot('summit'); fsp = S['flagSpot']; sm = S['summit']; walk(fsp[0] + (sm[0] - fsp[0]) * .22, fsp[1] + (sm[1] - fsp[1]) * .22, 12, .4); act('깃발 꽂기'); pg.wait_for_timeout(3000); shot('summit-flag')
         for _ in range(120):
             if st()['flag'] and not st()['scene'] and not pg.evaluate('wlGame.ui.cardShown()'): break
             pg.wait_for_timeout(500)
-        R['깃발 꽂음'] = st()['flag']; act('내려가기')
+        R['깃발 꽂음'] = st()['flag']
+        for _ in range(60):  # 고원을 걸어 내려가는 회오리로
+            s2 = st()
+            if s2['ride'] or not s2['summit']: break
+            w = s2['secretWhirl']; pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", w); pg.wait_for_timeout(400)
         for _ in range(200):
             s = st()
             if not s['ride'] and not s['scene'] and not s['summit']: break
