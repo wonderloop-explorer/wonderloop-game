@@ -20,7 +20,7 @@
    ── 그리기(휴대폰 목표 60 아래) ── 땅 1(화산 포함) · 메사 1 · 바위(색 접기 병합) · 둥둥 바위·징검다리 1 · 삐삐 3 · 둥둥 3 · 회오리 1~3 · 먼지 2 · 하늘 지붕 1 · 해·빛무리·달 4 · 동그란 그림자 1 */
 import * as THREE from 'three';
 import {mergeGeometries,mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
-import {PI,QUALITY,rng,blobMany} from '../../01-textures.js';
+import {PI,QUALITY,rng,blobMany,softMat,blobTex} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {setZoneBend} from '../../game/bend.js';
@@ -85,7 +85,7 @@ const gPos=new Float32Array(NX*NZ*3),gCol=new Float32Array(NX*NZ*3),gUv=new Floa
 /* 색(2026-11-10): 별똥별 착지 때의 파스텔 살구·테라코타 그대로(A·TC·SAND·ROCK — 본편에서 진한 주황으로 바뀌었던 것을 되돌림). 화성 주황 #D9704A는 포인트 색으로만(땅에는 안 씀) */
 {const A=new THREE.Color('#e8aa86'),TC=new THREE.Color('#dc9575'),SAND=new THREE.Color('#f5d0ab'),ROCK=new THREE.Color('#bf8a74'),WALL1=new THREE.Color('#d39478'),WALL2=new THREE.Color('#edbd9f'),
    FLOOR=new THREE.Color('#bd8570'),VOLC=new THREE.Color('#dba88e'),VOLD=new THREE.Color('#c9907a'),HILLC=new THREE.Color('#f2c6a6'),t=new THREE.Color();
-  for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i,x=XS[i],z=ZS[j],y=groundY(x,z);gPos.set([x,y-1.6*(1-ss(30,33.5,Math.hypot(x-VOL.c[0],z-VOL.c[1]))),z],k*3); /* 화산 고원 안쪽은 촘촘한 꼭대기 조각(아래 summit patch)이 덮으므로 큰 격자는 살짝 가라앉힘 */gUv.set([x/5,z/5],k*2);
+  for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i,x=XS[i],z=ZS[j],y=groundY(x,z);gPos.set([x,y-1.6*(1-ss(35.2,37.5,Math.hypot(x-VOL.c[0],z-VOL.c[1]))),z],k*3); /* 화산 고원 안쪽은 촘촘한 꼭대기 조각(아래 summit patch)이 덮으므로 큰 격자는 살짝 가라앉힘 */gUv.set([x/5,z/5],k*2);
     const n1=Math.sin(x*.31+Math.sin(z*.23)*1.7)*Math.cos(z*.27-x*.11),n2=Math.sin((x+z)*.13)*Math.sin(x*.07-z*.19);
     t.copy(A).lerp(TC,Math.max(0,n2)*.55).lerp(SAND,Math.min(1,Math.max(0,y-.25)*1.1)).lerp(ROCK,Math.max(0,n1-.35)*.9);
     const dh=Math.hypot(x-HILL.c[0],z-HILL.c[1]);t.lerp(HILLC,(1-ss(HILL.r0,HILL.r1,dh))*.5);
@@ -98,20 +98,26 @@ gGeo.setIndex(gIdx);gGeo.computeVertexNormals();
 const gMat=sbMat('#ffffff');gMat.vertexColors=true;
 const ground=new THREE.Mesh(gGeo,gMat);ground.receiveShadow=true;ground.name='mars-ground';ground.frustumCulled=false;root.add(ground);keep.push(ground);
 /* ── 화산 꼭대기 조각(summit patch): 고원·분화구·돌 턱을 촘촘한 동심원 격자로(반지름 35m — 큰 격자는 5m 칸이라 계단진 분화구를 못 그린다) + 분화구 가장자리의 낮은 돌 턱. 한 덩어리(그리기 1) ── */
+const STONES_C=[]; /* 돌 턱 돌들 [x, z, 크기, 밑동이 땅에 묻힌 깊이] — 시험 도구가 읽음 */
 {const RS=[];for(let r=0;r<=17;r+=.6)RS.push(r);for(let r=18.5;r<=35;r+=1.5)RS.push(r);const SEG=MOB?56:76,pos=[],col=[],uv=[],idx=[];
-  const PL=new THREE.Color('#e9bd9f'),PL2=new THREE.Color('#dfa98b'),WALLC=new THREE.Color('#bf8468'),FLR=new THREE.Color('#cf9a7f'),FLR2=new THREE.Color('#c08a72'),c=new THREE.Color();
+  /* 색(2026-11-12 입체감): 고원은 밝은 살구, 분화구 안쪽은 한 단계씩 어둡게(계단마다), 계단 벽은 더 진하게, 돌은 땅보다 진한 색. 돌·둔덕 밑동에는 어두운 접지 자국(정점 색 — 그림자를 끈 휴대폰에서도 땅에 붙어 보이게) */
+  const PL=new THREE.Color('#edc2a3'),PL2=new THREE.Color('#dfa98b'),WALLC=new THREE.Color('#a8694f'),FLR=new THREE.Color('#c58d72'),FLR2=new THREE.Color('#a5725d'),AO=new THREE.Color('#8f5a47'),c=new THREE.Color();
+  const RK=rng('space-mars:caldera'),rk=(a,b)=>a+(b-a)*RK(),ST1=new THREE.Color('#a8715b'),ST2=new THREE.Color('#c38c72'),NS=MOB?40:58,stones=[];
+  for(let i=0;i<NS;i++){const a=(i+rk(-.25,.25))/NS*PI*2,rr=VOL.rc*(1+.07*Math.sin(a*3+1.3)+.04*Math.sin(a*7+2.73))+rk(.75,1.15),x=VOL.c[0]+Math.cos(a)*rr,z=VOL.c[1]+Math.sin(a)*rr,sz=rk(.3,.52);
+    const g=new THREE.IcosahedronGeometry(sz,0);g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(x,groundY(x,z)+sz*.2,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rk(0,3),rk(0,3),rk(0,3))),new THREE.Vector3(rk(1,1.5),rk(.55,.8),rk(.9,1.3))));
+    const n=g.attributes.position.count,cc=new Float32Array(n*3),q=c.copy(ST1).lerp(ST2,rk(0,1)).clone();let lo=1e9;const P=g.attributes.position;for(let k=0;k<n;k++)lo=Math.min(lo,P.getY(k));
+    for(let k=0;k<n;k++){const h=ss(lo,lo+sz*.9,P.getY(k)),e=c.copy(AO).lerp(q,.35+.65*h);cc.set([e.r,e.g,e.b],k*3);} /* 돌 아래쪽은 어둡게(밑동 그늘) */
+    g.setAttribute('color',new THREE.BufferAttribute(cc,3));g.computeVertexNormals();stones.push({x,z,sz,g});STONES_C.push([+x.toFixed(2),+z.toFixed(2),+sz.toFixed(2),+(groundY(x,z)-lo).toFixed(3)]);}
+  const flow=(x,z)=>.5+.5*Math.sin(Math.atan2(z-VOL.c[1],x-VOL.c[0])*11+Math.hypot(x-VOL.c[0],z-VOL.c[1])*.35); /* 용암이 흘러 굳은 결(바깥으로 뻗는 옅은 줄) */
   for(let j=0;j<=RS.length;j++)for(let i=0;i<=SEG;i++){const skirt=j===RS.length,r=RS[Math.min(j,RS.length-1)],a=i/SEG*PI*2,x=VOL.c[0]+Math.cos(a)*r,z=VOL.c[1]+Math.sin(a)*r,y=groundY(x,z)-(skirt?2.6:0);pos.push(x,y,z);uv.push(x/5,z/5);
     const pd=pitDepth(x,z),sl=Math.abs(groundY(x+Math.cos(a)*.35,z+Math.sin(a)*.35)-groundY(x-Math.cos(a)*.35,z-Math.sin(a)*.35))/.7,n=Math.sin(x*.31+Math.sin(z*.23)*1.7)*Math.cos(z*.27-x*.11);
-    c.copy(PL).lerp(PL2,Math.max(0,n)*.5).lerp(FLR,Math.min(1,pd/2)).lerp(FLR2,ss(3,5,pd));if(r<VOL.rc+3)c.lerp(WALLC,Math.min(1,sl*.9));col.push(c.r,c.g,c.b);}
-  for(let j=0;j<RS.length;j++)for(let i=0;i<SEG;i++){const a=j*(SEG+1)+i,b=a+1,d=a+SEG+1,e=d+1;idx.push(a,d,b,b,d,e);}
+    c.copy(PL).lerp(PL2,Math.max(0,n)*.45+(r>VOL.rc+3?flow(x,z)*.28:0)).lerp(FLR,Math.min(1,pd/1.6)).lerp(FLR2,ss(2.6,5,pd));if(r<VOL.rc+3)c.lerp(WALLC,Math.min(1,sl*1.1));
+    let ao=0;for(const q of stones){const d=Math.hypot(x-q.x,z-q.z);if(d<q.sz*2.6)ao=Math.max(ao,1-d/(q.sz*2.6));}c.lerp(AO,Math.min(.7,ao*.9));col.push(c.r,c.g,c.b);}
+  for(let j=0;j<RS.length;j++)for(let i=0;i<SEG;i++){const a=j*(SEG+1)+i,b=a+1,d=a+SEG+1,e=d+1;idx.push(a,b,d,b,e,d);} /* 면이 위를 보게(2026-11-12 — 반대로 감겨 위에서는 안 그려지고, 1.6m 아래 가라앉힌 큰 격자가 대신 보여 원더룹·깃발이 떠 있었다) */
   const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));pg.setAttribute('color',new THREE.Float32BufferAttribute(col,3));pg.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));pg.setIndex(idx);pg.computeVertexNormals();
-  /* 낮은 돌 턱: 분화구 안으로 떨어지지 않게(걷기는 둥근 장애물로 막음 — 아래 obstacles) 가장자리를 따라 납작한 돌 */
-  const parts=[pg.toNonIndexed()],RK=rng('space-mars:caldera'),rk=(a,b)=>a+(b-a)*RK(),ST1=new THREE.Color('#c8957c'),ST2=new THREE.Color('#e2b598');const NS=MOB?40:58;
-  for(let i=0;i<NS;i++){const a=(i+rk(-.25,.25))/NS*PI*2,rr=VOL.rc*(1+.07*Math.sin(a*3+1.3)+.04*Math.sin(a*7+2.73))+rk(.75,1.15),x=VOL.c[0]+Math.cos(a)*rr,z=VOL.c[1]+Math.sin(a)*rr,sz=rk(.3,.52);
-    const g=new THREE.IcosahedronGeometry(sz,0);g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(x,groundY(x,z)+sz*.28,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rk(0,3),rk(0,3),rk(0,3))),new THREE.Vector3(rk(1,1.5),rk(.55,.8),rk(.9,1.3))));
-    const n=g.attributes.position.count,cc=new Float32Array(n*3),q=c.copy(ST1).lerp(ST2,rk(0,1));for(let k=0;k<n;k++)cc.set([q.r,q.g,q.b],k*3);g.setAttribute('color',new THREE.BufferAttribute(cc,3));g.computeVertexNormals();parts.push(g);}
-  const sg=mergeGeometries(parts);parts.forEach(q=>q.dispose());pg.dispose();const sm=gMat.clone();sm.polygonOffset=true;sm.polygonOffsetFactor=-2;sm.polygonOffsetUnits=-2;
-  const summit=new THREE.Mesh(sg,sm);summit.name='mars-summit';summit.receiveShadow=true;summit.frustumCulled=false;root.add(summit);keep.push(summit);}
+  const parts=[pg.toNonIndexed(),...stones.map(q=>q.g)],sg=mergeGeometries(parts);parts.forEach(q=>q.dispose());pg.dispose();
+  /* 깊이 밀기(polygonOffset)는 쓰지 않는다 — 발밑 둥근 그림자(땅 위 4.6cm)가 꼭대기에서만 가려졌다(2026-11-12). 큰 격자를 조각 끝(35m) 바깥까지 가라앉혀 겹치는 곳이 없음 */
+  const summit=new THREE.Mesh(sg,gMat);summit.name='mars-summit';summit.receiveShadow=true;summit.castShadow=!MOB;summit.frustumCulled=false;root.add(summit);keep.push(summit);}
 /* ── 화성 흙 텍스처(윗면용, 2026-11-10 — 예전 윗면은 가운데로 모이는 부채꼴 + 매끈한 법선이라 툰 음영이 동심원으로 져 나무 나이테처럼 보였다):
    고운 모래 알갱이(잔점) + 작은 자갈(밝은 쪽·그림자 쪽) + 바람 자국(비스듬한 옅은 물결 줄) + 색연필 결. 흰 바탕 그림이라 색은 정점 색·재질 색을 곱함(다음 발판 표시는 같은 텍스처에 밝은 색만).
    윗면(징검다리·둥둥 바위·메사)은 면 법선이 모두 위(평평한 한 톤) — 한 덩어리 TOPS(그리기 1) ── */
@@ -184,7 +190,7 @@ const nextTop=(()=>{const g=new THREE.CircleGeometry(1,26);g.rotateX(-PI/2);cons
 const DAY={top:'#e3bd8f',horizon:'#efc4b4',hemi:'#f6dcc6',ground:'#c98d73',hemiI:.64,sun:'#fff0dc',sunI:.78,sunDir:[-4,-7,-6],fill:.24,fog:'#ecc3b3',fogNear:60,fogFar:330,stars:0,milky:0};
 const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#f0cdb6',ground:'#7d5248',hemiI:.74,sun:'#d6e6fa',sunI:.66,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:150,fogFar:680,stars:0,milky:0}; /* 노을 안개(2026-11-11): 55~300이면 60~130m 메사·바위가 갈색 안개에 묻혀 화면이 갈색 한 장처럼 됐다 → 시작 150m·끝 680m(카메라 먼 거리 310m에서도 30%) — 가까운 땅·바위·메사는 안개 0, 화산만 옅게. 하늘 색은 그대로 */
 const SK=G.sky.sky({parent:root,keys:[DAY,DUSK,DUSK],t:0,nStars:20,starSize:2});
-const ZSUN={dir:new THREE.Vector3(...DAY.sunDir).normalize(),shadow:14,follow:true};
+const ZSUN={dir:new THREE.Vector3(...DAY.sunDir).normalize(),shadow:14,follow:true,followY:true};
 /* 해·파란 빛무리·작은 달 둘: 카메라를 따라다니는 하늘 판(해 자리는 지금 햇빛 방향의 반대 — 낮엔 높이, 노을엔 서쪽 낮게) */
 const skyG=new THREE.Group();skyG.name='mars-sky';root.add(skyG);
 const tex=(n,draw)=>{const c=document.createElement('canvas');c.width=c.height=n;draw(c.getContext('2d'),n);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;};
@@ -409,9 +415,11 @@ function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝
    → 사진 안내 → 비밀 띠 카드(큰 화산 꼭대기 — 깃발을 꽂은 뒤에). 내려가기: 옆에서 기다리는 회오리를 타면 돌아감(깃발을 안 꽂아도 됨 — 비밀이라 진행과 무관).
    깃발은 저장(K.flag)돼 다시 올라가도·다시 열어도 그대로, 화성 어디서든 꼭대기에 작게 보임(martians makeFlag — 멀면 키움 + 깃대 끝 반짝임) */
 /* 깃발 자리 = 분화구 가장자리 둔덕의 가장 높은 곳(탐험하던 땅 쪽), 내려가는 회오리는 고원 옆쪽에서 기다림 */
+const SUN_LOW=new THREE.Vector3(-8,-3.6,-2.2).normalize();
 const FLAGSPOT=[VOL.c[0]+VDIR[0]*(VOL.rc+2.2),VOL.c[1]+VDIR[1]*(VOL.rc+2.2)];
 const SUMMIT_W=[SUMMIT[0]-VDIR[1]*7.5+VDIR[0]*1.5,SUMMIT[1]+VDIR[0]*7.5+VDIR[1]*1.5];
 const flag=makeFlag();flag.root.visible=false;root.add(flag.root);keep.push(flag.root);
+{const fb=new THREE.Mesh(new THREE.PlaneGeometry(.8,.8).rotateX(-PI/2),softMat(blobTex,.6));fb.position.y=.04;fb.name='flag-contact';flag.root.add(fb);} /* 깃대 밑동 접지 자국(둥근 그림자 — 컴퓨터·휴대폰 모두) */
 const flagMark=new THREE.Object3D();flagMark.position.set(FLAGSPOT[0],groundY(...FLAGSPOT),FLAGSPOT[1]);root.add(flagMark);
 function setFlagPlanted(){flag.root.visible=true;flag.root.userData.pop=1;flag.root.position.set(FLAGSPOT[0],groundY(...FLAGSPOT),FLAGSPOT[1]);flag.root.rotation.set(0,Math.atan2(-VOL.c[0]+FLAGSPOT[0],-VOL.c[1]+FLAGSPOT[1])+PI/2,0);st.flagHeld=false;}
 if(F[K.flag])setFlagPlanted();
@@ -450,7 +458,8 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   /* 꼭대기에 있는 동안 먼지 안개를 걷는다(2026-11-12 — 85m 위라 '먼지 위로 올라온' 자리: 낮 안개 60~330m → 190~950m, 올라가고 내려오는 동안 천천히) */
   {const hi=st.summit||(st.ride&&W.position.y>20)?1:0;st.clearK=(st.clearK||0)+(hi-(st.clearK||0))*Math.min(1,dt*.8);const k=st.clearK;SK.fogPush=k>.002?[130*k,620*k]:null;
     /* 둥근 땅도 꼭대기에서는 거의 편다(2026-11-12 — 평소 세기면 250m 밖 땅이 65m 내려가 고원 끝 아래로 숨어 하늘만 보였다): 멀리 지평선·메사가 고원 너머로 보이게 */
-    if(k>.002||st.bendOn){st.bendOn=k>.002;setZoneBend({k:.0012*(1-.88*k),d0:18});}} /* 하늘 모듈이 키 값을 복사해 쓰므로 밀어내는 값으로(game/sky fogPush) */
+    if(k>.002||st.bendOn){st.bendOn=k>.002;setZoneBend({k:.0012*(1-.88*k),d0:18});}
+    SK.dirMix=k>.002?[SUN_LOW,k*.85]:null;} /* 꼭대기에서는 해를 옆으로 눕힘: 바위·분화구 계단의 밝은 면과 그늘진 면이 나뉘고 그림자가 길게 */ /* 하늘 모듈이 키 값을 복사해 쓰므로 밀어내는 값으로(game/sky fogPush) */
   whirl.tick(dt);secretW.tick(dt);wander(WS,WS.side==='w'?WHOME.w:WHOME.e,t,1.3);wander(SW,st.summit?SUMMIT_W:SECRET_HOME,t,4.1);
   if(!WS.busy){whirl.setBase(WS.x,groundY(WS.x,WS.z),WS.z);whirl.setHeight(6);}if(!SW.busy){secretW.setBase(SW.x,groundY(SW.x,SW.z),SW.z);secretW.setHeight(5);}
   whirlDust(whirl,WS,dt,MOB?7:12);whirlDust(secretW,SW,dt,MOB?5:9);
@@ -527,7 +536,7 @@ return {
   sky:SK,after:()=>G.state.afterOf(ZID),far:310,bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
-  spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,flagSpot:FLAGSPOT,summitWhirl:SUMMIT_W,sunsetWL:SUNSET.wl,volcano:VOL.c},
+  spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,calderaStones:STONES_C,flagSpot:FLAGSPOT,summitWhirl:SUMMIT_W,sunsetWL:SUNSET.wl,volcano:VOL.c},
   state:()=>({summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
   update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
 };

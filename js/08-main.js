@@ -245,7 +245,8 @@ function tickBody(){
    const d=doorAt(WL.position.x,WL.position.z);if(!d)doorLock=false;else if(!doorLock&&!zoneBusy){doorLock=true;goZone(d.to,d.spawn);}}
   // 넓은 야외: 그림자 범위가 원더룹을 따라감 (그림자 지도 한 칸 단위로 맞춰 떨림 없게)
   if(Z.sun.follow){const s=Z.sun.shadow,st=2*s/sun.shadow.mapSize.x,cx=Math.round(WL.position.x/st)*st,cz=Math.round(WL.position.z/st)*st;
-    sun.target.position.set(cx,0,cz);sun.position.set(cx,0,cz).sub(tmp.copy(Z.sun.dir).multiplyScalar(16));}
+    const cy=Z.sun.followY?Math.round(WL.position.y/4)*4:0; /* followY(구역 정보 sun): 높은 땅(화성 화산 꼭대기 38m — 2026-11-12)에서도 그림자 범위가 원더룹 높이를 따라감. 없으면 예전 그대로(0) */
+    sun.target.position.set(cx,cy,cz);sun.position.set(cx,cy,cz).sub(tmp.copy(Z.sun.dir).multiplyScalar(16));}
   // 천천히 둘러보기
   const C=GAME.controls.input.cam,rig=!SHOT&&follow,phOn=GAME.photo.active();C.on=rig&&!phOn;controls.enableRotate=controls.enableZoom=!rig; // 사진 모드 동안 따라가기 끌기·휠은 쉰다(사진 카메라가 받음) // 따라가기 카메라 = 개미굴 카메라(끌기·휠)
   if(spin&&!rig){const off=camera.position.clone().sub(controls.target);const s=new THREE.Spherical().setFromVector3(off);

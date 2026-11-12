@@ -75,7 +75,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
       L.hemi.color.copy(cur.hemi);L.hemi.groundColor.copy(cur.ground);L.hemi.intensity=num('hemiI');
       L.sun.color.copy(cur.sun);L.sun.intensity=num('sunI');L.fill.intensity=num('fill');
       if(L.fog){L.fog.color.copy(cur.fog);L.fog.near=num('fogNear')+(S.fogPush?S.fogPush[0]:0);L.fog.far=num('fogFar')+(S.fogPush?S.fogPush[1]:0);} /* fogPush [가까운 쪽, 먼 쪽]: 구역이 잠깐 안개를 밀어낼 때(화성 화산 꼭대기 — 2026-11-12), 없으면 그대로 */
-      if(sunDirOut){cur.dir.copy(a.dir).lerp(b.dir,u);if(R)cur.dir.lerp(RC.dir,R);sunDirOut.copy(cur.dir.normalize());}
+      if(sunDirOut){cur.dir.copy(a.dir).lerp(b.dir,u);if(R)cur.dir.lerp(RC.dir,R);if(S.dirMix&&S.dirMix[1]>0)cur.dir.lerp(S.dirMix[0],S.dirMix[1]); /* dirMix [방향, 0~1]: 구역이 잠깐 해를 옆으로 눕힐 때(화성 화산 꼭대기 — 2026-11-12) */sunDirOut.copy(cur.dir.normalize());}
       S.clk=(S.clk||0)+dt;const st=num('stars'),tw=.88+.12*Math.sin(S.clk*4); // 첫별 반짝임은 게임 시간으로(촬영 모드에서도 같은 그림)
       const clr=1-R; // 비: 달·별·첫별·은하수는 안 보임(맑은 밤에만), 하늘은 구름(밤이면 어둡게)
       uni.cloud.value=R;uni.cloudK.value=1-.62*ss(.6,2,S.t);

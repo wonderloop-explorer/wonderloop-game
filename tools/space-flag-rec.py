@@ -43,6 +43,16 @@ with sync_playwright() as p:
         if st()['summit'] and not st()['ride']: break
         pg.wait_for_timeout(250)
     R['꼭대기 도착'] = st()['summit']; pg.wait_for_timeout(3200); shot('summit-arrive'); perf.append(stats())
+    MEAS = """async ()=>{const T=await import('three');const G=wlGame,Z=wlZone.cur,S=Z.spots,W=G.mission.hero();let sc=W;while(sc.parent)sc=sc.parent;const tg=[sc.getObjectByName('mars-summit'),sc.getObjectByName('mars-ground')].filter(Boolean);
+      const rc=new T.Raycaster();const surf=(x,z)=>{rc.set(new T.Vector3(x,120,z),new T.Vector3(0,-1,0));const h=rc.intersectObjects(tg,false)[0];return h?h.point.y:null;};
+      const v=S.volcano,pts=[];for(const r of [15.5,18,22,26,30,33])for(let i=0;i<8;i++){const a=i/8*6.283+r;pts.push([v[0]+Math.cos(a)*r,v[1]+Math.sin(a)*r]);}
+      let mx=0,mn=0;for(const [x,z] of pts){const d=surf(x,z)-Z.groundY(x,z);mx=Math.max(mx,d);mn=Math.min(mn,d);}
+      const at=(p,y)=>+(y-surf(p[0],p[1])).toFixed(3),f=sc.getObjectByName('wl-flag'),st=S.calderaStones||[],bur=st.map(q=>q[3]);
+      const B=await import((performance.getEntriesByType('resource').find(e=>/js\\/game\\/bend\\.js/.test(e.name))||{}).name),b0=B.bentPos({x:W.position.x+20,y:38,z:W.position.z}),b1=B.bentPos({x:W.position.x+20,y:40,z:W.position.z});
+      return {'땅 그림과 걷는 높이 차이(m, 고원 48곳)':[+mn.toFixed(3),+mx.toFixed(3)],'원더룹 발 — 땅 위로 뜬 높이(m)':at([W.position.x,W.position.z],W.position.y),'깃발 밑동 — 뜬 높이(m)':f&&f.visible?at([f.position.x,f.position.z],f.position.y):null,
+        '회오리 자리 — 땅과 차이(m)':+(Z.groundY(...S.summitWhirl)-surf(...S.summitWhirl)).toFixed(3),'돌 턱 돌 — 묻힌 깊이(m, 최소~최대)':[Math.min(...bur),Math.max(...bur)],'돌 개수':st.length,
+        '둥근 땅 — 같은 자리의 땅과 2m 위 물체가 내려가는 양 차이(m)':+((b0.y-38)-(b1.y-40)).toFixed(4),'둥근 땅 세기':+B.bendK().toFixed(6)};}"""
+    R['접지(도착)'] = pg.evaluate(MEAS)
     R['할 일 안내'] = pg.evaluate("(document.getElementById('wlQuest')||{}).textContent||''")
     # 깃발 자리로 걸어감 → 꽂기
     fs = S['flagSpot']; pg.evaluate("([x,z,sx,sz])=>{const W=wlGame.mission.hero();let dx=sx-x,dz=sz-z;const l=Math.hypot(dx,dz)||1;W.userData.walkTo(x+dx/l*1.3,z+dz/l*1.3);}", fs + S['summit'])
@@ -66,6 +76,10 @@ with sync_playwright() as p:
         pg.wait_for_timeout(500)
     pg.wait_for_timeout(600); R['꽂은 뒤 할 일 안내'] = pg.evaluate("(document.getElementById('wlQuest')||{}).textContent||''"); shot('after-plant')
     pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", S['volcano'][:2]); pg.wait_for_timeout(3500); R['분화구 가운데까지(m) — 돌 턱에서 멈춤'] = pg.evaluate("([x,z])=>{const P=wlGame.mission.hero().position;return +Math.hypot(P.x-x,P.z-z).toFixed(1)}", S['volcano'][:2]); shot('caldera-edge')
+    R['접지(꽂은 뒤)'] = pg.evaluate(MEAS)
+    pg.evaluate("(()=>{const I=wlGame.controls.input;I.cam.dist=4;I.cam.pitch=.3;I.cam.user=(I.cam.user||0)+1;})()"); pg.wait_for_timeout(1800); shot('zoom-stones')
+    fs2 = S['flagSpot']; sm2 = S['summit']; pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", [fs2[0] + (sm2[0] - fs2[0]) * .3, fs2[1] + (sm2[1] - fs2[1]) * .3]); pg.wait_for_timeout(3000); shot('zoom-feet')
+    pg.evaluate("(()=>{const I=wlGame.controls.input;I.cam.dist=9;I.cam.pitch=.5;})()")
     # 고원을 걸어 내려가는 회오리로
     for _ in range(80):
         s = st()
