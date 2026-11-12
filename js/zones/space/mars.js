@@ -24,7 +24,8 @@ import {PI,QUALITY,rng,blobMany,softMat,blobTex} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {setZoneBend} from '../../game/bend.js';
-import {RIDE,arrival,redDust,points,lockOn,lockOff} from './meteor-ride.js';
+import {RIDE,arrival,redDust,points,lockOn,lockOff,dustVeil,camHome} from './meteor-ride.js';
+import {spaceBits,CLOUD_VEIL} from './whirl-lift.js';
 import {makePipi,makeDungdung,makeWhirl,makeCassette,makeGlass,glassIcon,jumbleBubble,dotTex,makeFlag} from './martians.js';
 import SPACE from '../../worlds/infinite-space.js';
 const WID=SPACE.id;
@@ -189,7 +190,9 @@ const nextTop=(()=>{const g=new THREE.CircleGeometry(1,26);g.rotateX(-PI/2);cons
 /* ── 하늘: 낮 버터스카치 → 노을(어둑한 살구·갈색, 해 둘레만 파랗게). 밤 칸은 노을과 같게(쓰지 않음) ── */
 const DAY={top:'#e3bd8f',horizon:'#efc4b4',hemi:'#f6dcc6',ground:'#c98d73',hemiI:.64,sun:'#fff0dc',sunI:.78,sunDir:[-4,-7,-6],fill:.24,fog:'#ecc3b3',fogNear:60,fogFar:330,stars:0,milky:0};
 const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#f0cdb6',ground:'#7d5248',hemiI:.74,sun:'#d6e6fa',sunI:.66,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:150,fogFar:680,stars:0,milky:0}; /* 노을 안개(2026-11-11): 55~300이면 60~130m 메사·바위가 갈색 안개에 묻혀 화면이 갈색 한 장처럼 됐다 → 시작 150m·끝 680m(카메라 먼 거리 310m에서도 30%) — 가까운 땅·바위·메사는 안개 0, 화산만 옅게. 하늘 색은 그대로 */
-const SK=G.sky.sky({parent:root,keys:[DAY,DUSK,DUSK],t:0,nStars:20,starSize:2});
+/* 셋째 칸 = 우주(2026-11-12 — 금성으로 떠날 때 큰 회오리가 들어 올리며 노을 → 짙은 남보라 우주로, SK.to(2)). 평소에는 0(낮)·1(노을)만 씀 */
+const SPACEK={top:'#150f33',horizon:'#3b2a68',hemi:'#cbbcf0',ground:'#5b4a86',hemiI:.6,sun:'#eef0ff',sunI:.5,sunDir:[10,-1.05,-1.6],fill:.26,fog:'#2a1e52',fogNear:400,fogFar:1600,stars:1,milky:.6};
+const SK=G.sky.sky({parent:root,keys:[DAY,DUSK,SPACEK],t:0,nStars:MOB?120:240,starSize:4});
 const ZSUN={dir:new THREE.Vector3(...DAY.sunDir).normalize(),shadow:14,follow:true,followY:true};
 /* 해·파란 빛무리·작은 달 둘: 카메라를 따라다니는 하늘 판(해 자리는 지금 햇빛 방향의 반대 — 낮엔 높이, 노을엔 서쪽 낮게) */
 const skyG=new THREE.Group();skyG.name='mars-sky';root.add(skyG);
@@ -383,7 +386,7 @@ async function finale(W,U){SK.to(1,9);G.sound.bedLevel(.55,3);
   st.sunFace=true;{const t0=G.clock.t;await G.core.until(()=>{const d=SUNSET.face-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.12;return G.clock.t-t0>1.1;},2);}
   await bigLift(W,U);}
 /* ⑧ 큰 먼지 회오리가 원더룹을 하늘로 → STAGE 2 완료 카드 → (금성 이동은 다음 작업) 다시 언덕에 내려놓음 */
-function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{radius:3.4,height:12,seed:7.7,big:true});st.big=big;const P0=W.position.clone(),gy=groundY(P0.x,P0.z);
+function bigLift(W,U,again=false){return new Promise(async res=>{const big=makeWhirl(root,{radius:3.4,height:12,seed:7.7,big:true});st.big=big;st.bigCard=false;const P0=W.position.clone(),gy=groundY(P0.x,P0.z);
   const fx=-1,bx0=P0.x+fx*14,bz0=P0.z+3,bo={x:P0.x,z:P0.z};let bx=bx0,bz=bz0,T0=G.clock.t,ph=0,liftT=0;G.sound.sfx('event-whirl');
   /* 2026-11-10: 큰 회오리가 다가오는 동안 둘은 노을을 보고 있다가, 원더룹이 들려 올라가면 돌아보며 손을 흔들고, 내려오면 다시 노을을 봄 */
   st.bigTick=dt=>{const t=G.clock.t-T0;big.tick(dt);
@@ -392,11 +395,54 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
       W.position.set(P0.x+ox,y,P0.z+oz);U.riding.y=y;W.rotation.y+=dt*2.4;W.rotation.z=Math.sin(k*2.3)*.1;big.setBase(P0.x,gy,P0.z);big.setHeight(Math.max(8,y-gy+4));
       if(Math.floor(k/2.1)!==st.bwi){st.bwi=Math.floor(k/2.1);G.sound.sfx('event-whirl',{gain:.9});}
       whirlDust(big,bo,dt,MOB?18:30);
-      if(ph===1&&k>4.6&&!st.bigCard){st.bigCard=true;G.sound.sfx('mission-clear');
+      if(ph===1&&!again&&k>4.6&&!st.bigCard){st.bigCard=true;G.sound.sfx('mission-clear');
         Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 금성 구름',icon:SPACE.icons.map(),sec:3.6,sound:null,who:'완료'}),new Promise(r=>setTimeout(r,4200))])
-          .then(()=>{G.state.setFlag(K.clear,true);saveAfterMars();ph=2;liftT=G.clock.t-T0;});}
-      if(ph===2&&k>3.3){W.position.set(P0.x,gy,P0.z);W.rotation.z=0;lockOff(G,W);G.sound.sfx('land');puffAt(P0.x,P0.z,16);st.bigTick=null;
-        const b=big;let f=1;const fade=setInterval(()=>{f-=.05;b.mat.uniforms.uA.value=.16*f;if(f<=0){clearInterval(fade);b.dispose();}},50);st.big=null;pipi.mode='idle';dung.mode='idle';st.lookWL=false;st.sunFace=true;res();}}};});}
+          .then(()=>{G.state.setFlag(K.clear,true);saveAfterMars();toSpace();});}
+      if(ph===1&&again&&k>2.2&&!st.bigCard){st.bigCard=true;toSpace();} /* 다시 떠날 때는 완료 카드 없이 바로 */
+    }};
+  /* ── 화성 → 금성(2026-11-12, 이동 공통 틀): 훨씬 큰 회오리가 감싸 천천히 빙글빙글 감아올림 → 노을 진 화성이 작아짐(손 흔드는 삐삐·둥둥 → 해 둘레 파란 빛 → 화산 꼭대기 깃발 반짝임)
+     → 하늘이 노을에서 짙은 남보라 우주로, 회오리가 하늘 끝에서 놓아줌 → 멀리 작은 파란 점(지구)·회색 점(달)이 스쳐 지나감(원더룹이 잠깐 돌아봄) → 우주 지도(화성 → 금성 발자국·예고 한 줄)
+     → 연보라 금성이 커지고 두꺼운 구름 속으로 쏙(구름 덮개 → 구역 space-venus, 거기서 내려앉음). 약 20초 + 내려앉기. 화면을 톡 누르면 다음 단계로. 카메라는 플레이어 것(손을 떼면 기본 각도로) ── */
+  function toSpace(){const R=9,SP=4.8,bits=spaceBits(root),y0=W.position.y,cs={cu:null,idle:9},tap={n:0};st.bits=bits;let q=0,ph3=0,T1=G.clock.t,done=false,yaw0=W.rotation.y,drift=0;
+    const onDown=e=>{tap.x=e.clientX;tap.y=e.clientY;tap.t=performance.now();},onUp=e=>{if(tap.t&&performance.now()-tap.t<320&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<10&&!(e.target&&e.target.closest&&e.target.closest('button')))tap.n++;tap.t=0;};
+    window.addEventListener('pointerdown',onDown);window.addEventListener('pointerup',onUp);st.tapOff=()=>{window.removeEventListener('pointerdown',onDown);window.removeEventListener('pointerup',onUp);};
+    G.travel.begin({id:'whirl',expect:R+SP+3.6+1.5+.75});G.travel.depart();G.sound.sfx('event-whirl',{gain:1.1});if(U.setExpr)U.setExpr('반짝 신남');
+    big.me.scale.set(1.9,1,1.9); /* 타던 회오리보다 훨씬 크게 감쌈 */st.sunFace=false;st.lookWL=true;pipi.mode='wave';dung.mode='wave';
+    /* 카메라 차례 [시작 초, 원더룹에서 카메라 쪽 방향(동쪽 = π/2), 위아래, 거리]: 위에서 얼굴과 아래 언덕(친구들) → 서쪽 노을(파란 해) → 북쪽 화산(깃발 반짝임) → 올려다보는 우주 */
+    const CAM=[[0,PI/2+.5,.95,7.5],[2.3,PI/2+.42,.1,8.5],[5.6,.12,.34,8.5],[7.9,.5,-.12,7.5]]; /* 노을 쪽은 조금 비껴서(파란 해가 탈 뒤에 숨지 않게) */
+    st.bigTick=dt=>{const t=G.clock.t-T1;big.tick(dt);if(done)return;
+      if(q===0){ /* 감아올림 */
+        if(tap.n){tap.n=0;T1=G.clock.t-R;return;}
+        const u=Math.min(1,t/R),e=u*u*(3-2*u),y=y0+150*Math.pow(e,1.5),a=t*1.25,rr=.55+.25*Math.sin(t*.7);
+        W.position.set(P0.x+Math.cos(a)*rr,y,P0.z+Math.sin(a)*rr);U.riding.y=y;W.rotation.y=yaw0+t*1.15;W.rotation.z=Math.sin(t*1.6)*.09;
+        big.setBase(P0.x,gy,P0.z);big.setHeight(Math.min(70,y-gy+6));big.mat.uniforms.uA.value=(.4-.2*ss(0,.3,u))*(1-ss(.62,.86,u)); /* 하늘 끝에서 놓아줌: 회오리가 옅어지며 아래에 남음 */
+        if(Math.floor(t/2.1)!==st.bwi){st.bwi=Math.floor(t/2.1);if(u<.7)G.sound.sfx('event-whirl',{gain:.85*(1-u)});}
+        if(u<.5)whirlDust(big,bo,dt,MOB?14:24);G.travel.tick(dt,'fly');
+        if(t>5.4&&!st.spc){st.spc=true;SK.to(2,3.5);} /* 노을(해 둘레 파란 빛)을 본 뒤에 하늘이 우주로 */
+        let c=CAM[0];for(const k of CAM)if(t>=k[0])c=k;camHome(G,dt,c[1],c[2],c[3]*pk(),cs,2.6);
+        if(u>=1){q=1;T1=G.clock.t;ph3=0;big.mat.uniforms.uA.value=0;st.lookWL=false;drift=W.rotation.y;G.sound.sfx('event-whoosh',{gain:.7});
+          bits.mars.visible=true;bits.earth.visible=bits.moon.visible=true;}}
+      else if(q===1){ /* 우주: 화성이 아래로 작아지고, 지구와 달이 멀리서 스쳐 지나감(설명 없이) — 원더룹이 잠깐 그쪽을 돌아봄 */
+        if(tap.n){tap.n=0;T1=G.clock.t-SP;return;}
+        const u=Math.min(1,t/SP),y=y0+150+220*ss(0,1,u)+Math.sin(t*1.3)*.25,Wp=W.position;Wp.set(P0.x+Math.sin(t*.5)*.4,y,P0.z+Math.cos(t*.43)*.4);U.riding.y=y;W.rotation.z=Math.sin(t*.9)*.12;
+        bits.mars.position.set(Wp.x-52-8*u,Wp.y-15-9*u,Wp.z-78-30*u);bits.mars.scale.setScalar(64*(1-.5*u)); /* 왼쪽 아래로 멀어지는 붉은 화성 */
+        const ex=lerp(34,-36,u),ey=lerp(9,3,u),ez=lerp(-40,-26,u);bits.earth.position.set(Wp.x+ex,Wp.y+ey,Wp.z+ez);bits.earth.scale.setScalar(2.1);bits.moon.position.set(Wp.x+ex+3.1,Wp.y+ey+1.1,Wp.z+ez-2);bits.moon.scale.setScalar(.62);
+        const look=ss(.25,.45,u)*(1-ss(.7,.9,u)),ya=Math.atan2(ex,ez);drift+=dt*.25;const base=drift,d=Math.atan2(Math.sin(ya-base),Math.cos(ya-base));W.rotation.y=base+d*look; /* 돌아봄 */
+        if(look>.5&&!st.eLook){st.eLook=true;if(U.setExpr)U.setExpr('궁금');}if(look<.3&&st.eLook===true&&u>.6){st.eLook=2;if(U.setExpr)U.setExpr('반짝 신남');}
+        G.travel.tick(dt,'fly');camHome(G,dt,.35,.06,7.5*pk(),cs,1.6); /* 카메라는 남쪽에서 북쪽을 봄 — 지구가 원더룹 뒤 하늘을 오른쪽에서 왼쪽으로 */
+        if(u>=1){q=2;done=true;bits.earth.visible=bits.moon.visible=false;finish();}}};
+    async function finish(){RIDE.pending={from:'space-mars',cloud:true};import('./venus.js').catch(()=>{});
+      /* 우주 지도(game/travel 공통 — 화성 → 금성 발자국·화성에서 발견한 것·예고 한 줄, 약 3.6초, 누르면 넘김) */
+      let mp=null;const pm=G.travel.mapFor(SPACE,'space-mars','space-venus',F).then(m=>{mp=m;});tap.n=0;
+      await Promise.race([pm,new Promise(r=>{const iv=setInterval(()=>{if(tap.n||mp){clearInterval(iv);r();}},60);})]);
+      /* 도착: 연보라 금성이 점점 커지고 → 두꺼운 구름 속으로 쏙(해결 화음은 구름에 들어서는 순간) */
+      if(mp)mp.remove();else pm.then(()=>mp&&mp.remove()); /* 지도를 걷고 나서 금성이 커짐 */
+      const V=bits.venus,Wp=W.position;V.visible=true;bits.mars.visible=false;G.travel.arrive();G.travel.landIn(1.5+.7);const t0=G.clock.t;
+      st.bigTick=dt=>{const u=Math.min(1,(G.clock.t-t0)/1.5);V.position.set(Wp.x+16,Wp.y+5,Wp.z-70+34*u);V.scale.setScalar(14+150*u*u);W.rotation.y+=dt*.6;camHome(G,dt,.35,.06,7.5*pk(),cs,1.6);}; /* 카메라는 그대로(남쪽에서 북쪽) — 금성이 원더룹 너머에서 커짐 */
+      await G.core.wait(1.5);
+      const veil=dustVeil(CLOUD_VEIL);G.sound.sfx('cloud-poof',{gain:1.2});await veil.cover(.7);st.tapOff&&st.tapOff();st.tapOff=null;
+      try{if(window.wlZone)await window.wlZone.go('space-venus');}catch(e){console.error(e);}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.3);}}
+  });}
 const discN=()=>Object.values(DISC).filter(k=>F[k]).length;
 /* ── 회오리 타기(원더룹): 들림 1초 → 빙글빙글 건너감 → 내려앉음(dur초, 조작 잠금 · 카메라는 플레이어 것 — 원더룹과 함께 움직임) ── */
 function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝 신남');U.action='서기';U.at=0;const P0=W.position.clone(),gy0=groundY(P0.x,P0.z),to=o.to,gy1=groundY(to[0],to[1]),D=o.dur;
@@ -418,6 +464,8 @@ function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝
 const SUN_LOW=new THREE.Vector3(-8,-3.6,-2.2).normalize();
 const FLAGSPOT=[VOL.c[0]+VDIR[0]*(VOL.rc+2.2),VOL.c[1]+VDIR[1]*(VOL.rc+2.2)];
 const SUMMIT_W=[SUMMIT[0]-VDIR[1]*7.5+VDIR[0]*1.5,SUMMIT[1]+VDIR[0]*7.5+VDIR[1]*1.5];
+/* 완료한 뒤 다시 금성으로: 삐삐 언덕 옆에서 기다리는 큰 회오리(끝낸 뒤에만 보임) — 닿으면 다시 감아올림 */
+const BIGHOME=[SUNSET.wl[0]+10,SUNSET.wl[1]+9],bigIdle=makeWhirl(root,{radius:3,height:10,seed:3.3,big:true});bigIdle.show(false);bigIdle.setBase(BIGHOME[0],groundY(...BIGHOME),BIGHOME[1]);
 const flag=makeFlag();flag.root.visible=false;root.add(flag.root);keep.push(flag.root);
 {const fb=new THREE.Mesh(new THREE.PlaneGeometry(.8,.8).rotateX(-PI/2),softMat(blobTex,.6));fb.position.y=.04;fb.name='flag-contact';flag.root.add(fb);} /* 깃대 밑동 접지 자국(둥근 그림자 — 컴퓨터·휴대폰 모두) */
 const flagMark=new THREE.Object3D();flagMark.position.set(FLAGSPOT[0],groundY(...FLAGSPOT),FLAGSPOT[1]);root.add(flagMark);
@@ -448,7 +496,7 @@ function secretRide(W){
 function summitDown(W){const back=[SECRET_HOME[0]+2,SECRET_HOME[1]+3];st.summit=null;G.goal.set(null);st.lastQ=null;ride(W,{whirl:secretW,wo:SW,to:back,dur:11,peak:18,h0:5});}
 /* ── 매 프레임 ── */
 if(SPACE.music)G.sound.songs({[SPACE.music.id]:SPACE.music.song});
-G.sound.songs({'mars-bgm-code':MARS_SONG});
+G.sound.songs({'mars-bgm-code':MARS_SONG});G.travel.prepare(SPACE.travel); /* 이동 테마 파일을 미리(금성으로 떠날 때) */
 /* 배경음 파일 자리(assets/audio/mars-bgm.mp3 — 수노 곡이 오면 넣기만): 있으면 그 곡, 없으면 코드로 만든 잔잔한 곡(바람 섞인 넓은 패드) */
 probeBgm();
 const pend=RIDE.pending;RIDE.pending=null;let arr=null,started=false;
@@ -456,10 +504,11 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   if(pend&&!started&&G.view.camera){started=true;arr=arrival({G,root,WL:W,groundY,mob:MOB,dust,onDone:()=>{st.arrDone=true;G.ui.toast('붉은 화성에 도착했어요! 화성 중력은 지구의 약 38%예요',4.2);}});}
   if(arr)arr.tick(dt,t);dust.tick(dt);fine.tick(dt,t,P);
   /* 꼭대기에 있는 동안 먼지 안개를 걷는다(2026-11-12 — 85m 위라 '먼지 위로 올라온' 자리: 낮 안개 60~330m → 190~950m, 올라가고 내려오는 동안 천천히) */
-  {const hi=st.summit||(st.ride&&W.position.y>20)?1:0;st.clearK=(st.clearK||0)+(hi-(st.clearK||0))*Math.min(1,dt*.8);const k=st.clearK;SK.fogPush=k>.002?[130*k,620*k]:null;
+  {const hi=st.summit||((st.ride||st.bigTick)&&W.position.y>20)?1:0;st.clearK=(st.clearK||0)+(hi-(st.clearK||0))*Math.min(1,dt*.8);const k=st.clearK;SK.fogPush=k>.002?[130*k,620*k]:null;
     /* 둥근 땅도 꼭대기에서는 거의 편다(2026-11-12 — 평소 세기면 250m 밖 땅이 65m 내려가 고원 끝 아래로 숨어 하늘만 보였다): 멀리 지평선·메사가 고원 너머로 보이게 */
     if(k>.002||st.bendOn){st.bendOn=k>.002;setZoneBend({k:.0012*(1-.88*k),d0:18});}
-    SK.dirMix=k>.002?[SUN_LOW,k*.85]:null;} /* 꼭대기에서는 해를 옆으로 눕힘: 바위·분화구 계단의 밝은 면과 그늘진 면이 나뉘고 그림자가 길게 */ /* 하늘 모듈이 키 값을 복사해 쓰므로 밀어내는 값으로(game/sky fogPush) */
+    st.sumK=(st.sumK||0)+((st.summit?1:0)-(st.sumK||0))*Math.min(1,dt*.8);SK.dirMix=st.sumK>.002?[SUN_LOW,st.sumK*.85]:null;} /* 해 눕히기는 화산 꼭대기에서만(큰 회오리로 떠날 때는 노을 해가 서쪽 그대로 — 2026-11-12) */ /* 꼭대기에서는 해를 옆으로 눕힘: 바위·분화구 계단의 밝은 면과 그늘진 면이 나뉘고 그림자가 길게 */ /* 하늘 모듈이 키 값을 복사해 쓰므로 밀어내는 값으로(game/sky fogPush) */
+  {const dusk=SK.t>.5;if(dusk!==st.duskTone){st.duskTone=dusk;G.sound.bedTone(dusk?{lp:3400,gain:.78}:{},dusk?6:2);}} /* 노을: 같은 곡을 조금 작게·높은 소리 살짝 덜(저녁 느낌) */
   whirl.tick(dt);secretW.tick(dt);wander(WS,WS.side==='w'?WHOME.w:WHOME.e,t,1.3);wander(SW,st.summit?SUMMIT_W:SECRET_HOME,t,4.1);
   if(!WS.busy){whirl.setBase(WS.x,groundY(WS.x,WS.z),WS.z);whirl.setHeight(6);}if(!SW.busy){secretW.setBase(SW.x,groundY(SW.x,SW.z),SW.z);secretW.setHeight(5);}
   whirlDust(whirl,WS,dt,MOB?7:12);whirlDust(secretW,SW,dt,MOB?5:9);
@@ -515,6 +564,8 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     else quest('둥둥에게 삐삐의 말을 들려줘요',{at:()=>[dung.root.position.x,dung.root.position.z],y:ROCKD.top,label:'둥둥',style:'ant',h:2.8});return;}
   if(s==='deliverB'){if(east(P.x))quest('먼지 회오리를 타고 삐삐에게 돌아가요',{at:()=>[WS.x,WS.z],label:'먼지 회오리',style:'ant',h:5});
     else quest('삐삐에게 둥둥의 대답을 들려줘요',{at:()=>[pipi.root.position.x,pipi.root.position.z],y:groundY(...PIPI_SPOT),label:'삐삐',style:'ant',h:2.4});return;}
+  {const on=s==='done';bigIdle.show(on);if(on){bigIdle.tick(dt);quest('큰 먼지 회오리를 타면 금성으로 떠나요',{at:BIGHOME,y:groundY(...BIGHOME),label:'금성으로 가는 큰 회오리',style:'ant',h:6});
+      if(Math.hypot(P.x-BIGHOME[0],P.z-BIGHOME[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking()){bigIdle.show(false);scene(()=>bigLift(W,U,true));}return;}}
   if(s==='finale'){quest('삐삐의 언덕에서 노을을 같이 봐요',{at:SUNSET.wl,y:HILL.h,label:'삐삐의 언덕',style:'ant',h:3});
     if(Math.hypot(P.x-SUNSET.wl[0],P.z-SUNSET.wl[1])<5&&!G.ui.cardShown())scene(finale);return;}
   quest('',null);}
@@ -537,8 +588,8 @@ return {
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
   spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,calderaStones:STONES_C,flagSpot:FLAGSPOT,summitWhirl:SUMMIT_W,sunsetWL:SUNSET.wl,volcano:VOL.c},
-  state:()=>({summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
-  update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
+  state:()=>({earth:!!(st.bits&&st.bits.earth.visible),venusOrb:!!(st.bits&&st.bits.venus.visible),summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
+  update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}G.sound.bedTone({},1);if(st.tapOff)st.tapOff();if(st.bits)st.bits.dispose();bigIdle.dispose();cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
 };
 }
 /* 화성 배경음(임시, 코드): 느린 60bpm, 넓은 패드 + 바람 스침 + 가끔 반짝이는 종, 낮은 베이스 — D 도리안 느낌(잔잔하고 넓게) */
@@ -547,4 +598,8 @@ const MARS_SONG={name:'화성 붉은 모래 언덕(임시)',bpm:60,lead:'celesta
   mel:[[null,null,74,null,null,null,77,null],[76,null,null,null,null,null,null,null],[null,null,72,null,74,null,null,null],[69,null,null,null,null,null,null,null],
        [null,null,74,null,null,77,null,79],[81,null,null,null,77,null,null,null],[null,null,79,null,76,null,74,null],[72,null,null,null,null,null,null,null]],
   parts:{mel:{v:.07},pad:{v:.03},bass:{v:.09,pat:[0,null,null,null,null,null,7,null]},wind:{p:.35,v:.05},sparkle:{p:.04,v:.03}}};
-async function probeBgm(){try{const r=await fetch('assets/audio/mars-bgm.mp3'+'?v='+(window.WL_V||''),{method:'HEAD'});if(r.ok&&r.headers.get('content-type')!=='text/html')G.sound.zoneMusic({id:'mars-bgm',fade:2});}catch(e){}}
+/* 화성 배경음(2026-11-12 — 수노 '02.무한우주_화성 배경음(붉은 모래 언덕 탐방)', 원본 WAV는 bgm/·wonderloop-studio/infinite-space/audio/): 약 94BPM(한 박 0.6385초), 4/4.
+   처음 화성에 올 때(flags 'mars:bgm-intro' 전)는 도입(0초)부터, 그 뒤로는 주 선율~대비 선율 구간만 되풀이 — 마디 시작 17.97초 → 53.72초(14마디 35.75초, 소리에서 박자·이음매를 재서 맞춤).
+   코드로 만든 임시 곡(mars-bgm-code)은 지우지 않음 — 파일이 없거나 주소에 ?marsBgm=code면 그 곡 */
+const BGM_LOOP=[17.97,53.72];
+async function probeBgm(){if(/[?&]marsBgm=code/.test(location.search))return;try{const r=await fetch('assets/audio/mars-bgm.mp3'+'?v='+(window.WL_V||''),{method:'HEAD'});if(r.ok&&r.headers.get('content-type')!=='text/html'){const first=!G.state.flags['mars:bgm-intro'];if(first)G.state.setFlag('mars:bgm-intro',true);G.sound.zoneMusic({id:'mars-bgm',fade:2,loop:BGM_LOOP,intro:first});}}catch(e){}}

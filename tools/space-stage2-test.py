@@ -173,7 +173,7 @@ with sync_playwright() as p:
         if s['stage'] == 'finale' and s['sky'] > .6 and 'sunset' not in T: mark('sunset'); shot('sunset')
         if s['stage'] == 'finale': sample('노을')
         if s['big'] and 'big' not in T: mark('big'); pg.wait_for_timeout(4000); shot('big-lift')
-        if pg.evaluate("!!wlGame.state.flags['clear:space-mars']") and not s['scene']: break
+        if pg.evaluate("!!wlGame.state.flags['clear:space-mars']"): break  # 완료 카드가 닫히면 내려놓지 않고 금성으로 떠남(2026-11-12)
         if pg.evaluate('wlGame.ui.cardShown()') and pg.evaluate('wlGame.ui.cardShown()') != 'item':
             if 'sunset' in T and 'blueCard' not in T: mark('blueCard'); shot('blue-card')
             pg.wait_for_timeout(int(READ * 1000) + 300); closeCard()
@@ -183,19 +183,32 @@ with sync_playwright() as p:
     R['유리 조각'] = pg.evaluate("!!wlGame.state.flags['item:infinite-space:bluesunset-glass']")
     R['발견'] = pg.evaluate("['marssound','bluesunset','volcano'].map(k=>!!wlGame.state.flags['secret:infinite-space:'+k])")
     R['착지부터 완료까지(초)'] = round(time.time() - t_land, 1); R['읽는 시간 넣음'] = REAL
-    R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.mission.hero().userData.sceneLock")
+    # 화성 → 금성(큰 회오리가 감아올림 → 우주(지구·달) → 우주 지도 → 금성 구름 속으로 → 내려앉아 조작이 풀림)
+    for i in range(400):
+        zn = pg.evaluate('wlZone.cur.name')
+        if zn != '금성 구름':
+            s3 = st()
+            if s3.get('earth') and 'earth' not in T: mark('earth'); pg.wait_for_timeout(1500); shot('to-venus-earth')
+            if pg.evaluate("!!document.getElementById('wlTravelMap')") and 'map2' not in T: mark('map2'); pg.wait_for_timeout(2600); shot('to-venus-map')
+        else:
+            if 'venus' not in T: mark('venus'); pg.wait_for_timeout(1500); shot('venus-descend')
+            if pg.evaluate('wlZone.cur.state().arrDone'): mark('금성 조작 풀림'); break
+        pg.wait_for_timeout(200)
+    pg.wait_for_timeout(1000); shot('venus-free'); R['금성 착지'] = pg.evaluate('wlZone.cur.name') == '금성 구름'
+    R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.mission.hero().userData.sceneLock&&!wlGame.core.blocking()")
     P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
-    R['완료 뒤 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
-    # 노을 뒤 돌아다니기(2026-11-11 — 안개가 짙어 갈색 화면이 됐다): 네 방향을 보며 한 장씩 + 안개 값
-    for i in range(4):
-        pg.evaluate("i=>{wlGame.controls.input.cam.yaw+=Math.PI/2;}", i); pg.keyboard.down('w'); pg.wait_for_timeout(1600); pg.keyboard.up('w'); pg.wait_for_timeout(500); shot('dusk-walk%d' % i)
-    R['노을 뒤 안개'] = pg.evaluate("(()=>{let s=wlGame.mission.hero();while(s.parent)s=s.parent;const f=s.fog,c=wlGame.view.camera;return {near:+f.near.toFixed(1),far:+f.far.toFixed(1),color:'#'+f.color.getHexString(),camFar:c.far,sky:wlZone.cur.state().sky}})()")
+    R['금성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
     # 끝낸 뒤의 모습(2026-11-11): 게임을 다시 열어도 노을·삐삐·둥둥 마지막 자리 그대로인지 — 다시 연 직후(착지 자리)와 노을 언덕에서 한 장씩
     import re as _re
     u2 = pg.url; u2 = _re.sub(r'zone=[^&]*', 'zone=space-mars', u2) if 'zone=' in u2 else u2 + ('&' if '?' in u2 else '?') + 'zone=space-mars'; u2 = _re.sub(r'&time=\d', '', u2)
     faceDump(); CV0 = pg.evaluate('window.__cover?window.__cover.report():null') if COVER else None  # 다시 열면 재던 값이 지워지므로 그 전에 받아 둠
     pg.goto('about:blank'); pg.goto(u2); pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots&&wlZone.cur.spots.sunsetWL', timeout=120000); pg.wait_for_timeout(3500); shot('reopen-spawn')
     pg.evaluate("(()=>{const W=wlGame.mission.hero(),s=wlZone.cur.spots.sunsetWL;W.position.x=s[0]+3.2;W.position.z=s[1];W.rotation.y=-Math.PI/2;const I=wlGame.controls.input;I.cam.yaw=Math.PI/2;I.cam.pitch=.22;})()"); pg.wait_for_timeout(2500); shot('reopen-hill')
+    hero("(W.position.x=wlZone.cur.spots.hill[0]-14,W.position.z=wlZone.cur.spots.hill[1]+8,0)"); pg.wait_for_timeout(800)
+    # 노을 뒤 돌아다니기(2026-11-11 — 안개가 짙어 갈색 화면이 됐다): 네 방향을 보며 한 장씩 + 안개 값
+    for i in range(4):
+        pg.evaluate("i=>{wlGame.controls.input.cam.yaw+=Math.PI/2;}", i); pg.keyboard.down('w'); pg.wait_for_timeout(1600); pg.keyboard.up('w'); pg.wait_for_timeout(500); shot('dusk-walk%d' % i)
+    R['노을 뒤 안개'] = pg.evaluate("(()=>{let s=wlGame.mission.hero();while(s.parent)s=s.parent;const f=s.fog,c=wlGame.view.camera;return {near:+f.near.toFixed(1),far:+f.far.toFixed(1),color:'#'+f.color.getHexString(),camFar:c.far,sky:wlZone.cur.state().sky}})()")
     R['다시 열기'] = pg.evaluate("(()=>{const s=wlZone.cur.state(),a=wlGame.state.afterOf('space-mars');let sc=wlGame.mission.hero();while(sc.parent)sc=sc.parent;return {sky:s.sky,pipi:s.pipi,dung:s.dung,after:a,fog:'#'+sc.fog.color.getHexString()}})()")
     cl = pg.evaluate('window.__clip||[]'); R['잘림 기록 프레임'] = len(cl)
     R['잘린 프레임(1% 넘게)'] = {k: sum(1 for x in cl if x[0] == k and x[1] > .01) for k in ('ride', 'cross', 'sunset', 'big')}

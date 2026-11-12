@@ -80,17 +80,18 @@ function noiseTile(N,seed,rgb){const c=document.createElement('canvas');c.width=
       v+=a*((h(i,j,o)*(1-u)+h(i+1,j,o)*u)*(1-w)+(h(i,j+1,o)*(1-u)+h(i+1,j+1,o)*u)*w);a*=.5;}
     const r=1-Math.abs(v/.94*2-1),k=(y*N+x0)*4,al=Math.max(0,Math.min(1,(r-.45)*2.6)); /* 능선 잡음 = 가는 먼지 자락 */D[k]=rgb[0];D[k+1]=rgb[1];D[k+2]=rgb[2];D[k+3]=al*al*255;}
   x.putImageData(im,0,0);return c;}
-export function dustVeil(){const cv=document.createElement('canvas');cv.id='wlDustVeil';cv.setAttribute('aria-hidden','true');
+/* o(2026-11-12 — 금성 구름): {blobs:[색…], bg:[위,아래], fade:'rgba(…,0)', tiles:[[r,g,b],[r,g,b]], dots:['r,g,b'…]} — 없으면 화성 먼지 색 */
+export function dustVeil(o={}){const cv=document.createElement('canvas');cv.id='wlDustVeil';cv.setAttribute('aria-hidden','true');
   cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none;opacity:0';document.body.appendChild(cv);
-  const g=cv.getContext('2d'),C=['#f3cfae','#ecb9a2','#f7dcc4','#e9a891','#f0c3a6'],B=[];for(let i=0;i<16;i++)B.push({x:Math.random(),y:Math.random(),r:.25+Math.random()*.35,c:C[i%C.length],v:.03+Math.random()*.05,p:Math.random()*6});
-  const T1=noiseTile(128,1,[255,240,222]),T2=noiseTile(128,2,[205,128,104]),P1=g.createPattern(T1,'repeat'),P2=g.createPattern(T2,'repeat');
-  const NP=110,Q=[];const reset=(q,z)=>{const a=Math.random()*PI*2,r=.05+Math.random()*.9;q.x=Math.cos(a)*r;q.y=Math.sin(a)*r;q.z=z??(.35+Math.random()*1.65);q.s=.5+Math.random()*1.1;q.c=Math.random()<.6?'255,244,228':Math.random()<.5?'214,140,112':'236,184,160';};
+  const g=cv.getContext('2d'),C=o.blobs||['#f3cfae','#ecb9a2','#f7dcc4','#e9a891','#f0c3a6'],BG=o.bg||['#f1caa9','#eab09c'],FD=o.fade||'rgba(240,200,170,0)',TL=o.tiles||[[255,240,222],[205,128,104]],DT=o.dots||['255,244,228','214,140,112','236,184,160'],B=[];for(let i=0;i<16;i++)B.push({x:Math.random(),y:Math.random(),r:.25+Math.random()*.35,c:C[i%C.length],v:.03+Math.random()*.05,p:Math.random()*6});
+  const T1=noiseTile(128,1,TL[0]),T2=noiseTile(128,2,TL[1]),P1=g.createPattern(T1,'repeat'),P2=g.createPattern(T2,'repeat');
+  const NP=110,Q=[];const reset=(q,z)=>{const a=Math.random()*PI*2,r=.05+Math.random()*.9;q.x=Math.cos(a)*r;q.y=Math.sin(a)*r;q.z=z??(.35+Math.random()*1.65);q.s=.5+Math.random()*1.1;q.c=Math.random()<.6?DT[0]:Math.random()<.5?DT[1]:DT[2];};
   for(let i=0;i<NP;i++){const q={};reset(q);Q.push(q);}
   let k=0,goal=0,rate=1,t0=performance.now(),last=t0,on=true,done=null;
   function draw(now){if(!on)return;const dt=Math.min(.05,(now-last)/1000);last=now;const t=(now-t0)/1000;k+=Math.sign(goal-k)*Math.min(Math.abs(goal-k),dt*rate);
     const w=cv.width=Math.round(innerWidth*.5),h=cv.height=Math.round(innerHeight*.5),m=Math.max(w,h),cx=w/2,cy=h/2;g.globalAlpha=1;
-    const bg=g.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#f1caa9');bg.addColorStop(1,'#eab09c');g.fillStyle=bg;g.globalAlpha=Math.min(1,Math.max(0,(k-.35)/.5));g.fillRect(0,0,w,h);
-    for(const b of B){const x=((b.x+t*b.v)%1.4-.2)*w,y=(b.y+Math.sin(t*.6+b.p)*.04)*h,r=b.r*m*(.8+.5*k),gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,b.c);gr.addColorStop(1,'rgba(240,200,170,0)');
+    const bg=g.createLinearGradient(0,0,0,h);bg.addColorStop(0,BG[0]);bg.addColorStop(1,BG[1]);g.fillStyle=bg;g.globalAlpha=Math.min(1,Math.max(0,(k-.35)/.5));g.fillRect(0,0,w,h);
+    for(const b of B){const x=((b.x+t*b.v)%1.4-.2)*w,y=(b.y+Math.sin(t*.6+b.p)*.04)*h,r=b.r*m*(.8+.5*k),gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,b.c);gr.addColorStop(1,FD);
       g.globalAlpha=Math.min(1,k*1.4);g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);}
     /* 소용돌이 결: 세 겹이 가운데를 축으로 서로 반대로 돌며 흘러감(살짝 숨쉬듯 늘었다 줄었다) */
     const ka=Math.min(1,Math.max(0,(k-.15)/.6));
@@ -135,7 +136,7 @@ export function lockOn(G,WL){const U=WL.userData;if(U.stopWalk)U.stopWalk();U.ri
 export function lockOff(G,WL){const U=WL.userData;U.riding=null;WL.scale.set(1,1,1);G.core.block('meteor',false);
   if(RIDE.hid){RIDE.hid=false;G.ui.setHints(RIDE.hints!==false);}const b=document.getElementById('wlRideCam');if(b)b.remove();if(U.action==='꼬리 잡기'){U.action='서기';U.at=0;}if(U.setExpr)U.setExpr('기본');}
 /* 카메라: 따라가기 카메라를 그대로 쓰되(끌기·두 손가락·휠로 둘레·거리), 손을 뗀 지 1.6초 지나면 기본 각도로 천천히 */
-function camHome(G,dt,yaw,pitch,dist,st,rate=.9){const C=G.controls.input.cam;if(!C||!C.on)return;if(st.cu!==C.user){st.cu=C.user;st.idle=0;return;}st.idle+=dt;if(st.idle<1.6)return;
+export function camHome(G,dt,yaw,pitch,dist,st,rate=.9){const C=G.controls.input.cam;if(!C||!C.on)return;if(st.cu!==C.user){st.cu=C.user;st.idle=0;return;}st.idle+=dt;if(st.idle<1.6)return;
   const k=1-Math.exp(-dt*rate);let dy=yaw-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));C.yaw+=dy*k;C.pitch+=(pitch-C.pitch)*k;C.dist+=(dist-C.dist)*k;}
 /* 비행 카메라 기본 각도 키: [u, 원더룹이 보는 쪽 기준 방향(0 = 정면), 위아래(라디안), 거리(m)] */
 const CAMK=[[0,.95,.02,5.6],[.1,.95,.02,5.6],[.15,PI+.4,.92,9],[.31,PI+.4,.92,9],[.37,PI/2,.08,6.8],[.56,PI/2,.08,6.8],[.62,PI+.78,.2,5.2],[.74,PI+.78,.2,5.2],[.82,.55,.06,4.6],[1,.55,.06,4.6]]; // 어깨 너머는 옆으로 조금(얼굴 옆선이 살짝), 마지막 얼굴 정면은 비행 끝 약 2.3초

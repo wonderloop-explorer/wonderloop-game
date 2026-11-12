@@ -17,6 +17,12 @@ let CAKEI=null;function ICON_CAKE(){return CAKEI||(CAKEI=canvasIcon(g=>{g.fillSt
 let ICEI=null,SCOPEI=null;
 function ICON_ICE(){return ICEI||(ICEI=canvasIcon(g=>{g.strokeStyle='#4a6f8c';g.lineWidth=3;[[48,62,14,46],[30,68,9,30],[66,70,8,26]].forEach(([x,y,hw,hh])=>{g.fillStyle='#d6f0ff';g.beginPath();g.moveTo(x,y-hh);g.lineTo(x+hw,y-hh*.35);g.lineTo(x+hw*.7,y+8);g.lineTo(x-hw*.7,y+8);g.lineTo(x-hw,y-hh*.35);g.closePath();g.fill();g.stroke();
   g.strokeStyle='rgba(255,255,255,.9)';g.beginPath();g.moveTo(x-hw*.3,y-hh*.6);g.lineTo(x-hw*.4,y);g.stroke();g.strokeStyle='#4a6f8c';});}));}
+/* 화성에서 발견한 것(우주 지도 — 화성 칸): 파란 노을(어둑한 하늘에 해 둘레 파란 빛), 엇갈린 목소리(높고 빠른 말풍선·낮고 늦은 말풍선) */
+let DUSKI=null,VOICEI=null;
+function ICON_DUSK(){return DUSKI||(DUSKI=canvasIcon(g=>{g.fillStyle='#8a6456';g.beginPath();g.arc(48,48,38,0,7);g.fill();const gr=g.createRadialGradient(48,50,2,48,50,30);gr.addColorStop(0,'#ffffff');gr.addColorStop(.25,'#bfe0ff');gr.addColorStop(.7,'rgba(110,170,235,.55)');gr.addColorStop(1,'rgba(110,170,235,0)');g.fillStyle=gr;g.beginPath();g.arc(48,50,30,0,7);g.fill();
+  g.fillStyle='#c98a70';g.beginPath();g.moveTo(10,66);g.quadraticCurveTo(48,54,86,66);g.arc(48,48,38,.5,Math.PI-.5);g.closePath();g.fill();g.strokeStyle='#5a3826';g.lineWidth=3;g.beginPath();g.arc(48,48,38,0,7);g.stroke();}));}
+function ICON_VOICE(){return VOICEI||(VOICEI=canvasIcon(g=>{const bub=(x,y,w,h,c,tail)=>{g.fillStyle=c;g.strokeStyle='#5a3826';g.lineWidth=3;g.beginPath();g.roundRect(x,y,w,h,12);g.fill();g.stroke();g.beginPath();g.moveTo(x+tail,y+h-1);g.lineTo(x+tail-6,y+h+12);g.lineTo(x+tail+12,y+h-1);g.closePath();g.fill();g.stroke();g.fillStyle=c;g.fillRect(x+tail-1,y+h-5,13,5);};
+  bub(10,14,50,28,'#ffd9a8',16);bub(34,46,52,28,'#e7a383',34);g.strokeStyle='#5a3826';g.lineWidth=3;g.lineCap='round';g.beginPath();g.moveTo(20,28);g.lineTo(26,22);g.lineTo(32,32);g.lineTo(38,22);g.lineTo(44,30);g.lineTo(50,24);g.stroke();g.beginPath();g.moveTo(44,60);g.lineTo(54,60);g.moveTo(60,60);g.lineTo(76,60);g.stroke();}));}
 function ICON_SCOPE(){return SCOPEI||(SCOPEI=canvasIcon(g=>{g.strokeStyle='#5a3826';g.lineWidth=4;g.beginPath();g.moveTo(48,52);g.lineTo(30,84);g.moveTo(48,52);g.lineTo(66,84);g.moveTo(48,52);g.lineTo(48,86);g.stroke();
   g.save();g.translate(48,44);g.rotate(-.55);g.fillStyle='#f3e4c4';g.lineWidth=3;g.beginPath();g.rect(-30,-9,56,18);g.fill();g.stroke();g.fillStyle='#d9704a';g.beginPath();g.rect(22,-12,10,24);g.fill();g.stroke();g.restore();}));}
 function ICON_MAP(){return MAPI||(MAPI=canvasIcon(g=>{g.fillStyle='#f3e4c4';g.strokeStyle='#5a3826';g.lineWidth=3;g.beginPath();g.moveTo(16,22);g.lineTo(44,14);g.lineTo(80,24);g.lineTo(74,76);g.lineTo(46,82);g.lineTo(20,72);g.closePath();g.fill();g.stroke();
@@ -102,7 +108,7 @@ export default {
     {flag:'secret:infinite-space:marssound',name:'화성의 두 가지 소리 빠르기',where:'STAGE 2 붉은 모래 언덕',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요.'},
     {flag:'secret:infinite-space:bluesunset',name:'화성의 노을은 파래요',where:'STAGE 2 붉은 모래 언덕',text:'해 질 녘엔 해 둘레가 파랗게 물들어요.'},
     {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}}],
-  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:null}],
+  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:'space-venus'}],
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,
     bars:[45,41,43,40,45,41,38,40].map((r,i)=>{const q=[3,4,4,3,3,4,4,4][i];return {bass:r,pad:[r+24,r+24+q,r+31]};}),
@@ -139,9 +145,10 @@ export default {
   /* 이동 테마 = 수노 '02.무한우주_이동 테마(오르골 왈츠)'(2026-11-09, 원본 WAV는 wonderloop-studio/infinite-space/audio/) — D장조 3/4, 0:13 현악 합류 → 0:17~0:28 절정 → 0:32 E♭으로 비켜 갔다
      0:33.5 D장조로 해결 → 0:37까지 울림. 한 마디 1.3765초(한 박 0.459초), 마디 자리 12.35초 기준, 늘이거나 줄이는 자리는 절정 안 24.74초 마디 경계 */
   travel:{theme:{file:'assets/audio/travel-theme.mp3',from:13,to:37,resolve:33.5,bar:1.3765,beat0:12.35,jumpAt:25},
-    map:{bodies:[{id:'sun',name:'해',color:'#F6C85A',r:.06,glow:true},{id:'venus',name:'금성',color:'#C9A6E0',r:.05},{id:'moon',name:'달',color:'#BFC3CC',r:.05,zone:'space-garden'},
+    map:{bodies:[{id:'sun',name:'해',color:'#F6C85A',r:.06,glow:true},{id:'venus',name:'금성',color:'#C9A6E0',r:.05,zone:'space-venus'},{id:'moon',name:'달',color:'#BFC3CC',r:.05,zone:'space-garden'},
       {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true}]},
-    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파래대요.'}},
+    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파래대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'}},
     facts:{'space-garden':[{flag:'have:infinite-space:necklace',img:()=>ICON_NECK()},{flag:'secret:infinite-space:icecave',img:()=>ICON_ICE()},
-      {flag:'secret:infinite-space:telescope',img:()=>ICON_SCOPE()},{flag:'item:infinite-space:dalddeok',img:()=>ICON_CAKE()}]}},
+      {flag:'secret:infinite-space:telescope',img:()=>ICON_SCOPE()},{flag:'item:infinite-space:dalddeok',img:()=>ICON_CAKE()}],
+      'space-mars':[{flag:'secret:infinite-space:bluesunset',img:()=>ICON_DUSK()},{flag:'secret:infinite-space:marssound',img:()=>ICON_VOICE()}]}},
 };

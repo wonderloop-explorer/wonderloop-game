@@ -62,6 +62,7 @@ const NEW={
     tone(c,'sine',f,t,.55,.16,D);tone(c,'sine',f*3.93,t,.09,.035,D);tone(c,'triangle',f*2,t,.05,.02,D);noise(c,t,.012,.03,D,'bandpass',f*4,2);}},
   // 대기에 들어섬: 낮은 '우웅'이 부풀었다 잦아듦(사인 55 → 70Hz + 낮은 바람) — roll(rumbleBurst)과 같은 크기, 덜컹거림 없이
   'travel-arrive':[1.6,(c,t,D)=>{tone(c,'sine',52,t,1.6,.26,D,{slide:72});tone(c,'sine',104,t+.1,1.3,.08,D,{slide:140});noise(c,t,1.5,.16,D,'lowpass',180,.7,420);}],
+  'cloud-poof':[.9,(c,t,D)=>{noise(c,t,.8,.13,D,'lowpass',rr(520,640),.6,160);noise(c,t+.05,.5,.05,D,'bandpass',rr(1300,1600),.9);tone(c,'sine',196,t+.02,.5,.05,D,{slide:147});}], // 푸훗: 푹신한 구름에 쏙(금성 — 2026-11-12, 원본에 없던 소리)
   'event-dust':[.4,(c,t,D)=>{noise(c,t,.35,.14,D,'lowpass',rr(900,1200),.7,220);noise(c,t+.03,.18,.04,D,'bandpass',rr(2200,2800),1.2);}], // 퍽: 부드러운 흙먼지
   'photo-shutter':[.2,(c,t,D)=>{noise(c,t,.03,.16,D,'highpass',3800,.8);tone(c,'square',1900,t,.018,.035,D,{lp:4200});noise(c,t+.075,.05,.12,D,'bandpass',2600,1.4);tone(c,'square',1300,t+.075,.02,.03,D,{lp:3600});}], // 찰-칵: 높은 딸깍 두 번(원본 click과 비슷한 크기)
   'step-grass':[.07,(c,t,D)=>{noise(c,t,.06,.021,D,'bandpass',rr(2200,3000),1.1);noise(c,t+.012,.04,.011,D,'highpass',5200,.7);}],      // 풀: 사각
@@ -133,6 +134,7 @@ const KINDS={
   'travel-depart':['이동','enter','출발 — 반짝이며 휙 올라감(스테이지 이동 연출 공통, 원본 구역 들어가기 소리)'],
   'travel-step':['이동','travel-step','우주 지도 발자국 한 칸 톡(마림바 — 칸마다 한 음씩 위로, sfx(…,{step:n}), 원본에 없던 소리)'],
   'travel-arrive':['이동','travel-arrive','다음 행성 대기에 들어섬(낮은 우웅 — 원본에 없던 소리)'],
+  'cloud-poof':['이동','cloud-poof','푹신한 구름에 들어섬·내려앉음(금성 — 원본에 없던 소리)'],
   'event-dust':['사건','event-dust','먼지 퐁(착지 때 흙먼지가 피어오름 — 원본에 없던 소리)'],
   'voice-mumble':['목소리','voice-mumble','웅얼 목소리 — 진짜 녹음 전 자리(sfx(…,{low,sec,tape}) — 높고 빠른 삐삐·낮고 느린 둥둥, 카세트로 들을 때 tape, 원본에 없던 소리)'],
   'cassette-click':['카세트','cassette-click','카세트 단추 딸깍(녹음·재생·정지 — 원본에 없던 소리)'],

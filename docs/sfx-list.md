@@ -65,6 +65,7 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `travel-depart` | 원본 `enter` | 스테이지 이동 출발 — 반짝이며 휙 올라감(game/travel, 2026-11-09) | 구역 들어가기 | game/travel.js | 1.63 | — |
 | `travel-step` | **새로 만듦** | 우주 지도 발자국 한 칸 '톡'(마림바 — 칸마다 D장조 한 음씩 위로, `sfx('travel-step',{step:n})`) | — | game/travel.js | 0.6 | — |
 | `travel-arrive` | **새로 만듦** | 다음 행성 대기에 들어섬(낮은 우웅이 부풀었다 잦아듦) | — | game/travel.js | 1.6 | — |
+| `cloud-poof` | **새로 만듦** (2026-11-12) | 푹신한 구름에 들어섬·사뿐히 내려앉음(부드러운 푸훗 — 금성) | — | zones/space/mars.js(구름 덮개) · whirl-lift.js(내려앉음) | 0.9 | — |
 | `photo-shutter` | **새로 만듦** | 사진 찍기 셔터 찰칵(사진 모드, 2026-11-08 — 높은 딸깍 두 번, 원본 `click`과 비슷한 크기) | — | game/photo.js | 0.2 | — |
 | `voice-mumble` | **새로 만듦** | 웅얼 목소리 — 진짜 녹음 전 자리(2026-11-09 화성: 모음 소리를 음절로 이어 붙임 · `{low}` 낮고 느린 둥둥 / 아니면 높고 빠른 삐삐 · `{sec}` 길이 · `{tape}` 카세트로 들을 때 좁은 대역 + 쉬익) | — | zones/space/mars.js | 2.4 | — |
 | `cassette-click` | **새로 만듦** | 카세트 단추 딸깍(녹음·재생·정지 — 무겁게 두 번) | — | zones/space/mars.js | 0.16 | — |
