@@ -59,10 +59,12 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
     const me=lump([[new THREE.CylinderGeometry(torso*.3,torso*.26,armLen,6).applyMatrix4(M4([0,-armLen/2,0])),skin],[sph(torso*.5,8,6).applyMatrix4(M4([0,-armLen,0])),skin]]);g.add(me);
     g.rotation.z=s*.32;g.userData.s=s;return g;});
   const st={mode:'idle',t:Math.random()*5,walk:0,head:0};
-  /* mode: idle 서서 살랑 · walk 걷기(콩콩) · call 두 손을 입가로 모아 부르기 · wave 한 손 흔들기 · talk 고개 끄덕 · give 두 손 내밀기 · spin 회오리에 실려 빙글 · sit 나란히 앉아 노을 보기 */
+  /* mode: … waveUp 올려다보며 손 흔들기 ·
+     idle 서서 살랑 · walk 걷기(콩콩) · call 두 손을 입가로 모아 부르기 · wave 한 손 흔들기 · talk 고개 끄덕 · give 두 손 내밀기 · spin 회오리에 실려 빙글 · sit 나란히 앉아 노을 보기 */
   function tick(dt,t,mode){st.t+=dt;const m=mode||st.mode,T=st.t;let ax=[0,0],az=[.32,.32],bob=0,tilt=0,nod=0;
     if(m==='walk'){st.walk+=dt*9;bob=Math.abs(Math.sin(st.walk))*.07;tilt=Math.sin(st.walk)*.08;ax=[Math.sin(st.walk)*.5,-Math.sin(st.walk)*.5];}
     else if(m==='call'){const k=.5+.5*Math.sin(T*6);ax=[-1.9,-1.9];az=[-.55,-.55];nod=-.12-.06*k;bob=.02*k;}
+    else if(m==='waveUp'){ax=[0,-2.6+Math.sin(T*8)*.35];az=[.32,.5+Math.sin(T*8)*.25];nod=-.42;bob=Math.abs(Math.sin(T*4))*.03;} /* 하늘로 올라가는 원더룹을 올려다보며 손 흔들기(2026-11-13) */
     else if(m==='wave'){ax=[0,-2.6+Math.sin(T*8)*.35];az=[.32,.5+Math.sin(T*8)*.25];bob=Math.abs(Math.sin(T*4))*.03;}
     else if(m==='talk'){nod=Math.sin(T*7)*.06;ax=[Math.sin(T*3)*.25,-.4+Math.sin(T*3.4)*.25];}
     else if(m==='spin'){az=[1.3,1.3];bob=Math.sin(T*5)*.05;}

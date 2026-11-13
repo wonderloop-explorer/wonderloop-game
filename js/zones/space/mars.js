@@ -243,7 +243,11 @@ const st={lastQ:null,scene:false,ready:false,readyT:0,pipiWalk:null,pipiMode:'id
 /* 끝낸 뒤의 모습(game/state saveAfter — 2026-11-11): 셋이 노을을 같이 본 뒤의 화성은 다시 열어도 노을, 삐삐·둥둥은 노을 쪽을 보며 나란히 선 마지막 자리 그대로.
    예전 저장(완료 표시만 있고 완료 후 상태가 없는 것)은 여기서 한 번 만들어 둔다 */
 const ZID='space-mars';
-const saveAfterMars=()=>G.state.saveAfter(ZID,{time:1,flag:!!F[K.flag],who:{pipi:[pipi.root.position.x,pipi.root.position.z,SUNSET.face],dung:[dung.root.position.x,dung.root.position.z,SUNSET.face]}});
+/* 노을을 다 본 뒤 둘이 서는 자리(2026-11-13): 화산 꼭대기에서 떠날 때 내려다보면 둘이 겹쳐 키 작은 삐삐가 둥둥 뒤로 숨었다 →
+   꼭대기 쪽에서 보는 줄(u)에 수직(n)으로 약 2.6m 벌려 나란히, 삐삐는 꼭대기(카메라) 쪽 앞자리. 다시 열어도 이 자리 */
+const WAVE=(()=>{const c=SUNSET.wl,dx=SUMMIT[0]-c[0],dz=SUMMIT[1]-c[1],L=Math.hypot(dx,dz),u=[dx/L,dz/L],n=[-u[1],u[0]];
+  return {c,u,n,pipi:[c[0]+u[0]*1.1+n[0]*1.2,c[1]+u[1]*1.1+n[1]*1.2],dung:[c[0]-u[0]*.3-n[0]*1.2,c[1]-u[1]*.3-n[1]*1.2]};})();
+const saveAfterMars=()=>G.state.saveAfter(ZID,{time:1,flag:!!F[K.flag],who:{pipi:[...WAVE.pipi,SUNSET.face],dung:[...WAVE.dung,SUNSET.face]}});
 let AF=G.state.afterOf(ZID);
 if(F[K.told]){SK.set(1);}
 /* 처음 자리: 삐삐는 착지 자리 곁(만난 뒤면 언덕), 둥둥은 바위 위(노을을 같이 본 뒤면 언덕) */
@@ -253,6 +257,7 @@ faceTo(pipi,SPAWN[0],SPAWN[1]);dung.root.rotation.y=-PI/2;
 if(F[K.told]){pipi.root.rotation.y=dung.root.rotation.y=SUNSET.face;}
 if(F[K.clear]&&!AF){saveAfterMars();AF=G.state.afterOf(ZID);}
 if(AF&&AF.who){for(const [m,ob,w] of [[pipi,pipiOb,AF.who.pipi],[dung,dungOb,AF.who.dung]])if(w){place(m,ob,w[0],w[1]);m.root.rotation.y=w[2];}SK.set(AF.time??1);}
+if(F[K.clear]){place(pipi,pipiOb,...WAVE.pipi);place(dung,dungOb,...WAVE.dung);pipi.root.rotation.y=dung.root.rotation.y=SUNSET.face;} /* 예전 저장(노을 볼 때 자리)도 나란히 선 자리로 */
 const stage=()=>!F[K.met]?'meet':!F[K.call]?'call':!F[K.recA]?'rec':!F[K.recB]?'deliverA':!F[K.told]?'deliverB':!F[K.clear]?'finale':'done';
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 const east=x=>x>CANYON.x;
@@ -403,7 +408,11 @@ async function finale(W,U){SK.to(1,9);G.sound.bedLevel(.55,3);
   dung.mode='talk';mumble(true,3.2);await say('둥둥','…화산 꼭대기에서 보면… 노을이… 더 오래… 보여.',4.4);dung.mode='idle';
   {const pc=G.view.pairCam(pipi.root,1.12);if(pc)G.view.hold(pc);st.pc=pc;}
   pipi.mode='talk';mumble(false,2.6);await say('삐삐',F[K.flag]?'꼭대기에 네 깃발이 보여! 거기 가면 큰 회오리가 하늘까지 데려다줄 거야.':'거기 깃발 하나 꽂고 와! 그럼 큰 회오리가 하늘까지 데려다줄 거야.',4.4);pipi.mode='idle';
-  if(st.pc&&G.view.req&&G.view.req.fn===st.pc)G.view.hold(null);st.pc=null;st.sunFace=true;}
+  if(st.pc&&G.view.req&&G.view.req.fn===st.pc)G.view.hold(null);st.pc=null;st.sunFace=true;
+  /* 권한 뒤 둘이 나란히 선 자리로 천천히 걸어감(1.4초) — 떠날 때 꼭대기에서 겹치지 않게, 다시 열어도 같은 자리 */
+  {const a=[pipi.root.position.x,pipi.root.position.z],b=[dung.root.position.x,dung.root.position.z],t0=G.clock.t;pipi.mode='walk';dung.mode='walk';
+    await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/1.4),e=u*u*(3-2*u);place(pipi,pipiOb,lerp(a[0],WAVE.pipi[0],e),lerp(a[1],WAVE.pipi[1],e));place(dung,dungOb,lerp(b[0],WAVE.dung[0],e),lerp(b[1],WAVE.dung[1],e));return u>=1;},3);
+    pipi.mode='idle';dung.mode='idle';saveAfterMars();}}
 /* ⑧ 큰 먼지 회오리가 원더룹을 하늘로 → STAGE 2 완료 카드 → (금성 이동은 다음 작업) 다시 언덕에 내려놓음 */
 function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{radius:3.4,height:12,seed:7.7,big:true});st.big=big;st.bigCard=false;const P0=W.position.clone(),gy=groundY(P0.x,P0.z);
   /* 2026-11-13(두 번째): 출발지는 화산 꼭대기 — 기다리던 큰 회오리(BIGTOP)에 걸어 들어가면 바로 감쌈. 이동 테마는 들리는 순간부터 건너뛰기 없이 흘려(곡 13 → 33.5초 = 20.5초) 연출 길이를 곡에 맞춤:
@@ -412,7 +421,7 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
   const bx0=BIGTOP[0],bz0=BIGTOP[1],bo={x:P0.x,z:P0.z};let bx=bx0,bz=bz0,T0=G.clock.t,ph=0,liftT=0;G.sound.sfx('event-whirl');G.travel.mark('touch');st.bigGo=true;
   /* 2026-11-10: 큰 회오리가 다가오는 동안 둘은 노을을 보고 있다가, 원더룹이 들려 올라가면 돌아보며 손을 흔들고, 내려오면 다시 노을을 봄 */
   st.bigTick=dt=>{const t=G.clock.t-T0;big.tick(dt);
-    if(ph===0){const u=ss(0,NEAR,t);bx=lerp(bx0,P0.x,u);bz=lerp(bz0,P0.z,u);big.setBase(bx,groundY(bx,bz),bz);if(t>NEAR){ph=1;G.travel.mark('lift');G.travel.begin({id:'whirl',expect:LIFT+R+SP+MAPS+ORB+COVER});liftT=t;big.clear(true);st.sunFace=false;st.lookWL=true;pipi.mode='wave';dung.mode='wave';lockOn(G,W);U.riding.y=gy;G.react.react('startle');G.sound.sfx('event-whoosh');if(U.setExpr)U.setExpr('반짝 신남');}}
+    if(ph===0){const u=ss(0,NEAR,t);bx=lerp(bx0,P0.x,u);bz=lerp(bz0,P0.z,u);big.setBase(bx,groundY(bx,bz),bz);if(t>NEAR){ph=1;G.travel.mark('lift');G.travel.begin({id:'whirl',expect:LIFT+R+SP+MAPS+ORB+COVER});liftT=t;big.clear(true);st.sunFace=false;st.lookWL=true;pipi.mode='waveUp';dung.mode='waveUp';lockOn(G,W);U.riding.y=gy;G.react.react('startle');G.sound.sfx('event-whoosh');if(U.setExpr)U.setExpr('반짝 신남');}}
     else{const k=t-liftT,y=ph===1?gy+22*ss(0,4.5,k):gy+22*(1-ss(0,3.2,k));const ox=Math.cos(k*3)*.35,oz=Math.sin(k*3)*.35;
       W.position.set(P0.x+ox,y,P0.z+oz);U.riding.y=y;W.rotation.y+=dt*2.4;W.rotation.z=Math.sin(k*2.3)*.1;big.setBase(P0.x,gy,P0.z);big.setHeight(Math.max(8,y-gy+4));
       if(Math.floor(k/2.1)!==st.bwi){st.bwi=Math.floor(k/2.1);G.sound.sfx('event-whirl',{gain:.9});}
@@ -427,7 +436,7 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
     const onDown=e=>{tap.x=e.clientX;tap.y=e.clientY;tap.t=performance.now();},onUp=e=>{if(tap.t&&performance.now()-tap.t<320&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<10&&!(e.target&&e.target.closest&&e.target.closest('button')))tap.n++;tap.t=0;};
     window.addEventListener('pointerdown',onDown);window.addEventListener('pointerup',onUp);st.tapOff=()=>{window.removeEventListener('pointerdown',onDown);window.removeEventListener('pointerup',onUp);};
     G.travel.mark('rise');G.travel.depart();G.sound.sfx('event-whirl',{gain:1.1});if(U.setExpr)U.setExpr('반짝 신남');
-    big.me.scale.set(1.9,1,1.9); /* 타던 회오리보다 훨씬 크게 감쌈 */st.sunFace=false;st.lookWL=true;pipi.mode='wave';dung.mode='wave';
+    big.me.scale.set(1.9,1,1.9); /* 타던 회오리보다 훨씬 크게 감쌈 */st.sunFace=false;st.lookWL=true;pipi.mode='waveUp';dung.mode='waveUp';
     /* 카메라 차례 [시작 초, 원더룹에서 카메라 쪽 방향(동쪽 = π/2), 위아래, 거리]: 위에서 얼굴과 아래 언덕(친구들) → 서쪽 노을(파란 해) → 북쪽 화산(깃발 반짝임) → 올려다보는 우주 */
     /* 2026-11-13(두 번째): 꼭대기에서 출발 — 멀리 노을 언덕의 삐삐·둥둥(작게 손 흔들기, 멀어서 키워 보임) → 서쪽 파란 해 → 발아래 방금 꽂은 깃발 → 우주 */
     const yawTo=(x,z,off)=>Math.atan2(P0.x-x,P0.z-z)+off;
@@ -542,7 +551,9 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   {const dusk=SK.t>.5;if(dusk!==st.duskTone){st.duskTone=dusk;G.sound.bedTone(dusk?{lp:3400,gain:.78}:{},dusk?6:2);}} /* 노을: 같은 곡을 조금 작게·높은 소리 살짝 덜(저녁 느낌) */
   {const on=!!(F[K.clear]&&F[K.flag])&&!st.bigGo&&(st.bigOn||!st.scene);if(on&&!st.bigOn){st.bigOn=true;st.bigK=0;bigIdle.show(true);if(st.summit)G.sound.sfx('event-whirl',{gain:.9});}
     if(st.bigOn&&!st.bigGo){st.bigK=Math.min(1,(st.bigK||0)+dt*.9);const e=st.bigK*st.bigK*(3-2*st.bigK);bigIdle.me.scale.set(e,e,e);bigIdle.tick(dt);}else if(st.bigGo&&st.bigOn){st.bigOn=false;bigIdle.show(false);}} /* 꼭대기의 큰 회오리: 완료 + 깃발 뒤에 스르륵 생김 */
-  {const far=st.bigGo?1:0;st.farK=(st.farK||0)+(far-(st.farK||0))*Math.min(1,dt*1.5);if(st.farK>.002||st.farOn){st.farOn=st.farK>.002;pipi.root.scale.setScalar(1+7*st.farK);dung.root.scale.setScalar(1+5*st.farK);}} /* 떠날 때: 165m 밖 노을 언덕의 둘이 보이게 키움(작게 손 흔드는 모습) */
+  {const far=st.bigGo?1:0;st.farK=(st.farK||0)+(far-(st.farK||0))*Math.min(1,dt*1.5);if(st.farK>.002||st.farOn){st.farOn=st.farK>.002;const k=st.farK,sp=1+6*k;pipi.root.scale.setScalar(1+7*k);dung.root.scale.setScalar(1+5*k);
+    for(const [m,ob,w] of [[pipi,pipiOb,WAVE.pipi],[dung,dungOb,WAVE.dung]])place(m,ob,WAVE.c[0]+(w[0]-WAVE.c[0])*sp,WAVE.c[1]+(w[1]-WAVE.c[1])*sp);} /* 키운 만큼 사이도 벌림(그대로면 커진 몸끼리 겹침) */
+    if(st.farK>.5&&G.view.camera){const o=waveOverlap();if(o.bothOn)st.waveOv=Math.max(st.waveOv||0,o.ov);}} /* 떠날 때: 165m 밖 노을 언덕의 둘이 보이게 키움(작게 손 흔드는 모습) */
   whirl.tick(dt);secretW.tick(dt);wander(WS,WS.side==='w'?WHOME.w:WHOME.e,t,1.3);wander(SW,st.summit?SUMMIT_W:SECRET_HOME,t,4.1);
   if(!WS.busy){whirl.setBase(WS.x,groundY(WS.x,WS.z),WS.z);whirl.setHeight(6);}if(!SW.busy){secretW.setBase(SW.x,groundY(SW.x,SW.z),SW.z);secretW.setHeight(5);}
   whirlDust(whirl,WS,dt,MOB?7:12);whirlDust(secretW,SW,dt,MOB?5:9);
@@ -582,7 +593,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   if(st.scene||st.cross||st.ride||st.bigTick||U.riding)return;
   if(st.summit){const S=st.summit;S.t+=dt; /* 화산 꼭대기 고원에 머무는 동안(걸어 다님): 깃발 자리 안내 → 꽂은 뒤엔 내려가는 회오리 안내. 깃발을 안 꽂아도 회오리를 타면 내려감(비밀이라 진행과 무관) */
     if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
-    else if(F[K.clear]){quest('큰 회오리를 타고 다음 행성으로',{at:BIGTOP,y:groundY(...BIGTOP),label:'금성으로 가는 큰 회오리',style:'ant',h:4});
+    else if(F[K.clear]){quest('큰 회오리를 타고 다음 행성으로',{at:BIGTOP,y:groundY(...BIGTOP),label:'금성행 회오리',style:'ant',h:4});
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else quest('다 봤으면 먼지 회오리를 타고 내려가요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'내려가는 회오리',style:'ant',h:5});
     return;}
@@ -600,10 +611,18 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     else quest('둥둥에게 삐삐의 말을 들려줘요',{at:()=>[dung.root.position.x,dung.root.position.z],y:ROCKD.top,label:'둥둥',style:'ant',h:2.8});return;}
   if(s==='deliverB'){if(east(P.x))quest('먼지 회오리를 타고 삐삐에게 돌아가요',{at:()=>[WS.x,WS.z],label:'먼지 회오리',style:'ant',h:5});
     else quest('삐삐에게 둥둥의 대답을 들려줘요',{at:()=>[pipi.root.position.x,pipi.root.position.z],y:groundY(...PIPI_SPOT),label:'삐삐',style:'ant',h:2.4});return;}
-  if(s==='done'){quest(F[K.flag]?'화산 꼭대기의 큰 회오리를 타요':'화산 꼭대기에 깃발을 꽂아요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'화산으로 올라가는 회오리',style:'ant',h:5});return;} /* 2026-11-13: 끝낸 뒤 — 화산으로 올라가는 회오리까지 점선(꼭대기에서는 깃발 자리 → 큰 회오리) */
+  if(s==='done'){quest(F[K.flag]?'화산 꼭대기의 큰 회오리를 타요':'화산 꼭대기에 깃발을 꽂아요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'화산 회오리',style:'ant',h:5});return;} /* 2026-11-13: 끝낸 뒤 — 화산으로 올라가는 회오리까지 점선(꼭대기에서는 깃발 자리 → 큰 회오리) */
   if(s==='finale'){quest('삐삐의 언덕에서 노을을 같이 봐요',{at:SUNSET.wl,y:HILL.h,label:'삐삐의 언덕',style:'ant',h:3});
     if(Math.hypot(P.x-SUNSET.wl[0],P.z-SUNSET.wl[1])<5&&!G.ui.cardShown())scene(finale);return;}
   quest('',null);}
+/* 삐삐·둥둥이 화면에서 겹친 정도(시험용 — 감아올림 첫 장면): 각자 발 ~ 머리 꼭대기·몸 너비를 화면에 비춘 네모, 겹친 넓이 ÷ 작은 쪽 넓이 */
+const _wa=new THREE.Vector3();
+function scrRect(m,h,r){const c=G.view.camera;if(!c)return null;c.updateMatrixWorld();const e=c.matrixWorld.elements,s=m.root.scale.x,p=m.root.position,W=innerWidth,H=innerHeight;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,inf=false;
+  for(const dy of [0,h*s])for(const sd of [-1,1]){_wa.set(p.x+e[0]*r*s*sd,p.y+dy,p.z+e[2]*r*s*sd).project(c);if(_wa.z>1)inf=true;const x=(_wa.x+1)/2*W,y=(1-_wa.y)/2*H;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+  return inf?null:[x0,y0,x1,y1];}
+function waveOverlap(){const a=scrRect(pipi,.97,.27),b=scrRect(dung,1.79,.36);if(!a||!b)return {ov:0,pipi:a,dung:b,bothOn:false};const W=innerWidth,H=innerHeight,on=r=>r[2]>0&&r[0]<W&&r[3]>0&&r[1]<H;
+  const ix=Math.max(0,Math.min(a[2],b[2])-Math.max(a[0],b[0])),iy=Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1])),ar=r=>(r[2]-r[0])*(r[3]-r[1]);
+  return {ov:+(ix*iy/Math.max(1,Math.min(ar(a),ar(b)))).toFixed(3),pipi:a.map(Math.round),dung:b.map(Math.round),bothOn:on(a)&&on(b)};}
 function platformTop(x,z){for(const p of platforms)if(Math.hypot(x-p.c[0],z-p.c[1])<p.c[2])return p.top;return groundY(x,z);}
 let foreR=null,foreL=null;const _fR=new THREE.Vector3(),_fL=new THREE.Vector3();
 function lateUpdate(dt,t){if(arr)arr.late(dt,t);cas.tick(dt);
@@ -623,7 +642,7 @@ return {
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
   spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,calderaStones:STONES_C,flagSpot:FLAGSPOT,summitWhirl:SUMMIT_W,bigTop:BIGTOP,sunsetWL:SUNSET.wl,volcano:VOL.c},
-  state:()=>({scr:(()=>{const c=G.view.camera;if(!c)return null;const f=(x,y,z)=>{const v=new THREE.Vector3(x,y,z).project(c);return [+v.x.toFixed(2),+v.y.toFixed(2),v.z<1?1:0];},p=pipi.root.position,W=U0();return {pipi:f(p.x,p.y+.5,p.z),flag:f(FLAGSPOT[0],groundY(...FLAGSPOT)+1.5,FLAGSPOT[1]),hero:W?f(W.position.x,W.position.y+.7,W.position.z):null,camY:+c.position.y.toFixed(1),heroY:W?+W.position.y.toFixed(1):null};})(),bigOn:!!st.bigOn&&(st.bigK||0)>=1,callCam:!!st.callCam,quest:st.lastQ||'',earth:!!(st.bits&&st.bits.earth.visible),venusOrb:!!(st.bits&&st.bits.venus.visible),summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
+  state:()=>({wave:waveOverlap(),waveOvMax:+(st.waveOv||0).toFixed(3),scr:(()=>{const c=G.view.camera;if(!c)return null;const f=(x,y,z)=>{const v=new THREE.Vector3(x,y,z).project(c);return [+v.x.toFixed(2),+v.y.toFixed(2),v.z<1?1:0];},p=pipi.root.position,W=U0();return {pipi:f(p.x,p.y+.5,p.z),flag:f(FLAGSPOT[0],groundY(...FLAGSPOT)+1.5,FLAGSPOT[1]),hero:W?f(W.position.x,W.position.y+.7,W.position.z):null,camY:+c.position.y.toFixed(1),heroY:W?+W.position.y.toFixed(1):null};})(),bigOn:!!st.bigOn&&(st.bigK||0)>=1,callCam:!!st.callCam,quest:st.lastQ||'',earth:!!(st.bits&&st.bits.earth.visible),venusOrb:!!(st.bits&&st.bits.venus.visible),summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
   update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}G.sound.bedTone({},1);if(st.tapOff)st.tapOff();if(st.bits)st.bits.dispose();bigIdle.dispose();cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
 };
 }
