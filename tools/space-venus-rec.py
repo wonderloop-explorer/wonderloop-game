@@ -2,14 +2,15 @@
 """화성 → 금성 이동 연출 녹화·확인 (2026-11-12) — 서버가 떠 있을 때 저장소 루트에서:
    python3 tools/space-venus-rec.py [--phone] [--rotate] [--audio] [--port 8000]
    STAGE 2를 끝낸 상태(노을)로 화성을 열어 → 기다리는 큰 회오리에 닿음 → 감아올림 → 우주(지구·달) → 우주 지도 → 금성 구름 → 내려앉아 조작이 풀릴 때까지 녹화.
+   --tap: 눌러 넘기기 시험 — 감아올림 1.5초·우주 1.2초·지도 1초 때 화면을 톡 눌러 다음 단계로(단계가 바로 넘어가는지, 해결 화음이 여전히 구름 진입에 맞는지).
    --rotate: 연출 동안 화면을 끌어 카메라를 돌림. --audio: 소리 포함(sound.tap → MediaRecorder, 영상과 합침).
    재는 것: 매 프레임 원더룹 몸(wlPhoto.body)이 화면 밖으로 1% 넘게 나간 프레임 수(구름 덮개·지도가 덮은 동안 뺌), 영상의 가장 어두운 프레임 밝기(ffmpeg signalstats),
    단계 시각, 지구가 화면에 잡힌 캡처, 금성 착지·조작 풀림, 그리기 수. 결과 docs/compare/space-venus/<pc|phone>[-rot]-….  소리 끔(--audio도 스피커로는 안 냄), 끝나면 닫음."""
 import base64, json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-a = sys.argv[1:]; PHONE = '--phone' in a; ROT = '--rotate' in a; AUDIO = '--audio' in a; PORT = a[a.index('--port') + 1] if '--port' in a else '8000'
-OUT = os.path.join(ROOT, 'docs/compare/space-venus'); os.makedirs(OUT, exist_ok=True); pre = ('phone' if PHONE else 'pc') + ('-rot' if ROT else '') + '-'; R = {}; T = {}
+a = sys.argv[1:]; PHONE = '--phone' in a; ROT = '--rotate' in a; TAP = '--tap' in a; AUDIO = '--audio' in a; PORT = a[a.index('--port') + 1] if '--port' in a else '8000'
+OUT = os.path.join(ROOT, 'docs/compare/space-venus'); os.makedirs(OUT, exist_ok=True); pre = ('phone' if PHONE else 'pc') + ('-tap' if TAP else '') + ('-rot' if ROT else '') + '-'; R = {}; T = {}
 FLAGS = ['have:infinite-space:necklace', 'mars:met', 'mars:call', 'mars:recA', 'mars:recB', 'mars:told', 'clear:space-mars', 'item:infinite-space:bluesunset-glass', 'meet:infinite-space:pipi', 'meet:infinite-space:dungdung',
          'secret:infinite-space:marssound', 'secret:infinite-space:bluesunset', 'secret:infinite-space:volcano', 'mars:flag', 'mars:bgm-intro']
 CLIP = """(()=>{window.__clip=[];const L=()=>{try{const Z=wlZone.cur,G=wlGame;if(Z&&window.wlPhoto&&G.mission.hero().userData.riding){const cover=document.getElementById('wlDustVeil')||document.getElementById('wlTravelMap');
@@ -41,16 +42,28 @@ with sync_playwright() as p:
             cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
         else:
             pg.mouse.move(x, y); pg.mouse.down(); pg.mouse.move(x + 140, y + 20, steps=8); pg.mouse.up()
-    seen = set(); last = 0
+    seen = set(); last = 0; taps = {}
+    def poke(key, mark_name, after):
+        # 눌러 넘기기: 그 단계가 시작되고 after초 뒤 한 번 톡
+        if not TAP or key in taps: return
+        L = pg.evaluate("(()=>{const l=wlGame.travel.log(),c=wlGame.sound.audioNow?wlGame.sound.audioNow():null;return [l['%s']??null,c]})()" % mark_name) if mark_name else None
+        if mark_name and (L[0] is None or L[1] is None or L[1] - L[0] < after): return
+        if not mark_name:
+            if not pg.evaluate("!!document.getElementById('wlTravelMap')"): return
+            taps.setdefault(key + '0', time.time())
+            if time.time() - taps[key + '0'] < after: return
+        (pg.touchscreen.tap(W * .5, H * .3) if PHONE else pg.mouse.click(W * .5, H * .3)); taps[key] = round(time.time() - V0, 1)
     for i in range(700):
         z = zn(); s = st() if z != '금성 구름' else {}
+        if 'venus' not in seen and 'lift' in seen:
+            poke('우주', 'space', 1.2) if '감아올림' in taps else None; poke('감아올림', 'rise', 1.5); poke('지도', None, 1.0)
         if s.get('big') and 'lift' not in seen: seen.add('lift'); mark('큰 회오리')
         if s.get('big') and s.get('sky', 0) > 1.2 and 'sky' not in seen: seen.add('sky'); mark('하늘이 우주로'); shot('rise-space-sky')
-        if s.get('big') and 'r1' not in seen and 'lift' in seen and time.time() - V0 - T['큰 회오리'] > 6.5: seen.add('r1'); shot('rise-1'); perf.append(stats())
-        if s.get('big') and 'r2' not in seen and 'lift' in seen and time.time() - V0 - T['큰 회오리'] > 10.3: seen.add('r2'); shot('rise-2')
-        if s.get('big') and 'r3' not in seen and 'lift' in seen and time.time() - V0 - T['큰 회오리'] > 12.8: seen.add('r3'); shot('rise-3')
+        if s.get('big') and 'r1' not in seen and 'lift' in seen and time.time() - V0 - T['큰 회오리'] > 4.4: seen.add('r1'); shot('rise-1'); perf.append(stats())
+        if s.get('big') and 'r2' not in seen and 'lift' in seen and time.time() - V0 - T['큰 회오리'] > 6.0: seen.add('r2'); shot('rise-2')
+        if s.get('big') and 'r3' not in seen and 'lift' in seen and time.time() - V0 - T['큰 회오리'] > 7.7: seen.add('r3'); shot('rise-3')
         if s.get('earth') and 'earth' not in seen: seen.add('earth'); mark('지구'); pg.wait_for_timeout(1500); shot('earth-1'); pg.wait_for_timeout(1000); shot('earth-2'); perf.append(stats())
-        if pg.evaluate("!!document.getElementById('wlTravelMap')") and 'map' not in seen: seen.add('map'); mark('우주 지도'); pg.wait_for_timeout(2600); shot('map')
+        if pg.evaluate("!!document.getElementById('wlTravelMap')") and 'map' not in seen: seen.add('map'); mark('우주 지도'); pg.wait_for_timeout(1000 if TAP else 2600); shot('map'); poke('지도', None, 0)
         if s.get('venusOrb') and 'orb' not in seen: seen.add('orb'); mark('금성이 커짐'); pg.wait_for_timeout(900); shot('venus-orb')
         if z == '금성 구름' and 'venus' not in seen: seen.add('venus'); mark('금성 구역'); pg.wait_for_timeout(1500); shot('cloud-descend'); perf.append(stats())
         if z == '금성 구름':
@@ -65,7 +78,10 @@ with sync_playwright() as p:
     R['금성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2); R['화면 UI'] = pg.evaluate('wlGame.ui.hintsVisible()'); R['배경음(금성)'] = pg.evaluate("(()=>{const h=wlGame.sound.bedHandle&&wlGame.sound.bedHandle();return !!h})()")
     cl = pg.evaluate('window.__clip||[]'); R['잘림 기록 프레임'] = len(cl); bad = [x for x in cl if x[1] > .01]; R['잘린 프레임(1% 넘게)'] = len(bad); R['잘림 최대'] = max([x[1] for x in cl] or [0]); R['잘린 때'] = [bad[0][0], bad[-1][0], bad[0][2]] if bad else None; R['페이지 시각 기준'] = pg.evaluate('performance.now()/1000')
     P = [x for x in perf if x]; R['그리기'] = {'최대 드로우콜': max(x[0] for x in P), '최대 삼각형': max(x[1] for x in P)} if P else None
-    R['시각(초)'] = T; R['출발부터 조작 풀림까지(초)'] = round(T.get('조작 풀림', 0) - T.get('큰 회오리', 0), 1); R['여행 기록'] = pg.evaluate('wlGame.travel.log?wlGame.travel.log():null'); R['오류'] = errs
+    R['시각(초)'] = T; R['출발부터 조작 풀림까지(초)'] = round(T.get('조작 풀림', 0) - T.get('큰 회오리', 0), 1); R['여행 기록'] = pg.evaluate('wlGame.travel.log?wlGame.travel.log():null');
+    L = R['여행 기록'] or {}; d = lambda x, y: round(L[y] - L[x], 2) if L.get(x) is not None and L.get(y) is not None else None
+    R['단계 길이(초, 소리 시계)'] = {'다가와 감쌈': d('touch', 'lift'), '들림(완료 카드)': d('lift', 'rise'), '감아올림': d('rise', 'space'), '우주(지구·달)': d('space', 'map'), '우주 지도': d('map', 'orb'), '금성이 커져 구름에 덮임': d('orb', 'cloud'),
+                        '닿아서 구름까지': d('touch', 'cloud'), '지구가 화면에 있던 시간': L.get('earthSec'), '해결 화음 − 구름 진입': d('cloud', 'resolve'), '눌러 넘긴 때(영상 초)': {k: v for k, v in taps.items() if not k.endswith('0')} or None}; R['오류'] = errs
     au = pg.evaluate(STOP) if AUDIO else None; auT = pg.evaluate('window.__auT||0') if AUDIO else 0
     vid = pg.video.path(); c.close(); b.close()
     vf = os.path.join(OUT, pre + 'venus.webm'); shutil.move(vid, vf); shutil.rmtree(os.path.join(OUT, 'vid-' + pre[:-1]), ignore_errors=True)

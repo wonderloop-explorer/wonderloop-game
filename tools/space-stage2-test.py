@@ -195,6 +195,8 @@ with sync_playwright() as p:
             if pg.evaluate('wlZone.cur.state().arrDone'): mark('금성 조작 풀림'); break
         pg.wait_for_timeout(200)
     pg.wait_for_timeout(1000); shot('venus-free'); R['금성 착지'] = pg.evaluate('wlZone.cur.name') == '금성 구름'
+    L = pg.evaluate('wlGame.travel.log?wlGame.travel.log():{}') or {}; d = lambda x, y: round(L[y] - L[x], 2) if L.get(x) is not None and L.get(y) is not None else None
+    R['금성 이동 단계 길이(초)'] = {'다가와 감쌈': d('touch', 'lift'), '들림(완료 카드)': d('lift', 'rise'), '감아올림': d('rise', 'space'), '우주(지구·달)': d('space', 'map'), '우주 지도': d('map', 'orb'), '금성이 커져 구름에 덮임': d('orb', 'cloud'), '닿아서 구름까지': d('touch', 'cloud'), '지구가 화면에 있던 시간': L.get('earthSec'), '해결 화음 − 구름 진입': d('cloud', 'resolve')}
     R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.mission.hero().userData.sceneLock&&!wlGame.core.blocking()")
     P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
     R['금성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)

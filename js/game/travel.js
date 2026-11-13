@@ -73,6 +73,8 @@ function fileTheme(c,D,buf,o,expect){const from=o.from||0,to=Math.min(buf.durati
       const err=head(landAt)-res;LOG.err=+err.toFixed(3); // +면 곡이 앞서 감
       if(Math.abs(err)>.06){const w=now+.03;segs.filter(x=>x.t>w).forEach(x=>{try{x.s.stop();}catch(e){}});const k=curAt(w);cut(k,w,.35);seg(w,head(w)-err,.35);LOG.fix=+err.toFixed(3);}
       const n=curAt(landAt),e1=landAt+.8,e2=landAt+2.3;n.g.gain.setValueAtTime(1,e1);n.g.gain.linearRampToValueAtTime(0,e2);setTimeout(()=>{segs.forEach(x=>{try{x.s.stop();x.g.disconnect();}catch(e){}});},(e2-now)*1000+200);},
+    /* 남은 시간이 바뀜(화면을 눌러 단계를 넘김 — 2026-11-13): 해결 화음이 sec초 뒤에 오도록 지금 자리를 0.35초 크로스페이드로 옮김(예약해 둔 건너뛰기는 버림). 마지막 맞춤은 landIn이 그대로 */
+    retime(sec){if(landAt!=null||done)return;const now=c.currentTime,w=now+.03,err=head(w+sec)-res;if(Math.abs(err)<=.06)return;segs.filter(x=>x.t>w).forEach(x=>{try{x.s.stop();}catch(e){}x.t=Infinity;});const k=curAt(w);cut(k,w,.35);seg(w,Math.max(0,head(w)-err),.35);LOG.retime=(LOG.retime||0)+1;},
     stop(sec=.6){if(done)return;done=true;const now=c.currentTime;segs.forEach(n=>{n.g.gain.cancelScheduledValues(now);n.g.gain.setValueAtTime(n.g.gain.value,now);n.g.gain.linearRampToValueAtTime(0,now+sec);try{n.s.stop(now+sec+.05);}catch(e){}});}};}
 /* 테마 고르기(비교용, 2026-11-09): 'file'(곡 파일 — 기본) | 'code'(코드로 만든 테마) — 주소 ?travelTheme=, 톱니 메뉴 '이동 테마'(이 기기에 기억 'wl-travel-theme') */
 function themeMode(){try{const q=new URLSearchParams(location.search).get('travelTheme');if(q==='file'||q==='code')return q;const v=localStorage.getItem('wl-travel-theme');if(v==='file'||v==='code')return v;}catch(e){}return (CFG.theme&&CFG.theme.use)||'file';}
@@ -100,6 +102,8 @@ export function landIn(sec){const t=T;if(!t||t.landed)return;t.landed=true;if(t.
 export const land=()=>landIn(0);
 /* 시험 기록(소리 시각 = 오디오 시계): 테마 종류·해결 화음 시각·실제 착지 시각 — tools/space-meteor-rec.py가 읽어 둘의 차이를 잼 */
 const LOG={};export const log=()=>LOG;
+export function retime(sec){const t=T;if(t&&!t.landed&&t.theme&&t.theme.retime)t.theme.retime(sec);}
+export function note(k,v){LOG[k]=v;}
 export function mark(name){const o=travelOut();LOG[name]=o?o.ctx.currentTime:null;if(name==='land'&&T&&T.theme)LOG.resolve=T.theme.landAt??null;}
 /* 끝(정리) — abort면 테마를 바로 줄이고 배경음을 되돌림 */
 export function end(abort){const t=T;if(!t)return;T=null;if(abort){if(t.theme)t.theme.stop(.6);clearTimeout(t.bedT);bedLevel(1,1.5);}}
@@ -175,4 +179,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
         g.beginPath();g.arc(x,y,s*.62,0,PI*2);g.fill();g.stroke();if(f.im&&f.im.complete&&f.im.naturalWidth)g.drawImage(f.im,x-s*.5,y-s*.5,s,s);else if(f.draw){g.translate(x,y);f.draw(g,s);}g.restore();});}
     if(t<sec+2)requestAnimationFrame(draw);}
   requestAnimationFrame(draw);
-  setTimeout(()=>done({remove(){on=false;cv.remove();blur.forEach(d=>d.remove());cap.remove();}}),sec*1000);});}
+  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;cv.remove();blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
+let MAPSKIP=null;
+/* 우주 지도를 지금 끝냄(화면을 눌러 넘길 때 — map()의 약속이 바로 풀림) */
+export function mapSkip(){if(MAPSKIP)MAPSKIP();}
