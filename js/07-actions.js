@@ -91,6 +91,10 @@ function actionPose(A,t){
  /* 꼬리 잡기(게임 로직 전용 — 무한 우주 별똥별 꼬리 타기, 2026-11-09): 두 손을 가슴 앞으로 뻗어 모아 별똥별 꼬리 끝을 쥠(엄지 보임), 고개를 살짝 들어 앞 위를 봄,
     다리는 매달려 대롱대롱(천천히 앞뒤로). 꼬리 끝은 구역이 두 손 가운데에 맞춘다(zones/space/meteor-ride.js) */
  if(A==='꼬리 잡기'){const sw=Math.sin(t*2.4);return{ax0:-1.5,ax1:-1.5,az0:.14,az1:-.14,ex0:-.15,ex1:-.15,ez0:.55,ez1:-.55,hx:-.1,bx:-.04,lx0:.14+sw*.16,lx1:-.06-sw*.16,kx0:.3+Math.max(0,sw)*.2,kx1:.3+Math.max(0,-sw)*.2,wy:0,_kr:14};} // wy 0: 매달린 동안 높이는 riding.y가 정함(기본 자세 wy는 공중 높이를 따라감). 팔 각도: 손이 가슴 앞 턱 아래 25cm 앞·두 손 사이 13cm(시험 도구로 실제 뼈 자리를 재서 고름 — 약 2등신이라 손을 머리 위로 올리면 꼬리가 얼굴을 지나갔다)
+ /* 회오리 타기(무한 우주 화성 → 금성, 2026-11-13): 두 팔을 옆으로 활짝 벌리고 고개를 들어 위를 봄, 손끝이 살랑, 다리는 대롱대롱(회전목마 타듯 — 도는 건 구역이 몸을 돌림) */
+ if(A==='팔 벌리기'){const sw=Math.sin(t*2.2),w=Math.sin(t*5.5);return{ax0:-.25+w*.08,ax1:-.25-w*.08,az0:-1.25-w*.1,az1:1.25+w*.1,ez0:-.25,ez1:.25,hx:-.18,bx:-.05,lx0:.12+sw*.14,lx1:-.04-sw*.14,kx0:.28+Math.max(0,sw)*.18,kx1:.28+Math.max(0,-sw)*.18,wy:0,_kr:10};}
+ /* 우주에 둥실(같은 연출): 팔다리를 천천히 젓기 — 헤엄치듯 번갈아 */
+ if(A==='둥실'){const a=Math.sin(t*1.7),b=Math.sin(t*1.7+1.6);return{ax0:-.5+a*.45,ax1:-.5-a*.45,az0:-.85-b*.15,az1:.85+b*.15,ez0:-.3,ez1:.3,hx:-.06,bx:.04,lx0:.2+b*.3,lx1:.2-b*.3,kx0:.35+Math.max(0,a)*.3,kx1:.35+Math.max(0,-a)*.3,wy:0,_kr:6};}
  if(A==='걷기'){const ph=t*8,s=Math.sin(ph);return{lx0:s*.5,lx1:-s*.5,ly0:.3+Math.max(0,s)*.08,ly1:.3+Math.max(0,-s)*.08,ax0:-s*.6,ax1:s*.6,az0:-.32,az1:.32,bx:.04,bz:s*.06,by:Math.abs(Math.cos(ph))*.05};}
  if(A==='뛰기')return runPose(t*13);
  if(A==='두리번'){const k=t*1.1,sk=Math.sin(k);return{hy:sk*.75*(.6+.4*Math.abs(Math.sin(k*.5))),hx:-.06,hz:sk*.06,bz:sk*.03,az0:-.38,az1:.38,ax0:.1*sk,ax1:-.1*sk};}

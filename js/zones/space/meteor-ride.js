@@ -108,14 +108,14 @@ export function dustVeil(o={}){const cv=document.createElement('canvas');cv.id='
 /* 붉은 먼지(화성 착지): 보통 섞기 둥근 점, 천천히 가라앉음 */
 export function redDust(root,n){return points(root,n,{map:dustTex(),add:false,size:.42,grav:.5,drag:1.6});}
 /* ── 목도리 끝 휘날림(연출 동안만): 목도리 매듭(06 앤트빌리지 차림 — 매듭 공)에서 두 가닥이 아래·앞쪽 바깥으로 펄럭(몸을 뚫지 않게 매듭에서 바깥쪽으로) ── */
-function makeScarf(WL){const U=WL.userData,M=U.antMats&&U.antMats.scarf;let knot=null;
+export function makeScarf(WL){const U=WL.userData,M=U.antMats&&U.antMats.scarf;let knot=null;
   knot=WL.getObjectByName('ant-scarf-knot'); // 06 앤트빌리지 차림의 목도리 매듭(옷 조합 색으로 바뀐 재질 그대로)
   const col=knot&&knot.material&&knot.material.color?knot.material.color.clone():M?M.color.clone():new THREE.Color('#36aaa0');const mat=sbMat(col);mat.side=THREE.DoubleSide;
   const N=8,strips=[],g=new THREE.Group();g.name='ride-scarf';
   for(const side of [-1,1]){const geo=new THREE.PlaneGeometry(.06,.36,1,N);geo.translate(0,-.18,0);const me=new THREE.Mesh(geo,mat);me.userData.noMerge=true;me.frustumCulled=false;g.add(me);strips.push({me,geo,side,base:geo.attributes.position.array.slice()});}
   g.visible=false;(WL.parent||WL).add(g);
   const _k=new THREE.Vector3(),_f=new THREE.Vector3(),_q=new THREE.Quaternion();
-  function tick(t,on,wind=1){g.visible=!!on&&!!knot;if(!g.visible)return;knot.getWorldPosition(_k);WL.getWorldQuaternion(_q);g.position.copy(_k);g.quaternion.copy(_q);
+  function tick(t,on,wind=1,yawOff=0){g.visible=!!on&&!!knot;if(!g.visible)return;knot.getWorldPosition(_k);WL.getWorldQuaternion(_q);g.position.copy(_k);g.quaternion.copy(_q);if(yawOff)g.rotateY(yawOff); /* yawOff: 몸이 돌 때 도는 반대쪽으로 휘날리게(화성 → 금성 회오리) */
     g.scale.set(WL.scale.x,WL.scale.y,WL.scale.z);
     for(const s of strips){const a=s.geo.attributes.position.array,b=s.base;for(let i=0;i<a.length;i+=3){const v=-b[i+1]/.36; // 0 매듭 → 1 끝
         const fl=Math.sin(t*15*wind-v*6+s.side)*.06*v*wind,out=.07*v+.18*v*v*wind;a[i]=b[i]+s.side*(.02+.05*v)+fl*.4;a[i+1]=b[i+1]*(1-.15*wind*v)+fl*.3;a[i+2]=out+fl;}

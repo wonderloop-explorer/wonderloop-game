@@ -275,7 +275,7 @@ function tickBody(){
     C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;
     /* 화면 가림 규칙(2026-11-10, game/layout heroBand): 아래에 대화창이 떠 있는 동안은 원더룹을 그 위 띠 가운데로 — 보는 점을 내려 원더룹이 화면에서 올라가게(0.25초쯤에 걸쳐, 대화창이 닫히면 돌아옴). 촬영 모드는 안 함 */
     {const hb=SHOT?null:GAME.layout.heroBand();if(hb)C.dc=(hb[0]+hb[1])/2;C.dk=(C.dk||0)+((hb?1:0)-(C.dk||0))*Math.min(1,dt*4);if(C.dk<.002)C.dk=0;}
-    const liftY=.85+d*(asp<1?FOLLOW.liftP:FOLLOW.lift),dockY=.75+((C.dc??.5)-.5)*d*2*Math.tan(camera.fov*Math.PI/360)/Math.max(.6,Math.cos(C.pitch));
+    const rlk=WL.userData.riding&&WL.userData.riding.lookY,liftY=rlk!=null?rlk:.85+d*(asp<1?FOLLOW.liftP:FOLLOW.lift), /* 연출이 원더룹을 타고 가게 할 때 riding.lookY로 보는 점 높이를 정할 수 있다(2026-11-13 — 화성 → 금성 가까운 카메라에서 컴퓨터 화면 아래로 발이 잘렸다) */dockY=.75+((C.dc??.5)-.5)*d*2*Math.tan(camera.fov*Math.PI/360)/Math.max(.6,Math.cos(C.pitch));
     _ct.set(WL.position.x,WL.position.y+liftY+(Math.min(liftY,dockY)-liftY)*C.dk,WL.position.z); /* 보는 점을 거리에 비례해 올림 → 원더룹이 화면 아래쪽 3분의 1쯤(가까이 당기면 덜 올라감) */
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
     {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
