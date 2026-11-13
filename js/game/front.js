@@ -243,7 +243,7 @@ function renderWorldBag(L){const W=curWorld();bag.innerHTML='';const H=document.
       if(f.got&&!im){const ic=cd.querySelector('.ic');ic.innerHTML='';const b=document.createElement('b');b.textContent=(f.c.name||'?').slice(0,1);b.style.cssText='color:#5a3826';ic.style.background=f.c.bg||'';ic.appendChild(b);}d2.appendChild(cd);});}
   /* 숨겨진 비밀·발견(세계 설정 finds:[{flag, name, text, where, note:{flag,text}}] — 2026-11-12): 찾은 것만 내용이 보이고, note의 flag가 켜졌으면 한 줄 더('깃발을 꽂았어요') */
   if(W&&W.finds&&W.finds.length){const nS=W.finds.filter(q=>flags[q.flag]).length,h3=document.createElement('p');h3.className='sec';h3.textContent=`✦ 숨겨진 비밀·발견 ${nS}/${W.finds.length}`;const d3=document.createElement('div');d3.className='cards';G.append(h3,d3);
-    W.finds.forEach(q=>{const got=!!flags[q.flag],cd=card({got,secret:true,title:q.name,text:got?q.text:(q.where?q.where+' 어딘가에 숨어 있어요':'어딘가에 숨어 있어요')});
+    W.finds.forEach(q=>{const got=!!flags[q.flag],cd=card({got,secret:!q.open,title:q.name,text:got?q.text:q.open?(q.where?q.where+' — ':'')+q.open:(q.where?q.where+' 어딘가에 숨어 있어요':'어딘가에 숨어 있어요')}); /* open이 있으면 숨겨진 비밀이 아닌 일반 발견(금빛 비밀 카드 모양 아님, 어디서 알게 되는지 알려 줌) */
       if(got){const ic=cd.querySelector('.ic');if(ic&&!ic.querySelector('img')){ic.innerHTML='<b style="color:#e3ad35">✦</b>';}}
       if(got&&q.note&&flags[q.note.flag]){const n=document.createElement('p');n.className='note';n.textContent=q.note.text;n.style.cssText='margin:.45rem 0 0;padding:.2rem .6rem;border-radius:999px;background:#f2b63c;color:#4a2a2a;font-family:"Jua",sans-serif;font-size:.82rem;display:inline-block';cd.appendChild(n);}d3.appendChild(cd);});}
   H.appendChild(pbtn('close wl-pop-foot','닫기',()=>closeBag()));bag.appendChild(H);}

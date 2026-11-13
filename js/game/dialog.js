@@ -43,11 +43,11 @@ function advance(){if(!talk)return false;talk.i++;show();return true;}
 /* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 true, 구역을 바꿔 지워지면 false */
 /* 옵션 o(2026-11-11 — 모든 대사 마주 보기): look '보는 곳' 표시 = 마주 보지 않는 예외 줄 — 이름만('노을')이면 지금 보는 곳 그대로, {at:[x,z]|물체, name}이면 말하는 주민과 원더룹이 그곳을 봄.
    to: 이 줄을 듣는(또는 원더룹이 말을 거는) 상대 물체 — 이름으로 못 찾는 줄(카세트 소리를 둥둥에게 들려줌)에. to:null이면 상대 없음(혼잣말). face:false는 look의 옛 이름 */
-function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined}));}
+function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined,hear:o?o.hear:undefined,hearName:o&&o.hearName,heroLook:o&&o.heroLook}));}
 function tickSay(){
   if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r(true);}
   if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
-    s.end=clock.t+Math.max(s.sec||0,h.dur);saying=s;}}
+    s.end=clock.t+Math.max(s.sec||0,h.dur);s.t0=clock.t;saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
    아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).
    위아래로 살짝 흔들림(움직임 줄이기면 멈춤). 깊이를 봐서 잎 뒤로 숨은 인물의 말풍선은 같이 가려진다. 가까이 가면 조금 작게(원더룹 얼굴·화면 위 안내 문구와 겹치지 않게).
@@ -81,22 +81,36 @@ function lineNPC(){if(talk)return talk.n;const s=saying;if(!s||!s.who)return nul
   if(s.who==='원더룹'){const pair=faceHook.pair&&faceHook.pair();if(pair){const n=NPCS.find(q=>q.root===pair.root);if(n)return n;}
     if(LAST&&LAST.n.root&&LAST.n.root.parent&&clock.t-LAST.t<10){LAST.n.root.getWorldPosition(_l);const P=ctx.WL.position;if(Math.hypot(_l.x-P.x,_l.z-P.z)<8)return LAST.n;}return null;}
   return nameNPC(s.who);}
-const speakNPC=()=>{if(talk)return talk.n;if(!saying||lookOf(saying)||saying.who==='원더룹')return null;return lineNPC();};
+const speakNPC=()=>{if(talk)return talk.n;if(!saying||saying.who==='원더룹')return null;if(hearOf(saying))return nameNPC(saying.who);if(lookOf(saying))return null;return lineNPC();};
 const speaking=()=>speakNPC();
 /* 지금 떠 있는 대사 한 줄의 정보(마주 보기 검사 tools/face-probe.js): 상대 주민 npc(없으면 null) · 보는 곳 표시 look(예외 줄의 이름) */
-const lineInfo=()=>{if(talk)return {who:talk.n.name,npc:talk.n,look:null,hero:false};if(!saying)return null;const l=lookOf(saying);return {who:saying.who,npc:lineNPC(),look:l?l.name:null,hero:saying.who==='원더룹'};};
+const lineInfo=()=>{if(talk)return {who:talk.n.name,npc:talk.n,look:null,hero:false,hear:null};if(!saying)return null;const h=hearOf(saying);if(h)return {who:saying.who,npc:saying.who==='원더룹'?null:nameNPC(saying.who),look:null,hero:saying.who==='원더룹',hear:{name:h.name,at:hearXZ(h),heroLook:saying.heroLook||null}};
+  const l=lookOf(saying);return {who:saying.who,npc:lineNPC(),look:l?l.name:null,hero:saying.who==='원더룹',hear:null,listener:saying.to?((NPCS.find(n=>n.root===saying.to)||{}).name||'상대'):null};}; /* listener: to로 정한 듣는 주민(카세트 소리를 들려줄 때) */
 /* 대화 카메라가 잡힌 동안(2026-11-11 — 말하는 쪽 얼굴 우선, game/index pairCam이 faceHook.pair로 {root, side, phi}를 줌): 둘이 똑바로 마주 보면 옆 카메라에서는 둘 다 옆모습뿐이라,
    무대 배우처럼 몸을 카메라 쪽으로 조금 열어 선다 — 말하는 쪽은 얼굴이 3/4 넘게(몸·카메라 방향 내적 약 0.75), 듣는 쪽은 옆모습보다 조금 더(약 0.15). 카메라는 듣는 쪽 어깨 쪽으로 살짝 돌아가 있다(phi).
    원더룹 줄('원더룹')은 반대로. 구역이 주민 방향을 매 프레임 다시 정해도(아기 토끼) 그리기 전에 여기서 덮어쓰고, 말이 끝나면 구역 값으로 부드럽게 돌려보낸다(REL) */
 const faceHook={pair:null};const heroSpeaking=()=>!!(saying&&saying.who==='원더룹');
 const wrapA=a=>Math.atan2(Math.sin(a),Math.cos(a));let FN=null;const REL=[];
+/* 듣는 사람(2026-11-13 — docs/series-rules.md '듣는 사람'): say(…, {hear}) — 그 줄을 듣는 상대가 원더룹이 아닐 때. 말하는 쪽은 그 대상을 본다.
+   hear: 주민 이름·id('둥둥') | 물체(주민 root 등) | [x,z](+ hearName) | '혼잣말'(아무도 안 돌림 — 보던 곳 그대로). 안 적으면 듣는 사람 = 원더룹(예전 그대로).
+   원더룹은 말하는 주민을 보고, heroLook:'hear'면 0.9초 뒤 듣는 쪽으로 같이 고개를 돌린다(삐삐가 협곡 건너 둥둥을 부를 때). '원더룹' 줄이면 원더룹이 듣는 쪽을 봄 */
+const _h=new THREE.Vector3();
+function hearOf(s){if(!s||s.hear===undefined||s.hear===null)return null;const h=s.hear;if(h==='혼잣말')return {name:'혼잣말',at:null};
+  if(typeof h==='string'){const n=NPCS.find(q=>q.root&&(q.id===h||q.name===h));return n?{name:n.name,at:n.root}:{name:h,at:null};}
+  if(h.isObject3D){const n=NPCS.find(q=>q.root===h);return {name:s.hearName||(n&&n.name)||'상대',at:h};}
+  if(Array.isArray(h))return {name:s.hearName||'상대',at:h};return null;}
+const hearXZ=h=>{if(!h||!h.at)return null;if(h.at.isObject3D){h.at.getWorldPosition(_h);return [_h.x,_h.z];}return [h.at[0],h.at[1]];};
 function tickFace(dt){const W=ctx.WL,U=W.userData,P=W.position,k=Math.min(1,(dt||1/60)*7);
   for(let i=REL.length-1;i>=0;i--){const it=REL[i],r=it.root;if(Math.abs(wrapA(r.rotation.y-it.last))<1e-4){REL.splice(i,1);continue;} /* 구역이 방향을 다시 정하지 않는 주민은 그대로 둠 */
     const off=wrapA(it.last-r.rotation.y)*(1-k);if(Math.abs(off)<.01){REL.splice(i,1);continue;}r.rotation.y+=off;it.last=r.rotation.y;}
-  const pair=faceHook.pair&&faceHook.pair(),look=!talk&&saying?lookOf(saying):null,heroSp=!talk&&heroSpeaking();let n=look?(look.at?nameNPC(saying.who):null):lineNPC();
-  if(n&&!look&&!heroSp)LAST={n,t:clock.t};
+  const hs=!talk&&saying?hearOf(saying):null;
+  const pair=faceHook.pair&&faceHook.pair(),look=!talk&&saying&&!hs?lookOf(saying):null,heroSp=!talk&&heroSpeaking();let n=hs?(saying.who==='원더룹'?null:nameNPC(saying.who)):look?(look.at?nameNPC(saying.who):null):lineNPC();
+  if(n&&!look&&!heroSp&&!hs)LAST={n,t:clock.t};
   if(n!==FN){if(FN&&FN.root&&FN._fy!=null)REL.push({root:FN.root,last:FN._fy});if(FN)FN._fy=null;FN=n;}
   const free=!(U.isWalking&&U.isWalking())&&!(U.drive&&Math.abs(U.drive.x)+Math.abs(U.drive.z)>.01)&&!U.riding /* drive는 가만히 있어도 {0,0}으로 늘 있다 — 예전엔 !U.drive라 주민 대화에서 원더룹이 상대를 보지 않았다(2026-11-10) */&&!blocking('itemget')&&!(U.reactFace);
+  if(hs){const xz=hearXZ(hs);if(!xz)return; /* 듣는 사람이 원더룹이 아닌 줄: 말하는 주민은 듣는 쪽을, 원더룹은 말하는 주민(heroLook 'hear'면 조금 뒤 듣는 쪽)을 */
+    let sx=P.x,sz=P.z;if(n&&n.root){n.root.getWorldPosition(_f);sx=_f.x;sz=_f.z;if(n.turn!==false){if(n._fy==null)n._fy=n.root.rotation.y;n._fy+=wrapA(Math.atan2(xz[0]-sx,xz[1]-sz)-n._fy)*k;n.root.rotation.y=n._fy;}}
+    if(free){const toHear=!n||(saying.heroLook==='hear'&&clock.t-(saying.t0||0)>.9),tx=toHear?xz[0]:sx,tz=toHear?xz[1]:sz;if(Math.hypot(tx-P.x,tz-P.z)>.2)W.rotation.y+=wrapA(Math.atan2(tx-P.x,tz-P.z)-W.rotation.y)*k*(toHear&&n?.6:1);}return;}
   if(look){if(!look.at)return; /* 보는 곳 표시: 말하는 주민과 원더룹이 그곳을 본다(이름만이면 지금 보는 곳 그대로) */
     let lx,lz;if(look.at.isObject3D){look.at.getWorldPosition(_f);lx=_f.x;lz=_f.z;}else{lx=look.at[0];lz=look.at[1];}
     if(n&&n.face!==false&&n.root&&n.turn!==false){n.root.getWorldPosition(_f);if(n._fy==null)n._fy=n.root.rotation.y;n._fy+=wrapA(Math.atan2(lx-_f.x,lz-_f.z)-n._fy)*k;n.root.rotation.y=n._fy;}

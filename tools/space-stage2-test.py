@@ -59,6 +59,11 @@ with sync_playwright() as p:
         s = stats()
         if s: perf[k].append(s)
     def st(): return pg.evaluate('wlZone.cur.state()')
+    # 삐삐가 둥둥을 부르는 순간: 삐삐·원더룹 몸 방향이 둥둥 쪽에서 몇 도 어긋났는지 + 둥둥이 화면 안인지(화면 좌표 -1~1)
+    CALLQ = """(()=>{const G=wlGame,W=G.mission.hero(),N=G.dialog.npcList(),p=N.find(n=>n.id==='pipi').root,d=N.find(n=>n.id==='dungdung').root,cam=G.view.camera;
+      const yaw=o=>{o.updateWorldMatrix(true,false);const e=o.matrixWorld.elements;return Math.atan2(e[8],e[10]);},off=(o,t)=>{const a=Math.atan2(t.position.x-o.position.x,t.position.z-o.position.z)-yaw(o);return Math.round(Math.abs(Math.atan2(Math.sin(a),Math.cos(a)))*180/Math.PI);};
+      const v=d.position.clone();v.y+=1;v.project(cam);const li=G.dialog.lineInfo();
+      return {'삐삐 → 둥둥 어긋남(도)':off(p,d),'삐삐 → 원더룹 어긋남(도)':off(p,W),'원더룹 → 둥둥 어긋남(도)':off(W,d),'둥둥 화면 자리':[+v.x.toFixed(2),+v.y.toFixed(2)],'둥둥 화면 안':Math.abs(v.x)<1&&Math.abs(v.y)<1&&v.z<1,'듣는 사람':li&&li.hear&&li.hear.name};})()"""
     def hero(js): return pg.evaluate("(()=>{const W=wlGame.mission.hero(),P=W.position,U=W.userData;return (" + js + ")})()")
     def closeCard():
         pg.keyboard.press('Escape'); pg.wait_for_timeout(350)
@@ -116,6 +121,18 @@ with sync_playwright() as p:
     pg.wait_for_timeout(1200); shot('meet'); mark('삐삐 만남')
     readAll(until="wlZone.cur.state().stage!=='meet'&&!wlZone.cur.state().scene"); readAll()
     R['삐삐 만남'] = pg.evaluate("!!wlGame.state.flags['mars:met']")
+    def toSummit():
+        rideWhirl('secretWhirl')
+        for _ in range(160):
+            if st()['summit'] and not st()['ride']: break
+            pg.wait_for_timeout(250)
+        pg.wait_for_timeout(1500)
+    def plantFlag(tag):
+        fsp = S['flagSpot']; sm = S['summit']; walk(fsp[0] + (sm[0] - fsp[0]) * .22, fsp[1] + (sm[1] - fsp[1]) * .22, 12, .4); act('깃발 꽂기'); pg.wait_for_timeout(3000); shot(tag)
+        for _ in range(120):
+            if st()['flag'] and not st()['scene'] and not pg.evaluate('wlGame.ui.cardShown()'): break
+            if pg.evaluate('wlGame.ui.cardShown()') not in (None, 'item'): closeCard()
+            pg.wait_for_timeout(500)
     if SECRET:
         rideWhirl('secretWhirl')  # 꼭대기: 깃발 꽂기(2026-11-12) → 리액션·한 바퀴 카메라·사진 안내·비밀 띠 카드 → '회오리 타고 내려가기'
         for _ in range(120):
@@ -169,11 +186,12 @@ with sync_playwright() as p:
     act('테이프 틀기'); mark('삐삐 테이프')
     for i in range(400):
         s = st()
+        if s.get('callCam') and 'callDung' not in T: mark('callDung'); pg.wait_for_timeout(700); shot('call-dung-1'); pg.wait_for_timeout(1900); shot('call-dung-2'); R['부르는 장면'] = pg.evaluate(CALLQ)
         if s['cross'] and 'cross' not in T: mark('cross'); pg.wait_for_timeout(3000); shot('dung-cross')
         if s['stage'] == 'finale' and s['sky'] > .6 and 'sunset' not in T: mark('sunset'); shot('sunset')
         if s['stage'] == 'finale': sample('노을')
         if s['big'] and 'big' not in T: mark('big'); pg.wait_for_timeout(4000); shot('big-lift')
-        if pg.evaluate("!!wlGame.state.flags['clear:space-mars']"): break  # 완료 카드가 닫히면 내려놓지 않고 금성으로 떠남(2026-11-12)
+        if pg.evaluate("!!wlGame.state.flags['clear:space-mars']"): break  # 완료 카드(2026-11-13: 바로 떠나지 않음 — 화산 꼭대기를 권하는 대사가 이어짐)
         if pg.evaluate('wlGame.ui.cardShown()') and pg.evaluate('wlGame.ui.cardShown()') != 'item':
             if 'sunset' in T and 'blueCard' not in T: mark('blueCard'); shot('blue-card')
             pg.wait_for_timeout(int(READ * 1000) + 300); closeCard()
@@ -183,11 +201,23 @@ with sync_playwright() as p:
     R['유리 조각'] = pg.evaluate("!!wlGame.state.flags['item:infinite-space:bluesunset-glass']")
     R['발견'] = pg.evaluate("['marssound','bluesunset','volcano'].map(k=>!!wlGame.state.flags['secret:infinite-space:'+k])")
     R['착지부터 완료까지(초)'] = round(time.time() - t_land, 1); R['읽는 시간 넣음'] = REAL
+    # 2026-11-13: 완료 카드 → 둘이 화산 꼭대기를 권함 → 화산으로 올라가는 회오리 → 꼭대기에서 깃발 꽂기(이미 꽂았으면 건너뜀) → 큰 회오리가 생김 → 걸어 들어가면 금성 이동
+    readAll(until="!wlZone.cur.state().scene&&!wlGame.ui.dialogShown()&&!wlGame.ui.cardShown()", maxn=60); pg.wait_for_timeout(600)
+    R['완료 뒤 할 일'] = st().get('quest'); R['완료 뒤 큰 회오리(깃발 전)'] = st().get('bigOn'); shot('after-clear')
+    toSummit(); shot('summit-dusk'); R['꼭대기 할 일'] = st().get('quest')
+    if not st()['flag']: plantFlag('summit-dusk-flag')
+    R['깃발 꽂음(완료 뒤)'] = st()['flag']
+    for _ in range(40):
+        if st().get('bigOn'): break
+        if pg.evaluate('wlGame.ui.cardShown()') not in (None, 'item'): closeCard()
+        pg.wait_for_timeout(400)
+    R['꼭대기 큰 회오리'] = st().get('bigOn'); R['큰 회오리 할 일'] = st().get('quest'); shot('summit-big'); mark('큰 회오리로'); bt = S['bigTop']; walk(bt[0], bt[1], 16, .5)
     # 화성 → 금성(큰 회오리가 감아올림 → 우주(지구·달) → 우주 지도 → 금성 구름 속으로 → 내려앉아 조작이 풀림)
     for i in range(400):
         zn = pg.evaluate('wlZone.cur.name')
         if zn != '금성 구름':
             s3 = st()
+            if s3.get('big') and 'rise' not in T: mark('rise'); pg.wait_for_timeout(3000); shot('to-venus-rise1'); pg.wait_for_timeout(1500); shot('to-venus-rise2'); pg.wait_for_timeout(1500); shot('to-venus-rise3')  # 큰 회오리가 감싼 뒤(0.8 + 1.6초) 감아올림: 친구들 → 파란 해 → 깃발
             if s3.get('earth') and 'earth' not in T: mark('earth'); pg.wait_for_timeout(1500); shot('to-venus-earth')
             if pg.evaluate("!!document.getElementById('wlTravelMap')") and 'map2' not in T: mark('map2'); pg.wait_for_timeout(2600); shot('to-venus-map')
         else:
@@ -196,7 +226,7 @@ with sync_playwright() as p:
         pg.wait_for_timeout(200)
     pg.wait_for_timeout(1000); shot('venus-free'); R['금성 착지'] = pg.evaluate('wlZone.cur.name') == '금성 구름'
     L = pg.evaluate('wlGame.travel.log?wlGame.travel.log():{}') or {}; d = lambda x, y: round(L[y] - L[x], 2) if L.get(x) is not None and L.get(y) is not None else None
-    R['금성 이동 단계 길이(초)'] = {'다가와 감쌈': d('touch', 'lift'), '들림(완료 카드)': d('lift', 'rise'), '감아올림': d('rise', 'space'), '우주(지구·달)': d('space', 'map'), '우주 지도': d('map', 'orb'), '금성이 커져 구름에 덮임': d('orb', 'cloud'), '닿아서 구름까지': d('touch', 'cloud'), '지구가 화면에 있던 시간': L.get('earthSec'), '해결 화음 − 구름 진입': d('cloud', 'resolve')}
+    R['금성 이동 단계 길이(초)'] = {'다가와 감쌈': d('touch', 'lift'), '들림': d('lift', 'rise'), '감아올림': d('rise', 'space'), '우주(지구·달)': d('space', 'map'), '우주 지도': d('map', 'orb'), '금성이 커져 구름에 덮임': d('orb', 'cloud'), '닿아서 구름까지': d('touch', 'cloud'), '지구가 화면에 있던 시간': L.get('earthSec'), '해결 화음 − 구름 진입': d('cloud', 'resolve')}
     R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.mission.hero().userData.sceneLock&&!wlGame.core.blocking()")
     P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
     R['금성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
@@ -221,7 +251,7 @@ with sync_playwright() as p:
     vid = pg.video.path() if VIDEO else None
     if COVER:
         cv = CV0 or pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered']}; json.dump(cv, open(os.path.join(OUT, pre + 'cover.json'), 'w'), ensure_ascii=False, indent=1)
-    faceDump(); bad = [x for x in FACE if x['flag'] == '어긋남']; R['마주 보기'] = {'대사': len(FACE), '45도 넘게 어긋남': len(bad), '예외(보는 곳 표시)': sum(1 for x in FACE if x['flag'].startswith('예외')), '어긋난 줄': [x['who'] + ': ' + x['text'][:22] for x in bad]}
+    faceDump(); bad = [x for x in FACE if x['flag'] == '어긋남']; R['마주 보기'] = {'대사': len(FACE), '45도 넘게 어긋남': len(bad), '예외(보는 곳 표시)': sum(1 for x in FACE if x['flag'].startswith('예외')), '원더룹이 아닌 듣는 사람': [[x['who'], x['text'][:26], x.get('hear')] for x in FACE if x.get('hear') not in (None, '원더룹')], '어긋난 줄': [x['who'] + ': ' + x['text'][:22] for x in bad]}
     json.dump(FACE, open(os.path.join(OUT, pre + 'face-s2-' + (a[a.index('--face') + 1] if '--face' in a else 'after') + '.json'), 'w'), ensure_ascii=False, indent=1)
     c.close(); b.close()
     if vid: shutil.move(vid, os.path.join(OUT, pre + 'stage2.webm')); shutil.rmtree(os.path.join(OUT, 'vid-' + pre[:-1]), ignore_errors=True)

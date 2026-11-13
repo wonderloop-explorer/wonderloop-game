@@ -58,7 +58,7 @@ function codeTheme(c,D){const g=c.createGain(),t0=c.currentTime+.05;g.gain.setVa
    남는 자투리(한 마디 안)는 시작 자리를 from − (D − k·bar)로 조금 당기거나 밀어 맞춤. 착지 시각을 정확히 알게 되면(landIn) 0.06초 넘게 어긋날 때만 0.35초 크로스페이드로 고침.
    앞 0.3초 서서히 올리고, 해결 화음 0.8초 뒤부터 1.5초에 걸쳐 줄임(to를 넘지 않음) */
 function fileTheme(c,D,buf,o,expect){const from=o.from||0,to=Math.min(buf.duration,o.to||buf.duration),res=o.resolve??Math.max(from,to-1.5),bar=o.bar||0,XF=.08;
-  const segs=[];let landAt=null,done=false;
+  const segs=[];let landAt=null,done=false,planLand=null;const tail=o.tail??((o.beat0??from)+Math.floor((res-2.6-(o.beat0??from))/(bar||1))*(bar||1)); /* 해결 화음 앞 구절이 시작하는 마디 경계(눌러 넘길 때 여기로) */
   function seg(when,off,fadeIn){const s=c.createBufferSource(),g=c.createGain();s.buffer=buf;g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(1,when+fadeIn);s.connect(g);g.connect(D);
     s.start(when,Math.max(0,off),Math.max(.1,to-Math.max(0,off)));const n={s,g,t:when,off};segs.push(n);return n;}
   function cut(n,when,fade){n.g.gain.cancelScheduledValues(when);n.g.gain.setValueAtTime(1,when);n.g.gain.linearRampToValueAtTime(0,when+fade);try{n.s.stop(when+fade+.02);}catch(e){}}
@@ -72,9 +72,16 @@ function fileTheme(c,D,buf,o,expect){const from=o.from||0,to=Math.min(buf.durati
   return {kind:'file',get landAt(){return landAt;},landIn(sec){if(landAt!=null||done)return;const now=c.currentTime;landAt=now+sec;
       const err=head(landAt)-res;LOG.err=+err.toFixed(3); // +면 곡이 앞서 감
       if(Math.abs(err)>.06){const w=now+.03;segs.filter(x=>x.t>w).forEach(x=>{try{x.s.stop();}catch(e){}});const k=curAt(w);cut(k,w,.35);seg(w,head(w)-err,.35);LOG.fix=+err.toFixed(3);}
-      const n=curAt(landAt),e1=landAt+.8,e2=landAt+2.3;n.g.gain.setValueAtTime(1,e1);n.g.gain.linearRampToValueAtTime(0,e2);setTimeout(()=>{segs.forEach(x=>{try{x.s.stop();x.g.disconnect();}catch(e){}});},(e2-now)*1000+200);},
-    /* 남은 시간이 바뀜(화면을 눌러 단계를 넘김 — 2026-11-13): 해결 화음이 sec초 뒤에 오도록 지금 자리를 0.35초 크로스페이드로 옮김(예약해 둔 건너뛰기는 버림). 마지막 맞춤은 landIn이 그대로 */
-    retime(sec){if(landAt!=null||done)return;const now=c.currentTime,w=now+.03,err=head(w+sec)-res;if(Math.abs(err)<=.06)return;segs.filter(x=>x.t>w).forEach(x=>{try{x.s.stop();}catch(e){}x.t=Infinity;});const k=curAt(w);cut(k,w,.35);seg(w,Math.max(0,head(w)-err),.35);LOG.retime=(LOG.retime||0)+1;},
+      const n=curAt(landAt),e1=landAt+1.4,e2=Math.min(landAt+3.3,landAt+Math.max(1.6,to-res-.1)); /* 끝 울림은 끊지 않고 1.4초 뒤부터 약 1.9초에 걸쳐(2026-11-13 — 예전 0.8초 뒤 1.5초: 도착한 곳의 바람 소리로 넘어가기 전에 꺼졌다) */n.g.gain.setValueAtTime(1,e1);n.g.gain.linearRampToValueAtTime(0,e2);setTimeout(()=>{segs.forEach(x=>{try{x.s.stop();x.g.disconnect();}catch(e){}});},(e2-now)*1000+200);},
+    /* 화면을 눌러 단계를 넘김(2026-11-13 두 번째 — 예전엔 곡 자리를 바로 건너뛰어 끊겨 들렸다): 곡은 지금 자리에서 그대로 흐르다가, 해결 화음까지 TAIL초 남는 순간에
+       해결 화음 앞 구절(마디 경계 tail)로 0.9초에 걸쳐 부드럽게 넘어간다 → 해결 화음은 여전히 sec초 뒤(도착 순간). 남은 시간이 그보다 짧으면 지금 바로 0.6초에 걸쳐 넘어감. 거듭 누르면 다시 잡음 */
+    retime(sec){if(landAt!=null||done)return;const now=c.currentTime,w=now+.05,tLand=now+sec;
+      for(let i=segs.length-1;i>=0;i--)if(segs[i].t>w){try{segs[i].s.stop();}catch(e){}segs.splice(i,1);} /* 예약해 둔 넘어가기는 버림 */
+      const k=curAt(w);k.g.gain.cancelScheduledValues(w);k.g.gain.setValueAtTime(1,w);planLand=tLand;LOG.retime=(LOG.retime||0)+1;
+      if(Math.abs(head(tLand)-res)<=.06)return;const L=res-tail;
+      if(sec<=L+.5){cut(k,w,.6);seg(w,Math.max(0,res-(tLand-w)),.6);}else{const tS=tLand-L,XF=.9;cut(k,tS-XF/2,XF);seg(tS-XF/2,tail-XF/2,XF);}},
+    /* 해결 화음까지 남은 초(눌러 넘긴 뒤에는 다시 잡은 도착 시각 기준) — 연출이 남은 장면 길이를 곡에 맞출 때 */
+    left(){const now=c.currentTime;return planLand!=null?planLand-now:res-head(now);},
     stop(sec=.6){if(done)return;done=true;const now=c.currentTime;segs.forEach(n=>{n.g.gain.cancelScheduledValues(now);n.g.gain.setValueAtTime(n.g.gain.value,now);n.g.gain.linearRampToValueAtTime(0,now+sec);try{n.s.stop(now+sec+.05);}catch(e){}});}};}
 /* 테마 고르기(비교용, 2026-11-09): 'file'(곡 파일 — 기본) | 'code'(코드로 만든 테마) — 주소 ?travelTheme=, 톱니 메뉴 '이동 테마'(이 기기에 기억 'wl-travel-theme') */
 function themeMode(){try{const q=new URLSearchParams(location.search).get('travelTheme');if(q==='file'||q==='code')return q;const v=localStorage.getItem('wl-travel-theme');if(v==='file'||v==='code')return v;}catch(e){}return (CFG.theme&&CFG.theme.use)||'file';}
@@ -102,6 +109,7 @@ export function landIn(sec){const t=T;if(!t||t.landed)return;t.landed=true;if(t.
 export const land=()=>landIn(0);
 /* 시험 기록(소리 시각 = 오디오 시계): 테마 종류·해결 화음 시각·실제 착지 시각 — tools/space-meteor-rec.py가 읽어 둘의 차이를 잼 */
 const LOG={};export const log=()=>LOG;
+export const untilResolve=()=>{const t=T;return t&&!t.landed&&t.theme&&t.theme.left?t.theme.left():null;};
 export function retime(sec){const t=T;if(t&&!t.landed&&t.theme&&t.theme.retime)t.theme.retime(sec);}
 export function note(k,v){LOG[k]=v;}
 export function mark(name){const o=travelOut();LOG[name]=o?o.ctx.currentTime:null;if(name==='land'&&T&&T.theme)LOG.resolve=T.theme.landAt??null;}
@@ -111,8 +119,8 @@ export const active=()=>!!T;
 /* 출발(몸이 끌려 올라가는 순간): 반짝이며 휙 올라감 */
 export function depart(){sfx('travel-depart',{gain:1.25});}
 /* 세계 설정으로 지도 장면: W.travel.map.bodies(행성마다 zone) · lines['지나온>다음'] · facts[지나온 구역](flag가 켜진 것만) */
-export function mapFor(W,from,to,flags={}){const C=W&&W.travel||{},B=C.map&&C.map.bodies||[],f=B.find(b=>b.zone===from),t=B.find(b=>b.zone===to),L=(C.lines||{})[from+'>'+to]||{};
-  return map({bodies:B,from:f&&f.id,to:t&&t.id,line:L.text||'',lineId:L.id,facts:((C.facts||{})[from]||[]).filter(x=>flags[x.flag]).map(x=>({img:typeof x.img==='function'?x.img():x.img,draw:x.draw}))});}
+export function mapFor(W,from,to,flags={},opt={}){const C=W&&W.travel||{},B=C.map&&C.map.bodies||[],f=B.find(b=>b.zone===from),t=B.find(b=>b.zone===to),L=(C.lines||{})[from+'>'+to]||{};
+  return map({sec:opt.sec,bodies:B,from:f&&f.id,to:t&&t.id,line:L.text||'',lineId:L.id,facts:((C.facts||{})[from]||[]).filter(x=>flags[x.flag]).map(x=>({img:typeof x.img==='function'?x.img():x.img,draw:x.draw}))});}
 /* ── 우주 지도 장면 ── */
 function solePath(c){c.beginPath();c.moveTo(0,.02);c.bezierCurveTo(.05,.02,.062,-.04,.062,-.085);c.bezierCurveTo(.062,-.135,.035,-.165,.002,-.165);c.bezierCurveTo(-.04,-.165,-.062,-.125,-.056,-.075);
   c.bezierCurveTo(-.05,-.03,-.042,.02,0,.02);c.closePath();c.moveTo(.045,.075);c.ellipse(.003,.075,.042,.046,0,0,PI*2);} // 로딩 화면(index.html #wlBoot) 발자국과 같은 모양
