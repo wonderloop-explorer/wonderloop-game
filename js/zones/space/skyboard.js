@@ -78,12 +78,12 @@ export function venusMap(g,w,h){g.fillStyle='#d7bcee';g.fillRect(0,0,w,h);const 
 const SKYC=new THREE.Color('#6b5fb4');
 const ORB_GLSL='float ringA(float r){if(r<1.32||r>2.3)return 0.;float u=(r-1.32)/.98;float a=u<.46?.55:u<.53?.08:u<.88?.82:u<.91?.1:.35;a*=.9+.1*sin(u*31.);return a*smoothstep(0.,.03,u)*smoothstep(1.,.95,u);}\n'; // 넓은 띠 셋(안쪽·가운데 진한 띠·옅은 바깥) + 틈 둘
 const crayTex=(()=>{const m=sbMat('#ffffff');return m.map;})();
-export function makeOrb(parent,{map,rep=[5,3],ring=false}){const g=new THREE.Group();parent.add(g);g.frustumCulled=false;
+export function makeOrb(parent,{map,rep=[5,3],ring=false,seg=[20,14]}){const g=new THREE.Group();parent.add(g);g.frustumCulled=false;
   const U={uMap:{value:map},uCray:{value:crayTex},uRep:{value:new THREE.Vector2(...rep)},uL:{value:new THREE.Vector3(-1,.5,.6).normalize()},uSky:{value:SKYC},uRim:{value:new THREE.Color('#fff1cf')},
-    uRn:{value:new THREE.Vector3(0,1,0)},uRing:{value:ring?1:0}};
-  const body=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),new THREE.ShaderMaterial({uniforms:U,fog:false,
+    uRn:{value:new THREE.Vector3(0,1,0)},uRing:{value:ring?1:0},uFlat:{value:0},uFlatC:{value:new THREE.Color('#b8694c')}}; /* uFlat: 구 전체를 한 가지 색으로(땅이 안개 색으로 묻힌 뒤 구로 넘어갈 때 — 화성 → 금성) */
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,seg[0],seg[1]),new THREE.ShaderMaterial({uniforms:U,fog:false,
     vertexShader:'varying vec3 vW,vN,vP;varying vec2 vUv;void main(){vUv=uv;vP=position;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}',
-    fragmentShader:'uniform sampler2D uMap,uCray;uniform vec2 uRep;uniform vec3 uL,uSky,uRim,uRn;uniform float uRing;varying vec3 vW,vN,vP;varying vec2 vUv;'+ORB_GLSL+
+    fragmentShader:'uniform sampler2D uMap,uCray;uniform vec2 uRep;uniform vec3 uL,uSky,uRim,uRn,uFlatC;uniform float uRing,uFlat;varying vec3 vW,vN,vP;varying vec2 vUv;'+ORB_GLSL+
       'void main(){vec3 Nf=normalize(cross(dFdx(vW),dFdy(vW)));vec3 N=normalize(mix(normalize(vN),Nf,.32));vec3 V=normalize(cameraPosition-vW);'+
       'float d=dot(N,uL);float k=mix(.56,.8,smoothstep(-.14,0.,d));k=mix(k,1.,smoothstep(.36,.5,d));'+
       'vec3 base=texture2D(uMap,vUv).rgb*dot(texture2D(uCray,vUv*uRep).rgb,vec3(.3333));vec3 col=base*k+uSky*(1.-k)*.45;'+
@@ -92,7 +92,7 @@ export function makeOrb(parent,{map,rep=[5,3],ring=false}){const g=new THREE.Gro
       'col=mix(col,uSky*1.3,smoothstep(.26,0.,nv)*.3);'+ // 하늘과 만나는 경계로 갈수록 연보라
       'col+=uRim*smoothstep(.16,.02,nv)*smoothstep(.05,.45,d)*.5;'+ // 해를 바라보는 쪽 가장자리 아주 얇은 밝은 테
       'float l=dot(col,vec3(.3,.59,.11));col=mix(vec3(l),col,.9);col=mix(col,uSky,.15);'+ // 멀리 있는 느낌: 하늘 보라 20%, 대비 조금 낮춤
-      'gl_FragColor=vec4(col,1.);\n#include <colorspace_fragment>\n}'}));
+      'col=mix(col,uFlatC,uFlat);gl_FragColor=vec4(col,1.);\n#include <colorspace_fragment>\n}'}));
   body.material.userData.noBend=true;body.frustumCulled=false;body.renderOrder=-6;body.userData.noMerge=true;g.add(body);
   const halo=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6),new THREE.MeshBasicMaterial({map:haloTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,opacity:.7}));
   halo.material.userData.noBend=true;halo.frustumCulled=false;halo.renderOrder=-4;halo.userData.noMerge=true;g.add(halo);

@@ -55,7 +55,7 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
     L.push([sph(torso*.46,8,6).applyMatrix4(M4([s*torso*.62,torso*.2,torso*.18],[0,0,0],[1,.6,1.5])),skinD]);}
   const bodyMesh=lump(L);bodyMesh.name=name+'-body';body.add(bodyMesh);
   /* 팔: 어깨를 축으로(아래로 늘어진 가는 원통 + 동그란 손) */
-  const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*torso*.95,tTop-.02,0);body.add(g);
+  const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*torso*.95,tTop-.02,0);bodyMesh.add(g); /* 팔은 몸 덩어리에(2026-11-14 — 올려다보거나 부를 때 몸만 발을 축으로 젖혀지고 팔은 제자리에 남아 어깨에서 떨어져 보였다) */
     const me=lump([[new THREE.CylinderGeometry(torso*.3,torso*.26,armLen,6).applyMatrix4(M4([0,-armLen/2,0])),skin],[sph(torso*.5,8,6).applyMatrix4(M4([0,-armLen,0])),skin]]);g.add(me);
     g.rotation.z=s*.32;g.userData.s=s;return g;});
   const st={mode:'idle',t:Math.random()*5,walk:0,head:0};

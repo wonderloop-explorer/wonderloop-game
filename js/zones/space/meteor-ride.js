@@ -195,11 +195,11 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
     /* 기본 각도(손을 뗀 지 1.6초 뒤 이쪽으로 — 2026-11-09 다듬기: 등 뒤 위만 보면 초록 탈만 보이고 휴대폰에선 꼬리가 탈에 붙은 풍선 같았다):
        내려와 잡을 때까지 옆 앞 → 끌려 올라간 직후 앞옆 낮게(얼굴·꼬리 잡은 손·멀어지는 달) → 마을 내려다보기(짧게) → 옆모습(목성·토성이 뒤로 스쳐 감)
        → 어깨 너머로 다가오는 화성 → 마지막 얼굴 정면(반짝 신남). 키: [비행 진행 u, 원더룹 기준 방향, 위아래, 거리] */
-    {const u=st.phase==='fly'?Math.min(1,(T-st.liftT)/FLY):-1,K=CAMK;let a,p,d;
+    {const u=st.phase==='fly'?Math.min(1,(T-st.liftT)/FLY):-1,K=o.camk||CAMK,LE=o.lookEnd||[.31,.38];let a,p,d;
      if(u<0){a=1.15;p=.22;d=6.5;}else{let i=0;while(i<K.length-2&&u>K[i+1][0])i++;const A=K[i],B=K[i+1],w=ss(A[0],B[0],u);let dy=B[1]-A[1];dy=Math.atan2(Math.sin(dy),Math.cos(dy));a=A[1]+dy*w;p=A[2]+(B[2]-A[2])*w;d=A[3]+(B[3]-A[3])*w;}
      let ya=st.face+a;
      /* 출발지 볼거리(o.lookAt [x,z] — 손 흔드는 친구들): 내려다보는 장면(u .08~.36) 동안 카메라가 원더룹 너머 그쪽을 보도록(친구들이 화면 가운데에 약 2초) */
-     if(o.lookAt&&u>=.06&&u<.38){const w=ss(.06,.13,u)*(1-ss(.31,.38,u)),yl=Math.atan2(WL.position.x-o.lookAt[0],WL.position.z-o.lookAt[1])+(o.lookOff||0);let dy=yl-ya;dy=Math.atan2(Math.sin(dy),Math.cos(dy));ya+=dy*w;}
+     if(o.lookAt&&u>=.06&&u<LE[1]){const w=ss(.06,.13,u)*(1-ss(LE[0],LE[1],u)),yl=Math.atan2(WL.position.x-o.lookAt[0],WL.position.z-o.lookAt[1])+(o.lookOff||0);let dy=yl-ya;dy=Math.atan2(Math.sin(dy),Math.cos(dy));ya+=dy*w;}
      {const c=G.view.camera,wide=c&&c.aspect>1.25;if(wide)d*=1.25;if(WL.userData.riding)WL.userData.riding.lookY=wide?.8:null;} /* 보는 점은 몸 가운데(가로 화면 — 따라가기의 '보는 점 올림'이면 발이 아래로 잘림) */ /* 가로 화면(컴퓨터)은 조금 멀리 — 가까운 장면에서 발·탈이 화면 밖으로 잘렸다(2026-11-14 — 별똥별도 같았다) */
      camHome(G,dt,ya,p,d,st,2.2);}}
   function stop(){if(M)M.show(false);else if(CR.stop)CR.stop();SC.tick(0,false);}

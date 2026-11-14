@@ -145,7 +145,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
   const STAR=[];for(let i=0;i<300;i++)STAR.push([Math.random(),Math.random(),.4+Math.random()*1.5,Math.random()*6,Math.random()]);
   const TWK=[];for(let i=0;i<16;i++)TWK.push([Math.random(),Math.random()*.9,3+Math.random()*4,Math.random()*6]);
   const NEB=[[.2,.25,.5,'255,150,190',.16],[.78,.3,.55,'140,170,255',.16],[.5,.8,.6,'201,166,224',.18],[.9,.78,.4,'255,190,150',.1]];
-  const NSTEP=o.steps||8,STEP0=.55,STEPD=.27;let bgC=null,stepN=0,t0=performance.now(),on=true,w=0,h=0,dpr=1;
+  const NSTEP=o.steps||8,STEP0=.72,CT=.4 /* 지도 그림·글자는 바탕이 화면을 다 덮은 뒤(0.4초)부터 — 앞 장면 위에 행성 이름이 비쳐 보였다(2026-11-14) */,STEPD=.27;let bgC=null,stepN=0,t0=performance.now(),on=true,w=0,h=0,dpr=1;
   requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{if(on)COVERING=true;},420); /* 지도가 화면을 다 덮은 동안 3D 그리기 쉼(08 — covering()) */setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
   // 자리: 지나온 행성 → 다음 행성 사이를 넓게(발자국 길), 나머지는 고르게. 가로 화면은 왼쪽 → 오른쪽 완만한 물결, 세로 화면은 아래 → 위 지그재그
   const GW=B.map((b,i)=>i===0?0:((i===iF&&i-1===iT)||(i===iT&&i-1===iF))?2.6:1),GS=[];{let a=0;GW.forEach(v=>{a+=v;GS.push(a);});}
@@ -177,7 +177,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
     {let cx=w/2,cy=h/2;if(iF>=0&&iT>=0){cx=(L[iF].x+L[iT].x)/2;cy=(L[iF].y+L[iT].y)/2;}const k=ss(.35,2.4,t),z=1+(h>w?.12:.24)*k,fx=w/2+(cx-w/2)*k*.9,fy=h/2+(cy-h/2)*k*.9;
      g.setTransform(z,0,0,z,w/2-fx*z,h/2-fy*z);}
     // 궤도 길(옅은 점선)
-    g.save();g.setLineDash([3*dpr,8*dpr]);g.strokeStyle='rgba(251,233,216,.34)';g.lineWidth=2*dpr;g.beginPath();L.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.stroke();g.restore();
+    g.save();g.globalAlpha=ss(CT,CT+.25,t);g.setLineDash([3*dpr,8*dpr]);g.strokeStyle='rgba(251,233,216,.34)';g.lineWidth=2*dpr;g.beginPath();L.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.stroke();g.restore();
     // 발자국: 지나온 행성 가장자리 → 다음 행성 가장자리, 휜 길을 따라 한 칸씩
     if(iF>=0&&iT>=0){const A=L[iF],Bq=L[iT],dx=Bq.x-A.x,dy=Bq.y-A.y,dl=Math.hypot(dx,dy)||1,nx=-dy/dl,ny=dx/dl,bow=dl*.18;
       const P=u=>{const x=A.x+dx*u+nx*bow*Math.sin(u*PI),y=A.y+dy*u+ny*bow*Math.sin(u*PI);return [x,y];};
@@ -187,9 +187,9 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
         const fx=x+nx*(left?-1:1)*FOOT*.09,fy=y+ny*(left?-1:1)*FOOT*.09,al=Math.min(1,pop*1.4);
         {const gl=g.createRadialGradient(fx,fy,0,fx,fy,sc*.2);gl.addColorStop(0,`rgba(255,196,206,${.5*al})`);gl.addColorStop(1,'rgba(255,196,206,0)');g.fillStyle=gl;g.fillRect(fx-sc*.2,fy-sc*.2,sc*.4,sc*.4);} // 빛 받침
         g.save();g.translate(fx,fy);g.rotate(ang);g.scale((left?-1:1)*sc,sc);g.translate(0,.045);solePath(g);g.globalAlpha=al;g.lineJoin='round';g.strokeStyle='#fff3e6';g.lineWidth=.03;g.stroke();g.fillStyle='#F2899A';g.fill();g.restore();}}
-    L.forEach((p,i)=>planet(p,ss(.02*i,.25+.02*i,t),i===iT&&stepN>=NSTEP?t:0));
+    L.forEach((p,i)=>planet(p,ss(CT+.02*i,CT+.25+.02*i,t),i===iT&&stepN>=NSTEP?t:0));
     // 지나온 행성 둘레에 발견한 것 — 작은 그림이 톡톡(0.2초부터 하나씩)
-    if(iF>=0&&IM.length){const A=L[iF],n=IM.length,S=Math.max(46*dpr,A.R*1.05);IM.forEach((f,i)=>{const a=-PI*.92+i*(PI*1.0/Math.max(1,n-1)),k=ss(.15+i*.14,.4+i*.14,t);if(k<=0)return;
+    if(iF>=0&&IM.length){const A=L[iF],n=IM.length,S=Math.max(46*dpr,A.R*1.05);IM.forEach((f,i)=>{const a=-PI*.92+i*(PI*1.0/Math.max(1,n-1)),k=ss(CT+.15+i*.14,CT+.4+i*.14,t);if(k<=0)return;
         const y=A.y+Math.sin(a)*(A.R+S*.78),s=S*(.7+.3*k);let x=A.x+Math.cos(a)*(A.R+S*.78);{const T=g.getTransform(),m=S*.7+6*dpr,x0=(m-T.e)/T.a,x1=(w-m-T.e)/T.a;x=Math.min(x1,Math.max(x0,x));} /* 화면 옆으로 잘리지 않게(세로 화면) */g.save();g.globalAlpha=k;g.fillStyle='rgba(255,246,230,.97)';g.strokeStyle='rgba(90,56,38,.9)';g.lineWidth=2.5*dpr;
         g.beginPath();g.arc(x,y,s*.62,0,PI*2);g.fill();g.stroke();if(f.im&&f.im.complete&&f.im.naturalWidth)g.drawImage(f.im,x-s*.5,y-s*.5,s,s);else if(f.draw){g.translate(x,y);f.draw(g,s);}g.restore();});}
     if(t<sec+2)requestAnimationFrame(draw);}

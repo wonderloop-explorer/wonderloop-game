@@ -218,7 +218,7 @@ function tickBody(){
   hemi.intensity=0.62-0.4*n;hemi.color.copy(cDaySky).lerp(cNightSky,n);hemi.groundColor.copy(cDayG).lerp(cNightG,n);
   sun.intensity=0.72*(1-n);fill.intensity=0.22-0.08*n;
   if(SK)SK.light({hemi,sun,fill,fog:scene.fog},camera,dt,Z.sun.dir);else if(scene.fog.near<FOG_OFF){scene.fog.near=FOG_OFF;scene.fog.far=FOG_OFF*2;}
-  {const far=SK?Math.min(Z.far||120,scene.fog.far+4):120; /* 구역 정보 far: 멀리 있는 표지물(화성 큰 화산 — 2026-11-09)까지 그릴 때 */if(camera.far!==far){camera.far=far;camera.updateProjectionMatrix();}} // 하늘 있는 구역: 안개가 다 덮는 곳부터는 그리지 않는다(하늘 지붕은 그 안으로 줄어듦)
+  {const far=SK?Math.max(Z.farMin||0,Math.min(Z.far||120,scene.fog.far+4)):120; /* farMin: 안개 끝보다 멀리 그려야 할 때(화성을 떠날 때 발아래 둥근 화성 — 2026-11-14) */ /* 구역 정보 far: 멀리 있는 표지물(화성 큰 화산 — 2026-11-09)까지 그릴 때 */if(camera.far!==far){camera.far=far;camera.updateProjectionMatrix();}} // 하늘 있는 구역: 안개가 다 덮는 곳부터는 그리지 않는다(하늘 지붕은 그 안으로 줄어듦)
   const wx=SK?{night:0,rain:SK.rain||0}:GAME.weather.indoorLight(INL,dt,rawLin); // 실내 날씨: 밤은 푸르고 어둡게, 비는 회청색(창문 하늘은 구역 light(env)가 env.weather·env.rain으로)
   cave+=((SK?0:caveTarget)-cave)*Math.min(1,dt*2.2);dayLabel(); // 하늘 있는 구역에서는 굴 조명을 쓰지 않는다
   if(cave>0.001){hemi.intensity*=1-.75*cave;hemi.color.lerp(rawLin(0x6b4a3a),cave);hemi.groundColor.lerp(rawLin(0x2a1d16),cave);fill.intensity*=1-.75*cave;}

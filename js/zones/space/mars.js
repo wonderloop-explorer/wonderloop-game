@@ -26,7 +26,7 @@ import {sbMat} from '../../game/storybook.js';
 import {setZoneBend} from '../../game/bend.js';
 import {RIDE,arrival,departure,redDust,points,lockOn,lockOff,dustVeil,camHome,makeScarf} from './meteor-ride.js';
 import {CLOUD_VEIL} from './whirl-lift.js';
-import {makeSkyBoard,canvasTex,jupiterMap,saturnMap,marsMap,venusMap} from './skyboard.js';
+import {makeSkyBoard,makeOrb,canvasTex,jupiterMap,saturnMap,marsMap,venusMap} from './skyboard.js';
 import {makePipi,makeDungdung,makeWhirl,makeCassette,makeGlass,glassIcon,jumbleBubble,dotTex,makeFlag} from './martians.js';
 import SPACE from '../../worlds/infinite-space.js';
 const WID=SPACE.id;
@@ -192,7 +192,7 @@ const nextTop=(()=>{const g=new THREE.CircleGeometry(1,26);g.rotateX(-PI/2);cons
 const DAY={top:'#e3bd8f',horizon:'#efc4b4',hemi:'#f6dcc6',ground:'#c98d73',hemiI:.64,sun:'#fff0dc',sunI:.78,sunDir:[-4,-7,-6],fill:.24,fog:'#ecc3b3',fogNear:60,fogFar:330,stars:0,milky:0};
 const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#f0cdb6',ground:'#7d5248',hemiI:.74,sun:'#d6e6fa',sunI:.66,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:150,fogFar:680,stars:0,milky:0}; /* 노을 안개(2026-11-11): 55~300이면 60~130m 메사·바위가 갈색 안개에 묻혀 화면이 갈색 한 장처럼 됐다 → 시작 150m·끝 680m(카메라 먼 거리 310m에서도 30%) — 가까운 땅·바위·메사는 안개 0, 화산만 옅게. 하늘 색은 그대로 */
 /* 셋째 칸 = 우주(2026-11-12 — 금성으로 떠날 때 큰 회오리가 들어 올리며 노을 → 짙은 남보라 우주로, SK.to(2)). 평소에는 0(낮)·1(노을)만 씀 */
-const SPACEK={top:'#151331',horizon:'#2b2560',hemi:'#cbbcf0',ground:'#5b4a86',hemiI:.6,sun:'#eef0ff',sunI:.5,sunDir:[10,-1.05,-1.6],fill:.26,fog:'#2a1e52',fogNear:400,fogFar:1600,stars:0,milky:1.1}; /* 2026-11-14: 달의 우주 하늘과 같은 남색(위 #151331 → 아래 #2b2560) — 별은 하늘 그림판(skyboard)이 맡음 */
+const SPACEK={top:'#151331',horizon:'#2b2560',hemi:'#cbbcf0',ground:'#5b4a86',hemiI:.6,sun:'#eef0ff',sunI:.5,sunDir:[10,-1.05,-1.6],fill:.26,fog:'#b0644a',fogNear:60,fogFar:-120,stars:0,milky:1.1}; /* 안개(2026-11-14): 화성 흙빛 — 떠나며 멀어지는 땅이 이 색으로 묻히고 그 아래 둥근 화성 구가 같은 색에서 드러난다(꼭대기 밀어내기 130·620을 더해 190~500m) */ /* 2026-11-14: 달의 우주 하늘과 같은 남색(위 #151331 → 아래 #2b2560) — 별은 하늘 그림판(skyboard)이 맡음 */
 const SK=G.sky.sky({parent:root,keys:[DAY,DUSK,SPACEK],t:0,nStars:MOB?120:240,starSize:4});
 const ZSUN={dir:new THREE.Vector3(...DAY.sunDir).normalize(),shadow:14,follow:true,followY:true};
 /* 해·파란 빛무리·작은 달 둘: 카메라를 따라다니는 하늘 판(해 자리는 지금 햇빛 방향의 반대 — 낮엔 높이, 노을엔 서쪽 낮게) */
@@ -419,27 +419,45 @@ async function finale(W,U){SK.to(1,9);G.sound.bedLevel(.55,3);
    → 우주로(하늘이 우주로, 회오리는 옅어져 놓아줌, 화성이 화면 아래로 멀어짐) → 어깨 너머로 다가오는 금성 → 원더룹 정면 가까이·뒤에 큰 금성 → 우주 지도(공통 3.6초) → 금성 구름 덮개 → space-venus(내려앉음).
    이동 테마는 잡는 순간 begin(착지까지 남은 초) — 해결 화음은 별똥별과 같은 자리(금성에 내려앉는 순간 — whirl-lift cloudArrival이 landIn) */
 const HEAD_OFF=0;
+/* 화성 → 금성 카메라 키(공통 키에서 내려다보는 장면만 길게 — 땅이 발아래로 멀어지며 둥근 화성이 되는 동안 더 곧게 내려다봄 → 고개를 들어 옆모습): [u, 방향, 위아래, 거리] */
+const CAMK_V=[[0,.95,.02,5.6],[.1,.95,.02,5.6],[.15,PI+.4,.92,9],[.29,PI+.4,.92,9],[.32,PI+.4,1.12,10],[.35,PI+.4,1.12,10],[.42,PI/2,.08,6.8],[.56,PI/2,.08,6.8],[.62,PI+.78,.2,5.2],[.74,PI+.78,.2,5.2],[.82,.55,.06,4.6],[1,.55,.06,4.6]];
+const RMS=1/(2*.0012),BSC=32; /* 화성 구 반지름 = 둥근 땅(k .0012)과 같은 곡률 약 417m · 하늘 그림판은 32배 멀리(약 2900m — 멀어진 땅·화성 구보다 뒤에 그려지게) */
 function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:3.4,height:12,seed:7.7,big:true});st.big=big;st.bigGo=true;const P0=W.position.clone(),gy=groundY(P0.x,P0.z);
   G.sound.sfx('event-whirl');G.travel.mark('touch');st.sunFace=false;st.lookWL=true;pipi.mode='waveUp';dung.mode='waveUp';
   /* 우주에서 쓸 화성·금성 판을 미리 만들어 아주 작게 두 프레임 그려 데움(처음 보일 때 멈칫하지 않게), 금성 구역 모듈도 미리 */
   /* 우주 하늘(2026-11-14 — 달 → 화성과 같은 하늘 그림판 skyboard.js: 별·반짝이·성운·은하수·종이 결·해 + 로우폴리 행성 구): 다가오는 동안 만들어 투명하게 그려 데워 두고(처음 보일 때 멈칫하지 않게),
      하늘이 우주로 바뀌는 만큼 나타남. 화성 구는 발아래에서 멀어지고, 먼 목성·토성이 작게, 금성 구가 어깨 너머로 다가와 끝에 원더룹 뒤에 크게. 금성 구역 모듈도 미리 */
   const board=makeSkyBoard(root,{mob:MOB,seed:'space-mars:travel'});st.board=board;board.setAlpha(.001);import('./venus.js').catch(()=>{});
-  const oMars=board.add({map:canvasTex(256,marsMap,128),rep:[4,2]}),oVen=board.add({map:canvasTex(256,venusMap,128),rep:[4,2]}),oJup=board.add({map:canvasTex(512,jupiterMap,256),rep:[6,3]}),oSat=board.add({map:canvasTex(256,saturnMap,128),rep:[4,2],ring:true});
-  for(const o of [oMars,oVen,oJup,oSat])board.place(o,0,0,1e-4);let flyU=0;st.dbg={oVen,oMars,get a(){return board.alpha;}};
-  const V3=new THREE.Vector3(),_hp=new THREE.Vector3(),bo={x:P0.x,z:P0.z};let wrapped=false,bwi=-1,spc=false,hidG=null;const yF=groundY(WAVE.c[0],WAVE.c[1]);
+  const gM=makeOrb(root,{map:canvasTex(256,marsMap,128),rep:[4,2],seg:[72,44]}); /* 가까이서 크게 보이는 구라 윤곽이 매끈하게 */gM.g.visible=false;gM.halo.visible=false;st.gM=gM;st.farMin=4300;board.anchor.scale.setScalar(BSC);
+  const oVen=board.add({map:canvasTex(256,venusMap,128),rep:[4,2],seg:[56,34]}),oJup=board.add({map:canvasTex(512,jupiterMap,256),rep:[6,3]}),oSat=board.add({map:canvasTex(256,saturnMap,128),rep:[4,2],ring:true});
+  for(const o of [oVen,oJup,oSat])board.place(o,0,0,1e-4);let flyU=0;st.dbg={oVen,gM,get a(){return board.alpha;},get drop(){return drop;},get u(){return flyU;}};
+  const V3=new THREE.Vector3(),_hp=new THREE.Vector3(),bo={x:P0.x,z:P0.z};let wrapped=false,bwi=-1,spc=false,hidG=null,sink=null,drop=0,yTop=0;const _q=new THREE.Quaternion(),_pw=new THREE.Vector3(),_ps=new THREE.Vector3(),SUNL=new THREE.Vector3(-10,1.05,1.6).normalize().multiplyScalar(.6).add(new THREE.Vector3(0,1,0)).normalize();let scn=root;while(scn.parent)scn=scn.parent;const yF=groundY(WAVE.c[0],WAVE.c[1]);
   /* 하늘 그림판 놓기(화면 좌표): 해(왼쪽 위 — 해 쪽으로 가니 달에서보다 크게)·먼 목성·토성(작게, 천천히 옆으로)·화성(발아래 가득 → 왼쪽 아래로 작아짐)·금성(오른쪽 위 작은 점 → 원더룹 뒤에 크게) */
   function skyTick(dt){const cam=G.view.camera;if(!cam)return;const a=Math.max(.001,Math.min(1,SK.t-1)),u=flyU,pt=cam.aspect<1,as=Math.min(1,cam.aspect);board.tick(dt,G.clock.t,cam);board.setAlpha(a);
     board.place(board.sunGlow,pt?-.45:-.66,pt?.84:.76,pt?1.0:.8);board.place(board.sun,pt?-.45:-.66,pt?.84:.76,pt?.5:.4);
-    const on=a>.5&&!!hidG,tiny=1e-4,k1=ss(.36,1,u);
+    const on=a>.5&&u>.3,tiny=1e-4,k1=ss(.36,1,u);
     board.place(oJup,lerp(pt?.6:.8,pt?.95:1.05,k1),lerp(.66,.56,k1),on?(pt?.11:.085):tiny);board.place(oSat,lerp(pt?-.1:-.22,pt?-.6:-.6,k1),lerp(.9,.84,k1),on?(pt?.05:.04):tiny);
-    {const k=ss(.345,.8,u),sz=3*Math.pow(.075,k),top=lerp(-.12,-.42,k);board.place(oMars,lerp(0,pt?-.5:-.6,k),top-sz*as,on?sz:tiny);} /* 윗가장자리가 지평선 자리에서 시작해 멀어지며 작아짐 */
-    {const k=ss(.52,1,u);board.place(oVen,lerp(pt?.5:.55,pt?.12:.16,k),lerp(.56,.22,k),on&&u>.5?lerp(.025,pt?.62:.5,k*k):tiny);}}
+    /* 화성(2026-11-14 — 땅에서 우주로 끊기지 않게): 땅 아래에 진짜 둥근 화성(반지름 RM = 둥근 땅 세기와 같은 곡률)을 두고, 땅과 함께 아래로 멀어짐(drop) → 땅은 화성 흙빛 안개에 묻히고 구가 같은 색에서 드러남
+       → 카메라가 고개를 들면 화면 자리(아래 → 왼쪽 아래)로 옮겨 가며 작아짐 */
+    {const g=gM.g;g.visible=u>.2;if(g.visible){const k2=ss(.345,.43,u),kk=ss(.38,.84,u),sz=.9*Math.pow(.24,kk),tv=Math.tan(cam.fov*PI/360),th=tv*cam.aspect,d=600;
+      _pw.set(cam.position.x,yTop-RMS-drop,cam.position.z);_q.copy(cam.quaternion); /* 화면 자리는 카메라에 바로(늦게 따라오는 판이면 고개를 드는 동안 화면 아래로 빠졌다) */
+      _ps.set(lerp(0,pt?-.5:-.6,kk)*th*d,(lerp(-.3,-.42,kk)-sz*as)*tv*d,-d).applyQuaternion(_q).add(cam.position);
+      g.position.lerpVectors(_pw,_ps,k2);g.scale.setScalar(lerp(RMS,sz*Math.min(tv,th)*d,k2));gM.U.uL.value.copy(SUNL);
+      gM.U.uFlat.value=ss(.28,.32,u)*(1-ss(.345,.41,u));if(scn.fog)gM.U.uFlatC.value.copy(scn.fog.color);
+      gM.halo.visible=k2>.6;gM.halo.quaternion.copy(cam.quaternion);}}
+    {const k=ss(.5,1,u);board.place(oVen,lerp(pt?.5:.55,pt?.04:.06,k),lerp(.56,.12,k),on&&u>.5?lerp(.025,pt?1.5:1.2,Math.pow(k,2.4)):tiny);}} /* 금성: 오른쪽 위 작은 점 → 마지막 약 2초(얼굴 정면) 동안 원더룹 뒤에서 화면을 거의 채울 만큼 */
+  /* 땅 가라앉히기(07·구역 update 뒤 — carrier.late): 구역 뿌리의 물체(하늘·빛·하늘 그림판·회오리·화성 구 빼고)를 drop만큼 아래로. 구역이 높이를 다시 쓴 물체는 그 값을 기준으로 */
+  function sinkTick(){const u=flyU;if(u<=.2||hidG)return;
+    if(!sink){sink=[];for(const ch of root.children)if(ch!==board.anchor&&ch!==big.me&&ch!==gM.g&&ch.name!=="sky"&&!ch.isLight){let lt=false;ch.traverse(q=>{if(q.isLight)lt=true;});if(lt)continue;sink.push({ch,y0:ch.position.y,set:ch.position.y});}
+      {let m=1e9;const c=G.view.camera.position;for(let ix=-3;ix<=3;ix++)for(let iz=-3;iz<=3;iz++)m=Math.min(m,groundY(c.x+ix*50,c.z+iz*50));yTop=m-6;}}
+    drop=1300*Math.pow(ss(.27,.385,u),2.2);st.bendFull=ss(.2,.29,u);
+    for(const o of sink){if(o.ch.position.y!==o.set)o.y0=o.ch.position.y;o.set=o.y0-drop;o.ch.position.y=o.set;}
+    if(drop>520){hidG=[];for(const o of sink)if(o.ch.visible){o.ch.visible=false;hidG.push(o.ch);}st.hidG=hidG;}} /* 땅이 안개 색으로 다 묻힌 뒤에 숨김(그 자리는 같은 색의 화성 구) */
   const hole=wp=>{const c=G.view.camera;if(!c)return;_hp.copy(wp);_hp.y+=.7;const d=c.position.distanceTo(_hp);_hp.project(c);big.setHole(_hp.x,_hp.y,1.25/(d*Math.tan(c.fov*PI/360)),c.aspect);};
   /* 꼭대기 → 노을 언덕의 삐삐·둥둥 쪽(내려다보는 장면 동안 둘이 앞 아래에) → 지나쳐 계속 오름 */
   const dx=WAVE.c[0]-P0.x,dz=WAVE.c[1]-P0.z,vl=Math.hypot(dx,dz)||1,HA=Math.atan2(dx,dz)+HEAD_OFF,ux=Math.sin(HA),uz=Math.cos(HA);W.rotation.y=Math.atan2(ux,uz); /* 가는 방향을 친구들 쪽에서 HEAD_OFF만큼 틂 — 내려다보는 카메라(공통 키: 뒤에서 0.4라디안 비껴 위)가 둘을 화면 가운데에 */
   const FLYS=13;
-  const carrier={hang:false,pose:{grab:'팔 벌리기',fly:u=>u<.42?'팔 벌리기':'둥실'},lift:T=>T<2.4?0:1.4*ss(2.4,3.75,T),
+  const carrier={hang:false,pose:{grab:'팔 벌리기',fly:u=>u<.42?'팔 벌리기':'둥실'},lift:T=>T<2.4?0:1.4*ss(2.4,3.75,T),late(){sinkTick();},
     tick(dt,t,s2,wp){big.tick(dt);const T=s2.t;
       skyTick(dt);
       if(T<2.4){const u=ss(0,1.9,T),bx=lerp(BIGTOP[0],wp.x,u),bz=lerp(BIGTOP[1],wp.z,u);big.setBase(bx,groundY(bx,bz),bz);
@@ -450,12 +468,13 @@ function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:
       if(Math.floor(T/2.1)!==bwi){bwi=Math.floor(T/2.1);if(T<9)G.sound.sfx('event-whirl',{gain:.85});}},
     stop(){big.show(false);},dispose(){}};
   const dep=departure({G,root,WL:W,groundY,mob:MOB,fly:FLYS,carrier,after:3.6+.75+.06+3.1, /* 비행 뒤 착지까지: 지도 3.6 + 구름 덮음 .75 + 구역 바꿈 약 .06 + 금성에 내려앉기 3.1(cloudArrival D) */
-    path:u=>{const x=Math.min(1,u/.17),lin=Math.min(1,Math.max(0,(u-.15)/.17)),d=(vl-8)*ss(0,1,x)+16*lin+30*ss(.31,1,u); /* 꼭대기에서 둘 가까이까지 휙(약 2초) → 둘의 머리 위를 천천히 지나감(약 2초, 초당 약 8m — 내려다보는 장면) → 우주로 */ /* 거의 고른 빠르기(초당 약 40m) — 꼭대기(높이 약 40m)에서 노을 언덕 쪽으로 내려가며 둘의 머리 위 약 9m를 지나감(달 → 화성의 마을 위처럼 — 둘은 본래 크기), 그 뒤 우주로 훌쩍 */
-      return {x:P0.x+ux*d,y:lerp(P0.y+1.4,yF+6.5,ss(0,.9,x))+380*Math.pow(ss(.33,1,u),1.5),z:P0.z+uz*d};},
+    path:u=>{const x=Math.min(1,u/.17),lin=Math.min(1,Math.max(0,(u-.15)/.17)),d=(vl-15)*ss(0,1,x)+13*lin+30*ss(.36,1,u); /* 둘의 15m 앞에서 2m 앞까지 천천히(둘이 원더룹 앞쪽 아래에 계속 보이게 — 머리 위를 지나치면 화면 아래로 빠졌다) */ /* 꼭대기에서 둘 가까이까지 휙(약 2초) → 둘의 머리 위를 천천히 지나감(약 2초, 초당 약 8m — 내려다보는 장면) → 우주로 */ /* 거의 고른 빠르기(초당 약 40m) — 꼭대기(높이 약 40m)에서 노을 언덕 쪽으로 내려가며 둘의 머리 위 약 9m를 지나감(달 → 화성의 마을 위처럼 — 둘은 본래 크기), 그 뒤 우주로 훌쩍 */
+      const X=P0.x+ux*d,Z=P0.z+uz*d,y0=lerp(P0.y+1.4,yF+6.5,ss(0,.9,x))+120*Math.pow(ss(.33,1,u),1.5),gq=groundY(X,Z)+3.2*ss(0,.03,u)+1.4; /* 땅 위 여유(2026-11-14 — 곧은 길이 화산 가장자리 둔덕·비탈을 뚫고 지나가 원더룹이 모래에 묻혔다): 부드러운 큰 값 */
+      return {x:X,y:.5*(y0+gq+Math.sqrt((y0-gq)*(y0-gq)+.6)),z:Z};},
+    camk:CAMK_V,lookEnd:[.35,.42],
     onWave:()=>{},lookAt:WAVE.c,
-    onFly:u=>{flyU=u;if(u>.2&&!spc){spc=true;SK.to(2,1.8);} /* 내려다보는 장면 동안 하늘이 노을에서 우주로(고개를 들면 이미 별 하늘) */
-      /* 우주에 닿으면(내려다보던 카메라가 고개를 드는 순간) 화성 구역 물체를 숨기고 그 자리에 발아래 커다란 화성 구 — 땅 위에 화성 그림이 겹치지 않게 */
-      if(u>.345&&!hidG){hidG=[];for(const ch of root.children)if(ch.visible&&ch!==board.anchor&&ch!==big.me&&ch.name!=="sky"&&!ch.isLight){let lt=false;ch.traverse(q=>{if(q.isLight)lt=true;});if(lt)continue;ch.visible=false;hidG.push(ch);}st.hidG=hidG;}},
+    onFly:u=>{flyU=u;if(u>.17&&!spc){spc=true;SK.to(2,1.8);} /* 내려다보는 장면 동안 하늘이 노을에서 우주로(고개를 들면 이미 별 하늘) */
+},
     onEnd:async()=>{G.travel.note('phase','map');RIDE.pending={from:'space-mars',cloud:true};const mp=await G.travel.mapFor(SPACE,'space-mars','space-venus',F);
       G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil(CLOUD_VEIL);G.sound.sfx('cloud-poof',{gain:1.2});await veil.cover(.75);G.travel.mark('cloud');G.travel.mark('veil');
       st.bigTick=null;st.bigLate=null;dep.stop();
@@ -532,7 +551,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   /* 꼭대기에 있는 동안 먼지 안개를 걷는다(2026-11-12 — 85m 위라 '먼지 위로 올라온' 자리: 낮 안개 60~330m → 190~950m, 올라가고 내려오는 동안 천천히) */
   {const hi=st.summit||((st.ride||st.bigTick)&&W.position.y>20)?1:0;st.clearK=(st.clearK||0)+(hi-(st.clearK||0))*Math.min(1,dt*.8);const k=st.clearK;SK.fogPush=k>.002?[130*k,620*k]:null;
     /* 둥근 땅도 꼭대기에서는 거의 편다(2026-11-12 — 평소 세기면 250m 밖 땅이 65m 내려가 고원 끝 아래로 숨어 하늘만 보였다): 멀리 지평선·메사가 고원 너머로 보이게 */
-    if(k>.002||st.bendOn){st.bendOn=k>.002;setZoneBend({k:.0012*(1-.88*k),d0:18});}
+    if(k>.002||st.bendOn){st.bendOn=k>.002;setZoneBend({k:.0012*(1-.88*k*(1-(st.bendFull||0))),d0:18});} /* bendFull: 떠나며 땅이 멀어질 때는 평소 세기로(땅이 둥근 화성 구를 따라 휨) */
     st.sumK=(st.sumK||0)+((st.summit?1:0)-(st.sumK||0))*Math.min(1,dt*.8);SK.dirMix=st.sumK>.002?[SK.t>.5?SUN_DUSK_HI:SUN_LOW,st.sumK*.85]:null;} /* 해 눕히기는 화산 꼭대기에서만(큰 회오리로 떠날 때는 노을 해가 서쪽 그대로 — 2026-11-12) */ /* 꼭대기에서는 해를 옆으로 눕힘: 바위·분화구 계단의 밝은 면과 그늘진 면이 나뉘고 그림자가 길게 */ /* 하늘 모듈이 키 값을 복사해 쓰므로 밀어내는 값으로(game/sky fogPush) */
   {const dusk=SK.t>.5;if(dusk!==st.duskTone){st.duskTone=dusk;G.sound.bedTone(dusk?{lp:3400,gain:.78}:{},dusk?6:2);}} /* 노을: 같은 곡을 조금 작게·높은 소리 살짝 덜(저녁 느낌) */
   {const on=!!(F[K.clear]&&F[K.flag])&&!st.bigGo&&(st.bigOn||!st.scene);if(on&&!st.bigOn){st.bigOn=true;st.bigK=0;bigIdle.show(true);if(st.summit)G.sound.sfx('event-whirl',{gain:.9});}
@@ -624,12 +643,12 @@ return {
   areas:{field:{bounds:[BOUNDS[0],BOUNDS[1],-300,BOUNDS[3]],obstacles,camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
   platforms,
   sun:ZSUN,light,
-  sky:SK,after:()=>G.state.afterOf(ZID),far:310,bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
+  sky:SK,after:()=>G.state.afterOf(ZID),far:310,get farMin(){return st.farMin||0;},bend:{k:.0012,d0:18},gravity:.38,jumpK:1.15,rim:.2,ambience:'wind',
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
   spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,calderaStones:STONES_C,flagSpot:FLAGSPOT,summitWhirl:SUMMIT_W,bigTop:BIGTOP,sunsetWL:SUNSET.wl,volcano:VOL.c},
   state:()=>({wave:waveOverlap(),waveOvMax:+(st.waveOv||0).toFixed(3),scr:(()=>{const c=G.view.camera;if(!c)return null;const f=(x,y,z)=>{const v=new THREE.Vector3(x,y,z).project(c);return [+v.x.toFixed(2),+v.y.toFixed(2),v.z<1?1:0];},p=pipi.root.position,W=U0();return {pipi:f(p.x,p.y+.5,p.z),flag:f(FLAGSPOT[0],groundY(...FLAGSPOT)+1.5,FLAGSPOT[1]),hero:W?f(W.position.x,W.position.y+.7,W.position.z):null,camY:+c.position.y.toFixed(1),heroY:W?+W.position.y.toFixed(1):null};})(),bigOn:!!st.bigOn&&(st.bigK||0)>=1,callCam:!!st.callCam,quest:st.lastQ||'',summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
-  dbgBoard:()=>st.dbg,update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}G.sound.bedTone({},1);if(st.board)st.board.dispose();if(st.dep)st.dep.dispose();bigIdle.dispose();cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
+  dbgBoard:()=>st.dbg,update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}G.sound.bedTone({},1);if(st.board)st.board.dispose();if(st.gM){st.gM.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});if(st.gM.U.uMap.value)st.gM.U.uMap.value.dispose();st.gM.g.removeFromParent();}if(st.dep)st.dep.dispose();bigIdle.dispose();cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
 };
 }
 /* 화성 배경음(임시, 코드): 느린 60bpm, 넓은 패드 + 바람 스침 + 가끔 반짝이는 종, 낮은 베이스 — D 도리안 느낌(잔잔하고 넓게) */
