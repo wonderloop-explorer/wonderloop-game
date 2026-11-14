@@ -15,7 +15,7 @@ OUT = os.path.join(ROOT, 'docs/compare/summit-card'); os.makedirs(OUT, exist_ok=
 PROBE = open(os.path.join(ROOT, 'tools/cover-probe.js')).read()
 SIZE = """(()=>{window.__sz=[];const t0=performance.now();const L=()=>{try{const G=wlGame,W=G.mission.hero(),U=W.userData;
   if(U.riding&&window.wlPhoto){const b=wlPhoto.body(G.view.camera);if(b&&b.rect){const r=b.rect,h=r[3]-r[1],w=r[2]-r[0],
-    ix=Math.max(0,Math.min(1,r[2])-Math.max(0,r[0])),iy=Math.max(0,Math.min(1,r[3])-Math.max(0,r[1])),out=w>0&&h>0?1-ix*iy/(w*h):0;__sz.push([+((performance.now()-t0)/1000).toFixed(2),+h.toFixed(4),+out.toFixed(3)]);}}}catch(e){}if(!window.__szStop)requestAnimationFrame(L);};L();})()"""
+    ix=Math.max(0,Math.min(1,r[2])-Math.max(0,r[0])),iy=Math.max(0,Math.min(1,r[3])-Math.max(0,r[1])),out=w>0&&h>0?1-ix*iy/(w*h):0;const hd=W.getObjectByName('head')||W,hp=new W.position.constructor(),fw=new W.position.constructor();hd.getWorldPosition(hp);hd.getWorldDirection(fw);fw.y=0;fw.normalize();const cv=G.view.camera.position.clone().sub(hp).normalize();__sz.push([+((performance.now()-t0)/1000).toFixed(2),+h.toFixed(4),+out.toFixed(3),+(fw.x*cv.x+fw.z*cv.z).toFixed(3),W.rotation.y]);}}}catch(e){}if(!window.__szStop)requestAnimationFrame(L);};L();})()"""
 VIS = """(id=>{const e=document.getElementById(id);if(!e)return false;for(let q=e;q&&q!==document.documentElement;q=q.parentElement){const c=getComputedStyle(q);if(c.display==='none'||c.visibility==='hidden'||+c.opacity<.05)return false;}const r=e.getBoundingClientRect();return r.width>2&&r.height>2;})"""
 FL = ['have:infinite-space:necklace', 'mars:met', 'mars:call', 'mars:recA', 'mars:recB', 'mars:told', 'clear:space-mars', 'item:infinite-space:bluesunset-glass', 'meet:infinite-space:pipi', 'meet:infinite-space:dungdung',
       'secret:infinite-space:marssound', 'secret:infinite-space:bluesunset', 'mars:bgm-intro']
@@ -61,7 +61,7 @@ with sync_playwright() as p:
     pg.evaluate('window.__szStop=true'); sz = pg.evaluate('window.__sz||[]'); hs = [x[1] for x in sz if x[1] > 0]
     R['화산 회오리'] = {'프레임': len(sz), '원더룹 높이 %(가운데값)': round(statistics.median(hs) * 100, 1) if hs else None,
                     '높이 % 10~90번째': [round(sorted(hs)[int(len(hs) * .1)] * 100, 1), round(sorted(hs)[int(len(hs) * .9)] * 100, 1)] if hs else None,
-                    '20~30% 안 비율': round(sum(1 for h in hs if .2 <= h <= .3) / max(1, len(hs)) * 100, 1), '잘린 프레임(1% 넘게)': len([x for x in sz if x[2] > .01])}
+                    '20~30% 안 비율': round(sum(1 for h in hs if .2 <= h <= .3) / max(1, len(hs)) * 100, 1), '잘린 프레임(1% 넘게)': len([x for x in sz if x[2] > .01]), '얼굴 쪽(앞 ~ 옆) 비율 %': round(sum(1 for x in sz if len(x) > 3 and x[3] > 0) / max(1, len(sz)) * 100, 1), '뒤통수만 보인 비율 %': round(sum(1 for x in sz if len(x) > 3 and x[3] < -.707) / max(1, len(sz)) * 100, 1), '평균 회전 속도(°/초)': round(abs(sz[-1][4] - sz[0][4]) / max(.1, sz[-1][0] - sz[0][0]) * 57.3, 1) if len(sz) > 2 else None}
     pg.wait_for_timeout(1500)
     S = pg.evaluate('wlZone.cur.spots'); fsp = S['flagSpot']; sm = S['summit']
     pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", [fsp[0] + (sm[0] - fsp[0]) * .22, fsp[1] + (sm[1] - fsp[1]) * .22]); pg.wait_for_timeout(5000)

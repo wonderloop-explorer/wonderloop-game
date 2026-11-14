@@ -85,7 +85,7 @@ export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
   for(const layer of [0,1]){const o=pos.length/3,rk=layer?.62:1;
     for(let j=0;j<=HS;j++){const v=j/HS;for(let i=0;i<=RS;i++){const u=i/RS,a=u*PI*2+v*2.2*(layer?-1:1),r=(.18+radius*Math.pow(v,1.35))*rk;pos.push(Math.cos(a)*r,v,Math.sin(a)*r);uv.push(u,v);}}
     for(let j=0;j<HS;j++)for(let i=0;i<RS;i++){const a=o+j*(RS+1)+i,b=a+1,c=a+RS+1,d=c+1;idx.push(a,c,b,b,c,d);}}
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);if(big&&LOWFX)geo.setDrawRange(0,HS*RS*6); /* 휴대폰 큰 회오리는 바깥 겹 하나만(2026-11-14 버벅거림 — 안에 타면 화면 전체를 겹겹이 덮었다) */
   const U={uT:{value:0},uH:{value:height},uA:{value:big?.6:.55},uSeed:{value:seed},uHole:{value:new THREE.Vector4(0,0,0,1)},uRim:{value:0}}; /* uHole (화면 x, y, 반지름 y, 가로세로비) — 안에 탄 원더룹 둘레 먼지를 옅게 · uRim 1이면 정면으로 보이는 면은 옅고 바깥 가장자리만 진하게(2026-11-13) */
   const mat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,
     vertexShader:'#include <common>\nuniform float uH;varying vec2 vU;varying vec3 vN;varying vec3 vV;varying vec2 vS;void main(){vU=uv;vec3 p=position;p.y*=uH;vec4 w=modelMatrix*vec4(p,1.);vN=mat3(modelMatrix)*vec3(position.x,0.,position.z);vV=cameraPosition-w.xyz;gl_Position=projectionMatrix*(wlBend.x>0.?viewMatrix*wlBent(w):viewMatrix*w);vS=gl_Position.xy/gl_Position.w;}',
@@ -93,10 +93,10 @@ export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
     /* 2026-11-10: 크림빛 반투명 자락이 하얀 연기 줄기처럼 보였다 → 모래색(살구·테라코타·짙은 흙빛)의 또렷한 먼지 띠가 비스듬히 감기며 빠르게 돌고, 띠 사이는 비침. 밝은 크림은 띠 가장자리에만 조금 */
     fragmentShader:'uniform float uT;uniform float uA;uniform float uSeed;uniform vec4 uHole;uniform float uRim;varying vec2 vU;varying vec3 vN;varying vec3 vV;varying vec2 vS;float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
       'float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}'+
-      'void main(){float v=vU.y;float sw=vU.x*5.+v*2.6-uT*.55+uSeed;vec2 q=vec2(sw*1.6,v*7.-uT*1.3);float s=n(q)*.55+n(q*2.7+5.)*.3+n(q*6.+11.)*.15;'+
+      'void main(){float v=vU.y;float sw=vU.x*5.+v*2.6-uT*.55+uSeed;vec2 q=vec2(sw*1.6,v*7.-uT*1.3);float s='+(LOWFX?'n(q)*.62+n(q*2.7+5.)*.38;':'n(q)*.55+n(q*2.7+5.)*.3+n(q*6.+11.)*.15;')+ /* 휴대폰: 잡음 두 겹(2026-11-14 버벅거림 — 회오리 속에서 화면 전체를 여러 겹 덮는 셰이더) */
       'float band=smoothstep(.3,.5,s)*(.7+.3*smoothstep(.2,.8,fract(sw*.5+s*.6)));float edge=smoothstep(0.,.1,v)*(1.-smoothstep(.7,1.,v));float al=band*edge*uA;float fr=1.-abs(dot(normalize(vN+vec3(1e-5)),normalize(vV)));al*=mix(1.,mix(.38,1.,smoothstep(.25,.85,fr)),uRim);'+
       'if(uHole.z>0.){float dh=length(vec2((vS.x-uHole.x)*uHole.w,vS.y-uHole.y));al*=mix(.08,1.,smoothstep(uHole.z*.6,uHole.z*1.35,dh));}'+
-      'vec3 c=mix(vec3(.66,.40,.29),vec3(.87,.63,.46),smoothstep(.35,.8,s));c=mix(c,vec3(.95,.80,.64),smoothstep(.72,.95,s)*.55);c*=.9+.2*n(vec2(vU.x*40.,v*60.-uT*3.));c=pow(c,vec3(2.2));gl_FragColor=vec4(c,al);\n#include <colorspace_fragment>\n}'});
+      'vec3 c=mix(vec3(.66,.40,.29),vec3(.87,.63,.46),smoothstep(.35,.8,s));c=mix(c,vec3(.95,.80,.64),smoothstep(.72,.95,s)*.55);'+(LOWFX?'':'c*=.9+.2*n(vec2(vU.x*40.,v*60.-uT*3.));')+'c=pow(c,vec3(2.2));gl_FragColor=vec4(c,al);\n#include <colorspace_fragment>\n}'});
   mat.userData.noStorybook=true;
   const me=new THREE.Mesh(geo,mat);me.frustumCulled=false;me.userData.noMerge=true;me.renderOrder=3;root.add(me);
   /* 날리는 알갱이: 깔때기 겉을 따라 나선으로 올라가며 도는 모래 알갱이(점 묶음 — 자리는 셰이더가 시간으로 계산, 그리기 1) */

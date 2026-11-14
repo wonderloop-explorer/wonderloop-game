@@ -157,9 +157,9 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13;const M=makeMeteo
   function tick(dt,t){if(st.end)return;st.t+=dt;const T=st.t,U=WL.userData;
     if(T<2.4){const u=ss(0,2.2,T),a=hi.clone().lerp(hover,u);a.y+=Math.sin(u*PI)*1.2;a.x+=-fz*Math.sin(u*PI)*1.5;a.z+=fx*Math.sin(u*PI)*1.5;head.copy(a);if(T>2.2){const w=(T-2.2)*3;head.x+=Math.cos(w)*.25;head.z+=Math.sin(w)*.25;}}
     else if(T<3.3){const w=(T-2.2)*3;head.copy(hover);head.x+=Math.cos(w)*.25*(1-ss(2.4,3.2,T));head.z+=Math.sin(w)*.25*(1-ss(2.4,3.2,T));head.y+=Math.sin(T*3)*.06;
-      if(st.phase==='come'){st.phase='grab';G.travel.begin({id:'meteor',expect:(3.75-T)+FLY+(o.after||0)}); /* 꼬리를 잡는 순간 이동 공통 틀(game/travel) 시작: 배경음 줄이고 이동 테마 — expect = 착지까지 남은 초 */U.action='꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y;}}
-    else if(T<3.75){if(st.phase!=='pull'){st.phase='pull';G.sound.sfx('event-whoosh',{gain:.85});}head.copy(hover);head.y+=ss(3.3,3.75,T)*.55;}
-    else{if(st.phase!=='fly'){st.phase='fly';st.liftT=T;G.travel.depart();S.v+=2.2;lastH.copy(head);}
+      if(st.phase==='come'){st.phase='grab';G.travel.note('phase','grab');G.travel.begin({id:'meteor',expect:(3.75-T)+FLY+(o.after||0)}); /* 꼬리를 잡는 순간 이동 공통 틀(game/travel) 시작: 배경음 줄이고 이동 테마 — expect = 착지까지 남은 초 */U.action='꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y;}}
+    else if(T<3.75){if(st.phase!=='pull'){st.phase='pull';G.travel.note('phase','pull');G.sound.sfx('event-whoosh',{gain:.85});}head.copy(hover);head.y+=ss(3.3,3.75,T)*.55;}
+    else{if(st.phase!=='fly'){st.phase='fly';G.travel.note('phase','fly');st.liftT=T;G.travel.depart();S.v+=2.2;lastH.copy(head);}
       const u=Math.min(1,(T-3.75)/FLY),p=o.path(u);head.set(p.x,p.y,p.z);
       if(o.onFly)o.onFly(u);if(!st.wave&&u>.12){st.wave=true;if(o.onWave)o.onWave(true);}
       G.travel.tick(dt,'fly'); // 잔잔한 바람 + 꼬리 반짝이(작게)
@@ -210,10 +210,10 @@ export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mo
   G.sound.sfx('event-sparkle');
   function tick(dt,t){if(st.done)return;st.t+=dt;const T=st.t;
     if(st.phase==='down'){const u=ss(0,1.8,T);head.set(P.x+fx*1.9,gy+11-5*u+Math.sin(T*3)*.08,P.z+fz*1.9);st.y=head.y-2.45;
-      if(T>=1.9){st.phase='fall';st.vy=0;U.action='서기';U.at=0;G.sound.sfx('event-whoosh',{gain:.8});st.rel=head.clone();G.react.react('startle',{sound:null});G.travel.landIn(Math.sqrt(2*Math.max(0,st.y-gy)/G2));} /* 놓아준 순간 착지 시각을 알림 → 이동 테마 해결 화음이 착지에 */}
+      if(T>=1.9){st.phase='fall';G.travel.note('phase','fall');st.vy=0;U.action='서기';U.at=0;G.sound.sfx('event-whoosh',{gain:.8});st.rel=head.clone();G.react.react('startle',{sound:null});G.travel.landIn(Math.sqrt(2*Math.max(0,st.y-gy)/G2));} /* 놓아준 순간 착지 시각을 알림 → 이동 테마 해결 화음이 착지에 */}
     else{if(st.rel){const k=T-1.9;head.copy(st.rel).addScaledVector(away,k*(.5+k*.6));if(k>3){M.show(false);}}
       if(st.phase==='fall'||st.phase==='hop'){st.vy-=G2*dt;st.y+=st.vy*dt;if(st.y<=gy){st.y=gy;const v=-st.vy;
-          if(st.bounce===0){st.bounce=1;st.phase='hop';st.vy=2.5;land(v*1.6,true);st.landT=T;G.travel.mark('land');}else if(st.bounce===1){st.bounce=2;st.vy=1.05;land(v*1.3);}else{st.phase='stand';st.standT=T;land(v);}}}
+          if(st.bounce===0){st.bounce=1;st.phase='hop';G.travel.note('phase','hop');st.vy=2.5;land(v*1.6,true);st.landT=T;G.travel.mark('land');}else if(st.bounce===1){st.bounce=2;st.vy=1.05;land(v*1.3);}else{st.phase='stand';G.travel.note('phase','stand');st.standT=T;land(v);}}}
       if(st.phase==='stand'){const k=T-st.standT;
         if(k>.9&&!st.r1){st.r1=1;G.react.react('startle');}
         if(k>2.1&&!st.r2){st.r2=1;G.react.react('tilt');}

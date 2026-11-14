@@ -418,6 +418,8 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
   /* 2026-11-13(두 번째): 출발지는 화산 꼭대기 — 기다리던 큰 회오리(BIGTOP)에 걸어 들어가면 바로 감쌈. 이동 테마는 들리는 순간부터 건너뛰기 없이 흘려(곡 13 → 33.5초 = 20.5초) 연출 길이를 곡에 맞춤:
      들림 LIFT + 감아올림 R + 우주 SP + 지도 MAPS(곡의 남은 시간으로 다시 맞춤) + 금성 ORB + 구름 덮개 COVER = 20.5초 */
   const NEAR=.8,LIFT=1.6,R=5.6,SP=5.6,MAPS=5.5,ORB=1.5,COVER=.7;
+  /* 미리 만들어 데워 두기(2026-11-14 버벅거림): 우주에서 쓸 화성·금성 판을 다가오는 동안 만들고 아주 작게 한 번 그려 셰이더·그림을 GPU에 올려 둠(감아올림이 시작될 때 만들면 그 프레임이 멈칫), 금성 구역 모듈도 미리 불러 둠 */
+  const bits=spaceBits(root);st.bits=bits;bits.mars.visible=bits.venus.visible=true;bits.mars.scale.setScalar(1e-3);bits.venus.scale.setScalar(1e-3);let warm=2;import('./venus.js').catch(()=>{});
   const bx0=BIGTOP[0],bz0=BIGTOP[1],bo={x:P0.x,z:P0.z};let bx=bx0,bz=bz0,T0=G.clock.t,ph=0,liftT=0;G.sound.sfx('event-whirl');G.travel.mark('touch');st.bigGo=true;
   /* 2026-11-13(네 번째 — 달 → 화성 별똥별처럼): 회오리 안에서 두 팔을 벌리고 천천히 빙글빙글(회전목마), '반짝 신남', 목도리는 도는 반대쪽으로 휘날림. 카메라는 원더룹 가까이 앞옆 3/4(얼굴),
      내려다보는 장면(친구들·깃발)만 짧게 넓게. 거리는 가로 화면 기준 — 세로 화면 배율은 08이 곱한다(예전엔 여기서도 pk()를 곱해 휴대폰에서 두 배 멀었다) */
@@ -426,62 +428,62 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
   st.rideFx=dt=>{SC.tick(G.clock.t,true,1.1,-1.6);hole();}; /* 목도리는 도는 반대쪽 옆으로 휘날림 */
   /* 2026-11-10: 큰 회오리가 다가오는 동안 둘은 노을을 보고 있다가, 원더룹이 들려 올라가면 돌아보며 손을 흔들고, 내려오면 다시 노을을 봄 */
   st.bigTick=dt=>{const t=G.clock.t-T0;big.tick(dt);
-    if(ph===0){const u=ss(0,NEAR,t);bx=lerp(bx0,P0.x,u);bz=lerp(bz0,P0.z,u);big.setBase(bx,groundY(bx,bz),bz);if(t>NEAR){ph=1;G.travel.mark('lift');G.travel.begin({id:'whirl',expect:LIFT+R+SP+MAPS+ORB+COVER});liftT=t;big.clear(true);big.setRim(1);U.action='팔 벌리기';U.at=0;st.sunFace=false;st.lookWL=true;pipi.mode='waveUp';dung.mode='waveUp';lockOn(G,W);U.riding.y=gy;U.riding.lookY=.8;G.react.react('startle');G.sound.sfx('event-whoosh');if(U.setExpr)U.setExpr('반짝 신남');}}
-    else{const k=t-liftT,y=ph===1?gy+22*ss(0,4.5,k):gy+22*(1-ss(0,3.2,k));const ox=Math.cos(k*3)*.35,oz=Math.sin(k*3)*.35;
-      W.position.set(P0.x+ox,y,P0.z+oz);U.riding.y=y;W.rotation.y+=dt*SPIN;W.rotation.z=Math.sin(k*2.3)*.06;st.rideFx(dt);camHome(G,dt,W.rotation.y+.75,.1,rd(5.4),cs1,4); /* 들리는 동안: 얼굴이 보이는 앞옆 3/4 가까이 */big.setBase(P0.x,gy,P0.z);big.setHeight(Math.max(8,y-gy+4));
+    if(warm>0){const c=G.view.camera;if(c){c.updateMatrixWorld();const e=c.matrixWorld.elements;for(const b of [bits.mars,bits.venus])b.position.set(e[12]-e[8]*20,e[13]-e[9]*20,e[14]-e[10]*20);}if(ph>0&&--warm===0){bits.mars.visible=bits.venus.visible=false;}}
+    if(ph===0){const u=ss(0,NEAR,t);bx=lerp(bx0,P0.x,u);bz=lerp(bz0,P0.z,u);big.setBase(bx,groundY(bx,bz),bz);if(t>NEAR){ph=1;G.travel.mark('lift');G.travel.note('phase','lift');{const C=G.controls.input.cam;st.camY0=C?C.yaw:W.rotation.y+.75;}G.travel.begin({id:'whirl',expect:LIFT+R+SP+MAPS+ORB+COVER});liftT=t;big.clear(true);big.setRim(1);U.action='팔 벌리기';U.at=0;st.sunFace=false;st.lookWL=true;pipi.mode='waveUp';dung.mode='waveUp';lockOn(G,W);U.riding.y=gy;U.riding.lookY=.8;G.react.react('startle');G.sound.sfx('event-whoosh');if(U.setExpr)U.setExpr('반짝 신남');}}
+    else{const k=t-liftT,y=ph===1?gy+22*ss(0,4.5,k):gy+22*(1-ss(0,3.2,k));const ox=Math.cos(k*1.4)*.16,oz=Math.sin(k*1.4)*.16; /* 출렁임 줄이기(2026-11-14): 작은 원·느리게 */
+      W.position.set(P0.x+ox,y,P0.z+oz);U.riding.y=y;
+      /* 떠오르는 순간 얼굴 먼저(2026-11-14): 회오리로 걸어 들어가 등이 카메라 쪽이던 원더룹이 0.7초 동안 카메라 쪽(앞옆)으로 돌아섬 — 카메라는 그동안 제자리, 그 뒤 천천히 빙글 */
+      if(k<.7){const e=Math.atan2(Math.sin(st.camY0-.5-W.rotation.y),Math.cos(st.camY0-.5-W.rotation.y));W.rotation.y+=e*Math.min(1,dt*7);}else W.rotation.y+=dt*SPIN;
+      W.rotation.z=Math.sin(k*1.1)*.03;st.rideFx(dt);camHome(G,dt,k<.7?st.camY0:W.rotation.y+.75,.1,rd(5.4),cs1,2.2); /* 다가가는 카메라는 천천히(출렁여 보이지 않게) */ /* 들리는 동안: 얼굴이 보이는 앞옆 3/4 가까이 */big.setBase(P0.x,gy,P0.z);big.setHeight(Math.max(8,y-gy+4));
       if(Math.floor(k/2.1)!==st.bwi){st.bwi=Math.floor(k/2.1);G.sound.sfx('event-whirl',{gain:.9});}
       whirlDust(big,bo,dt,MOB?18:30);
       if(ph===1&&k>LIFT&&!st.bigCard){st.bigCard=true;toSpace();}
     }};
-  /* ── 화성 → 금성(2026-11-12, 이동 공통 틀): 훨씬 큰 회오리가 감싸 천천히 빙글빙글 감아올림 → 노을 진 화성이 작아짐(손 흔드는 삐삐·둥둥 → 해 둘레 파란 빛 → 화산 꼭대기 깃발 반짝임)
-     → 하늘이 노을에서 짙은 남보라 우주로, 회오리가 하늘 끝에서 놓아줌 → 멀리 작은 파란 점(지구)·회색 점(달)이 스쳐 지나감(원더룹이 잠깐 돌아봄) → 우주 지도(화성 → 금성 발자국·예고 한 줄)
-     → 연보라 금성이 커지고 두꺼운 구름 속으로 쏙(구름 덮개 → 구역 space-venus, 거기서 내려앉음). 약 20초 + 내려앉기. 화면을 톡 누르면 다음 단계로. 카메라는 플레이어 것(손을 떼면 기본 각도로) ── */
+  /* ── 화성 → 금성(2026-11-12, 이동 공통 틀 — 2026-11-14 다시: 지구·달 뺌): ① 큰 회오리에 들려 팔 벌리고 천천히 빙글빙글 감아올림(아래로 손 흔드는 삐삐·둥둥이 스쳐 보임)
+     → ② 우주로 나감: 화성이 뒤로 멀어지고 원더룹 정면 → ③ 날아가기: 별똥별 이동처럼 둥실 떠서 팔다리를 젓고 목도리가 휘날리는 원더룹 둘레를 카메라가 천천히 돎(원더룹은 고개를 돌리지 않음 —
+     카메라가 앞 ~ 옆으로만 돌고 뒤 3/4보다 뒤로는 안 감) → ④ 우주 지도 → 연보라 금성이 커지고 두꺼운 구름 속으로 쏙(구름 덮개 → 구역 space-venus, 거기서 내려앉음).
+     길이는 이동 테마(13 → 33.5초)에 맞춤 — 지도 길이를 곡의 남은 시간으로. 화면을 톡 누르면 다음 단계로. 카메라는 플레이어 것(손을 떼면 1.6초 뒤 기본 각도로) ── */
   function toSpace(){const V3=new THREE.Vector3(),
-    bits=spaceBits(root),y0=W.position.y,cs=cs1,tap={n:0}; /* cu를 지금 값으로: null이면 camHome이 '방금 만졌다'로 보고 1.6초를 기다려 첫 장면(친구들)이 통째로 지나갔다(2026-11-13) */st.bits=bits;let fast=false,q=0,ph3=0,T1=G.clock.t,done=false,yaw0=W.rotation.y,yb=yaw0,drift=0;
+    y0=W.position.y,cs=cs1,tap={n:0}; /* cu를 지금 값으로: null이면 camHome이 '방금 만졌다'로 보고 1.6초를 기다려 첫 장면(친구들)이 통째로 지나갔다(2026-11-13) */let fast=false,q=0,T1=G.clock.t,done=false,yaw0=W.rotation.y,yb=yaw0,drift=0;
     const onDown=e=>{tap.x=e.clientX;tap.y=e.clientY;tap.t=performance.now();},onUp=e=>{if(tap.t&&performance.now()-tap.t<320&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<10&&!(e.target&&e.target.closest&&e.target.closest('button')))tap.n++;tap.t=0;};
     window.addEventListener('pointerdown',onDown);window.addEventListener('pointerup',onUp);st.tapOff=()=>{window.removeEventListener('pointerdown',onDown);window.removeEventListener('pointerup',onUp);};
-    G.travel.mark('rise');G.travel.depart();G.sound.sfx('event-whirl',{gain:1.1});if(U.setExpr)U.setExpr('반짝 신남');
+    G.travel.mark('rise');G.travel.note('phase','rise');G.travel.depart();G.sound.sfx('event-whirl',{gain:1.1});if(U.setExpr)U.setExpr('반짝 신남');
     big.me.scale.set(1.9,1,1.9); /* 타던 회오리보다 훨씬 크게 감쌈 */st.sunFace=false;st.lookWL=true;pipi.mode='waveUp';dung.mode='waveUp';
-    /* 카메라 차례 [시작 초, 원더룹에서 카메라 쪽 방향(동쪽 = π/2), 위아래, 거리]: 위에서 얼굴과 아래 언덕(친구들) → 서쪽 노을(파란 해) → 북쪽 화산(깃발 반짝임) → 올려다보는 우주 */
-    /* 2026-11-13(두 번째): 꼭대기에서 출발 — 멀리 노을 언덕의 삐삐·둥둥(작게 손 흔들기, 멀어서 키워 보임) → 서쪽 파란 해 → 발아래 방금 꽂은 깃발 → 우주 */
     const yawTo=(x,z,off)=>Math.atan2(P0.x-x,P0.z-z)+off;
-    /* 2026-11-13(네 번째): 가까이 얼굴(앞옆 3/4 — 'face'면 지금 몸 방향 + 0.75) → 짧게 넓게 친구들 → 가까이 → 파란 해(옆에서 조금 가까이) → 짧게 넓게 깃발(내려다봄) → 가까이 올려다보는 얼굴 */
-    const CAM=[[0,'face',.12,5.4],[.9,yawTo(SUNSET.wl[0],SUNSET.wl[1],pk()>1?.1:.3),.3,8],[1.9,'face',.1,5.4],[2.5,PI/2+.42,-.05,6],[3.3,yawTo(FLAGSPOT[0],FLAGSPOT[1],.15),1.12,10],[4.2,'face',-.12,5.3]];
+    /* 카메라 차례 [시작 초, 방향('face' = 원더룹 몸 방향 + 0.75 = 앞옆 3/4), 위아래, 거리]: 얼굴 → 짧게 넓게 아래 언덕의 삐삐·둥둥(손 흔들기) → 다시 얼굴(그대로 우주까지).
+       2026-11-14: 파란 해·깃발 장면은 뺌 — 장면마다 카메라가 위아래로 크게 오가 출렁여 보였다. 위아래 각도는 얼굴 장면 내내 같게 */
+    const CAM=[[0,'face',.1,5.4],[.9,yawTo(SUNSET.wl[0],SUNSET.wl[1],pk()>1?.1:.3),.3,8],[1.9,'face',.1,5.4]];
     st.bigTick=dt=>{const t=G.clock.t-T1;big.tick(dt);if(done)return;
-      if(q===0){ /* 감아올림 */
+      if(q===0){ /* ① 감아올림 */
         /* 누르면 남은 감아올림을 빠르게(8배, 적어도 0.7초에 걸쳐) 올라가 우주로 — 뚝 끊지 않음. 높이는 따로 부드럽게 잇는다: 한 프레임에 20m 넘게 움직이면 08의 카메라 따라 옮기기가 꺼져 원더룹이 화면 위로 빠졌다 */
         if(tap.n&&!fast){tap.n=0;const rem=Math.max(.01,R-t),fd=Math.max(.7,rem/8);fast={f:rem/fd,t0:G.clock.t,fd,y:W.position.y};if(!st.spc){st.spc=true;SK.to(2,fd);}G.travel.retime(fd+SP+MAPS+ORB+COVER);}
         if(fast){T1-=dt*(fast.f-1);tap.n=0;}
-        const u=Math.min(1,t/R),e=u*u*(3-2*u),yn=y0+20*ss(0,4.1,t)+130*Math.pow(Math.max(0,(t-4.1)/(R-4.1)),2),y=fast?lerp(fast.y,y0+150,ss(0,fast.fd,G.clock.t-fast.t0)):yn, /* 세 장면(친구들·파란 해·깃발)을 보는 4.1초까지는 천천히 20m, 그 뒤 훌쩍 우주로(2026-11-13 — 꼭대기에서 출발: 발아래 깃발이 깃발 장면 동안 화면 안이게) */a=t*1.25,rr=.55+.25*Math.sin(t*.7);
-        W.position.set(P0.x+Math.cos(a)*rr*.6,y,P0.z+Math.sin(a)*rr*.6);U.riding.y=y;
-        /* 몸 돌기(2026-11-14 — 뒤통수 줄이기): 얼굴 장면은 천천히 빙글(카메라가 따라 돎), 세계 방향이 정해진 장면(친구들·파란 해·깃발)은 그 0.5초 전부터 카메라 쪽으로 몸을 돌려 놓고 천천히 — 장면이 바뀌는 순간 등이 카메라 쪽이던 것 */
+        const u=Math.min(1,t/R),yn=y0+20*ss(0,4.1,t)+130*Math.pow(Math.max(0,(t-4.1)/(R-4.1)),2),y=fast?lerp(fast.y,y0+150,ss(0,fast.fd,G.clock.t-fast.t0)):yn,a=t*.9;
+        W.position.set(P0.x+Math.cos(a)*.18,y,P0.z+Math.sin(a)*.18);U.riding.y=y; /* 출렁임 줄이기(2026-11-14): 회오리 안에서 도는 원을 작게·느리게, 몸 기울기도 작게 */
+        /* 몸 돌기: 얼굴 장면은 천천히 빙글(카메라가 따라 돎), 세계 방향이 정해진 장면(친구들)은 0.5초 전부터 몸을 카메라 쪽으로 돌려 놓고 천천히 */
         {let cn=null;for(const k of CAM)if(t+.5>=k[0])cn=k;const tg=fast?G.controls.input.cam.yaw:(cn&&cn[1]!=='face'?cn[1]:null);let om=SPIN;
-          if(tg!=null){let e=tg-.7-yb;e=Math.atan2(Math.sin(e),Math.cos(e));om=Math.max(-1.6,Math.min(1.8,.15+3*e));}yb+=om*dt;W.rotation.y=yb;}W.rotation.z=Math.sin(t*1.6)*.06;st.rideFx(dt);
+          if(tg!=null){let e=tg-.7-yb;e=Math.atan2(Math.sin(e),Math.cos(e));om=Math.max(-1.6,Math.min(1.8,.15+3*e));}yb+=om*dt;W.rotation.y=yb;}
+        W.rotation.z=Math.sin(t*.9)*.03;st.rideFx(dt);
         big.setBase(P0.x,gy,P0.z);big.setHeight(Math.min(70,y-gy+6));big.mat.uniforms.uA.value=(.4-.2*ss(0,.3,u))*(1-ss(.62,.86,u)); /* 하늘 끝에서 놓아줌: 회오리가 옅어지며 아래에 남음 */
         if(Math.floor(t/2.1)!==st.bwi){st.bwi=Math.floor(t/2.1);if(u<.7)G.sound.sfx('event-whirl',{gain:.85*(1-u)});}
         if(u<.5)whirlDust(big,bo,dt,MOB?14:24);G.travel.tick(dt,'fly');
-        if(t>3.6&&!st.spc){st.spc=true;SK.to(2,2.2);} /* 노을(해 둘레 파란 빛)을 본 뒤에 하늘이 우주로 */
-        let c=CAM[0];for(const k of CAM)if(t>=k[0])c=k;if(fast)c=[0,G.controls.input.cam.yaw,.06,6]; /* 눌러 넘기는 동안은 지금 방향 그대로 올려다보기만(장면 각도를 빠르게 훑으면 원더룹이 화면에서 잘렸다) */camHome(G,dt,c[1]==='face'?W.rotation.y+.75:c[1],c[2],c[1]==='face'?rd(c[3]):c[3],cs,4.5);
-        if(u>=1){q=1;T1=G.clock.t;ph3=0;G.travel.mark('space');st.earthSec=0;big.mat.uniforms.uA.value=0;big.noHole();st.lookWL=false;drift=W.rotation.y;U.action='둥실';U.at=0;G.sound.sfx('event-whoosh',{gain:.7});
-          bits.mars.visible=true;bits.earth.visible=bits.moon.visible=true;}}
-      else if(q===1){ /* 우주: 화성이 아래로 작아지고, 지구와 달이 멀리서 스쳐 지나감(설명 없이) — 원더룹이 잠깐 그쪽을 돌아봄 */
+        if(t>3.4&&!st.spc){st.spc=true;SK.to(2,2.2);} /* 하늘이 노을에서 우주로 */
+        let c=CAM[0];for(const k of CAM)if(t>=k[0])c=k;if(fast)c=[0,G.controls.input.cam.yaw,.06,6]; /* 눌러 넘기는 동안은 지금 방향 그대로 올려다보기만 */camHome(G,dt,c[1]==='face'?W.rotation.y+.75:c[1],c[2],c[1]==='face'?rd(c[3]):c[3],cs,c[1]==='face'?2.6:4.5);
+        if(u>=1){q=1;T1=G.clock.t;G.travel.mark('space');G.travel.note('phase','space');big.mat.uniforms.uA.value=0;big.noHole();big.show(false); /* 다 옅어진 회오리는 그리지 않음(알파 0이어도 화면을 덮어 그리는 값이 들었다 — 휴대폰 버벅거림) */
+          st.lookWL=false;drift=W.rotation.y;U.action='둥실';U.at=0;G.sound.sfx('event-whoosh',{gain:.7});bits.mars.visible=true;}}
+      else if(q===1){ /* ② 우주로 나감(화성이 뒤로 멀어지고 원더룹 정면) → ③ 날아가기(카메라가 원더룹 둘레를 천천히 돎) */
         if(tap.n){tap.n=0;T1=G.clock.t-SP;G.travel.retime(MAPS+ORB+COVER);return;}
-        const u=Math.min(1,t/SP),y=y0+150+220*ss(0,1,u)+Math.sin(t*1.3)*.25,Wp=W.position;Wp.set(P0.x+Math.sin(t*.5)*.4,y,P0.z+Math.cos(t*.43)*.4);U.riding.y=y;W.rotation.z=Math.sin(t*.9)*.12;
-        st.scarf.tick(G.clock.t,true,.6,2.2);
-        /* 지구·달(2026-11-13 — 스쳐 가는 시간이 짧아 놓치기 쉬웠다): 화면 자리로 놓는다 — 오른쪽에서 들어와(0.2) 화면 오른쪽 위에 약 2초 천천히 흐르며 머물다(0.22~0.70) 왼쪽으로 나감. 세로 화면도 같은 자리 */
-        const cam=G.view.camera,nx=u<.22?lerp(1.3,.5,1-Math.pow(1-u/.22,2)):u<.7?lerp(.5,.3,(u-.22)/.48):lerp(.3,-1.35,Math.pow((u-.7)/.3,2)),ny=lerp(.56,.4,u),ED=40;
-        cam.updateMatrixWorld();const tv=Math.tan(cam.fov*PI/360),e=cam.matrixWorld.elements,EP=bits.earth.position;
-        /* 화성도 화면 자리로(2026-11-13 네 번째 — 카메라가 원더룹 가까이 앞옆으로 오면서 세계 자리로 두면 화면 밖이었다): 왼쪽 아래 배경에 크게, 천천히 작아지며 멀어짐 */
-        {const MD=90,mx=lerp(-.62,-.78,u),my=lerp(-.5,-.62,u);bits.mars.position.set(e[12],e[13],e[14]).addScaledVector(V3.set(-e[8],-e[9],-e[10]),MD).addScaledVector(V3.set(e[0],e[1],e[2]),mx*MD*tv*cam.aspect).addScaledVector(V3.set(e[4],e[5],e[6]),my*MD*tv);bits.mars.scale.setScalar(lerp(40,24,u));}
-        EP.set(e[12],e[13],e[14]).addScaledVector(V3.set(-e[8],-e[9],-e[10]),ED).addScaledVector(V3.set(e[0],e[1],e[2]),nx*ED*tv*cam.aspect).addScaledVector(V3.set(e[4],e[5],e[6]),ny*ED*tv);
-        bits.earth.scale.setScalar(5);bits.moon.position.copy(EP).addScaledVector(V3.set(e[0],e[1],e[2]),cam.aspect<1?-4.4:6.6).addScaledVector(V3.set(e[4],e[5],e[6]),cam.aspect<1?4.4:2.3); /* 세로 화면은 지구 왼쪽 위(오른쪽 옆이면 화면 밖) */bits.moon.scale.setScalar(1.4);
-        if(Math.abs(nx)<.97){st.earthSec+=dt;G.travel.note('earthSec',+st.earthSec.toFixed(2));}
-        const ex=EP.x-Wp.x,ez=EP.z-Wp.z,look=ss(.2,.34,u)*(1-ss(.66,.8,u)),ya=Math.atan2(ex,ez);drift+=dt*.25;const base=drift,d=Math.atan2(Math.sin(ya-base),Math.cos(ya-base));W.rotation.y=base+d*look; /* 돌아봄 */
-        {const C=G.controls.input.cam;if(C){const lim=1.9,wr=a=>Math.atan2(Math.sin(a),Math.cos(a)),b0=wr(base-C.yaw),r=wr(W.rotation.y-C.yaw);if(Math.abs(b0)<=lim&&Math.abs(r)>lim)W.rotation.y=C.yaw+Math.sign(r)*lim;}} /* 돌아봐도 카메라에서 뒤 3/4(약 110°)까지만 — 볼과 눈 한쪽이 보이게(2026-11-14 — 지구 쪽으로 고개를 돌리는 2~3초 동안 뒷모습만 보였다) */
-        if(look>.5&&!st.eLook){st.eLook=true;if(U.setExpr)U.setExpr('궁금');}if(look<.3&&st.eLook===true&&u>.55){st.eLook=2;if(U.setExpr)U.setExpr('반짝 신남');}
-        G.travel.tick(dt,'fly');camHome(G,dt,drift+.7,.05,rd(5.4),cs,2.5); /* 카메라는 원더룹 가까이 앞옆 3/4(몸의 기본 방향 기준 — 지구를 돌아보는 고개 때문에 카메라가 따라 돌지 않게), 지구·화성은 화면 자리로 뒤에 */
-        if(u>=1){q=2;done=true;bits.earth.visible=bits.moon.visible=false;G.travel.mark('map');finish();}}};
-    async function finish(){RIDE.pending={from:'space-mars',cloud:true};import('./venus.js').catch(()=>{});
+        const u=Math.min(1,t/SP),y=y0+150+220*ss(0,1,u)+Math.sin(t*.7)*.04,Wp=W.position;Wp.set(P0.x+Math.sin(t*.4)*.15,y,P0.z+Math.cos(t*.35)*.15);U.riding.y=y;W.rotation.z=Math.sin(t*.6)*.04;
+        W.rotation.y=drift;st.scarf.tick(G.clock.t,true,.6,2.2); /* 원더룹은 따로 고개를 돌리지 않음 */
+        if(t>EXIT&&!st.flyN){st.flyN=true;G.travel.note('phase','fly');}
+        const cam=G.view.camera;cam.updateMatrixWorld();const tv=Math.tan(cam.fov*PI/360),e=cam.matrixWorld.elements;
+        /* 화성은 화면 자리로(카메라가 원더룹 가까이 앞쪽에 있어 세계 자리면 화면 밖): 원더룹 뒤 왼쪽 아래 배경에 크게 → 멀어지며 작아짐 */
+        {const MD=90,mx=lerp(-.5,-.8,ss(0,SP,t)),my=lerp(-.42,-.66,ss(0,SP,t));bits.mars.position.set(e[12],e[13],e[14]).addScaledVector(V3.set(-e[8],-e[9],-e[10]),MD).addScaledVector(V3.set(e[0],e[1],e[2]),mx*MD*tv*cam.aspect).addScaledVector(V3.set(e[4],e[5],e[6]),my*MD*tv);bits.mars.scale.setScalar(lerp(46,18,ss(0,SP,t)));}
+        G.travel.tick(dt,'fly');const o=flyCam(t);camHome(G,dt,drift+o[0],o[1],rd(5.4),cs,2.2);
+        if(u>=1){q=2;done=true;bits.mars.visible=false;G.travel.mark('map');G.travel.note('phase','map');finish();}}};
+    /* 우주 카메라(별똥별 이동처럼): 원더룹 몸 방향 기준 [방향, 위아래]. ② 처음 EXIT초는 정면 가까이(앞 0.25 — 화성이 뒤로), ③ 그 뒤 옆(오른쪽 약 80°)으로 천천히 → 정면 → 반대쪽 옆(약 -50°)으로 — 초당 약 30°, 늘 앞 ~ 옆 */
+    const EXIT=1.5,flyCam=t=>{const s=ss(EXIT,SP,t),off=.25+1.15*Math.sin(s*PI*1.5);return [off,.06+.1*Math.sin(s*PI)];};
+    async function finish(){RIDE.pending={from:'space-mars',cloud:true};
       /* 우주 지도(game/travel 공통 — 화성 → 금성 발자국·화성에서 발견한 것·예고 한 줄, 약 3.6초, 누르면 넘김) */
       const left=G.travel.untilResolve(),mapSec=left==null?MAPS:Math.max(3,Math.min(9,left-ORB-COVER)); /* 지도 길이는 곡의 남은 시간에 맞춤(해결 화음이 구름 진입에 — 건너뛰기·크로스페이드 없이) */
       let mp=null;const pm=G.travel.mapFor(SPACE,'space-mars','space-venus',F,{sec:mapSec}).then(m=>{mp=m;});tap.n=0;
@@ -490,11 +492,11 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
       /* 도착: 연보라 금성이 점점 커지고 → 두꺼운 구름 속으로 쏙(해결 화음은 구름에 들어서는 순간) */
       mp.remove(); /* 지도를 걷고 나서 금성이 커짐 */
       const V=bits.venus,Wp=W.position;V.visible=true;bits.mars.visible=false;G.travel.arrive();G.travel.landIn(ORB+COVER);const t0=G.clock.t;
-      const yawV=drift+.7;st.bigTick=dt=>{const u=Math.min(1,(G.clock.t-t0)/ORB),cam=G.view.camera;cam.updateMatrixWorld();const e=cam.matrixWorld.elements,tv=Math.tan(cam.fov*PI/360),VD=70-30*u;
+      const yawV=drift+flyCam(SP)[0];G.travel.note('phase','orb');st.bigTick=dt=>{const u=Math.min(1,(G.clock.t-t0)/ORB),cam=G.view.camera;cam.updateMatrixWorld();const e=cam.matrixWorld.elements,tv=Math.tan(cam.fov*PI/360),VD=70-30*u;
         V.position.set(e[12],e[13],e[14]).addScaledVector(V3.set(-e[8],-e[9],-e[10]),VD).addScaledVector(V3.set(e[0],e[1],e[2]),.28*VD*tv*cam.aspect).addScaledVector(V3.set(e[4],e[5],e[6]),.1*VD*tv);V.scale.setScalar(14+150*u*u);
-        W.rotation.y+=dt*.6;st.scarf.tick(G.clock.t,true,.6,2.2);camHome(G,dt,yawV,.05,rd(5.4),cs,2.5);}; /* 금성은 원더룹 너머 화면 오른쪽 위에서 커짐(화면 자리), 카메라는 가까이 그대로 */
+        W.rotation.y=drift;st.scarf.tick(G.clock.t,true,.6,2.2);camHome(G,dt,yawV,.06,rd(5.4),cs,2.5);}; /* 2026-11-14: 금성으로 갈 때도 몸을 돌리지 않음(돌면 등이 카메라 쪽) — 카메라는 날아가기 끝 방향 그대로 */ /* 금성은 원더룹 너머 화면 오른쪽 위에서 커짐(화면 자리), 카메라는 가까이 그대로 */
       await G.core.wait(ORB);
-      const veil=dustVeil(CLOUD_VEIL);G.sound.sfx('cloud-poof',{gain:1.2});await veil.cover(COVER);G.travel.mark('cloud');st.tapOff&&st.tapOff();st.tapOff=null;
+      const veil=dustVeil(CLOUD_VEIL);G.sound.sfx('cloud-poof',{gain:1.2});await veil.cover(COVER);G.travel.mark('cloud');G.travel.note('phase','cloud');st.tapOff&&st.tapOff();st.tapOff=null;
       st.scarf.tick(0,false);U.action='서기';U.at=0;
       try{if(window.wlZone)await window.wlZone.go('space-venus');}catch(e){console.error(e);}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.3);}}
   });}
@@ -510,7 +512,9 @@ function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝
     if(T<1){x=P0.x;z=P0.z;y=gy0+1.2*ss(0,1,T);}
     else if(T<D-1.1){const u=ss(1,D-1.1,T);x=lerp(P0.x,to[0],u);z=lerp(P0.z,to[1],u);y=lerp(gy0,gy1,u)+1.2+o.peak*Math.sin(PI*u);}
     else{x=to[0];z=to[1];y=gy1+1.2*(1-ss(D-1.1,D,T));}
-    const ox=Math.cos(T*2.6)*.32,oz=Math.sin(T*2.6)*.32;W.position.set(x+ox,y,z+oz);U.riding.y=y;W.rotation.y+=dt*(2+Math.sin(T*.9)*.8);W.rotation.z=Math.sin(T*2.4)*.11;
+    const ox=Math.cos(T*1.3)*.15,oz=Math.sin(T*1.3)*.15;W.position.set(x+ox,y,z+oz);U.riding.y=y;
+    /* 2026-11-14: 큰 회오리처럼 천천히(평균 초당 약 30°) — 얼굴이 카메라 쪽이면 더 천천히(초당 0.25), 등이 카메라 쪽이면 빨리(초당 1.05) 지나가 얼굴 쪽에 오래 머묾. 출렁임 줄이기: 작은 원·작은 기울기 */
+    {const C=G.controls.input.cam,rel=C?Math.atan2(Math.sin(W.rotation.y-C.yaw),Math.cos(W.rotation.y-C.yaw)):0,back=(1-Math.cos(rel))/2;W.rotation.y+=dt*(.25+.8*back);}W.rotation.z=Math.sin(T*1.1)*.035;
     wo.x=x;wo.z=z;const wg=groundY(x,z);w.setBase(x,wg,z);w.setHeight(Math.max(5,y-wg+1.4));
     if(Math.floor(T/2.1)!==wi){wi=Math.floor(T/2.1);G.sound.sfx('event-whirl',{gain:.95});}
     if(T>=D&&!landed){landed=true;W.position.set(to[0],gy1,to[1]);W.rotation.z=0;st.ride=null;wo.busy=false;wo.armed=false;w.setHeight(o.h0||6);w.clear(false);lockOff(G,W);G.sound.sfx('land');G.sound.sfx('event-dust');puffAt(to[0],to[1],18);

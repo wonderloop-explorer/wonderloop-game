@@ -126,11 +126,15 @@ function solePath(c){c.beginPath();c.moveTo(0,.02);c.bezierCurveTo(.05,.02,.062,
   c.bezierCurveTo(-.05,-.03,-.042,.02,0,.02);c.closePath();c.moveTo(.045,.075);c.ellipse(.003,.075,.042,.046,0,0,PI*2);} // 로딩 화면(index.html #wlBoot) 발자국과 같은 모양
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 function shadeHex(h,k){const n=parseInt(h.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const f=v=>Math.round(k>0?v+(255-v)*k:v*(1+k));return `rgb(${f(r)},${f(g)},${f(b)})`;}
+/* 지도가 화면을 다 덮은 동안 참 — 08이 3D를 그리지 않음(2026-11-14 버벅거림: 안 보이는 3D 장면을 지도 밑에서 계속 그렸다) */
+let COVERING=false;export const covering=()=>COVERING;
 export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=document.createElement('canvas');cv.id='wlTravelMap';cv.setAttribute('aria-hidden','true');
   cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:58;pointer-events:none;opacity:0;transition:opacity .35s';document.body.appendChild(cv);
   // 미니어처: 위·아래 띠를 흐리게(가운데만 또렷)
+  /* 2026-11-14 버벅거림: 휴대폰은 흐림 띠(backdrop-filter — 아래 지도 캔버스가 매 프레임 바뀌어 다시 흐렸다) 대신 위아래를 살짝 어둡게만 */
+  const LOW=matchMedia('(pointer:coarse)').matches;
   const blur=[0,1].map(i=>{const d=document.createElement('div');const m=i?'linear-gradient(to top,#000 0%,#000 30%,transparent 100%)':'linear-gradient(to bottom,#000 0%,#000 30%,transparent 100%)';
-    d.style.cssText=`position:fixed;left:0;right:0;${i?'bottom':'top'}:0;height:24%;z-index:58;pointer-events:none;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);mask-image:${m};-webkit-mask-image:${m};opacity:0;transition:opacity .35s`;document.body.appendChild(d);return d;});
+    d.style.cssText=LOW?`position:fixed;left:0;right:0;${i?'bottom':'top'}:0;height:24%;z-index:58;pointer-events:none;background:linear-gradient(${i?'to top':'to bottom'},rgba(20,14,40,.35),rgba(20,14,40,0));opacity:0;transition:opacity .35s`:`position:fixed;left:0;right:0;${i?'bottom':'top'}:0;height:24%;z-index:58;pointer-events:none;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);mask-image:${m};-webkit-mask-image:${m};opacity:0;transition:opacity .35s`;document.body.appendChild(d);return d;});
   const cap=document.createElement('div');cap.id='wlTravelLine';cap.setAttribute('role','status');cap.textContent=o.line||'';
   cap.style.cssText='position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 9%);transform:translate(-50%,8px);z-index:59;pointer-events:none;max-width:min(88vw,560px);box-sizing:border-box;padding:.6rem 1.15rem;border-radius:16px;background:rgba(44,30,42,.86);color:#fbe9d8;font-family:"Gowun Dodum",sans-serif;font-size:clamp(15px,2.2vw,19px);line-height:1.45;text-align:center;word-break:keep-all;opacity:0;transition:opacity .45s,transform .45s';
   if(o.line)document.body.appendChild(cap);
@@ -141,8 +145,8 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
   const STAR=[];for(let i=0;i<300;i++)STAR.push([Math.random(),Math.random(),.4+Math.random()*1.5,Math.random()*6,Math.random()]);
   const TWK=[];for(let i=0;i<16;i++)TWK.push([Math.random(),Math.random()*.9,3+Math.random()*4,Math.random()*6]);
   const NEB=[[.2,.25,.5,'255,150,190',.16],[.78,.3,.55,'140,170,255',.16],[.5,.8,.6,'201,166,224',.18],[.9,.78,.4,'255,190,150',.1]];
-  const NSTEP=o.steps||8,STEP0=.55,STEPD=.27;let stepN=0,t0=performance.now(),on=true,w=0,h=0,dpr=1;
-  requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
+  const NSTEP=o.steps||8,STEP0=.55,STEPD=.27;let bgC=null,stepN=0,t0=performance.now(),on=true,w=0,h=0,dpr=1;
+  requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{if(on)COVERING=true;},420); /* 지도가 화면을 다 덮은 동안 3D 그리기 쉼(08 — covering()) */setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
   // 자리: 지나온 행성 → 다음 행성 사이를 넓게(발자국 길), 나머지는 고르게. 가로 화면은 왼쪽 → 오른쪽 완만한 물결, 세로 화면은 아래 → 위 지그재그
   const GW=B.map((b,i)=>i===0?0:((i===iF&&i-1===iT)||(i===iT&&i-1===iF))?2.6:1),GS=[];{let a=0;GW.forEach(v=>{a+=v;GS.push(a);});}
   function lay(){const pt=h>w,tot=GS[GS.length-1]||1;return B.map((b,i)=>{const s=B.length>1?GS[i]/tot:.5;
@@ -158,12 +162,15 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
     g.strokeStyle='rgba(74,42,42,.55)';g.lineWidth=Math.max(1.2,r*.05);g.beginPath();g.arc(x,y,r,0,PI*2);g.stroke();
     if(b.ring){g.strokeStyle=shadeHex(b.color,.1);g.lineWidth=r*.16;g.beginPath();g.ellipse(x,y,r*1.75,r*.5,-.25,-PI*.02,PI*1.02);g.stroke();}
     g.font=`${Math.round(Math.max(12,Math.min(w,h)*.028))}px Jua, "Gowun Dodum", sans-serif`;g.textAlign='center';g.textBaseline='top';g.fillStyle='rgba(251,233,216,.92)';g.fillText(b.name,x,y+r*1.32);g.restore();}
-  function draw(now){if(!on)return;const t=(now-t0)/1000;dpr=Math.min(2,devicePixelRatio||1);const W=Math.round(innerWidth*dpr),H=Math.round(innerHeight*dpr);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}w=W;h=H;
+  let odd=false;function draw(now){if(!on)return;if(LOW&&(odd=!odd)){requestAnimationFrame(draw);return;} /* 휴대폰은 초당 30장(게임과 같게 — 발열) */const t=(now-t0)/1000;dpr=Math.min(2,devicePixelRatio||1);const W=Math.round(innerWidth*dpr),H=Math.round(innerHeight*dpr);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}w=W;h=H;
     g.setTransform(1,0,0,1,0,0);
-    const bg=g.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#211d4c');bg.addColorStop(.55,'#35296a');bg.addColorStop(1,'#4a3472');g.fillStyle=bg;g.fillRect(-w*.1,-h*.1,w*1.2,h*1.2);
-    for(const [nx0,ny0,nr,nc,na] of NEB){const r=Math.max(w,h)*nr,gr=g.createRadialGradient(nx0*w,ny0*h,0,nx0*w,ny0*h,r);gr.addColorStop(0,`rgba(${nc},${na})`);gr.addColorStop(1,`rgba(${nc},0)`);g.fillStyle=gr;g.fillRect(0,0,w,h);}
-    const ng=g.createRadialGradient(w*.62,h*.35,0,w*.62,h*.35,Math.max(w,h)*.6);ng.addColorStop(0,'rgba(201,166,224,.22)');ng.addColorStop(1,'rgba(201,166,224,0)');g.fillStyle=ng;g.fillRect(0,0,w,h);
-    for(const [sx,sy,sr,sp,sc] of STAR){g.globalAlpha=.5+.45*Math.sin(t*2+sp);g.fillStyle=sc<.7?'#fff6e4':sc<.8?'#ffe9a8':sc<.9?'#ffd0e0':'#cfe4ff';g.beginPath();g.arc(sx*w,sy*h,sr*dpr,0,PI*2);g.fill();}
+    /* 바탕(그러데이션·색 구름·별 300)은 크기가 바뀔 때만 따로 한 번 그려 두고 매 프레임 붙이기만(2026-11-14 버벅거림 — 화면 전체 그러데이션 다섯 장 + 별 300개를 매 프레임 그렸다). 반짝임은 아래 네 갈래 별이 맡음 */
+    if(!bgC||bgC.width!==w||bgC.height!==h){bgC=document.createElement('canvas');bgC.width=w;bgC.height=h;const q=bgC.getContext('2d');
+      const bg=q.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#211d4c');bg.addColorStop(.55,'#35296a');bg.addColorStop(1,'#4a3472');q.fillStyle=bg;q.fillRect(0,0,w,h);
+      for(const [nx0,ny0,nr,nc,na] of NEB){const r=Math.max(w,h)*nr,gr=q.createRadialGradient(nx0*w,ny0*h,0,nx0*w,ny0*h,r);gr.addColorStop(0,`rgba(${nc},${na})`);gr.addColorStop(1,`rgba(${nc},0)`);q.fillStyle=gr;q.fillRect(0,0,w,h);}
+      const ng=q.createRadialGradient(w*.62,h*.35,0,w*.62,h*.35,Math.max(w,h)*.6);ng.addColorStop(0,'rgba(201,166,224,.22)');ng.addColorStop(1,'rgba(201,166,224,0)');q.fillStyle=ng;q.fillRect(0,0,w,h);
+      for(const [sx,sy,sr,sp,sc] of STAR){q.globalAlpha=.5+.45*Math.sin(sp);q.fillStyle=sc<.7?'#fff6e4':sc<.8?'#ffe9a8':sc<.9?'#ffd0e0':'#cfe4ff';q.beginPath();q.arc(sx*w,sy*h,sr*dpr,0,PI*2);q.fill();}}
+    g.drawImage(bgC,0,0);
     for(const [sx,sy,sr,sp] of TWK){const k=Math.max(0,Math.sin(t*1.7+sp)),r=sr*dpr*(1+2.2*k);g.globalAlpha=.35+.65*k;g.fillStyle='#fff4c2';g.beginPath();for(let i=0;i<8;i++){const a=i*PI/4,q=i%2?r*.22:r;g.lineTo(sx*w+Math.cos(a)*q,sy*h+Math.sin(a)*q);}g.closePath();g.fill();}g.globalAlpha=1;
     const L=lay();
     // 미니어처 카메라: 한눈에 보다가(0~0.4초) 발자국 길 쪽으로 살짝 다가감
@@ -187,7 +194,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
         g.beginPath();g.arc(x,y,s*.62,0,PI*2);g.fill();g.stroke();if(f.im&&f.im.complete&&f.im.naturalWidth)g.drawImage(f.im,x-s*.5,y-s*.5,s,s);else if(f.draw){g.translate(x,y);f.draw(g,s);}g.restore();});}
     if(t<sec+2)requestAnimationFrame(draw);}
   requestAnimationFrame(draw);
-  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;cv.remove();blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
+  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;COVERING=false;cv.remove();blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
 let MAPSKIP=null;
 /* 우주 지도를 지금 끝냄(화면을 눌러 넘길 때 — map()의 약속이 바로 풀림) */
 export function mapSkip(){if(MAPSKIP)MAPSKIP();}

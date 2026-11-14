@@ -15,11 +15,9 @@ function orbTex(n,base,light,dark,glow,deco){return discTex(n,(g,N)=>{const c=N/
   if(deco)deco(g,c,R);g.globalAlpha=.16;g.strokeStyle='#fff8ee';g.lineWidth=N/90;for(let i=-8;i<9;i++){g.beginPath();g.moveTo(c-R,c+i*R*.14-R*.2);g.lineTo(c+R,c+i*R*.14+R*.2);g.stroke();}g.restore();});}
 export function spaceBits(root){const mk=(tex,add)=>{const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,fog:false,blending:add?THREE.AdditiveBlending:THREE.NormalBlending});m.userData.noBend=true;const s=new THREE.Sprite(m);s.visible=false;s.renderOrder=4;s.frustumCulled=false;root.add(s);return s;};
   const mars=mk(orbTex(256,'#d9895f','#f2c19a','#a85c40','rgba(240,170,130,.35)',(g,c,R)=>{g.globalAlpha=.3;g.fillStyle='#b9694a';for(const [x,y,r] of [[-.3,.2,.3],[.35,-.1,.22],[.05,.5,.2]]){g.beginPath();g.ellipse(c+x*R,c+y*R,r*R*1.4,r*R,.3,0,7);g.fill();}g.globalAlpha=1;})),
-    earth=mk(orbTex(128,'#4f9be0','#bfe6ff','#2c5fa8','rgba(150,200,255,.5)',(g,c,R)=>{g.globalAlpha=.75;g.fillStyle='#f4fbff';for(const [x,y,r] of [[-.2,-.3,.3],[.3,.2,.26],[-.35,.4,.2]]){g.beginPath();g.ellipse(c+x*R,c+y*R,r*R*1.5,r*R*.6,.4,0,7);g.fill();}g.globalAlpha=1;})),
-    moon=mk(orbTex(64,'#b9bcc6','#eceef2','#7e8290','rgba(220,224,235,.3)')),
     venus=mk(orbTex(256,'#c9a6e0','#efdcfb','#9a78bd','rgba(214,180,240,.45)',(g,c,R)=>{g.globalAlpha=.4;g.strokeStyle='#f3e6ff';g.lineWidth=R*.12;g.lineCap='round';for(let i=-3;i<4;i++){g.beginPath();g.moveTo(c-R,c+i*R*.26+R*.12);g.bezierCurveTo(c-R*.3,c+i*R*.26-R*.12,c+R*.3,c+i*R*.26+R*.16,c+R,c+i*R*.26-R*.08);g.stroke();}g.globalAlpha=1;}));
-  const all=[mars,earth,moon,venus];
-  return {mars,earth,moon,venus,hide(){all.forEach(s=>s.visible=false);},dispose(){all.forEach(s=>{s.removeFromParent();s.material.map.dispose();s.material.dispose();});}};}
+  const all=[mars,venus];
+  return {mars,venus,hide(){all.forEach(s=>s.visible=false);},dispose(){all.forEach(s=>{s.removeFromParent();s.material.map.dispose();s.material.dispose();});}};}
 /* 금성 구름 덮개 색(meteor-ride dustVeil 옵션) */
 export const CLOUD_VEIL={blobs:['#e6d2f4','#d9c0ee','#f1e4fa','#cdb0e6','#e0c9f2'],bg:['#dcc6ef','#cfb4e6'],fade:'rgba(214,190,236,0)',tiles:[[250,240,255],[176,146,206]],dots:['252,244,255','198,170,226','226,206,242']};
 export function cloudArrival(o){const {G,root,WL}=o,U=WL.userData;lockOn(G,WL);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('기본');

@@ -276,7 +276,7 @@ function tickBody(){
     C.minD=CAM_MIN/fk;if(C.dist<C.minD)C.dist=C.minD;const d=C.dist*fk;
     /* 화면 가림 규칙(2026-11-10, game/layout heroBand): 아래에 대화창이 떠 있는 동안은 원더룹을 그 위 띠 가운데로 — 보는 점을 내려 원더룹이 화면에서 올라가게(0.25초쯤에 걸쳐, 대화창이 닫히면 돌아옴). 촬영 모드는 안 함 */
     {const hb=SHOT?null:GAME.layout.heroBand();if(hb)C.dc=(hb[0]+hb[1])/2;C.dk=(C.dk||0)+((hb?1:0)-(C.dk||0))*Math.min(1,dt*4);if(C.dk<.002)C.dk=0;}
-    const rlk=WL.userData.riding&&WL.userData.riding.lookY,liftY=rlk!=null?rlk:.85+d*(asp<1?FOLLOW.liftP:FOLLOW.lift), /* 연출이 원더룹을 타고 가게 할 때 riding.lookY로 보는 점 높이를 정할 수 있다(2026-11-13 — 화성 → 금성 가까운 카메라에서 컴퓨터 화면 아래로 발이 잘렸다) */dockY=.75+((C.dc??.5)-.5)*d*2*Math.tan(camera.fov*Math.PI/360)/Math.max(.6,Math.cos(C.pitch));
+    const rlk=WL.userData.riding&&WL.userData.riding.lookY,liftY0=rlk!=null?rlk:.85+d*(asp<1?FOLLOW.liftP:FOLLOW.lift),liftY=SHOT?liftY0:(C.lys=C.lys==null?liftY0:C.lys+(liftY0-C.lys)*(1-Math.exp(-dt*3))), /* 보는 점 높이는 부드럽게(2026-11-14 — 탈것이 riding.lookY를 정하는 순간 1m 넘게 뚝 바뀌어 원더룹이 화면에서 튀어 올랐다) */ /* 연출이 원더룹을 타고 가게 할 때 riding.lookY로 보는 점 높이를 정할 수 있다(2026-11-13 — 화성 → 금성 가까운 카메라에서 컴퓨터 화면 아래로 발이 잘렸다) */dockY=.75+((C.dc??.5)-.5)*d*2*Math.tan(camera.fov*Math.PI/360)/Math.max(.6,Math.cos(C.pitch));
     _ct.set(WL.position.x,WL.position.y+liftY+(Math.min(liftY,dockY)-liftY)*C.dk,WL.position.z); /* 보는 점을 거리에 비례해 올림 → 원더룹이 화면 아래쪽 3분의 1쯤(가까이 당기면 덜 올라감) */
     _cw.set(_ct.x+Math.sin(C.yaw)*Math.cos(C.pitch)*d,_ct.y+Math.sin(C.pitch)*d,_ct.z+Math.cos(C.yaw)*Math.cos(C.pitch)*d);
     {let kt=1;if(Z.camRoom){const [rx,rz]=Z.camRoom.c,rr=Z.camRoom.r,ox=_ct.x-rx,oz=_ct.z-rz,dx=_cw.x-_ct.x,dz=_cw.z-_ct.z,A=dx*dx+dz*dz,B=2*(ox*dx+oz*dz),Cq=ox*ox+oz*oz-rr*rr; // 카메라 방(구역 정보 camRoom): 팔이 방 밖으로 나가면 방 안까지만
@@ -308,7 +308,7 @@ function tickBody(){
   else{C.ready=false;C.hv=null;const tg=follow?new THREE.Vector3(WL.position.x,WL.position.y+.85,WL.position.z):ROOM_T;const k=Math.min(1,dt*3);const dv=tg.clone().sub(controls.target).multiplyScalar(k);controls.target.add(dv);camera.position.add(dv);
    if(ui.camGoal){const off=camera.position.clone().sub(controls.target);const L=off.length(),nl=L+(ui.camGoal-L)*Math.min(1,dt*3);off.setLength(nl);camera.position.copy(controls.target).add(off);if(Math.abs(nl-ui.camGoal)<.05)ui.camGoal=0;}}
   if(!rig&&!C.hv&&!phOn){controls.update();if(Z.camBox&&!GAME.view.req)clampBox(camera.position,Z.camBox);}if(phOn)GAME.photo.cameraTick(dt); // 사진 카메라가 마지막에 덮어씀(연출·따라가기는 밑에서 그대로 흐름)
-  GAME.occlude.prepCut();{const fx=GAME.react.camPre(camera,dt);renderFrame();if(fx)GAME.react.camPost(camera);} // 리액션 화면 흔들림·시야(game/react) — 그 한 장에만. 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
+  GAME.occlude.prepCut();if(!GAME.travel.covering()){const fx=GAME.react.camPre(camera,dt);renderFrame();if(fx)GAME.react.camPost(camera);} /* 우주 지도가 화면을 다 덮은 동안은 3D를 그리지 않음(game/travel covering) */ // 리액션 화면 흔들림·시야(game/react) — 그 한 장에만. 흐려 보기 동그라미는 카메라가 움직인 뒤에 맞춘다
   if(!ui.firstFrame){ui.firstFrame=true;performance.mark('wl-frame');} // 첫 화면 (로딩 시간 측정용)
   ui.statT+=dt;if(ui.statT>0.5){ui.statT=0;const ri=renderer.info.render,P=PERF,c=renderer.domElement;
     statsEl.textContent=(SHOT?'':`버전 ${window.WL_V||'-'}${window.WL_BUILD?' · 커밋 '+window.WL_BUILD.commit:''}\n`)+`${optimized?'최적화 켜짐':'최적화 꺼짐'}: 드로우콜 ${ri.calls}회(그림자 포함), 삼각형 ${ri.triangles.toLocaleString('ko-KR')}개`+(SHOT?'':

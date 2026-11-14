@@ -142,6 +142,7 @@ body.wl-antui #wlGet .ic{width:auto;height:auto;background:none;border:0;border-
 #wlHud .wl-chip.y{background:#f2b63c;color:#3e2834}#wlHud button.wl-chip{cursor:pointer}
 #wlItems .wl-ic img{filter:drop-shadow(0 0 .7px #7a5236) drop-shadow(0 0 .7px #7a5236)} /* 크림색 아이콘도 노란 칩 위에서 보이게 */
 #wlMenu{position:fixed;right:calc(env(safe-area-inset-right,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px + var(--qh,0px));z-index:41;display:flex;flex-direction:column;align-items:flex-end;gap:.45rem}
+#wlMenu .wl-ver{font:12px/1.2 'Gowun Dodum',sans-serif;color:#fbe9d8;background:rgba(44,30,42,.72);border-radius:999px;padding:.2rem .6rem;opacity:.9}
 #wlMenu .ls{display:none;flex-direction:column;align-items:flex-end;gap:.45rem}#wlMenu.open .ls{display:flex}
 #wlItems{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:calc(env(safe-area-inset-top,0px) + 14px + max(58px,var(--qh,0px)));z-index:16;display:flex;flex-direction:column;align-items:flex-start;gap:.45rem;pointer-events:none}
 #wlItems .wl-chip{min-height:40px;padding:.35rem .9rem .35rem .55rem;font-size:.95rem;color:#1e1418;pointer-events:auto;border:0;font:inherit;font-family:"Jua","Gowun Dodum",sans-serif}#wlItems .wl-ic,#wlItems .bagic{width:24px;height:24px}
@@ -195,6 +196,8 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   /* 절전 모드(2026-11-10 — 08 window.wlEco: 낮은 화질·30프레임 고정, 기본 꺼짐, 이 기기에 기억) */
   const eco=chip('',()=>{sfx('ui-click');if(window.wlEco){window.wlEco.set(!window.wlEco.on);ecoLabel();toast(window.wlEco.on?'절전 모드 켜짐 — 화질을 낮추고 30프레임으로':'절전 모드 꺼짐');}}),ecoLabel=()=>{eco.textContent='절전 모드: '+(window.wlEco&&window.wlEco.on?'켜짐':'꺼짐');};
   ls.append(snd,eco,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
+  /* 버전 표시(2026-11-14 — 휴대폰이 예전 버전을 보고 있는지 확인): 메뉴 맨 아래 작은 글자 '버전 7b75f60a35'(= version.json, 공개 주소 index.html의 WL_V — 한 파일 HTML은 빌드 해시) */
+  {const v=document.createElement('div');v.className='wl-ver';v.textContent='버전 '+(window.WL_V||'-')+(window.WL_BUILD&&window.WL_BUILD.commit?' · '+window.WL_BUILD.commit:'');ls.append(v);}
   const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on){sndLabel();ecoLabel();}};
   mb.addEventListener('click',()=>{sfx('ui-click');mb.blur();setMenu(!menu.classList.contains('open'));});setMenu(false);menu.append(mb,ls);
   // 왼쪽 위 가방 단추(개미굴 '도감 0/11' 노란 칩 자리): 받은 물건을 줄줄이 늘어놓지 않고 한 단추 → 탐험 가방 창
