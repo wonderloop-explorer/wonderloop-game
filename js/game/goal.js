@@ -54,19 +54,19 @@ function setArrow(ang){const q=document.getElementById('wlQuest');if(!q)return;i
   if(!arrow){arrow=document.createElement('span');arrow.className='wl-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='➜';}
   if(arrow.parentNode!==q&&q.textContent)q.prepend(arrow);arrow.style.transform=`rotate(${ang}rad)`;}
 /* 이름표가 화면 위 안내 글(할 일 안내·가방·메뉴·안내 문구)과 겹치면 기둥을 따라 아래로 비켜 내림(2026-11-04 — 개미굴 원본에서 '버섯 랜턴' 이름표와 할 일 안내가 겹쳐 잘렸다). 기둥 밑동 1.2m 위보다 낮게는 안 내린다 */
-const _v=new THREE.Vector3(),_b=new THREE.Vector3();let tagDrop=0;
-function hudRects(){const R=[];for(const id of ['wlQuest','wlItems','wlMenu','wlToast','wlPrompt']){const e=document.getElementById(id);if(!e||!e.offsetParent&&getComputedStyle(e).position!=='fixed')continue;const r=e.getBoundingClientRect();if(r.width>2&&r.height>2&&getComputedStyle(e).visibility!=='hidden'&&+getComputedStyle(e).opacity>.05)R.push(r);}return R;}
+const _v=new THREE.Vector3(),_b=new THREE.Vector3();let tagDrop=0,tagHide=false;
+function hudRects(){const R=[];for(const id of ['wlQuest','wlItems','wlMenu','wlToast','wlPrompt','wlStrip','wlNotice','wlGet','wlCount']) /* 카드·띠·횟수도(2026-11-14 — 화산 꼭대기 발견 띠 카드가 '금성행 회오리' 이름표를 반쯤 가렸다) */{const e=document.getElementById(id);if(!e||!e.offsetParent&&getComputedStyle(e).position!=='fixed')continue;const r=e.getBoundingClientRect();if(r.width>2&&r.height>2&&getComputedStyle(e).visibility!=='hidden'&&+getComputedStyle(e).opacity>.05)R.push(r);}return R;}
 function avoidHud(gy,dt){const cam=ctx.camera;if(!cam||!cam.isPerspectiveCamera){tagDrop=0;return;}const W=innerWidth,H=innerHeight;
   const base=tag.position.y;_v.copy(tag.position);_v.y+=tag.scale.y*(1-tag.center.y);_v.project(cam);if(_v.z>1){tagDrop=0;return;}
   const depth=cam.position.distanceTo(tag.position),ppm=H/(2*Math.tan(cam.fov*Math.PI/360)*depth),top=(1-_v.y)/2*H,cx=(_v.x+1)/2*W,hw=tag.scale.x*.5*ppm*.75;
   let need=0;for(const r of hudRects()){if(cx+hw<r.left||cx-hw>r.right||top>r.bottom+6||top+tag.scale.y*ppm<r.top)continue;need=Math.max(need,(r.bottom+8-top)/ppm);}
-  need=Math.min(need,Math.max(0,base-gy-1.2));tagDrop+=(need-tagDrop)*Math.min(1,dt*6);tag.position.y=base-tagDrop;}
+  const cap=Math.max(0,base-gy-1.2);need=Math.min(need,cap)+(need>cap+.05?1e3:0);tagHide=need-tagDrop>.25;need=Math.min(need,cap);tagDrop+=(need-tagDrop)*Math.min(1,dt*6);tag.position.y=base-tagDrop;} /* 끝까지 내려도 카드에 걸리면 그동안 이름표를 숨김(반쯤 가려진 채 두지 않음) */
 function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hintsVisible()){G.visible=false;setArrow(null);return;}G.visible=true;t0+=dt;
   const gy=P.y??cur.y??(ctx.ground?ctx.ground(P.x,P.z):0);beam.position.set(P.x,gy,P.z);beamA.position.set(P.x,gy,P.z);tag.position.set(P.x,gy+(cur.h||2.7)+Math.sin(t0*3)*.08,P.z);
   /* 이름표·노란 세모 크기 상한(2026-11-07 — 카메라 가까이 오면 화면을 크게 가렸다): 화면 높이의 11%(최대 96px)보다 커지지 않게 줄이고,
      원더룹이 목표 1.6m 안이면 0.3초에 걸쳐 숨김(2.6m부터 옅어짐) */
   {const cam=ctx.camera;let k=1;if(cam&&cam.isPerspectiveCamera){const depth=Math.max(.1,cam.position.distanceTo(tag.position)),ppm=innerHeight/(2*Math.tan(cam.fov*Math.PI/360)*depth),cap=Math.min(96,innerHeight*.11);k=Math.min(1,cap/(1.44*ppm),(innerWidth-16)/(2.3*tagW*ppm));} /* 화면 폭보다 넓어지지도 않게 */
-   tag.scale.set(2.3*k*tagW,1.44*k,1);const W0=ctx.WL,dl=W0?Math.hypot(P.x-W0.position.x,P.z-W0.position.z):9,want=Math.min(1,Math.max(0,(dl-1.6)/1));
+   tag.scale.set(2.3*k*tagW,1.44*k,1);const W0=ctx.WL,dl=W0?Math.hypot(P.x-W0.position.x,P.z-W0.position.z):9,want=tagHide?0:Math.min(1,Math.max(0,(dl-1.6)/1));
    tagA+=(want-tagA)*Math.min(1,dt*6);tag.material.opacity=tagA;}
   avoidHud(gy,dt);
   /* 화면 가장자리에 걸리면 안쪽으로 밀어 넣음(2026-11-13 — 모든 세계 공통: 휴대폰에서 '먼지 회오리' 이름표가 화면 끝에서 잘렸다): 화면에서 좌우 8px 안에 들도록 카메라 오른쪽 방향으로 옮김 */
@@ -92,4 +92,8 @@ function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hi
   // 화살표: 카메라가 보는 쪽(앞)을 위로 — 오른쪽이면 오른쪽으로
   const cam=ctx.camera;cam.getWorldDirection(_p);_p.y=0;_p.normalize();const f=dx*_p.x+dz*_p.z,r=dx*-_p.z+dz*_p.x;
   setArrow(L<1.6?null:Math.atan2(f,r)*-1);}
-export {clearGoal,initGoal,set,tickGoal};
+/* 이름표 화면 네모(시험용 — tools/cover-probe.js가 카드에 가려졌는지 잼): 보일 때(불투명도 .3 넘게)만 [왼, 위, 오른, 아래] 화면 화소 */
+function tagRect(){const cam=ctx&&ctx.camera;if(!G||!G.visible||!cur||!tag||tag.material.opacity<.3||!cam)return null;_v.copy(tag.position).project(cam);if(_v.z>1)return null;
+  const depth=cam.position.distanceTo(tag.position),ppm=innerHeight/(2*Math.tan(cam.fov*Math.PI/360)*depth),w=tag.scale.x*ppm,h=tag.scale.y*ppm,cx=(_v.x+1)/2*innerWidth,cy=(1-_v.y)/2*innerHeight;
+  return {label:cur.label||'',r:[cx-w*tag.center.x,cy-h*(1-tag.center.y),cx+w*(1-tag.center.x),cy+h*tag.center.y]};}
+export {clearGoal,initGoal,set,tagRect,tickGoal};

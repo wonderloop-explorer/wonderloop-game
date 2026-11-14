@@ -296,4 +296,4 @@ const hintsVisible=()=>hintsOn;
 export {uiHooks,count,badgeShown,closeBadge,stageBadge,profileCard,closeProfile,profileShown,itemCard,toast,closeItemCard,transition,HINT_LAYER,act as actButton,cardCloser,closeCut,cut,tickCut,closers as cardClosers,cardDone,enqueue as cardSlot,cardShown,cardsQueued,chooseResult,clearCards,closeNotice,closeSecret,secret,secretShown,dialogShown,hideDialog,hint,hintObjs,hintsVisible,notice,noticeShown,result,resultShown,setHints,setPrompt,setQuest,showDialog};
 // 소리 안내 (개미굴과 같은 문구): 화면에 돌아왔는데 소리가 깨어나지 않으면, M으로 끄고 켤 때
 soundHooks.onWakeFail=()=>toast('소리가 멈췄다면 화면을 한 번 눌러 주세요');
-soundHooks.onMute=m=>toast(m?'소리 꺼짐 (M으로 다시 켜기)':'소리 켜짐');
+soundHooks.onMute=m=>toast(m?(coarse?'소리 꺼짐 (메뉴에서 다시 켜기)':'소리 꺼짐 (M으로 다시 켜기)'):'소리 켜짐'); /* 터치 기기는 키보드 글자 없이 */

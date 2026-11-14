@@ -33,7 +33,7 @@ export const FAIRY_FRONT={ribbon:'원더룹의 대모험',logo:'요정의 숲 �
       {id:'umbrella',name:'민들레 솜털 우산',f:'사공 요정의 선물. 뛰어내리거나 떨어질 때 펼쳐져 사뿐히 내려와요.',where:'이슬방울 선착장'},
       {id:'badge',name:'???',where:'민들레 공중정원'},{id:'can',name:'???',where:'버섯 장터'},{id:'gem',name:'???',where:'별꽃 전망대'}],
     friends:['boatman','mushroom'],secrets:[{id:'strider',where:'이슬방울 선착장'},{id:'ladybug',where:'이슬방울 선착장'}]},
-  help:[['탈것','가까이 가면 생기는 단추(E)로 타요 · 타는 동안에도 카메라는 돌릴 수 있어요'],['민들레 우산','받은 뒤에는 점프하거나 높은 데서 떨어질 때 저절로 펼쳐져 천천히 내려와요']],
+  help:[['탈것','가까이 가면 생기는 단추로 타요 · 타는 동안에도 카메라는 돌릴 수 있어요'],['민들레 우산','받은 뒤에는 점프하거나 높은 데서 떨어질 때 저절로 펼쳐져 천천히 내려와요']],
   ending:{img:null}};
 export const FAIRY_BADGE={img:asset('assets/ui/fairy/stage-badge.webp'),box:[.128,.414,.868,.893],medal:[.4992,.2153,.13],ar:1400/416};
 export const icon=id=>`assets/icons/fairy/${id}.png?v=${window.WL_V||''}`;

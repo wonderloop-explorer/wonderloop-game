@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""이동 연출에서 원더룹이 화면에서 차지하는 높이 비교 (2026-11-13) — 촬영 서버(8000)가 떠 있을 때 저장소 루트에서:
+"""이동 연출에서 (2026-11-14: 뒤통수만 보인 시간 — 머리 뼈 앞 방향과 카메라 쪽이 135° 넘게 벌어진 프레임 시간 합, --rides whirl만 고르기)
+    원더룹이 화면에서 차지하는 높이 비교 (2026-11-13) — 촬영 서버(8000)가 떠 있을 때 저장소 루트에서:
      python3 tools/ride-size-rec.py [--tag 이름] [--pc] [--port 8000]
    같은 휴대폰 세로 크기(390×844, 기본 — --pc면 1280×720)로 두 이동을 차례로 녹화한다:
      달 → 화성(별똥별 꼬리 타기 — 회색 정원 출구로 걸어 들어가 화성에 내려앉아 조작이 풀릴 때까지)
@@ -10,11 +11,12 @@
 import json, os, shutil, statistics, sys, time
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')); a = sys.argv[1:]
-TAG = a[a.index('--tag') + 1] if '--tag' in a else 'after'; PC = '--pc' in a; PORT = a[a.index('--port') + 1] if '--port' in a else '8000'
+TAG = a[a.index('--tag') + 1] if '--tag' in a else 'after'; RIDES = (a[a.index('--rides') + 1] if '--rides' in a else 'meteor,whirl').split(','); PC = '--pc' in a; PORT = a[a.index('--port') + 1] if '--port' in a else '8000'
 DEV = 'pc' if PC else 'phone'; OUT = os.path.join(ROOT, 'docs/compare/ride-size'); os.makedirs(OUT, exist_ok=True)
 SIZE = """(()=>{window.__sz=[];const t0=performance.now();const L=()=>{try{const G=wlGame,W=G.mission.hero(),U=W.userData;
   if(U.riding&&!document.getElementById('wlDustVeil')&&!document.getElementById('wlTravelMap')&&window.wlPhoto){const b=wlPhoto.body(G.view.camera);if(b&&b.rect){const r=b.rect,h=r[3]-r[1],w=r[2]-r[0],
-    ix=Math.max(0,Math.min(1,r[2])-Math.max(0,r[0])),iy=Math.max(0,Math.min(1,r[3])-Math.max(0,r[1])),out=w>0&&h>0?1-ix*iy/(w*h):0;__sz.push([+((performance.now()-t0)/1000).toFixed(2),+h.toFixed(4),+out.toFixed(3)]);}}}catch(e){}requestAnimationFrame(L);};L();})()"""
+    ix=Math.max(0,Math.min(1,r[2])-Math.max(0,r[0])),iy=Math.max(0,Math.min(1,r[3])-Math.max(0,r[1])),out=w>0&&h>0?1-ix*iy/(w*h):0;const hd=W.getObjectByName('head')||W,hp=new W.position.constructor(),fw=new W.position.constructor();hd.getWorldPosition(hp);hd.getWorldDirection(fw);fw.y=0;fw.normalize();const cv=G.view.camera.position.clone().sub(hp).normalize();
+    __sz.push([+((performance.now()-t0)/1000).toFixed(2),+h.toFixed(4),+out.toFixed(3),+(fw.x*cv.x+fw.z*cv.z).toFixed(3)]);}}}catch(e){}requestAnimationFrame(L);};L();})()"""
 NOWH = "()=>{const s=window.__sz||[];return s.length?s[s.length-1][1]:null}"
 FL_M = ['have:infinite-space:necklace', 'space:demo', 'space:rock', 'moon:bgm-intro']
 FL_W = ['have:infinite-space:necklace', 'mars:met', 'mars:call', 'mars:recA', 'mars:recB', 'mars:told', 'clear:space-mars', 'item:infinite-space:bluesunset-glass', 'meet:infinite-space:pipi', 'meet:infinite-space:dungdung',
@@ -23,7 +25,7 @@ R = {}; SHOTS = {}
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--mute-audio', '--autoplay-policy=no-user-gesture-required', '--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal'])
     o = dict(viewport={'width': 1280, 'height': 720}) if PC else dict(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
-    for ride in ('meteor', 'whirl'):
+    for ride in RIDES:
         vd = os.path.join(OUT, 'vid-' + ride); c = b.new_context(**o, record_video_dir=vd, record_video_size=o['viewport']); pg = c.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)[:200]))
         zone = 'space-garden' if ride == 'meteor' else 'space-mars'
@@ -55,10 +57,18 @@ with sync_playwright() as p:
         sz = pg.evaluate('window.__sz||[]'); vid = pg.video.path(); c.close()
         shutil.move(vid, os.path.join(OUT, '%s-%s-%s.webm' % (TAG, DEV, ride))); shutil.rmtree(vd, ignore_errors=True)
         hs = [x[1] for x in sz if x[1] > 0]; bad = [x for x in sz if x[2] > .01]
+        back = 0.0; runs = []; cur = 0.0
+        for i in range(1, len(sz)):
+            dtf = min(.1, sz[i][0] - sz[i - 1][0])
+            if len(sz[i]) > 3 and sz[i][3] < -.707: back += dtf; cur += dtf
+            else:
+                if cur > 0: runs.append(round(cur, 2))
+                cur = 0.0
+        if cur > 0: runs.append(round(cur, 2))
         R[ride] = {'프레임': len(sz), '원더룹 높이 %(가운데값)': round(statistics.median(hs) * 100, 1) if hs else None,
                    '높이 % 10~90번째': [round(sorted(hs)[int(len(hs) * .1)] * 100, 1), round(sorted(hs)[int(len(hs) * .9)] * 100, 1)] if hs else None,
                    '25~35% 안 비율': round(sum(1 for h in hs if .25 <= h <= .35) / max(1, len(hs)) * 100, 1), '25% 넘는 비율': round(sum(1 for h in hs if h >= .25) / max(1, len(hs)) * 100, 1),
-                   '잘린 프레임(1% 넘게)': len(bad), '오류': errs}
+                   '잘린 프레임(1% 넘게)': len(bad), '뒤통수만 보인 시간(초)': round(back, 2), '뒤통수 한 번에 가장 길게(초)': max(runs) if runs else 0, '뒤통수 구간 수': len(runs), '오류': errs}
         SHOTS[ride] = [x for x in shots if x[1] and not x[3]]
     b.close()
 # 나란히 비교 그림: 이동마다 고르게 여섯 장 + 높이 %
@@ -66,7 +76,7 @@ try:
     from PIL import Image, ImageDraw, ImageFont
     fnt = ImageFont.truetype('/System/Library/Fonts/AppleSDGothicNeo.ttc', 30)
     rows = []
-    for ride, name in (('meteor', '달 → 화성 (별똥별)'), ('whirl', '화성 → 금성 (큰 회오리)')):
+    for ride, name in [x for x in (('meteor', '달 → 화성 (별똥별)'), ('whirl', '화성 → 금성 (큰 회오리)')) if x[0] in SHOTS]:
         L = SHOTS.get(ride) or []; pick = [L[int(i * (len(L) - 1) / 5)] for i in range(6)] if len(L) >= 6 else L
         ims = []
         for t, h, f, _ in pick:

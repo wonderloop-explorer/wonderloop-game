@@ -27,6 +27,6 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[];
     spawn:{x:0,z:0,ry:PI*.8},
     areas:{field:{bounds:[-B,B,-B,B],obstacles:[],camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
     sun:{dir:new THREE.Vector3(...KEY.sunDir).normalize(),shadow:14,follow:true},
-    sky:SK,far:60,ambience:'wind',groundY,ground:[ground],keepOut:keep,
+    sky:SK,far:60,ambience:'wind',charFog:.12, /* 캐릭터는 안개를 아주 약하게(game/bend markChar — 배경 안개는 그대로) */groundY,ground:[ground],keepOut:keep,
     arrival:()=>arr,state:()=>({arrDone:st.arrDone,landed:!!(arr&&arr.state.landed)}),spots:{spawn:[0,0]},
     update,lateUpdate,dispose(){if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.scale.set(1,1,1);}}};}

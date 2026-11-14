@@ -27,6 +27,9 @@
     try {
       const G = window.wlGame; if (!G || !window.wlPhoto || !G.view.camera) return; const B = await bend(), cam = G.view.camera, W = G.mission.hero(), V = W.position.constructor;
       const boxes = []; for (const s of UI) document.querySelectorAll(s).forEach(e => {if (vis(e)) boxes.push({id: s.replace(/^[#.]/, ''), r: rectOf(e), e});});
+      /* 목표 이름표가 카드·띠·안내 문구에 가려졌는지(2026-11-14 — 화산 꼭대기 '금성행 회오리'): 이름표 네모가 15% 넘게 덮인 표본 */
+      if (G.goal.tagRect) {const tg = G.goal.tagRect(); if (tg) {const cb = boxes.filter(b => ['wlDlg', 'wlNotice', 'wlGet', 'wlStrip', 'wlToast', 'wlCount', 'wlSecret .card', 'wlResult .card', 'wlBadge'].includes(b.id)); const cv = cover(tg.r, cb);
+        const L = C.L || (C.L = {n: 0, bad: 0, max: 0, list: {}}); L.n++; L.max = Math.max(L.max, cv.f); if (cv.f > .15) {L.bad++; const k = tg.label + '|' + cv.by.join(','); L.list[k] = (L.list[k] || 0) + 1;}}}
       const pf = document.getElementById('wlProf'), modal = pf && vis(pf);
       const has = id => boxes.find(b => b.id === id);
       let key = null; const d = has('wlDlg');
@@ -46,6 +49,6 @@
   }
   setInterval(tick, 200);
   C.report = () => {const L = [...C.S.values()].filter(s => s.n >= 2 && !s.modal), cov = L.filter(s => s.bad / s.n > .5);
-    return {screens: L.length, covered: cov.length, modal: [...C.S.values()].filter(s => s.modal).length, err: C.err || null,
+    return {label: C.L ? {표본: C.L.n, 가려진표본: C.L.bad, 최대: +C.L.max.toFixed(2), 목록: C.L.list} : null, screens: L.length, covered: cov.length, modal: [...C.S.values()].filter(s => s.modal).length, err: C.err || null,
       list: cov.map(s => ({key: s.key, who: [...s.who], face: +s.face.toFixed(2), body: +s.body.toFixed(2), by: [...s.by], n: s.n}))};};
 })();

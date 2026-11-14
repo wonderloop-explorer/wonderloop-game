@@ -9,7 +9,7 @@ import './06-outfits.js';
 import {DRV,GAIT,SPEED,hopWL,setWalkTarget,stopWalk,updateWL,walking,wlHit} from './07-actions.js';
 import * as GAME from './game/index.js';
 import {CURRENT as WORLD} from './worlds/index.js'; // 지금 세계 설정(시리즈 공통 틀 — 타이틀 화면)
-import {bendInfo,setBend,setLevel,setZoneBend} from './game/bend.js';
+import {bendInfo,markChar,setBend,setCharFog,setLevel,setZoneBend} from './game/bend.js';
 import {clearDevcheck,initDevcheck,rollTest,toggleBounds,toggleMeasure,toggleSize} from './game/devcheck.js';
 import {clearDevstory,devStory,initDevstory} from './game/devstory.js'; // 톱니 메뉴: 공통 틀 8단계 시험 장면(긴장·숨바꼭질·감정·스테이지 빛·큰 획득·귀환 비행·미니어처·엔딩) // 톱니 메뉴: 경계 보기·걷는 시간 재기·크기 확인·굴러가는 물건 시험
 /* ---------- 상호작용 ---------- */
@@ -69,7 +69,8 @@ function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥�
   {const h=document.querySelector('header');if(h)h.style.display=z.world||!DEV_HEAD?'none':''; /* 개발용 머리말('원더룹 베이스캠프 / … 실험')은 주소에 ?debug일 때만(2026-11-04) */document.body.classList.toggle('wl-world',!!z.world);} // 세계 구역: 베이스캠프 머리말·아래 조작 안내 글자 숨김(조작법 창에 다 있음) // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);
   {const W=z.world||WORLD;GAME.sound.useWorld(W.sfxWorld||W.id||null,W.sfx||null);} // 효과음: 그 세계 전용 묶음(js/sfx/<세계>.js) + 세계 설정 sfx로 몇 종류만 바꿔 끼우기(game/sound useWorld)
-  GAME.front.applyLook(U);} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
+  GAME.front.applyLook(U);setCharFog(z.charFog);markChar(WL); /* 캐릭터 안개(game/bend): 원더룹은 구역 정보 charFog만큼만 안개를 받음(없으면 1 — 예전 그대로) */} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
+window.wlCharFog=setCharFog; // 시험용: 캐릭터 안개 배율 바꿔 보기(전후 비교 — 구역을 옮기면 구역 값으로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)
 {const sp=zone.cur.spawn;WL.position.set(sp.x,groundY(sp.x,sp.z),sp.z);WL.rotation.y=sp.ry||0;} // 처음 구역의 들어오는 자리 (베이스캠프는 04의 처음 자리와 같다)
 GAME.initGame({scene,camera,renderer,WL,ground:(x,z)=>floorAt(x,z,.5),blocked:(x,z)=>blocked(x,z),rig:{neck,spine,arms}});window.wlGame=GAME;if(!new URLSearchParams(location.search).has('shot'))GAME.photo.initPhoto({scene,camera,renderer,WL,controls,ui:GAME.ui,head:WL.getObjectByName('head'),mobile:QUALITY.tier==='mobile',groundY:(x,z)=>groundY(x,z),zone:()=>zone.cur,prerender:c=>setBend(c,WL.position)}); // 사진 모드(시리즈 공통)

@@ -379,7 +379,7 @@ async function finale(W,U){SK.to(1,9);G.sound.bedLevel(.55,3);
   const c=[SUNSET.wl[0],groundY(...SUNSET.wl),SUNSET.wl[1]];G.view.start({at:[c[0]-3,c[1]+2.4,c[2]],from:[c[0]+7.4,c[1]+1.7,c[2]-.6]}); /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
   await wait(3);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
   await wait(1.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','…같이… 보니까… 더… 파랗다…',3.4,{look:'노을'});dung.mode='idle';
-  G.ui.toast('사진 찍기 좋은 순간이에요 — 사진 단추(C)로 남겨 보세요',4.6);await wait(4.2);
+  G.ui.toast(PHOTO_TIP,4.6);await wait(4.9); /* 안내 문구가 사라진 뒤 발견 카드 */
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
     await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
   /* 유리 조각 건네기(2026-11-11): 노을을 보며 하는 말은 위 두 줄까지 — 여기부터 삐삐가 원더룹 쪽으로 돌아서 한 걸음 다가와 두 손으로 유리 조각을 내밀고, 원더룹도 삐삐를 보고,
@@ -421,7 +421,7 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
   const bx0=BIGTOP[0],bz0=BIGTOP[1],bo={x:P0.x,z:P0.z};let bx=bx0,bz=bz0,T0=G.clock.t,ph=0,liftT=0;G.sound.sfx('event-whirl');G.travel.mark('touch');st.bigGo=true;
   /* 2026-11-13(네 번째 — 달 → 화성 별똥별처럼): 회오리 안에서 두 팔을 벌리고 천천히 빙글빙글(회전목마), '반짝 신남', 목도리는 도는 반대쪽으로 휘날림. 카메라는 원더룹 가까이 앞옆 3/4(얼굴),
      내려다보는 장면(친구들·깃발)만 짧게 넓게. 거리는 가로 화면 기준 — 세로 화면 배율은 08이 곱한다(예전엔 여기서도 pk()를 곱해 휴대폰에서 두 배 멀었다) */
-  const SC=makeScarf(W);st.scarf=SC;const rd=d=>{const c=G.view.camera;return c&&c.aspect>1.25?d*1.25:d;}; /* 가로 화면(컴퓨터)은 조금 멀리 — 별똥별 이동과 같은 크기(휴대폰 세로는 08 배율 그대로) */const cs1={cu:(G.controls.input.cam||{}).user,idle:9},SPIN=.55,_hp=new THREE.Vector3();
+  const SC=makeScarf(W);st.scarf=SC;const rd=d=>{const c=G.view.camera;return c&&c.aspect>1.25?d*1.25:d;}; /* 가로 화면(컴퓨터)은 조금 멀리 — 별똥별 이동과 같은 크기(휴대폰 세로는 08 배율 그대로) */const cs1={cu:(G.controls.input.cam||{}).user,idle:9,faceFn:()=>W.rotation.y},SPIN=.55,_hp=new THREE.Vector3();
   const hole=()=>{const c=G.view.camera;if(!c)return;W.updateMatrixWorld();_hp.copy(W.position);_hp.y+=.7;const d=c.position.distanceTo(_hp);_hp.project(c);big.setHole(_hp.x,_hp.y,1.25/(d*Math.tan(c.fov*PI/360)),c.aspect);}; /* 원더룹 둘레(약 1.25m) 먼지를 옅게 */
   st.rideFx=dt=>{SC.tick(G.clock.t,true,1.1,-1.6);hole();}; /* 목도리는 도는 반대쪽 옆으로 휘날림 */
   /* 2026-11-10: 큰 회오리가 다가오는 동안 둘은 노을을 보고 있다가, 원더룹이 들려 올라가면 돌아보며 손을 흔들고, 내려오면 다시 노을을 봄 */
@@ -437,7 +437,7 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
      → 하늘이 노을에서 짙은 남보라 우주로, 회오리가 하늘 끝에서 놓아줌 → 멀리 작은 파란 점(지구)·회색 점(달)이 스쳐 지나감(원더룹이 잠깐 돌아봄) → 우주 지도(화성 → 금성 발자국·예고 한 줄)
      → 연보라 금성이 커지고 두꺼운 구름 속으로 쏙(구름 덮개 → 구역 space-venus, 거기서 내려앉음). 약 20초 + 내려앉기. 화면을 톡 누르면 다음 단계로. 카메라는 플레이어 것(손을 떼면 기본 각도로) ── */
   function toSpace(){const V3=new THREE.Vector3(),
-    bits=spaceBits(root),y0=W.position.y,cs=cs1,tap={n:0}; /* cu를 지금 값으로: null이면 camHome이 '방금 만졌다'로 보고 1.6초를 기다려 첫 장면(친구들)이 통째로 지나갔다(2026-11-13) */st.bits=bits;let fast=false,q=0,ph3=0,T1=G.clock.t,done=false,yaw0=W.rotation.y,drift=0;
+    bits=spaceBits(root),y0=W.position.y,cs=cs1,tap={n:0}; /* cu를 지금 값으로: null이면 camHome이 '방금 만졌다'로 보고 1.6초를 기다려 첫 장면(친구들)이 통째로 지나갔다(2026-11-13) */st.bits=bits;let fast=false,q=0,ph3=0,T1=G.clock.t,done=false,yaw0=W.rotation.y,yb=yaw0,drift=0;
     const onDown=e=>{tap.x=e.clientX;tap.y=e.clientY;tap.t=performance.now();},onUp=e=>{if(tap.t&&performance.now()-tap.t<320&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<10&&!(e.target&&e.target.closest&&e.target.closest('button')))tap.n++;tap.t=0;};
     window.addEventListener('pointerdown',onDown);window.addEventListener('pointerup',onUp);st.tapOff=()=>{window.removeEventListener('pointerdown',onDown);window.removeEventListener('pointerup',onUp);};
     G.travel.mark('rise');G.travel.depart();G.sound.sfx('event-whirl',{gain:1.1});if(U.setExpr)U.setExpr('반짝 신남');
@@ -453,7 +453,10 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
         if(tap.n&&!fast){tap.n=0;const rem=Math.max(.01,R-t),fd=Math.max(.7,rem/8);fast={f:rem/fd,t0:G.clock.t,fd,y:W.position.y};if(!st.spc){st.spc=true;SK.to(2,fd);}G.travel.retime(fd+SP+MAPS+ORB+COVER);}
         if(fast){T1-=dt*(fast.f-1);tap.n=0;}
         const u=Math.min(1,t/R),e=u*u*(3-2*u),yn=y0+20*ss(0,4.1,t)+130*Math.pow(Math.max(0,(t-4.1)/(R-4.1)),2),y=fast?lerp(fast.y,y0+150,ss(0,fast.fd,G.clock.t-fast.t0)):yn, /* 세 장면(친구들·파란 해·깃발)을 보는 4.1초까지는 천천히 20m, 그 뒤 훌쩍 우주로(2026-11-13 — 꼭대기에서 출발: 발아래 깃발이 깃발 장면 동안 화면 안이게) */a=t*1.25,rr=.55+.25*Math.sin(t*.7);
-        W.position.set(P0.x+Math.cos(a)*rr*.6,y,P0.z+Math.sin(a)*rr*.6);U.riding.y=y;W.rotation.y=yaw0+t*SPIN;W.rotation.z=Math.sin(t*1.6)*.06;st.rideFx(dt);
+        W.position.set(P0.x+Math.cos(a)*rr*.6,y,P0.z+Math.sin(a)*rr*.6);U.riding.y=y;
+        /* 몸 돌기(2026-11-14 — 뒤통수 줄이기): 얼굴 장면은 천천히 빙글(카메라가 따라 돎), 세계 방향이 정해진 장면(친구들·파란 해·깃발)은 그 0.5초 전부터 카메라 쪽으로 몸을 돌려 놓고 천천히 — 장면이 바뀌는 순간 등이 카메라 쪽이던 것 */
+        {let cn=null;for(const k of CAM)if(t+.5>=k[0])cn=k;const tg=fast?G.controls.input.cam.yaw:(cn&&cn[1]!=='face'?cn[1]:null);let om=SPIN;
+          if(tg!=null){let e=tg-.7-yb;e=Math.atan2(Math.sin(e),Math.cos(e));om=Math.max(-1.6,Math.min(1.8,.15+3*e));}yb+=om*dt;W.rotation.y=yb;}W.rotation.z=Math.sin(t*1.6)*.06;st.rideFx(dt);
         big.setBase(P0.x,gy,P0.z);big.setHeight(Math.min(70,y-gy+6));big.mat.uniforms.uA.value=(.4-.2*ss(0,.3,u))*(1-ss(.62,.86,u)); /* 하늘 끝에서 놓아줌: 회오리가 옅어지며 아래에 남음 */
         if(Math.floor(t/2.1)!==st.bwi){st.bwi=Math.floor(t/2.1);if(u<.7)G.sound.sfx('event-whirl',{gain:.85*(1-u)});}
         if(u<.5)whirlDust(big,bo,dt,MOB?14:24);G.travel.tick(dt,'fly');
@@ -474,6 +477,7 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
         bits.earth.scale.setScalar(5);bits.moon.position.copy(EP).addScaledVector(V3.set(e[0],e[1],e[2]),cam.aspect<1?-4.4:6.6).addScaledVector(V3.set(e[4],e[5],e[6]),cam.aspect<1?4.4:2.3); /* 세로 화면은 지구 왼쪽 위(오른쪽 옆이면 화면 밖) */bits.moon.scale.setScalar(1.4);
         if(Math.abs(nx)<.97){st.earthSec+=dt;G.travel.note('earthSec',+st.earthSec.toFixed(2));}
         const ex=EP.x-Wp.x,ez=EP.z-Wp.z,look=ss(.2,.34,u)*(1-ss(.66,.8,u)),ya=Math.atan2(ex,ez);drift+=dt*.25;const base=drift,d=Math.atan2(Math.sin(ya-base),Math.cos(ya-base));W.rotation.y=base+d*look; /* 돌아봄 */
+        {const C=G.controls.input.cam;if(C){const lim=1.9,wr=a=>Math.atan2(Math.sin(a),Math.cos(a)),b0=wr(base-C.yaw),r=wr(W.rotation.y-C.yaw);if(Math.abs(b0)<=lim&&Math.abs(r)>lim)W.rotation.y=C.yaw+Math.sign(r)*lim;}} /* 돌아봐도 카메라에서 뒤 3/4(약 110°)까지만 — 볼과 눈 한쪽이 보이게(2026-11-14 — 지구 쪽으로 고개를 돌리는 2~3초 동안 뒷모습만 보였다) */
         if(look>.5&&!st.eLook){st.eLook=true;if(U.setExpr)U.setExpr('궁금');}if(look<.3&&st.eLook===true&&u>.55){st.eLook=2;if(U.setExpr)U.setExpr('반짝 신남');}
         G.travel.tick(dt,'fly');camHome(G,dt,drift+.7,.05,rd(5.4),cs,2.5); /* 카메라는 원더룹 가까이 앞옆 3/4(몸의 기본 방향 기준 — 지구를 돌아보는 고개 때문에 카메라가 따라 돌지 않게), 지구·화성은 화면 자리로 뒤에 */
         if(u>=1){q=2;done=true;bits.earth.visible=bits.moon.visible=false;G.travel.mark('map');finish();}}};
@@ -494,11 +498,15 @@ function bigLift(W,U){return new Promise(async res=>{const big=makeWhirl(root,{r
       st.scarf.tick(0,false);U.action='서기';U.at=0;
       try{if(window.wlZone)await window.wlZone.go('space-venus');}catch(e){console.error(e);}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.3);}}
   });}
+/* 사진 안내 — 휴대폰·터치 기기는 키보드 글자 없이(2026-11-14) */
+const PHOTO_TIP=matchMedia('(pointer:coarse)').matches?'사진 찍기 좋은 순간이에요 — 사진 단추로 남겨 보세요':'사진 찍기 좋은 순간이에요 — 사진 단추(C)로 남겨 보세요';
 const discN=()=>Object.values(DISC).filter(k=>F[k]).length;
 /* ── 회오리 타기(원더룹): 들림 1초 → 빙글빙글 건너감 → 내려앉음(dur초, 조작 잠금 · 카메라는 플레이어 것 — 원더룹과 함께 움직임) ── */
 function ride(W,o){const U=W.userData;lockOn(G,W);if(U.setExpr)U.setExpr('반짝 신남');U.action='서기';U.at=0;const P0=W.position.clone(),gy0=groundY(P0.x,P0.z),to=o.to,gy1=groundY(to[0],to[1]),D=o.dur;
   const w=o.whirl,wo=o.wo;wo.busy=true;w.clear(true);let T=0,wi=-1,landed=false;G.sound.sfx('event-whoosh',{gain:.9});G.react.react('startle',{sound:null});
-  st.ride={o,tick(dt){T+=dt;let x,z,y;
+  /* 가까운 카메라(o.cam — 화산 회오리, 2026-11-14: 멀어서 원더룹이 점처럼 보였다): 큰 회오리 이동처럼 가까이 — 가는 방향 옆 앞쪽 비스듬히, 거리는 가로 화면 기준(세로 배율은 08이), 만지면 1.6초 뒤 돌아옴 */
+  const cs=o.cam?{cu:(G.controls.input.cam||{}).user,idle:9}:null,side=Math.atan2(to[0]-P0.x,to[1]-P0.z)+PI/2+.55,rd=d=>{const c=G.view.camera;return c&&c.aspect>1.25?d*1.25:d;};if(cs)U.riding.lookY=.8;
+  st.ride={o,tick(dt){T+=dt;let x,z,y;if(cs)camHome(G,dt,side,.22,rd(o.cam),cs,2.5);
     if(T<1){x=P0.x;z=P0.z;y=gy0+1.2*ss(0,1,T);}
     else if(T<D-1.1){const u=ss(1,D-1.1,T);x=lerp(P0.x,to[0],u);z=lerp(P0.z,to[1],u);y=lerp(gy0,gy1,u)+1.2+o.peak*Math.sin(PI*u);}
     else{x=to[0];z=to[1];y=gy1+1.2*(1-ss(D-1.1,D,T));}
@@ -534,15 +542,16 @@ async function flagScene(W,U){ /* 꽂은 뒤: 뿌듯한 폴짝 → 한 바퀴 �
     const fn=()=>{const u=Math.min(1,(G.clock.t-t0)/D),e=u*u*(3-2*u),a=a0+e*PI*2,k=pk(),r=8.5*k,x=cx+Math.sin(a)*r,z=cz+Math.cos(a)*r;return {at:[cx,cy+1.1,cz],from:[x,Math.max(cy+3.9*k,groundY(x,z)+1.6),z]};}; /* 평평한 고원 위(2026-11-12): 분화구 쪽에서 볼 때는 고원 끝 너머로 지평선·메사, 바깥에서 볼 때는 분화구가 화면에 */ /* 높이 올려 내려다봄(2026-11-12 — 낮게 돌면 85m 아래 화성 땅이 화면 밖이라 분홍 하늘만 보였다): 원더룹·깃발 너머로 붉은 땅·협곡·메사 */
     G.view.hold(fn);await G.core.until(()=>G.clock.t-t0>D||(C&&C.user!==cu)||!(G.view.req&&G.view.req.fn===fn),D+2);if(G.view.req&&G.view.req.fn===fn)G.view.hold(null);}
   if(U.setExpr)U.setExpr('기본');
-  G.ui.toast('사진 찍기 좋은 순간이에요 — 사진 단추(C)로 남겨 보세요',4.6);await wait(1.6);if(st.summit)st.summit.t=0;
+  /* 카드는 한 번에 하나(2026-11-14 — 발견 띠 카드와 사진 안내가 함께 떠 뒤의 '금성행 회오리' 이름표를 가렸다): 발견 카드가 닫힌 뒤에 사진 안내 */
   if(!F[DISC.vol]){G.state.setFlag(DISC.vol,true);G.react.react('awe',{sound:'card-secret'});
-    G.ui.secret({kicker:'새 발견',title:'큰 화산 꼭대기',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 에베레스트보다 약 2.5배 높지만 경사는 아주 완만한 방패 모양이고, 꼭대기에는 여러 번 무너져 생긴 거대한 분화구가 있어요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
+    await G.ui.secret({kicker:'새 발견',title:'큰 화산 꼭대기',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 에베레스트보다 약 2.5배 높지만 경사는 아주 완만한 방패 모양이고, 꼭대기에는 여러 번 무너져 생긴 거대한 분화구가 있어요.',count:`발견 ${discN()}/${DISC_TOTAL}`});await wait(.4);}
+  G.ui.toast(PHOTO_TIP,4.6);await wait(1.6);if(st.summit)st.summit.t=0;
   st.lastQ=null;}
 function plantNow(){G.state.setFlag(K.flag,true);setFlagPlanted();st.flagPop=0;G.sound.sfx('land',{gain:.8});G.sound.sfx('event-sparkle');G.sound.sfx('event-dust');puffAt(FLAGSPOT[0],FLAGSPOT[1],14);
   {const y=groundY(...FLAGSPOT);for(let i=0;i<12;i++){const a=Math.random()*PI*2,v=.5+Math.random()*.9;dust.emit(FLAGSPOT[0],y+.9+Math.random()*.6,FLAGSPOT[1],Math.cos(a)*v,.9+Math.random()*.8,Math.sin(a)*v,1.2+Math.random()*.6,[1,.93,.62]);}}
   if(F[K.clear])saveAfterMars(); /* 끝낸 뒤의 모습에도 깃발 */}
 function secretRide(W){
-  ride(W,{whirl:secretW,wo:SW,to:SUMMIT,dur:11,peak:26,h0:5,onEnd:()=>{st.summit={t:0,said:false};W.rotation.y=Math.atan2(FLAGSPOT[0]-SUMMIT[0],FLAGSPOT[1]-SUMMIT[1]);st.lastQ=null;
+  ride(W,{whirl:secretW,wo:SW,to:SUMMIT,dur:11,peak:26,h0:5,cam:6.8,onEnd:()=>{st.summit={t:0,said:false};W.rotation.y=Math.atan2(FLAGSPOT[0]-SUMMIT[0],FLAGSPOT[1]-SUMMIT[1]);st.lastQ=null;
     G.ui.toast('먼지 위로 올라왔어요! 화성 땅과 작은 달 포보스가 가까이 보여요',4.2);}});}
 function summitDown(W){const back=[SECRET_HOME[0]+2,SECRET_HOME[1]+3];st.summit=null;G.goal.set(null);st.lastQ=null;ride(W,{whirl:secretW,wo:SW,to:back,dur:11,peak:18,h0:5});}
 /* ── 매 프레임 ── */

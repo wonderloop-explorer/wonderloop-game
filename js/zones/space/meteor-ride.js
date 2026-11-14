@@ -137,7 +137,9 @@ export function lockOff(G,WL){const U=WL.userData;U.riding=null;WL.scale.set(1,1
   if(RIDE.hid){RIDE.hid=false;G.ui.setHints(RIDE.hints!==false);}const b=document.getElementById('wlRideCam');if(b)b.remove();if(U.action==='꼬리 잡기'){U.action='서기';U.at=0;}if(U.setExpr)U.setExpr('기본');}
 /* 카메라: 따라가기 카메라를 그대로 쓰되(끌기·두 손가락·휠로 둘레·거리), 손을 뗀 지 1.6초 지나면 기본 각도로 천천히 */
 export function camHome(G,dt,yaw,pitch,dist,st,rate=.9){const C=G.controls.input.cam;if(!C||!C.on)return;if(st.cu!==C.user){st.cu=C.user;st.idle=0;return;}st.idle+=dt;if(st.idle<1.6)return;
-  const k=1-Math.exp(-dt*rate);let dy=yaw-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));C.yaw+=dy*k;C.pitch+=(pitch-C.pitch)*k;C.dist+=(dist-C.dist)*k;}
+  const k=1-Math.exp(-dt*rate);let dy=yaw-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));C.yaw+=dy*k;C.pitch+=(pitch-C.pitch)*k;C.dist+=(dist-C.dist)*k;
+  /* 얼굴 지키기(2026-11-14 — 장면이 바뀌거나 원더룹이 돌아볼 때 뒤통수만 보였다): st.faceFn(원더룹 몸 방향 함수)를 주면 카메라가 얼굴 쪽에서 뒤 3/4(약 115°, 내려다볼 때 150°)보다 더 뒤로 가지 않게 따라감 */
+  if(st.faceFn){const f=st.faceFn(),L=C.pitch>.75?2.6:2.0;let d=C.yaw-f;d=Math.atan2(Math.sin(d),Math.cos(d));if(Math.abs(d)>L){let e=f+Math.sign(d)*L-C.yaw;e=Math.atan2(Math.sin(e),Math.cos(e));C.yaw+=e*(1-Math.exp(-dt*8));}}}
 /* 비행 카메라 기본 각도 키: [u, 원더룹이 보는 쪽 기준 방향(0 = 정면), 위아래(라디안), 거리(m)] */
 const CAMK=[[0,.95,.02,5.6],[.1,.95,.02,5.6],[.15,PI+.4,.92,9],[.31,PI+.4,.92,9],[.37,PI/2,.08,6.8],[.56,PI/2,.08,6.8],[.62,PI+.78,.2,5.2],[.74,PI+.78,.2,5.2],[.82,.55,.06,4.6],[1,.55,.06,4.6]]; // 어깨 너머는 옆으로 조금(얼굴 옆선이 살짝), 마지막 얼굴 정면은 비행 끝 약 2.3초
 /* 용수철(늘어남·눌림): squishy-test 값 */
