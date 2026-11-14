@@ -23,6 +23,7 @@ export const CLOUD_VEIL={blobs:['#e6d2f4','#d9c0ee','#f1e4fa','#cdb0e6','#e0c9f2
 export function cloudArrival(o){const {G,root,WL}=o,U=WL.userData;lockOn(G,WL);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('기본');
   const P=WL.position.clone(),gy=o.groundY(P.x,P.z),face=WL.rotation.y;const puffs=points(root,o.mob?70:120,{map:discTex(64,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,255,255,.95)');gr.addColorStop(.6,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}),add:false,size:.55,grav:-.05,drag:1.8});
   const st={t:0,done:false,cu:null,idle:9,landed:false,sq:1,sv:0};const D=3.1,H=4.6;
+  G.travel.note('phase','arrive');G.travel.landIn(D); /* 이동 테마 해결 화음은 내려앉는 순간(별똥별 도착과 같은 자리 — 2026-11-14 행성 이동 공통 틀) */
   {const C=G.controls.input.cam;if(C){C.yaw=face+.7;C.pitch=.3;C.dist=6.4;st.cu=C.user;}U.riding.snap=true;}
   const puff=(n,sp)=>{for(let i=0;i<n;i++){const a=Math.random()*PI*2,r=.2+Math.random()*.5,v=sp*(.4+Math.random()*.7),k=.86+Math.random()*.12;puffs.emit(P.x+Math.cos(a)*r,gy+.1+Math.random()*.3,P.z+Math.sin(a)*r,Math.cos(a)*v,.25+Math.random()*.5,Math.sin(a)*v,1.6+Math.random()*1.4,[.93*k,.86*k,1*k]);}};
   function tick(dt,t){if(st.done)return;st.t+=dt;const T=st.t;puffs.tick(dt);

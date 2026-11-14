@@ -705,8 +705,8 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
       onFly:u=>{FLY.k=u;if(u>.3&&!st.marsPre){st.marsPre=true;import('./mars.js').catch(()=>{});}}, // 화성 구역을 비행 중에 미리 불러 둠(넘어갈 때 기다리지 않게)
       /* 비행 끝: 우주 지도 장면(game/travel 공통 — 달 → 화성 발자국 점선·발견한 것·예고 한 줄, 약 3.6초) → 화성 대기로 들어섬(낮은 우웅 + 먼지구름 휙) →
          파스텔 먼지구름이 화면을 덮었다 걷힘(어두운 화면 없이 — 예전 ui.transition은 1초쯤 어두웠다) */
-      onEnd:async()=>{RIDE.pending={from:'space-garden',scarf:true};const mp=await G.travel.mapFor(SPACE,'space-garden','space-mars',F);
-        G.travel.arrive();const veil=dustVeil();await veil.cover(.75);
+      onEnd:async()=>{G.travel.note('phase','map');RIDE.pending={from:'space-garden',scarf:true};const mp=await G.travel.mapFor(SPACE,'space-garden','space-mars',F);
+        G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil();await veil.cover(.75);G.travel.mark('veil');
         try{if(window.wlZone)await window.wlZone.go('space-mars');}catch(e){console.error(e);}mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}});};
   if(first){G.react.react('hop');Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]).then(()=>setTimeout(go,250));}
   else go();}

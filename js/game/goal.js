@@ -60,7 +60,7 @@ function avoidHud(gy,dt){const cam=ctx.camera;if(!cam||!cam.isPerspectiveCamera)
   const base=tag.position.y;_v.copy(tag.position);_v.y+=tag.scale.y*(1-tag.center.y);_v.project(cam);if(_v.z>1){tagDrop=0;return;}
   const depth=cam.position.distanceTo(tag.position),ppm=H/(2*Math.tan(cam.fov*Math.PI/360)*depth),top=(1-_v.y)/2*H,cx=(_v.x+1)/2*W,hw=tag.scale.x*.5*ppm*.75;
   let need=0;for(const r of hudRects()){if(cx+hw<r.left||cx-hw>r.right||top>r.bottom+6||top+tag.scale.y*ppm<r.top)continue;need=Math.max(need,(r.bottom+8-top)/ppm);}
-  const cap=Math.max(0,base-gy-1.2);need=Math.min(need,cap)+(need>cap+.05?1e3:0);tagHide=need-tagDrop>.25;need=Math.min(need,cap);tagDrop+=(need-tagDrop)*Math.min(1,dt*6);tag.position.y=base-tagDrop;} /* 끝까지 내려도 카드에 걸리면 그동안 이름표를 숨김(반쯤 가려진 채 두지 않음) */
+  const cap=Math.max(0,base-gy-1.2);need=Math.min(need,cap)+(need>cap+.05?1e3:0);tagHide=need-tagDrop>.08;need=Math.min(need,cap);tagDrop+=(need-tagDrop)*Math.min(1,dt*6);tag.position.y=base-tagDrop;} /* 끝까지 내려도 카드에 걸리면 그동안 이름표를 숨김(반쯤 가려진 채 두지 않음) */
 function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hintsVisible()){G.visible=false;setArrow(null);return;}G.visible=true;t0+=dt;
   const gy=P.y??cur.y??(ctx.ground?ctx.ground(P.x,P.z):0);beam.position.set(P.x,gy,P.z);beamA.position.set(P.x,gy,P.z);tag.position.set(P.x,gy+(cur.h||2.7)+Math.sin(t0*3)*.08,P.z);
   /* 이름표·노란 세모 크기 상한(2026-11-07 — 카메라 가까이 오면 화면을 크게 가렸다): 화면 높이의 11%(최대 96px)보다 커지지 않게 줄이고,
