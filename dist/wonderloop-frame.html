@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="7891cdb845";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="0692a5cb5d";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 68deb43, 버전 fb911c74b9, 2026-11-14)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 51e2ea4, 버전 d8e235474a, 2026-11-14)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="fb911c74b9";
-window.WL_BUILD={"commit":"68deb43","date":"2026-11-14","stage":"basecamp"};
+window.WL_V="d8e235474a";
+window.WL_BUILD={"commit":"51e2ea4","date":"2026-11-14","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -9694,6 +9694,7 @@ import {sbMat} from '../../game/storybook.js';
 import {bentPos} from '../../game/bend.js';
 import {popShown} from '../../game/popup.js';
 import SPACE from '../../worlds/infinite-space.js';
+import {canvasTex,srand,wob,hatch,shade,jupiterMap,marsMap,saturnMap,sunArt,sunGlowArt,paperArt,sparkArt,nebulaArt,milkyArt,makeOrb} from './skyboard.js';
 import {RIDE,departure,dustVeil} from './meteor-ride.js'; // 출구 → 별똥별 꼬리 타고 화성으로(2026-11-09)
 /* 행성 크기(2026-11-08 — 17m → 24m): 걷기 속도는 그대로 두고 행성을 키워 땅이 도는 속도를 약 30% 늦춤(땅 회전만 따로 늦추면 발이 미끄러져 보여서). 한 바퀴 2πR/3.78 ≈ 40초.
    ?debug 톱니 메뉴 '행성 반지름' 막대(localStorage 'wl-space-R', 12~40 — 바꾸면 다시 연다) 또는 ?planetR=로 맞춰 볼 수 있다.
@@ -10185,37 +10186,7 @@ const sunM=bill(canvasTex(256,sunArt),{order:-4}); // 크림빛 해(손그림 �
    멀리 있는 느낌(하늘 보라 20% 섞고 대비를 조금 낮춤 — 앞쪽 바닥보다 한 단계 흐리게), 하늘과 만나는 경계엔 옅은 연보라 빛무리(더하기 섞기 판, 구가 가리는 안쪽은 안 보임).
    토성 고리: 몸통보다 살짝 어둡고 반투명한 여러 줄 띠(진짜 3D 고리 — 몸통 뒤로 지나가는 부분은 깊이로 가려짐), 고리가 몸통에 가는 그림자를 드리움(셰이더에서 해 쪽으로 고리 면을 비춰 봄).
    그리기: 목성 2(구·빛무리) · 토성 3(구·고리·빛무리). 크기·자리는 그림판 LAYOUT(예전 원판과 같은 화면 자리·크기) */
-const SKYC=new THREE.Color('#6b5fb4');
-const ORB_GLSL='float ringA(float r){if(r<1.32||r>2.3)return 0.;float u=(r-1.32)/.98;float a=u<.46?.55:u<.53?.08:u<.88?.82:u<.91?.1:.35;a*=.9+.1*sin(u*31.);return a*smoothstep(0.,.03,u)*smoothstep(1.,.95,u);}\n'; // 넓은 띠 셋(안쪽·가운데 진한 띠·옅은 바깥) + 틈 둘
-const crayTex=(()=>{const m=sbMat('#ffffff');return m.map;})();
-function orb({map,rep=[5,3],ring=false}){const g=new THREE.Group();anchor.add(g);g.frustumCulled=false;
-  const U={uMap:{value:map},uCray:{value:crayTex},uRep:{value:new THREE.Vector2(...rep)},uL:{value:new THREE.Vector3(-1,.5,.6).normalize()},uSky:{value:SKYC},uRim:{value:new THREE.Color('#fff1cf')},
-    uRn:{value:new THREE.Vector3(0,1,0)},uRing:{value:ring?1:0}};
-  const body=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),new THREE.ShaderMaterial({uniforms:U,fog:false,
-    vertexShader:'varying vec3 vW,vN,vP;varying vec2 vUv;void main(){vUv=uv;vP=position;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}',
-    fragmentShader:'uniform sampler2D uMap,uCray;uniform vec2 uRep;uniform vec3 uL,uSky,uRim,uRn;uniform float uRing;varying vec3 vW,vN,vP;varying vec2 vUv;'+ORB_GLSL+
-      'void main(){vec3 Nf=normalize(cross(dFdx(vW),dFdy(vW)));vec3 N=normalize(mix(normalize(vN),Nf,.32));vec3 V=normalize(cameraPosition-vW);'+
-      'float d=dot(N,uL);float k=mix(.56,.8,smoothstep(-.14,0.,d));k=mix(k,1.,smoothstep(.36,.5,d));'+
-      'vec3 base=texture2D(uMap,vUv).rgb*dot(texture2D(uCray,vUv*uRep).rgb,vec3(.3333));vec3 col=base*k+uSky*(1.-k)*.45;'+
-      'if(uRing>0.){float dn=dot(uL,uRn);if(abs(dn)>.02){float t=-dot(vP,uRn)/dn;if(t>0.){float a=ringA(length(vP+uL*t));col*=1.-a*.5;}}}'+ // 고리 그림자(해 쪽으로 고리 면을 비춰 봄)
-      'float nv=max(dot(N,V),0.);col*=mix(.8,1.,pow(nv,.4));'+ // 가장자리 어두움
-      'col=mix(col,uSky*1.3,smoothstep(.26,0.,nv)*.3);'+ // 하늘과 만나는 경계로 갈수록 연보라
-      'col+=uRim*smoothstep(.16,.02,nv)*smoothstep(.05,.45,d)*.5;'+ // 해를 바라보는 쪽 가장자리 아주 얇은 밝은 테
-      'float l=dot(col,vec3(.3,.59,.11));col=mix(vec3(l),col,.9);col=mix(col,uSky,.15);'+ // 멀리 있는 느낌: 하늘 보라 20%, 대비 조금 낮춤
-      'gl_FragColor=vec4(col,1.);\n#include <colorspace_fragment>\n}'}));
-  body.material.userData.noBend=true;body.frustumCulled=false;body.renderOrder=-6;body.userData.noMerge=true;g.add(body);
-  const halo=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6),new THREE.MeshBasicMaterial({map:haloTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,opacity:.7}));
-  halo.material.userData.noBend=true;halo.frustumCulled=false;halo.renderOrder=-4;halo.userData.noMerge=true;g.add(halo);
-  let rg=null;if(ring){rg=new THREE.Mesh(new THREE.RingGeometry(1.32,2.3,96,1),new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,
-      vertexShader:'varying vec3 vP,vW;void main(){vP=position;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
-      fragmentShader:'uniform sampler2D uCray;uniform vec3 uL,uSky,uRn;varying vec3 vP,vW;'+ORB_GLSL+
-        'void main(){float r=length(vP.xy);float a=ringA(r);if(a<.01)discard;float u=(r-1.32)/.98;'+
-        'vec3 c=mix(vec3(.6,.44,.22),vec3(.7,.54,.3),smoothstep(.4,.7,u))*(.94+.06*sin(u*23.));c*=dot(texture2D(uCray,vP.xy*1.7).rgb,vec3(.3333));'+ // 몸통보다 살짝 어두운 금빛 띠 + 크레용 결
-        'float lit=.85+.15*abs(dot(uRn,uL));c=c*lit;float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,.9);c=mix(c,uSky,.22);'+
-        'gl_FragColor=vec4(c,min(1.,a*1.15));\n#include <colorspace_fragment>\n}'}));
-    rg.material.userData.noBend=true;rg.frustumCulled=false;rg.renderOrder=-5;rg.userData.noMerge=true;g.add(rg);}
-  return {g,body,halo,ring:rg,U};}
-const haloTex=canvasTex(128,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(190,170,255,0)');gr.addColorStop(.72,'rgba(190,170,255,0)');gr.addColorStop(.78,'rgba(196,178,255,.3)');gr.addColorStop(.9,'rgba(180,160,250,.12)');gr.addColorStop(1,'rgba(170,150,240,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
+const orb=o=>makeOrb(anchor,o); /* 로우폴리 행성 구는 skyboard.js로 옮김(2026-11-14 — 화성 → 금성 이동도 같은 구) */
 const jup=orb({map:canvasTex(512,jupiterMap,256),rep:[6,3]});
 const sat=orb({map:canvasTex(256,saturnMap,128),rep:[4,2],ring:true});
 /* 화성(별똥별 비행 끝에만 — 점점 커짐): 같은 로우폴리 구 + 녹슨 주황 그림(어두운 무늬·흰 극관) */
@@ -10408,76 +10379,12 @@ start:{compass:true},world:null,
   update,lateUpdate,dispose(){cntShow(null);scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
-function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
-/* ── 하늘 행성 손그림(2026-11-07 — 매끈한 스티커처럼 보여 로우폴리 색연필 세계와 따로 놀았다): 살짝 고르지 않은 가장자리(wob), 색연필 빗금 결(hatch),
-   은은한 입체 그림자(왼쪽 위 해 쪽 밝게, 반대쪽 어둡게 — shade), 목성 줄무늬는 경계가 번지게(화소마다 물결 + 부드러운 섞기) */
-function srand(seed){let s=seed;return ()=>((s=(s*16807)%2147483647)/2147483647);}
-function wob(g,cx,cy,r,seed,amp=.018){const R=srand(seed),p1=R()*6,p2=R()*6,p3=R()*6;g.beginPath();for(let i=0;i<=120;i++){const a=i/120*PI*2,k=1+amp*(Math.sin(a*5+p1)*.5+Math.sin(a*9+p2)*.3+Math.sin(a*17+p3)*.2);
-  const x=cx+Math.cos(a)*r*k,y=cy+Math.sin(a)*r*k;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
-function hatch(g,x0,y0,w,h,n,cols,seed,{len=[10,22],ang=-.55,alpha=[.08,.2],lw=[1.4,2.6]}={}){const R=srand(seed);g.save();g.lineCap='round';
-  for(let i=0;i<n;i++){const x=x0+R()*w,y=y0+R()*h,L=len[0]+R()*(len[1]-len[0]),a=ang+(R()-.5)*.3;g.globalAlpha=alpha[0]+R()*(alpha[1]-alpha[0]);g.strokeStyle=cols[(R()*cols.length)|0];g.lineWidth=lw[0]+R()*(lw[1]-lw[0]);
-    g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*L,y+Math.sin(a)*L);g.stroke();}g.restore();}
-function shade(g,cx,cy,r,{lit=.22,dark=.4}={}){const hl=g.createRadialGradient(cx-r*.42,cy-r*.42,0,cx-r*.42,cy-r*.42,r*.9);hl.addColorStop(0,`rgba(255,250,232,${lit})`);hl.addColorStop(1,'rgba(255,250,232,0)');g.fillStyle=hl;g.fillRect(cx-r*1.1,cy-r*1.1,r*2.2,r*2.2);
-  const sh=g.createRadialGradient(cx-r*.3,cy-r*.3,r*.55,cx-r*.1,cy-r*.1,r*1.25);sh.addColorStop(0,'rgba(60,30,70,0)');sh.addColorStop(.7,`rgba(60,30,70,${dark*.45})`);sh.addColorStop(1,`rgba(50,22,60,${dark})`);g.fillStyle=sh;g.fillRect(cx-r*1.1,cy-r*1.1,r*2.2,r*2.2);}
-/* 목성 줄무늬 그림(구에 감는 equirect 2:1): 밝은 크림 + 연한 주황 줄무늬(물결 경계·번짐) + 옅은 빗금. 붉은 폭풍은 광택 없는 산호빛 다홍 —
-   또렷한 가장자리(선 없이 한 단계 진한 산호 띠) + 안쪽 소용돌이 빗금. 자리는 구에서 카메라를 보는 쪽 아래 왼쪽(u .17·위도 남쪽) */
-function jupiterMap(g,w,h){const bands=['#f6ead2','#f2cba4','#f5e6cb','#edbd92','#f4e2c4','#eab48a','#f6e8cd','#f0c79f','#f5e4c6','#ecba90','#f6ead2'].map(c=>{const n=parseInt(c.slice(1),16),k=v=>Math.pow(v/255,1.45);return {r:k(n>>16&255),g:k(n>>8&255),b:k(n&255)};}); // 밝은 크림 + 연한 주황 — 지난번 확정한 색(선형 값을 화소에 쓴 진한 주황)과 sRGB 그대로(너무 옅음)의 사이 // 하늘 보라를 섞으면 분홍으로 기울어 조금 더 노랗게
-  const img=g.createImageData(w,h),d=img.data,bh=h/bands.length,R=srand(5);const nz=[];for(let i=0;i<64;i++)nz.push(R());
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const xx=x/w*PI*2,yy=y+Math.sin(xx*3+y*.01)*bh*.2+Math.sin(xx*11+nz[(y>>2)&63]*6)*bh*.05,bi=yy/bh,i0=Math.max(0,Math.min(bands.length-1,Math.floor(bi))),i1=Math.min(bands.length-1,i0+1),f=bi-i0;
-    const t=f<.78?0:Math.min(1,(f-.78)/.22),tt=t*t*(3-2*t),A=bands[i0],B=bands[i1],j=(nz[(x*7+y*13)&63]-.5)*.03,k=(y*w+x)*4;
-    d[k]=Math.min(255,(A.r+(B.r-A.r)*tt+j)*255);d[k+1]=Math.min(255,(A.g+(B.g-A.g)*tt+j)*255);d[k+2]=Math.min(255,(A.b+(B.b-A.b)*tt+j)*255);d[k+3]=255;}
-  g.putImageData(img,0,0);
-  hatch(g,0,0,w,h,700,['#fffaf0','#fdeed6','#f3c9a2','#e8b088'],7,{len:[6,16],alpha:[.06,.14]});
-  // 붉은 폭풍: 산호빛 다홍, 광택 없음, 또렷한 가장자리(한 단계 진한 산호 띠 — 검은 선 없음), 안쪽 소용돌이 빗금
-  const sx=w*.17,sy=h*.6,rx=w*.034,ry=h*.038; // 예전 원판 그림의 폭풍과 같은 크기(구 둘레의 약 7%)
-  g.beginPath();g.ellipse(sx,sy,rx*1.08,ry*1.1,0,0,PI*2);g.fillStyle='#d9614a';g.fill();
-  g.beginPath();g.ellipse(sx,sy,rx,ry,0,0,PI*2);g.fillStyle='#e8775c';g.fill();
-  g.save();g.beginPath();g.ellipse(sx,sy,rx,ry,0,0,PI*2);g.clip();g.lineCap='round';
-  for(let i=0;i<16;i++){const k=i/16,a0=k*PI*2.6,rr=.25+.7*k;g.strokeStyle=i%2?'rgba(255,190,160,.45)':'rgba(196,78,58,.45)';g.lineWidth=1.6;g.beginPath();
-    g.ellipse(sx,sy,rx*rr,ry*rr,0,a0,a0+1.6);g.stroke();}
-  g.restore();}
-/* 화성 그림(equirect): 녹슨 주황 + 어두운 무늬(손그림 얼룩) + 밝은 모래빛 + 위아래 흰 극관 + 빗금 */
-function marsMap(g,w,h){g.fillStyle='#cf6a45';g.fillRect(0,0,w,h);const R=srand(23);
-  for(let i=0;i<46;i++){const x=R()*w,y=h*(.2+R()*.6),r=w*(.02+R()*.07);g.globalAlpha=.25+R()*.3;g.fillStyle=R()<.6?'#9c4430':'#e4925f';g.beginPath();g.ellipse(x,y,r*1.6,r*.7,R()*.6-.3,0,PI*2);g.fill();}
-  g.globalAlpha=1;g.fillStyle='#f6ece2';g.fillRect(0,0,w,h*.07);g.fillRect(0,h*.95,w,h*.05);
-  hatch(g,0,0,w,h,420,['#f0a074','#b04e34','#fbe0c8'],31,{len:[5,13],alpha:[.07,.16]});}
-/* 토성 줄무늬 그림(equirect): 금빛 몸통 + 옅은 줄무늬 + 빗금 */
-function saturnMap(g,w,h){g.fillStyle='#efc979';g.fillRect(0,0,w,h);const R=srand(31);
-  [[.28,'#e2bc78',5],[.42,'#f6e0ae',4],[.55,'#ddb26a',6],[.68,'#f3dba6',3],[.8,'#d9ad66',4]].forEach(([y,c,lw])=>{g.strokeStyle=c;g.lineWidth=lw;g.beginPath();for(let x=0;x<=w;x+=4){const yy=y*h+Math.sin(x/w*PI*6+y*9)*1.6;x?g.lineTo(x,yy):g.moveTo(x,yy);}g.stroke();});
-  hatch(g,0,0,w,h,260,['#fff4d6','#c99a52'],33,{len:[4,10],alpha:[.08,.18],lw:[1,1.6]});}
-/* 해: 크림빛 원(고르지 않은 가장자리 — 선 없음) + 노랑·살구 빗금 + 은은한 입체(빛무리는 sunGlowArt 판) */
-function sunArt(g,n){const cx=n/2,cy=n/2,r=n*.19; // 원만(빛무리는 sunGlowArt — 더하기 섞기 판으로 따로, 손그림 결은 원 안쪽에만)
-  g.save();wob(g,cx,cy,r,21,.03);g.fillStyle='#ffe9b0';g.fill();g.clip();hatch(g,cx-r,cy-r,2*r,2*r,240,['#fffbe8','#fff2c8','#ffd98a','#ffcf7a'],23,{len:[6,14],alpha:[.14,.3],lw:[1.2,2.2]});shade(g,cx,cy,r,{lit:.4,dark:.08});g.restore();
-  // 테두리 선 없음(2026-11-08) — 가장자리는 둘레로 갈수록 살짝 진한 살구빛이 원 안쪽에서 번지듯
-  {const e=g.createRadialGradient(cx,cy,r*.72,cx,cy,r*1.04);e.addColorStop(0,'rgba(255,214,140,0)');e.addColorStop(.8,'rgba(255,200,120,.35)');e.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=e;g.beginPath();g.arc(cx,cy,r*1.04,0,PI*2);g.fill();}}
-/* 해 빛무리: 은은하게 번지는 살구빛(가운데 크림 → 바깥으로 사라짐) */
-function sunGlowArt(g,n){const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,240,200,.85)');gr.addColorStop(.18,'rgba(255,226,170,.6)');gr.addColorStop(.42,'rgba(255,200,130,.24)');gr.addColorStop(.7,'rgba(255,180,120,.08)');gr.addColorStop(1,'rgba(255,170,120,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}
 /* 바닥 크레용 결(storybook 크레용 결과 같은 그리기): 획은 연보라·크림 위주(진한 갈색 획은 휴대폰에서 지저분한 얼룩처럼 보였다), 진하기는 공용 결과 한 단계 진한 결의 중간 — 파스텔 색연필 */
 function crayonGround(g,size){const R=srand(20261107),rr=(a,b)=>a+R()*(b-a),cols=['#ffffff','#fff4e2','#f2e4cc','#e6daf2','#d8c8ec','#f4ecfa','#e9dcc8'],pick=()=>cols[Math.floor(R()*cols.length)];
   g.fillStyle='#ffffff';g.fillRect(0,0,size,size);g.lineCap='round';
   for(let i=0;i<1300;i++){const x=R()*size,y=R()*size,len=rr(6,18),ang=R()*PI,w=rr(1.5,5);g.strokeStyle=pick();g.globalAlpha=rr(.13,.38);g.lineWidth=w;
     const dx=Math.cos(ang)*len,dy=Math.sin(ang)*len;for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){g.beginPath();g.moveTo(x+ox*size,y+oy*size);g.lineTo(x+dx+ox*size,y+dy+oy*size);g.stroke();}}
   for(let i=0;i<1000;i++){g.globalAlpha=rr(.12,.34);g.fillStyle=pick();g.beginPath();g.arc(R()*size,R()*size,rr(.8,3),0,7);g.fill();}g.globalAlpha=1;}
-/* 종이 결(하늘 바탕, 256 반복): 밝은 섬유 짧은 선 + 어두운 티끌 — 판 불투명도로 아주 옅게 */
-function paperArt(g,n){const R=srand(41);g.clearRect(0,0,n,n);g.lineCap='round';
-  for(let i=0;i<420;i++){const x=R()*n,y=R()*n,L=2+R()*5,a=R()*PI;g.globalAlpha=.04+R()*.07;g.strokeStyle=R()<.75?'#fff4e6':'#d9c8ff';g.lineWidth=.8+R()*1.4;
-    for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){g.beginPath();g.moveTo(x+ox*n,y+oy*n);g.lineTo(x+ox*n+Math.cos(a)*L,y+oy*n+Math.sin(a)*L);g.stroke();}}
-  for(let i=0;i<700;i++){g.globalAlpha=.06+R()*.1;g.fillStyle=R()<.6?'#0c0820':'#fff8ee';g.fillRect(R()*n,R()*n,1.2,1.2);}g.globalAlpha=1;}
-/* 네 갈래 반짝이 ✦(로딩 화면 반짝이와 같은 모양 — 노랑, 가운데 흰빛) */
-function sparkArt(g,n){const c=n/2;const gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,240,170,.55)');gr.addColorStop(1,'rgba(255,230,140,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);
-  g.fillStyle='#ffe27a';g.beginPath();for(let k=0;k<8;k++){const a=k/8*PI*2-PI/2,r=k%2?n*.08:n*.46;const x=c+Math.cos(a)*r,y=c+Math.sin(a)*r;k?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();g.fill();
-  g.fillStyle='#fffbe6';g.beginPath();g.arc(c,c,n*.07,0,7);g.fill();}
-/* 성운: 연보라·분홍 위주(+ 살구·하늘 조금) 구름 얼룩 */
-function nebulaArt(g,n){let s=11;const R=()=>((s=(s*16807)%2147483647)/2147483647);const cols=['214,150,240','255,150,200','200,160,255','255,180,170','170,170,255'];
-  for(let i=0;i<60;i++){const x=n*(.12+R()*.76),y=n*(.25+R()*.5),r=n*(.07+R()*.2),c=cols[i%5],gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(${c},.075)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(0,0,n,n);}
-  /* 판 가장자리로 갈수록 0까지(2026-11-08 — 가장자리에서 잘린 구름 얼룩이 하늘에 밝기가 다른 세로 이음매로 보였다) */
-  const m=g.createRadialGradient(n/2,n/2,n*.22,n/2,n/2,n*.5);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(1,'rgba(0,0,0,0)');g.globalCompositeOperation='destination-in';g.fillStyle=m;g.fillRect(0,0,n,n);g.globalCompositeOperation='source-over';}
-/* 은하수 띠(가로로 긴 그림 — 판은 4:1): 가운데가 밝은 연보라·분홍 띠 + 작은 별 알갱이 */
-function milkyArt(g,n){const w=n,h=n;let s=23;const R=()=>((s=(s*16807)%2147483647)/2147483647);
-  for(let i=0;i<70;i++){const x=w*R(),y=h*(.5+(R()-.5)*.36*Math.sin(x/w*PI)),r=h*(.08+R()*.16),c=['190,160,240','240,170,220','170,180,255'][i%3],gr=g.createRadialGradient(x,y,0,x,y,r);
-    gr.addColorStop(0,`rgba(${c},.07)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(0,0,w,h);}
-  const fade=g.createLinearGradient(0,0,w,0);fade.addColorStop(0,'rgba(0,0,0,1)');fade.addColorStop(.15,'rgba(0,0,0,0)');fade.addColorStop(.85,'rgba(0,0,0,0)');fade.addColorStop(1,'rgba(0,0,0,1)');
-  g.globalCompositeOperation='destination-out';g.fillStyle=fade;g.fillRect(0,0,w,h);const fv=g.createLinearGradient(0,0,0,h);fv.addColorStop(0,'rgba(0,0,0,1)');fv.addColorStop(.3,'rgba(0,0,0,0)');fv.addColorStop(.7,'rgba(0,0,0,0)');fv.addColorStop(1,'rgba(0,0,0,1)');g.fillStyle=fv;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
 /* 겉면에 딱 붙는 무늬·문·창(2026-11-08): 2D 모양(u,v)의 점마다 frame(u,v) → [원점, 겉면 쪽 방향]으로 실제 겉면(로우폴리 그대로)에 쏘아 맞은 자리에 붙이고 eps만큼 바깥으로 띄움.
    경계는 모양 그대로 매끈한 선, 겉면이 꺾이면 같이 꺾임(겹쳐 깜빡이지 않음). bulge: 가운데로 갈수록 더 볼록(점의 세 번째 값 w — 가운데 1, 가장자리 0) */
 /* (함수 선언만 — 구역 코드 위쪽(집)에서 먼저 불러도 되게) */
@@ -10606,7 +10513,8 @@ import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {setZoneBend} from '../../game/bend.js';
 import {RIDE,arrival,departure,redDust,points,lockOn,lockOff,dustVeil,camHome,makeScarf} from './meteor-ride.js';
-import {spaceBits,CLOUD_VEIL} from './whirl-lift.js';
+import {CLOUD_VEIL} from './whirl-lift.js';
+import {makeSkyBoard,canvasTex,jupiterMap,saturnMap,marsMap,venusMap} from './skyboard.js';
 import {makePipi,makeDungdung,makeWhirl,makeCassette,makeGlass,glassIcon,jumbleBubble,dotTex,makeFlag} from './martians.js';
 import SPACE from '../../worlds/infinite-space.js';
 const WID=SPACE.id;
@@ -10772,7 +10680,7 @@ const nextTop=(()=>{const g=new THREE.CircleGeometry(1,26);g.rotateX(-PI/2);cons
 const DAY={top:'#e3bd8f',horizon:'#efc4b4',hemi:'#f6dcc6',ground:'#c98d73',hemiI:.64,sun:'#fff0dc',sunI:.78,sunDir:[-4,-7,-6],fill:.24,fog:'#ecc3b3',fogNear:60,fogFar:330,stars:0,milky:0};
 const DUSK={top:'#5a3d36',horizon:'#a57663',hemi:'#f0cdb6',ground:'#7d5248',hemiI:.74,sun:'#d6e6fa',sunI:.66,sunDir:[10,-1.05,-1.6],fill:.22,fog:'#93705f',fogNear:150,fogFar:680,stars:0,milky:0}; /* 노을 안개(2026-11-11): 55~300이면 60~130m 메사·바위가 갈색 안개에 묻혀 화면이 갈색 한 장처럼 됐다 → 시작 150m·끝 680m(카메라 먼 거리 310m에서도 30%) — 가까운 땅·바위·메사는 안개 0, 화산만 옅게. 하늘 색은 그대로 */
 /* 셋째 칸 = 우주(2026-11-12 — 금성으로 떠날 때 큰 회오리가 들어 올리며 노을 → 짙은 남보라 우주로, SK.to(2)). 평소에는 0(낮)·1(노을)만 씀 */
-const SPACEK={top:'#150f33',horizon:'#3b2a68',hemi:'#cbbcf0',ground:'#5b4a86',hemiI:.6,sun:'#eef0ff',sunI:.5,sunDir:[10,-1.05,-1.6],fill:.26,fog:'#2a1e52',fogNear:400,fogFar:1600,stars:1,milky:.6};
+const SPACEK={top:'#151331',horizon:'#2b2560',hemi:'#cbbcf0',ground:'#5b4a86',hemiI:.6,sun:'#eef0ff',sunI:.5,sunDir:[10,-1.05,-1.6],fill:.26,fog:'#2a1e52',fogNear:400,fogFar:1600,stars:0,milky:1.1}; /* 2026-11-14: 달의 우주 하늘과 같은 남색(위 #151331 → 아래 #2b2560) — 별은 하늘 그림판(skyboard)이 맡음 */
 const SK=G.sky.sky({parent:root,keys:[DAY,DUSK,SPACEK],t:0,nStars:MOB?120:240,starSize:4});
 const ZSUN={dir:new THREE.Vector3(...DAY.sunDir).normalize(),shadow:14,follow:true,followY:true};
 /* 해·파란 빛무리·작은 달 둘: 카메라를 따라다니는 하늘 판(해 자리는 지금 햇빛 방향의 반대 — 낮엔 높이, 노을엔 서쪽 낮게) */
@@ -11002,16 +10910,26 @@ const HEAD_OFF=0;
 function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:3.4,height:12,seed:7.7,big:true});st.big=big;st.bigGo=true;const P0=W.position.clone(),gy=groundY(P0.x,P0.z);
   G.sound.sfx('event-whirl');G.travel.mark('touch');st.sunFace=false;st.lookWL=true;pipi.mode='waveUp';dung.mode='waveUp';
   /* 우주에서 쓸 화성·금성 판을 미리 만들어 아주 작게 두 프레임 그려 데움(처음 보일 때 멈칫하지 않게), 금성 구역 모듈도 미리 */
-  const bits=spaceBits(root);st.bits=bits;let warm=3;bits.mars.visible=bits.venus.visible=true;bits.mars.scale.setScalar(1e-3);bits.venus.scale.setScalar(1e-3);import('./venus.js').catch(()=>{});
-  const V3=new THREE.Vector3(),_hp=new THREE.Vector3(),bo={x:P0.x,z:P0.z};let wrapped=false,bwi=-1,spc=false,hidG=null;
-  const scr=(obj,D,nx,ny)=>{const c=G.view.camera;c.updateMatrixWorld();const e=c.matrixWorld.elements,tv=Math.tan(c.fov*PI/360);obj.position.set(e[12],e[13],e[14]).addScaledVector(V3.set(-e[8],-e[9],-e[10]),D).addScaledVector(V3.set(e[0],e[1],e[2]),nx*D*tv*c.aspect).addScaledVector(V3.set(e[4],e[5],e[6]),ny*D*tv);};
+  /* 우주 하늘(2026-11-14 — 달 → 화성과 같은 하늘 그림판 skyboard.js: 별·반짝이·성운·은하수·종이 결·해 + 로우폴리 행성 구): 다가오는 동안 만들어 투명하게 그려 데워 두고(처음 보일 때 멈칫하지 않게),
+     하늘이 우주로 바뀌는 만큼 나타남. 화성 구는 발아래에서 멀어지고, 먼 목성·토성이 작게, 금성 구가 어깨 너머로 다가와 끝에 원더룹 뒤에 크게. 금성 구역 모듈도 미리 */
+  const board=makeSkyBoard(root,{mob:MOB,seed:'space-mars:travel'});st.board=board;board.setAlpha(.001);import('./venus.js').catch(()=>{});
+  const oMars=board.add({map:canvasTex(256,marsMap,128),rep:[4,2]}),oVen=board.add({map:canvasTex(256,venusMap,128),rep:[4,2]}),oJup=board.add({map:canvasTex(512,jupiterMap,256),rep:[6,3]}),oSat=board.add({map:canvasTex(256,saturnMap,128),rep:[4,2],ring:true});
+  for(const o of [oMars,oVen,oJup,oSat])board.place(o,0,0,1e-4);let flyU=0;st.dbg={oVen,oMars,get a(){return board.alpha;}};
+  const V3=new THREE.Vector3(),_hp=new THREE.Vector3(),bo={x:P0.x,z:P0.z};let wrapped=false,bwi=-1,spc=false,hidG=null;const yF=groundY(WAVE.c[0],WAVE.c[1]);
+  /* 하늘 그림판 놓기(화면 좌표): 해(왼쪽 위 — 해 쪽으로 가니 달에서보다 크게)·먼 목성·토성(작게, 천천히 옆으로)·화성(발아래 가득 → 왼쪽 아래로 작아짐)·금성(오른쪽 위 작은 점 → 원더룹 뒤에 크게) */
+  function skyTick(dt){const cam=G.view.camera;if(!cam)return;const a=Math.max(.001,Math.min(1,SK.t-1)),u=flyU,pt=cam.aspect<1,as=Math.min(1,cam.aspect);board.tick(dt,G.clock.t,cam);board.setAlpha(a);
+    board.place(board.sunGlow,pt?-.45:-.66,pt?.84:.76,pt?1.0:.8);board.place(board.sun,pt?-.45:-.66,pt?.84:.76,pt?.5:.4);
+    const on=a>.5&&!!hidG,tiny=1e-4,k1=ss(.36,1,u);
+    board.place(oJup,lerp(pt?.6:.8,pt?.95:1.05,k1),lerp(.66,.56,k1),on?(pt?.11:.085):tiny);board.place(oSat,lerp(pt?-.1:-.22,pt?-.6:-.6,k1),lerp(.9,.84,k1),on?(pt?.05:.04):tiny);
+    {const k=ss(.345,.8,u),sz=3*Math.pow(.075,k),top=lerp(-.12,-.42,k);board.place(oMars,lerp(0,pt?-.5:-.6,k),top-sz*as,on?sz:tiny);} /* 윗가장자리가 지평선 자리에서 시작해 멀어지며 작아짐 */
+    {const k=ss(.52,1,u);board.place(oVen,lerp(pt?.5:.55,pt?.12:.16,k),lerp(.56,.22,k),on&&u>.5?lerp(.025,pt?.62:.5,k*k):tiny);}}
   const hole=wp=>{const c=G.view.camera;if(!c)return;_hp.copy(wp);_hp.y+=.7;const d=c.position.distanceTo(_hp);_hp.project(c);big.setHole(_hp.x,_hp.y,1.25/(d*Math.tan(c.fov*PI/360)),c.aspect);};
   /* 꼭대기 → 노을 언덕의 삐삐·둥둥 쪽(내려다보는 장면 동안 둘이 앞 아래에) → 지나쳐 계속 오름 */
   const dx=WAVE.c[0]-P0.x,dz=WAVE.c[1]-P0.z,vl=Math.hypot(dx,dz)||1,HA=Math.atan2(dx,dz)+HEAD_OFF,ux=Math.sin(HA),uz=Math.cos(HA);W.rotation.y=Math.atan2(ux,uz); /* 가는 방향을 친구들 쪽에서 HEAD_OFF만큼 틂 — 내려다보는 카메라(공통 키: 뒤에서 0.4라디안 비껴 위)가 둘을 화면 가운데에 */
   const FLYS=13;
   const carrier={hang:false,pose:{grab:'팔 벌리기',fly:u=>u<.42?'팔 벌리기':'둥실'},lift:T=>T<2.4?0:1.4*ss(2.4,3.75,T),
     tick(dt,t,s2,wp){big.tick(dt);const T=s2.t;
-      if(warm>0){if(G.view.camera){scr(bits.mars,20,0,0);scr(bits.venus,20,0,0);}if(--warm===0)bits.mars.visible=bits.venus.visible=false;}
+      skyTick(dt);
       if(T<2.4){const u=ss(0,1.9,T),bx=lerp(BIGTOP[0],wp.x,u),bz=lerp(BIGTOP[1],wp.z,u);big.setBase(bx,groundY(bx,bz),bz);
         if(T>1.9&&!wrapped){wrapped=true;big.clear(true);big.setRim(1);G.sound.sfx('event-whoosh');G.react.react('startle',{sound:null});}}
       else if(s2.phase!=='fly'){big.setBase(wp.x,gy,wp.z);big.setHeight(Math.max(8,wp.y-gy+5));}
@@ -11020,14 +10938,12 @@ function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:
       if(Math.floor(T/2.1)!==bwi){bwi=Math.floor(T/2.1);if(T<9)G.sound.sfx('event-whirl',{gain:.85});}},
     stop(){big.show(false);},dispose(){}};
   const dep=departure({G,root,WL:W,groundY,mob:MOB,fly:FLYS,carrier,after:3.6+.75+.06+3.1, /* 비행 뒤 착지까지: 지도 3.6 + 구름 덮음 .75 + 구역 바꿈 약 .06 + 금성에 내려앉기 3.1(cloudArrival D) */
-    path:u=>{const x=Math.min(1,u/.38),d=(vl+5)*(.25*x*x*(3-2*x)+.75*x)+30*ss(.38,1,u); /* 거의 고른 빠르기(초당 약 40m) — 내려다보는 장면(u .15~.31) 동안 둘이 화면 위에서 아래로 약 2초 지나감 */return {x:P0.x+ux*d,y:P0.y+1.4+12*ss(0,.4,u)+380*Math.pow(ss(.33,1,u),1.5),z:P0.z+uz*d};}, /* 우주로는 훨씬 높이(화성 땅이 화면에서 빠지게) */
+    path:u=>{const x=Math.min(1,u/.17),lin=Math.min(1,Math.max(0,(u-.15)/.17)),d=(vl-8)*ss(0,1,x)+16*lin+30*ss(.31,1,u); /* 꼭대기에서 둘 가까이까지 휙(약 2초) → 둘의 머리 위를 천천히 지나감(약 2초, 초당 약 8m — 내려다보는 장면) → 우주로 */ /* 거의 고른 빠르기(초당 약 40m) — 꼭대기(높이 약 40m)에서 노을 언덕 쪽으로 내려가며 둘의 머리 위 약 9m를 지나감(달 → 화성의 마을 위처럼 — 둘은 본래 크기), 그 뒤 우주로 훌쩍 */
+      return {x:P0.x+ux*d,y:lerp(P0.y+1.4,yF+6.5,ss(0,.9,x))+380*Math.pow(ss(.33,1,u),1.5),z:P0.z+uz*d};},
     onWave:()=>{},lookAt:WAVE.c,
-    onFly:u=>{if(u>.35&&!spc){spc=true;SK.to(2,2.4);} /* 하늘이 노을에서 우주로 */
-      /* 우주에 닿으면(카메라가 옆으로 도는 사이) 화성 땅·주민을 숨기고 화면 자리 화성 그림이 아래에 — 진짜 땅 위에 화성 그림이 겹쳐 보였다(2026-11-14) */
-      if(u>.44&&!hidG){hidG=[];for(const ch of root.children)if(ch.visible&&ch!==bits.mars&&ch!==bits.venus&&ch!==big.me&&ch.name!=="sky"&&!ch.isLight){let lt=false;ch.traverse(q=>{if(q.isLight)lt=true;});if(lt)continue;ch.visible=false;hidG.push(ch);}st.hidG=hidG;}
-      /* 화성은 화면 아래로 멀어짐(화면 자리 — 카메라가 돌아도 늘 보이게), 금성은 어깨 너머로 다가와 끝에 원더룹 뒤에 크게 */
-      if(u>.42&&u<.76){bits.mars.visible=true;const k=ss(.42,.76,u);scr(bits.mars,90,lerp(-.35,-.62,k),lerp(-.62,-.86,k));bits.mars.scale.setScalar(lerp(70,22,k));}else bits.mars.visible=false;
-      if(u>.58){bits.venus.visible=true;const k=ss(.58,1,u);scr(bits.venus,70,lerp(.32,.12,k),lerp(.34,.24,k));bits.venus.scale.setScalar(lerp(6,58,k*k));}},
+    onFly:u=>{flyU=u;if(u>.2&&!spc){spc=true;SK.to(2,1.8);} /* 내려다보는 장면 동안 하늘이 노을에서 우주로(고개를 들면 이미 별 하늘) */
+      /* 우주에 닿으면(내려다보던 카메라가 고개를 드는 순간) 화성 구역 물체를 숨기고 그 자리에 발아래 커다란 화성 구 — 땅 위에 화성 그림이 겹치지 않게 */
+      if(u>.345&&!hidG){hidG=[];for(const ch of root.children)if(ch.visible&&ch!==board.anchor&&ch!==big.me&&ch.name!=="sky"&&!ch.isLight){let lt=false;ch.traverse(q=>{if(q.isLight)lt=true;});if(lt)continue;ch.visible=false;hidG.push(ch);}st.hidG=hidG;}},
     onEnd:async()=>{G.travel.note('phase','map');RIDE.pending={from:'space-mars',cloud:true};const mp=await G.travel.mapFor(SPACE,'space-mars','space-venus',F);
       G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil(CLOUD_VEIL);G.sound.sfx('cloud-poof',{gain:1.2});await veil.cover(.75);G.travel.mark('cloud');G.travel.mark('veil');
       st.bigTick=null;st.bigLate=null;dep.stop();
@@ -11109,7 +11025,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   {const dusk=SK.t>.5;if(dusk!==st.duskTone){st.duskTone=dusk;G.sound.bedTone(dusk?{lp:3400,gain:.78}:{},dusk?6:2);}} /* 노을: 같은 곡을 조금 작게·높은 소리 살짝 덜(저녁 느낌) */
   {const on=!!(F[K.clear]&&F[K.flag])&&!st.bigGo&&(st.bigOn||!st.scene);if(on&&!st.bigOn){st.bigOn=true;st.bigK=0;bigIdle.show(true);if(st.summit)G.sound.sfx('event-whirl',{gain:.9});}
     if(st.bigOn&&!st.bigGo){st.bigK=Math.min(1,(st.bigK||0)+dt*.9);const e=st.bigK*st.bigK*(3-2*st.bigK);bigIdle.me.scale.set(e,e,e);bigIdle.tick(dt);}else if(st.bigGo&&st.bigOn){st.bigOn=false;bigIdle.show(false);}} /* 꼭대기의 큰 회오리: 완료 + 깃발 뒤에 스르륵 생김 */
-  {const far=st.bigGo?1:0;st.farK=(st.farK||0)+(far-(st.farK||0))*Math.min(1,dt*1.5);if(st.farK>.002||st.farOn){st.farOn=st.farK>.002;const cm=G.view.camera,cd=cm?Math.hypot(cm.position.x-WAVE.c[0],cm.position.y-groundY(WAVE.c[0],WAVE.c[1]),cm.position.z-WAVE.c[1]):165,k=st.farK*Math.min(1,Math.max(0,(cd-15)/80)),sp=1+2.2*k; /* 키우는 정도는 카메라 거리로(2026-11-14 — 회오리가 둘 위를 지나가면 가까워지니 본래 크기로) */pipi.root.scale.setScalar(1+7*k);dung.root.scale.setScalar(1+5*k);
+  {const far=0; /* 2026-11-14: 떠날 때 둘을 키우지 않음(회오리가 둘의 머리 위를 낮게 지나감 — 키우면 길쭉한 거인처럼 보였다) */st.farK=(st.farK||0)+(far-(st.farK||0))*Math.min(1,dt*1.5);if(st.farK>.002||st.farOn){st.farOn=st.farK>.002;const cm=G.view.camera,cd=cm?Math.hypot(cm.position.x-WAVE.c[0],cm.position.y-groundY(WAVE.c[0],WAVE.c[1]),cm.position.z-WAVE.c[1]):165,k=st.farK*Math.min(1,Math.max(0,(cd-15)/80)),sp=1+2.2*k; /* 키우는 정도는 카메라 거리로(2026-11-14 — 회오리가 둘 위를 지나가면 가까워지니 본래 크기로) */pipi.root.scale.setScalar(1+7*k);dung.root.scale.setScalar(1+5*k);
     for(const [m,ob,w] of [[pipi,pipiOb,WAVE.pipi],[dung,dungOb,WAVE.dung]])place(m,ob,WAVE.c[0]+(w[0]-WAVE.c[0])*sp,WAVE.c[1]+(w[1]-WAVE.c[1])*sp);} /* 키운 만큼 사이도 벌림(그대로면 커진 몸끼리 겹침) */
     if(st.farK>.5&&G.view.camera){const o=waveOverlap();if(o.bothOn)st.waveOv=Math.max(st.waveOv||0,o.ov);}} /* 떠날 때: 165m 밖 노을 언덕의 둘이 보이게 키움(작게 손 흔드는 모습) */
   whirl.tick(dt);secretW.tick(dt);wander(WS,WS.side==='w'?WHOME.w:WHOME.e,t,1.3);wander(SW,st.summit?SUMMIT_W:SECRET_HOME,t,4.1);
@@ -11200,8 +11116,8 @@ return {
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:{id:'mars-bgm-code',fade:2},
   arrival:()=>arr, /* 시험 도구가 읽음 */
   spots:{spawn:SPAWN,pipi0:PIPI0,pipiSpot:PIPI_SPOT,hill:HILL.c,rock:ROCKD.c,rockTop:ROCKD.top,stones:STONES.map(s=>[...s.c,s.top]),landW:LAND.w,landE:LAND.e,secret:SECRET_HOME,summit:SUMMIT,calderaStones:STONES_C,flagSpot:FLAGSPOT,summitWhirl:SUMMIT_W,bigTop:BIGTOP,sunsetWL:SUNSET.wl,volcano:VOL.c},
-  state:()=>({wave:waveOverlap(),waveOvMax:+(st.waveOv||0).toFixed(3),scr:(()=>{const c=G.view.camera;if(!c)return null;const f=(x,y,z)=>{const v=new THREE.Vector3(x,y,z).project(c);return [+v.x.toFixed(2),+v.y.toFixed(2),v.z<1?1:0];},p=pipi.root.position,W=U0();return {pipi:f(p.x,p.y+.5,p.z),flag:f(FLAGSPOT[0],groundY(...FLAGSPOT)+1.5,FLAGSPOT[1]),hero:W?f(W.position.x,W.position.y+.7,W.position.z):null,camY:+c.position.y.toFixed(1),heroY:W?+W.position.y.toFixed(1):null};})(),bigOn:!!st.bigOn&&(st.bigK||0)>=1,callCam:!!st.callCam,quest:st.lastQ||'',venusOrb:!!(st.bits&&st.bits.venus.visible),summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
-  update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}G.sound.bedTone({},1);if(st.bits)st.bits.dispose();if(st.dep)st.dep.dispose();bigIdle.dispose();cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
+  state:()=>({wave:waveOverlap(),waveOvMax:+(st.waveOv||0).toFixed(3),scr:(()=>{const c=G.view.camera;if(!c)return null;const f=(x,y,z)=>{const v=new THREE.Vector3(x,y,z).project(c);return [+v.x.toFixed(2),+v.y.toFixed(2),v.z<1?1:0];},p=pipi.root.position,W=U0();return {pipi:f(p.x,p.y+.5,p.z),flag:f(FLAGSPOT[0],groundY(...FLAGSPOT)+1.5,FLAGSPOT[1]),hero:W?f(W.position.x,W.position.y+.7,W.position.z):null,camY:+c.position.y.toFixed(1),heroY:W?+W.position.y.toFixed(1):null};})(),bigOn:!!st.bigOn&&(st.bigK||0)>=1,callCam:!!st.callCam,quest:st.lastQ||'',summit:!!st.summit,flag:!!F[K.flag],flagAt:flag.root.visible?flag.root.position.toArray().map(n=>+n.toFixed(2)):null,stage:stage(),scene:st.scene,ride:!!st.ride,cross:!!st.cross,big:!!st.bigTick,whirl:[+WS.x.toFixed(2),+WS.z.toFixed(2),WS.side],secretWhirl:[+SW.x.toFixed(2),+SW.z.toFixed(2)],sky:+SK.t.toFixed(2),pipi:pipi.root.position.toArray().map(n=>+n.toFixed(2)),dung:dung.root.position.toArray().map(n=>+n.toFixed(2))}),
+  dbgBoard:()=>st.dbg,update,lateUpdate,dispose(){clearInterval(runIv);if(arr){arr.dispose();arr=null;}const W=U0();if(W){W.userData.sceneLock=false;if(W.userData.heldObj===cas.g)W.userData.setHeld(null);}G.sound.bedTone({},1);if(st.board)st.board.dispose();if(st.dep)st.dep.dispose();bigIdle.dispose();cas.dispose();flag.dispose();pipi.dispose();dung.dispose();whirl.dispose();secretW.dispose();if(st.big)st.big.dispose();},
 };
 }
 /* 화성 배경음(임시, 코드): 느린 60bpm, 넓은 패드 + 바람 스침 + 가끔 반짝이는 종, 낮은 베이스 — D 도리안 느낌(잔잔하고 넓게) */
@@ -11674,6 +11590,158 @@ export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mo
   return {tick,late,dispose,state:st};}
 
 </script>
+<script type="text/x-wl-module" data-path="js/zones/space/skyboard.js">
+/* ===== 원본: js/zones/space/skyboard.js ===== */
+/* 우주 하늘 공통(2026-11-14 — 달 → 화성 별똥별 이동의 하늘을 다른 행성 이동도 그대로 쓰게): 손그림 행성 그림(목성·토성·화성·금성·해·성운·은하수·종이 결·반짝이),
+   로우폴리 행성 구 makeOrb(parent,{map,rep,ring}) — 회색 정원(garden.js)이 쓰던 것 그대로 옮김, 그리고 하늘 그림판 makeSkyBoard(root,{mob,seed}):
+   카메라 자리에 붙어 방향만 늦게(초당 1.4) 따라오는 판 — 별(점 묶음 1)·네 갈래 반짝이(1)·성운(1)·은하수 띠(1)·종이 결(1)·해(2) + 행성 구는 쓰는 쪽이 add()로.
+   setAlpha(a)로 서서히 나타남(노을 하늘 → 우주), place(obj, x, y, size) = 화면 좌표(-1~1)·크기(화면 짧은 쪽 비율)로 그림판 위에 놓기. 회색 정원은 자기 그림판을 그대로 쓴다(구·그림만 여기서). */
+import * as THREE from 'three';
+import {rng} from '../../01-textures.js';
+import {sbMat} from '../../game/storybook.js';
+const PI=Math.PI;
+export function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
+/* ── 하늘 행성 손그림(2026-11-07 — 매끈한 스티커처럼 보여 로우폴리 색연필 세계와 따로 놀았다): 살짝 고르지 않은 가장자리(wob), 색연필 빗금 결(hatch),
+   은은한 입체 그림자(왼쪽 위 해 쪽 밝게, 반대쪽 어둡게 — shade), 목성 줄무늬는 경계가 번지게(화소마다 물결 + 부드러운 섞기) */
+export function srand(seed){let s=seed;return ()=>((s=(s*16807)%2147483647)/2147483647);}
+export function wob(g,cx,cy,r,seed,amp=.018){const R=srand(seed),p1=R()*6,p2=R()*6,p3=R()*6;g.beginPath();for(let i=0;i<=120;i++){const a=i/120*PI*2,k=1+amp*(Math.sin(a*5+p1)*.5+Math.sin(a*9+p2)*.3+Math.sin(a*17+p3)*.2);
+  const x=cx+Math.cos(a)*r*k,y=cy+Math.sin(a)*r*k;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
+export function hatch(g,x0,y0,w,h,n,cols,seed,{len=[10,22],ang=-.55,alpha=[.08,.2],lw=[1.4,2.6]}={}){const R=srand(seed);g.save();g.lineCap='round';
+  for(let i=0;i<n;i++){const x=x0+R()*w,y=y0+R()*h,L=len[0]+R()*(len[1]-len[0]),a=ang+(R()-.5)*.3;g.globalAlpha=alpha[0]+R()*(alpha[1]-alpha[0]);g.strokeStyle=cols[(R()*cols.length)|0];g.lineWidth=lw[0]+R()*(lw[1]-lw[0]);
+    g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*L,y+Math.sin(a)*L);g.stroke();}g.restore();}
+export function shade(g,cx,cy,r,{lit=.22,dark=.4}={}){const hl=g.createRadialGradient(cx-r*.42,cy-r*.42,0,cx-r*.42,cy-r*.42,r*.9);hl.addColorStop(0,`rgba(255,250,232,${lit})`);hl.addColorStop(1,'rgba(255,250,232,0)');g.fillStyle=hl;g.fillRect(cx-r*1.1,cy-r*1.1,r*2.2,r*2.2);
+  const sh=g.createRadialGradient(cx-r*.3,cy-r*.3,r*.55,cx-r*.1,cy-r*.1,r*1.25);sh.addColorStop(0,'rgba(60,30,70,0)');sh.addColorStop(.7,`rgba(60,30,70,${dark*.45})`);sh.addColorStop(1,`rgba(50,22,60,${dark})`);g.fillStyle=sh;g.fillRect(cx-r*1.1,cy-r*1.1,r*2.2,r*2.2);}
+/* 목성 줄무늬 그림(구에 감는 equirect 2:1): 밝은 크림 + 연한 주황 줄무늬(물결 경계·번짐) + 옅은 빗금. 붉은 폭풍은 광택 없는 산호빛 다홍 —
+   또렷한 가장자리(선 없이 한 단계 진한 산호 띠) + 안쪽 소용돌이 빗금. 자리는 구에서 카메라를 보는 쪽 아래 왼쪽(u .17·위도 남쪽) */
+export function jupiterMap(g,w,h){const bands=['#f6ead2','#f2cba4','#f5e6cb','#edbd92','#f4e2c4','#eab48a','#f6e8cd','#f0c79f','#f5e4c6','#ecba90','#f6ead2'].map(c=>{const n=parseInt(c.slice(1),16),k=v=>Math.pow(v/255,1.45);return {r:k(n>>16&255),g:k(n>>8&255),b:k(n&255)};}); // 밝은 크림 + 연한 주황 — 지난번 확정한 색(선형 값을 화소에 쓴 진한 주황)과 sRGB 그대로(너무 옅음)의 사이 // 하늘 보라를 섞으면 분홍으로 기울어 조금 더 노랗게
+  const img=g.createImageData(w,h),d=img.data,bh=h/bands.length,R=srand(5);const nz=[];for(let i=0;i<64;i++)nz.push(R());
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const xx=x/w*PI*2,yy=y+Math.sin(xx*3+y*.01)*bh*.2+Math.sin(xx*11+nz[(y>>2)&63]*6)*bh*.05,bi=yy/bh,i0=Math.max(0,Math.min(bands.length-1,Math.floor(bi))),i1=Math.min(bands.length-1,i0+1),f=bi-i0;
+    const t=f<.78?0:Math.min(1,(f-.78)/.22),tt=t*t*(3-2*t),A=bands[i0],B=bands[i1],j=(nz[(x*7+y*13)&63]-.5)*.03,k=(y*w+x)*4;
+    d[k]=Math.min(255,(A.r+(B.r-A.r)*tt+j)*255);d[k+1]=Math.min(255,(A.g+(B.g-A.g)*tt+j)*255);d[k+2]=Math.min(255,(A.b+(B.b-A.b)*tt+j)*255);d[k+3]=255;}
+  g.putImageData(img,0,0);
+  hatch(g,0,0,w,h,700,['#fffaf0','#fdeed6','#f3c9a2','#e8b088'],7,{len:[6,16],alpha:[.06,.14]});
+  // 붉은 폭풍: 산호빛 다홍, 광택 없음, 또렷한 가장자리(한 단계 진한 산호 띠 — 검은 선 없음), 안쪽 소용돌이 빗금
+  const sx=w*.17,sy=h*.6,rx=w*.034,ry=h*.038; // 예전 원판 그림의 폭풍과 같은 크기(구 둘레의 약 7%)
+  g.beginPath();g.ellipse(sx,sy,rx*1.08,ry*1.1,0,0,PI*2);g.fillStyle='#d9614a';g.fill();
+  g.beginPath();g.ellipse(sx,sy,rx,ry,0,0,PI*2);g.fillStyle='#e8775c';g.fill();
+  g.save();g.beginPath();g.ellipse(sx,sy,rx,ry,0,0,PI*2);g.clip();g.lineCap='round';
+  for(let i=0;i<16;i++){const k=i/16,a0=k*PI*2.6,rr=.25+.7*k;g.strokeStyle=i%2?'rgba(255,190,160,.45)':'rgba(196,78,58,.45)';g.lineWidth=1.6;g.beginPath();
+    g.ellipse(sx,sy,rx*rr,ry*rr,0,a0,a0+1.6);g.stroke();}
+  g.restore();}
+/* 화성 그림(equirect): 녹슨 주황 + 어두운 무늬(손그림 얼룩) + 밝은 모래빛 + 위아래 흰 극관 + 빗금 */
+export function marsMap(g,w,h){g.fillStyle='#cf6a45';g.fillRect(0,0,w,h);const R=srand(23);
+  for(let i=0;i<46;i++){const x=R()*w,y=h*(.2+R()*.6),r=w*(.02+R()*.07);g.globalAlpha=.25+R()*.3;g.fillStyle=R()<.6?'#9c4430':'#e4925f';g.beginPath();g.ellipse(x,y,r*1.6,r*.7,R()*.6-.3,0,PI*2);g.fill();}
+  g.globalAlpha=1;g.fillStyle='#f6ece2';g.fillRect(0,0,w,h*.07);g.fillRect(0,h*.95,w,h*.05);
+  hatch(g,0,0,w,h,420,['#f0a074','#b04e34','#fbe0c8'],31,{len:[5,13],alpha:[.07,.16]});}
+/* 토성 줄무늬 그림(equirect): 금빛 몸통 + 옅은 줄무늬 + 빗금 */
+export function saturnMap(g,w,h){g.fillStyle='#efc979';g.fillRect(0,0,w,h);const R=srand(31);
+  [[.28,'#e2bc78',5],[.42,'#f6e0ae',4],[.55,'#ddb26a',6],[.68,'#f3dba6',3],[.8,'#d9ad66',4]].forEach(([y,c,lw])=>{g.strokeStyle=c;g.lineWidth=lw;g.beginPath();for(let x=0;x<=w;x+=4){const yy=y*h+Math.sin(x/w*PI*6+y*9)*1.6;x?g.lineTo(x,yy):g.moveTo(x,yy);}g.stroke();});
+  hatch(g,0,0,w,h,260,['#fff4d6','#c99a52'],33,{len:[4,10],alpha:[.08,.18],lw:[1,1.6]});}
+/* 해: 크림빛 원(고르지 않은 가장자리 — 선 없음) + 노랑·살구 빗금 + 은은한 입체(빛무리는 sunGlowArt 판) */
+export function sunArt(g,n){const cx=n/2,cy=n/2,r=n*.19; // 원만(빛무리는 sunGlowArt — 더하기 섞기 판으로 따로, 손그림 결은 원 안쪽에만)
+  g.save();wob(g,cx,cy,r,21,.03);g.fillStyle='#ffe9b0';g.fill();g.clip();hatch(g,cx-r,cy-r,2*r,2*r,240,['#fffbe8','#fff2c8','#ffd98a','#ffcf7a'],23,{len:[6,14],alpha:[.14,.3],lw:[1.2,2.2]});shade(g,cx,cy,r,{lit:.4,dark:.08});g.restore();
+  // 테두리 선 없음(2026-11-08) — 가장자리는 둘레로 갈수록 살짝 진한 살구빛이 원 안쪽에서 번지듯
+  {const e=g.createRadialGradient(cx,cy,r*.72,cx,cy,r*1.04);e.addColorStop(0,'rgba(255,214,140,0)');e.addColorStop(.8,'rgba(255,200,120,.35)');e.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=e;g.beginPath();g.arc(cx,cy,r*1.04,0,PI*2);g.fill();}}
+/* 해 빛무리: 은은하게 번지는 살구빛(가운데 크림 → 바깥으로 사라짐) */
+export function sunGlowArt(g,n){const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,240,200,.85)');gr.addColorStop(.18,'rgba(255,226,170,.6)');gr.addColorStop(.42,'rgba(255,200,130,.24)');gr.addColorStop(.7,'rgba(255,180,120,.08)');gr.addColorStop(1,'rgba(255,170,120,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}
+/* 종이 결(하늘 바탕, 256 반복): 밝은 섬유 짧은 선 + 어두운 티끌 — 판 불투명도로 아주 옅게 */
+export function paperArt(g,n){const R=srand(41);g.clearRect(0,0,n,n);g.lineCap='round';
+  for(let i=0;i<420;i++){const x=R()*n,y=R()*n,L=2+R()*5,a=R()*PI;g.globalAlpha=.04+R()*.07;g.strokeStyle=R()<.75?'#fff4e6':'#d9c8ff';g.lineWidth=.8+R()*1.4;
+    for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){g.beginPath();g.moveTo(x+ox*n,y+oy*n);g.lineTo(x+ox*n+Math.cos(a)*L,y+oy*n+Math.sin(a)*L);g.stroke();}}
+  for(let i=0;i<700;i++){g.globalAlpha=.06+R()*.1;g.fillStyle=R()<.6?'#0c0820':'#fff8ee';g.fillRect(R()*n,R()*n,1.2,1.2);}g.globalAlpha=1;}
+/* 네 갈래 반짝이 ✦(로딩 화면 반짝이와 같은 모양 — 노랑, 가운데 흰빛) */
+export function sparkArt(g,n){const c=n/2;const gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,240,170,.55)');gr.addColorStop(1,'rgba(255,230,140,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);
+  g.fillStyle='#ffe27a';g.beginPath();for(let k=0;k<8;k++){const a=k/8*PI*2-PI/2,r=k%2?n*.08:n*.46;const x=c+Math.cos(a)*r,y=c+Math.sin(a)*r;k?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();g.fill();
+  g.fillStyle='#fffbe6';g.beginPath();g.arc(c,c,n*.07,0,7);g.fill();}
+/* 성운: 연보라·분홍 위주(+ 살구·하늘 조금) 구름 얼룩 */
+export function nebulaArt(g,n){let s=11;const R=()=>((s=(s*16807)%2147483647)/2147483647);const cols=['214,150,240','255,150,200','200,160,255','255,180,170','170,170,255'];
+  for(let i=0;i<60;i++){const x=n*(.12+R()*.76),y=n*(.25+R()*.5),r=n*(.07+R()*.2),c=cols[i%5],gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(${c},.075)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(0,0,n,n);}
+  /* 판 가장자리로 갈수록 0까지(2026-11-08 — 가장자리에서 잘린 구름 얼룩이 하늘에 밝기가 다른 세로 이음매로 보였다) */
+  const m=g.createRadialGradient(n/2,n/2,n*.22,n/2,n/2,n*.5);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(1,'rgba(0,0,0,0)');g.globalCompositeOperation='destination-in';g.fillStyle=m;g.fillRect(0,0,n,n);g.globalCompositeOperation='source-over';}
+/* 은하수 띠(가로로 긴 그림 — 판은 4:1): 가운데가 밝은 연보라·분홍 띠 + 작은 별 알갱이 */
+export function milkyArt(g,n){const w=n,h=n;let s=23;const R=()=>((s=(s*16807)%2147483647)/2147483647);
+  for(let i=0;i<70;i++){const x=w*R(),y=h*(.5+(R()-.5)*.36*Math.sin(x/w*PI)),r=h*(.08+R()*.16),c=['190,160,240','240,170,220','170,180,255'][i%3],gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,`rgba(${c},.07)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(0,0,w,h);}
+  const fade=g.createLinearGradient(0,0,w,0);fade.addColorStop(0,'rgba(0,0,0,1)');fade.addColorStop(.15,'rgba(0,0,0,0)');fade.addColorStop(.85,'rgba(0,0,0,0)');fade.addColorStop(1,'rgba(0,0,0,1)');
+  g.globalCompositeOperation='destination-out';g.fillStyle=fade;g.fillRect(0,0,w,h);const fv=g.createLinearGradient(0,0,0,h);fv.addColorStop(0,'rgba(0,0,0,1)');fv.addColorStop(.3,'rgba(0,0,0,0)');fv.addColorStop(.7,'rgba(0,0,0,0)');fv.addColorStop(1,'rgba(0,0,0,1)');g.fillStyle=fv;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
+/* 금성 그림(equirect): 연보라 구름 띠(물결) + 크림 줄 + 빗금 */
+export function venusMap(g,w,h){g.fillStyle='#d7bcee';g.fillRect(0,0,w,h);const R=srand(57);
+  for(let i=0;i<9;i++){const y0=h*(.06+i*.105),amp=h*.03,ph=R()*6,th=h*(.03+R()*.035);g.fillStyle=i%2?'rgba(246,234,252,.75)':'rgba(190,156,222,.6)';g.beginPath();
+    for(let x=0;x<=w;x+=4)g.lineTo(x,y0+Math.sin(x/w*PI*4+ph)*amp);for(let x=w;x>=0;x-=4)g.lineTo(x,y0+th+Math.sin(x/w*PI*4+ph+.6)*amp);g.closePath();g.fill();}
+  hatch(g,0,0,w,h,90,['#ffffff','#f3e6ff','#b895d8'],58,{len:[10,24],alpha:[.06,.16]});}
+const SKYC=new THREE.Color('#6b5fb4');
+const ORB_GLSL='float ringA(float r){if(r<1.32||r>2.3)return 0.;float u=(r-1.32)/.98;float a=u<.46?.55:u<.53?.08:u<.88?.82:u<.91?.1:.35;a*=.9+.1*sin(u*31.);return a*smoothstep(0.,.03,u)*smoothstep(1.,.95,u);}\n'; // 넓은 띠 셋(안쪽·가운데 진한 띠·옅은 바깥) + 틈 둘
+const crayTex=(()=>{const m=sbMat('#ffffff');return m.map;})();
+export function makeOrb(parent,{map,rep=[5,3],ring=false}){const g=new THREE.Group();parent.add(g);g.frustumCulled=false;
+  const U={uMap:{value:map},uCray:{value:crayTex},uRep:{value:new THREE.Vector2(...rep)},uL:{value:new THREE.Vector3(-1,.5,.6).normalize()},uSky:{value:SKYC},uRim:{value:new THREE.Color('#fff1cf')},
+    uRn:{value:new THREE.Vector3(0,1,0)},uRing:{value:ring?1:0}};
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),new THREE.ShaderMaterial({uniforms:U,fog:false,
+    vertexShader:'varying vec3 vW,vN,vP;varying vec2 vUv;void main(){vUv=uv;vP=position;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}',
+    fragmentShader:'uniform sampler2D uMap,uCray;uniform vec2 uRep;uniform vec3 uL,uSky,uRim,uRn;uniform float uRing;varying vec3 vW,vN,vP;varying vec2 vUv;'+ORB_GLSL+
+      'void main(){vec3 Nf=normalize(cross(dFdx(vW),dFdy(vW)));vec3 N=normalize(mix(normalize(vN),Nf,.32));vec3 V=normalize(cameraPosition-vW);'+
+      'float d=dot(N,uL);float k=mix(.56,.8,smoothstep(-.14,0.,d));k=mix(k,1.,smoothstep(.36,.5,d));'+
+      'vec3 base=texture2D(uMap,vUv).rgb*dot(texture2D(uCray,vUv*uRep).rgb,vec3(.3333));vec3 col=base*k+uSky*(1.-k)*.45;'+
+      'if(uRing>0.){float dn=dot(uL,uRn);if(abs(dn)>.02){float t=-dot(vP,uRn)/dn;if(t>0.){float a=ringA(length(vP+uL*t));col*=1.-a*.5;}}}'+ // 고리 그림자(해 쪽으로 고리 면을 비춰 봄)
+      'float nv=max(dot(N,V),0.);col*=mix(.8,1.,pow(nv,.4));'+ // 가장자리 어두움
+      'col=mix(col,uSky*1.3,smoothstep(.26,0.,nv)*.3);'+ // 하늘과 만나는 경계로 갈수록 연보라
+      'col+=uRim*smoothstep(.16,.02,nv)*smoothstep(.05,.45,d)*.5;'+ // 해를 바라보는 쪽 가장자리 아주 얇은 밝은 테
+      'float l=dot(col,vec3(.3,.59,.11));col=mix(vec3(l),col,.9);col=mix(col,uSky,.15);'+ // 멀리 있는 느낌: 하늘 보라 20%, 대비 조금 낮춤
+      'gl_FragColor=vec4(col,1.);\n#include <colorspace_fragment>\n}'}));
+  body.material.userData.noBend=true;body.frustumCulled=false;body.renderOrder=-6;body.userData.noMerge=true;g.add(body);
+  const halo=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6),new THREE.MeshBasicMaterial({map:haloTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,opacity:.7}));
+  halo.material.userData.noBend=true;halo.frustumCulled=false;halo.renderOrder=-4;halo.userData.noMerge=true;g.add(halo);
+  let rg=null;if(ring){rg=new THREE.Mesh(new THREE.RingGeometry(1.32,2.3,96,1),new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,
+      vertexShader:'varying vec3 vP,vW;void main(){vP=position;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
+      fragmentShader:'uniform sampler2D uCray;uniform vec3 uL,uSky,uRn;varying vec3 vP,vW;'+ORB_GLSL+
+        'void main(){float r=length(vP.xy);float a=ringA(r);if(a<.01)discard;float u=(r-1.32)/.98;'+
+        'vec3 c=mix(vec3(.6,.44,.22),vec3(.7,.54,.3),smoothstep(.4,.7,u))*(.94+.06*sin(u*23.));c*=dot(texture2D(uCray,vP.xy*1.7).rgb,vec3(.3333));'+ // 몸통보다 살짝 어두운 금빛 띠 + 크레용 결
+        'float lit=.85+.15*abs(dot(uRn,uL));c=c*lit;float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,.9);c=mix(c,uSky,.22);'+
+        'gl_FragColor=vec4(c,min(1.,a*1.15));\n#include <colorspace_fragment>\n}'}));
+    rg.material.userData.noBend=true;rg.frustumCulled=false;rg.renderOrder=-5;rg.userData.noMerge=true;g.add(rg);}
+  return {g,body,halo,ring:rg,U};}
+const haloTex=canvasTex(128,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(190,170,255,0)');gr.addColorStop(.72,'rgba(190,170,255,0)');gr.addColorStop(.78,'rgba(196,178,255,.3)');gr.addColorStop(.9,'rgba(180,160,250,.12)');gr.addColorStop(1,'rgba(170,150,240,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
+/* ── 하늘 그림판 ── */
+export function makeSkyBoard(root,{mob=false,seed='space-travel'}={}){const anchor=new THREE.Group();anchor.name='space-sky-board';root.add(anchor);const D=90,aq=new THREE.Quaternion(),aq2=new THREE.Quaternion();let aqOn=false,A=1;
+  /* 행성·해는 따로 빨리 따라오는 판(near — 초당 6: 이동 카메라가 뒤·옆·앞으로 크게 돌아도 정한 화면 자리 가까이에), 별·성운·은하수는 늦게(초당 1.4 — 카메라가 돌면 별이 흘러 원근감) */
+  const near=new THREE.Group();near.name='space-sky-near';anchor.add(near);
+  const fades=[];const bill=(tex,{op=1,add=false,order=-1,w=1,h=1}={})=>{const m=new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,depthTest:true,fog:false,opacity:op,blending:add?THREE.AdditiveBlending:THREE.NormalBlending});m.userData.noBend=true;m.userData.op0=op;
+    const me=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);me.renderOrder=order;me.frustumCulled=false;me.userData.noMerge=true;anchor.add(me);fades.push(m);return me;};
+  const sunG=bill(canvasTex(128,sunGlowArt),{add:true,order:-4.5,op:.85}),sunM=bill(canvasTex(256,sunArt),{order:-4});near.add(sunG,sunM);
+  const neb=bill(canvasTex(512,nebulaArt),{add:true,order:-7,op:.62}),milkyB=bill(canvasTex(512,milkyArt),{add:true,order:-7,op:.75,w:4,h:1});
+  const grain=(()=>{const t=canvasTex(256,paperArt);t.wrapS=t.wrapT=THREE.RepeatWrapping;return bill(t,{order:-9,op:mob?.32:.28});})();
+  const N=mob?3400:6400,starU={uT:{value:0},uPR:{value:Math.min(window.devicePixelRatio||1,mob?1.25:2)},uA:{value:1}};
+  const stars=(()=>{const pos=new Float32Array(N*3),cc=new Float32Array(N*3),sz=new Float32Array(N),ph=new Float32Array(N*2),c=new THREE.Color();const r=rng(seed+':stars'),sr=(a,b)=>a+(b-a)*r();
+    const cols=['#ffffff','#ffffff','#ffffff','#fdfcf6','#fff2b8','#ffd0e0','#cfe6ff'];
+    for(let i=0;i<N;i++){const az=sr(-PI,PI),el=Math.asin(sr(Math.sin(-1.2),Math.sin(1.3)));pos.set([Math.sin(az)*Math.cos(el)*D*.99,Math.sin(el)*D*.99,-Math.cos(az)*Math.cos(el)*D*.99],i*3); /* 온 하늘(이동 카메라는 사방으로 돎) */
+      c.set(cols[(sr(0,cols.length))|0]);cc.set([c.r,c.g,c.b],i*3);const q=sr(0,1);sz[i]=q<.6?sr(2,3):q<.88?sr(3.1,4.4):q<.98?sr(4.5,6):sr(6.2,8);ph.set([sr(0,PI*2),sr(.35,1.6)],i*2);}
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(cc,3));geo.setAttribute('psize',new THREE.BufferAttribute(sz,1));geo.setAttribute('tw',new THREE.BufferAttribute(ph,2));
+    const m=new THREE.ShaderMaterial({uniforms:starU,transparent:true,depthWrite:false,fog:false,
+      vertexShader:'uniform float uT,uPR;attribute float psize;attribute vec2 tw;attribute vec3 color;varying vec3 vC;varying float vA;void main(){float w=.5+.5*sin(uT*tw.y+tw.x);float big=step(3.2,psize);vA=mix(.35,1.,w*w)*(.8+.2*big);vC=color;vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;gl_PointSize=psize*uPR*(.82+.3*w);}',
+      fragmentShader:'uniform float uA;varying vec3 vC;varying float vA;void main(){vec2 d=gl_PointCoord-.5;float r=length(d)*2.;float a=1.-smoothstep(.55,1.,r);if(a<.01)discard;gl_FragColor=vec4(vC*(1.+.35*smoothstep(.45,0.,r)),a*vA*uA);}'});
+    m.userData.noBend=true;const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.renderOrder=-8;pts.userData.noMerge=true;anchor.add(pts);return pts;})();
+  const twinkles=(()=>{const n=mob?10:18,pos=new Float32Array(n*3),pr=new Float32Array(n*3);const r=rng(seed+':twinkle'),sr=(a,b)=>a+(b-a)*r();
+    for(let i=0;i<n;i++){const az=sr(-.9,.9),el=sr(-.3,.62);pos.set([Math.sin(az)*Math.cos(el)*D*.97,Math.sin(el)*D*.97,-Math.cos(az)*Math.cos(el)*D*.97],i*3);pr.set([sr(0,8),sr(3,8),sr(18,30)],i*3);}
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('tp',new THREE.BufferAttribute(pr,3));
+    const m=new THREE.ShaderMaterial({uniforms:{uT:starU.uT,uPR:starU.uPR,uA:starU.uA,uMap:{value:canvasTex(64,sparkArt)}},transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending,
+      vertexShader:'uniform float uT,uPR;attribute vec3 tp;varying float vK;float h(float n){return fract(sin(n*12.9898)*43758.5453);}void main(){float cyc=(uT+tp.x)/tp.y,ci=floor(cyc),u=fract(cyc)*tp.y;float k=u<.7?sin(3.14159*u/.7):0.;vK=k;'+
+        'vec3 p=position+vec3((h(ci+tp.x)-.5)*30.,(h(ci*1.7+tp.x*3.1)-.5)*16.,0.);vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=tp.z*uPR*k;}',
+      fragmentShader:'uniform sampler2D uMap;uniform float uA;varying float vK;void main(){vec4 c=texture2D(uMap,gl_PointCoord);if(c.a<.01)discard;gl_FragColor=vec4(c.rgb*c.a*vK*uA,1.);}'});
+    m.userData.noBend=true;const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.renderOrder=-3;pts.userData.noMerge=true;anchor.add(pts);return pts;})();
+  const orbs=[];let tv=.4,th=.4,u=.4,port=false;
+  /* 화면 좌표(x,y: -1~1)·크기(화면 짧은 쪽 비율 s)로 그림판 위에 놓기. 구(orb)는 반지름 = s×짧은 쪽 */
+  function place(o,x,y,s,dk=1){const g=o.g||o;g.position.set(x*th*D*dk,y*tv*D*dk,-D*dk);g.quaternion.identity();const sz=s*2*u*D*dk;if(o.g)g.scale.setScalar(sz*.5);else g.scale.set(sz,sz,1);}
+  function tick(dt,t,cam){if(!cam)return;anchor.position.copy(cam.position);if(!aqOn){aq.copy(cam.quaternion);aq2.copy(aq);aqOn=true;}else{aq.slerp(cam.quaternion,1-Math.exp(-dt*1.4));aq2.slerp(cam.quaternion,1-Math.exp(-dt*6));}anchor.quaternion.copy(aq);near.quaternion.copy(aq).invert().multiply(aq2);
+    tv=Math.tan(cam.fov*PI/360);th=tv*cam.aspect;u=Math.min(tv,th);port=cam.aspect<1;starU.uT.value=t;
+    place(neb,port?-.2:-.35,port?.66:.62,port?1.4:1.3);place(milkyB,port?0:.05,port?.72:.7,1);milkyB.rotation.z=port?-.55:-.22;
+    {const gs=2*D*.995*Math.max(tv,th)*4.2;grain.position.set(0,0,-D);grain.scale.set(gs,gs,1);grain.material.map.repeat.set(9,9);}
+    for(const o of orbs){_od.copy(sunM.position).sub(o.g.position).normalize();_od.z+=.85;o.U.uL.value.copy(_od.normalize()).applyQuaternion(aq2);if(o.ring)o.U.uRn.value.set(.16,.88,.45).normalize().applyQuaternion(aq2);}}
+  const _od=new THREE.Vector3();
+  function setAlpha(a){A=a;starU.uA.value=a;for(const m of fades)m.opacity=m.userData.op0*a;}
+  function add(opts){const o=makeOrb(near,opts);if(o.ring){const n=new THREE.Vector3(.16,.88,.45).normalize();o.ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),n);o.U.uRn.value.copy(n);}orbs.push(o);return o;}
+  function dispose(){anchor.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});for(const o of orbs)if(o.U.uMap.value)o.U.uMap.value.dispose();anchor.removeFromParent();}
+  return {anchor,D,sun:sunM,sunGlow:sunG,place,tick,setAlpha,add,dispose,get port(){return port;},get alpha(){return A;}};}
+
+</script>
 <script type="text/x-wl-module" data-path="js/zones/space/venus.js">
 /* ===== 원본: js/zones/space/venus.js ===== */
 /* 무한 우주 ③ 금성 구름 — 임시 구역(2026-11-12): 화성 → 금성 이동 연출이 내려앉는 곳. 사방이 연보라(#C9A6E0) 안개인 푹신한 구름 땅뿐이다.
@@ -11727,11 +11795,6 @@ function orbTex(n,base,light,dark,glow,deco){return discTex(n,(g,N)=>{const c=N/
   const gl=g.createRadialGradient(c,c,R*.9,c,c,N*.5);gl.addColorStop(0,glow);gl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gl;g.fillRect(0,0,N,N);
   g.save();g.beginPath();g.arc(c,c,R,0,7);g.clip();const gr=g.createRadialGradient(c-R*.35,c-R*.4,R*.1,c,c,R*1.1);gr.addColorStop(0,light);gr.addColorStop(.55,base);gr.addColorStop(1,dark);g.fillStyle=gr;g.fillRect(0,0,N,N);
   if(deco)deco(g,c,R);g.globalAlpha=.16;g.strokeStyle='#fff8ee';g.lineWidth=N/90;for(let i=-8;i<9;i++){g.beginPath();g.moveTo(c-R,c+i*R*.14-R*.2);g.lineTo(c+R,c+i*R*.14+R*.2);g.stroke();}g.restore();});}
-export function spaceBits(root){const mk=(tex,add)=>{const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,fog:false,blending:add?THREE.AdditiveBlending:THREE.NormalBlending});m.userData.noBend=true;const s=new THREE.Sprite(m);s.visible=false;s.renderOrder=4;s.frustumCulled=false;root.add(s);return s;};
-  const mars=mk(orbTex(256,'#d9895f','#f2c19a','#a85c40','rgba(240,170,130,.35)',(g,c,R)=>{g.globalAlpha=.3;g.fillStyle='#b9694a';for(const [x,y,r] of [[-.3,.2,.3],[.35,-.1,.22],[.05,.5,.2]]){g.beginPath();g.ellipse(c+x*R,c+y*R,r*R*1.4,r*R,.3,0,7);g.fill();}g.globalAlpha=1;})),
-    venus=mk(orbTex(256,'#c9a6e0','#efdcfb','#9a78bd','rgba(214,180,240,.45)',(g,c,R)=>{g.globalAlpha=.4;g.strokeStyle='#f3e6ff';g.lineWidth=R*.12;g.lineCap='round';for(let i=-3;i<4;i++){g.beginPath();g.moveTo(c-R,c+i*R*.26+R*.12);g.bezierCurveTo(c-R*.3,c+i*R*.26-R*.12,c+R*.3,c+i*R*.26+R*.16,c+R,c+i*R*.26-R*.08);g.stroke();}g.globalAlpha=1;}));
-  const all=[mars,venus];
-  return {mars,venus,hide(){all.forEach(s=>s.visible=false);},dispose(){all.forEach(s=>{s.removeFromParent();s.material.map.dispose();s.material.dispose();});}};}
 /* 금성 구름 덮개 색(meteor-ride dustVeil 옵션) */
 export const CLOUD_VEIL={blobs:['#e6d2f4','#d9c0ee','#f1e4fa','#cdb0e6','#e0c9f2'],bg:['#dcc6ef','#cfb4e6'],fade:'rgba(214,190,236,0)',tiles:[[250,240,255],[176,146,206]],dots:['252,244,255','198,170,226','226,206,242']};
 export function cloudArrival(o){const {G,root,WL}=o,U=WL.userData;lockOn(G,WL);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('기본');
