@@ -6,14 +6,14 @@
      duck {min 배경음 묶음 가장 작은 값, max 가장 큰 값(0.5를 넘으면 안 됨), downs 줄어든 횟수, rises 되돌아온 횟수, riseSec 되돌아오는 데 걸린 시간들}
      ctx 소리 상태(휴대폰: 첫 터치 뒤 running이어야 함) */
 (()=>{const KEY='__voiceProbe';let S;try{S=JSON.parse(sessionStorage.getItem(KEY)||'null');}catch(e){S=null;}
-  if(!S)S={seen:{},plays:[],nofile:{},unlisted:{},skip:[],late:[],asleep:[],cut:[],userclose:[],replaced:[],stops:[],arrive:[],muteToast:0,muteDuck:0,maxAtOnce:0,cutByClose:0,cuts:[],duck:{min:9,max:0,downs:0,rises:0,riseSec:[]},ctx:[],frames:0,reloads:0};else S.reloads++;
+  if(!S)S={seen:{},plays:[],nofile:{},unlisted:{},skip:[],late:[],asleep:[],cut:[],userclose:[],replaced:[],stops:[],arrive:[],queued:[],muteToast:0,muteDuck:0,maxAtOnce:0,cutByClose:0,cuts:[],duck:{min:9,max:0,downs:0,rises:0,riseSec:[]},ctx:[],frames:0,reloads:0};else S.reloads++;
   let AR=null,lastSt=null,riseT=0,dlgWas=false,voWas=null,saved=0,mtWas=false,mtNow=false;
   const save=()=>{try{sessionStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
   const tick=()=>{requestAnimationFrame(tick);const G=window.wlGame;if(!G||!G.sound||!G.sound.voiceLog)return;S.frames++;
     try{const L=G.sound.voiceLog();S.maxAtOnce=Math.max(S.maxAtOnce,L.max);S.has=L.has;S.lines=L.lines;S.temp=L.temp;
       for(const e of L.log){const k=S.reloads+':'+e.t+':'+e.g+':'+e.ev+':'+e.text;if(S.seen[k])continue;S.seen[k]=1;
         if(e.ev==='play')S.plays.push([e.id,e.dur,e.n]);else if(e.ev==='nofile')S.nofile[e.id]=(S.nofile[e.id]||0)+1;else if(e.ev==='unlisted')S.unlisted[e.text]=(S.unlisted[e.text]||0)+1;
-        else if(e.ev==='skip')S.skip.push(e.id||e.text);else if(e.ev==='late')S.late.push(e.id);else if(e.ev==='asleep')S.asleep.push(e.id);else if(e.ev==='cut')S.cut.push(e.id);else if(e.ev==='userclose')S.userclose.push(e.id);else if(e.ev==='replaced')S.replaced.push([e.id,e.text]);else if(e.ev==='stop')S.stops.push([e.id,e.dur]);}
+        else if(e.ev==='skip')S.skip.push(e.id||e.text);else if(e.ev==='late')S.late.push(e.id);else if(e.ev==='asleep')S.asleep.push(e.id);else if(e.ev==='cut')S.cut.push(e.id);else if(e.ev==='userclose')S.userclose.push(e.id);else if(e.ev==='replaced')S.replaced.push([e.id,e.text]);else if(e.ev==='stop')S.stops.push([e.id,e.dur]);else if(e.ev==='queue')S.queued.push(e.id);}
       /* 도착 안내(TR-003·004): 목소리가 나오는 동안 안내 문구가 떠 있는지 · 배경음 묶음(줄이기)·스테이지 배경음 크기(이동 테마 뒤 되돌아오는 중) */
       {const N2=G.sound.voiceNow(),t2=document.getElementById('wlToast'),on2=!!t2&&t2.classList.contains('on'),D2=G.sound.duckState(),tr=/SPC-TR-00[34]/.test(N2.id||'');
        if(tr&&!AR){AR={id:N2.id.slice(3),t0:performance.now(),toastAtStart:on2,gone:0,bus0:D2&&D2.bus,bed0:D2&&D2.bed,busMin:9,bedMin:9,bedMax:0};S.arrive.push(AR);}
@@ -33,5 +33,5 @@
   requestAnimationFrame(tick);addEventListener('pagehide',save);
   window.__voice={report(){save();const ids=S.plays.map(p=>p[0]),dup={};ids.forEach(i=>dup[i]=(dup[i]||0)+1);
     return {색인:{줄:S.lines,'파일 있는 줄':S.has,임시:S.temp},'튼 목소리(번)':S.plays.length,'튼 줄(서로 다른)':Object.keys(dup).length,'동시에 나온 목소리 최대':S.maxAtOnce,'대화창이 닫힐 때 목소리가 남은 횟수':S.cutByClose,'그 줄':S.cuts,
-      '파일 없는 줄(자막만)':S.nofile,'대본에 없는 글':S.unlisted,'건너뛴 작은 목소리':S.skip,'늦게 읽혀 못 튼 줄':S.late,'카드 나레이션이 끊긴 줄(저절로)':S.cut,'카드를 눌러 닫아 멈춘 줄':S.userclose,'새 목소리가 앞 목소리를 끊은 횟수':S.replaced.length,'끊긴 줄':S.replaced,'도착 안내':S.arrive,'끝나기 전에 멈춘 목소리(번호·그때까지 초)':S.stops,'글자만 안내 문구가 뜬 횟수':S.muteToast,'그때 배경음이 줄어든 횟수':S.muteDuck,'소리가 깨기 전이라 못 튼 줄':S.asleep,
+      '파일 없는 줄(자막만)':S.nofile,'대본에 없는 글':S.unlisted,'건너뛴 작은 목소리':S.skip,'늦게 읽혀 못 튼 줄':S.late,'카드 나레이션이 끊긴 줄(저절로)':S.cut,'카드를 눌러 닫아 멈춘 줄':S.userclose,'새 목소리가 앞 목소리를 끊은 횟수':S.replaced.length,'끊긴 줄':S.replaced,'줄을 섰다 나온 작은 목소리':S.queued,'도착 안내':S.arrive,'끝나기 전에 멈춘 목소리(번호·그때까지 초)':S.stops,'글자만 안내 문구가 뜬 횟수':S.muteToast,'그때 배경음이 줄어든 횟수':S.muteDuck,'소리가 깨기 전이라 못 튼 줄':S.asleep,
       '배경음 줄이기':S.duck,'다시 연 횟수':S.reloads,'측정 오류':S.err||null,plays:S.plays};}};})();

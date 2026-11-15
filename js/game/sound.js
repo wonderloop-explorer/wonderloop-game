@@ -115,9 +115,12 @@ const voiceLog=()=>({mute:VB.lines.filter(l=>l.mute&&!l.fx).map(l=>l.text),log:V
 /* 목소리 하나 (대사·나레이션 공통): {id,text,who,kind, minor(말풍선·안내 문구 — 다른 목소리가 나오는 중이면 건너뜀), quiet(파일이 있을 때만 — 없으면 아무 일도 안 함: 시점 기록·배경음 줄이기 없음)}
    → {dur, end, live(), stop()}. 한 번에 하나: 새 대사·나레이션이 시작되면 앞 목소리는 멈춘다(CURV). 파일을 아직 못 읽었으면 읽는 대로(1.2초 안) 틀고 길이를 고친다 */
 const SPEAK=new Set(); // 지금 말하는 목소리 (배경음 줄이기)
-let CURV=null,CURM=null; // 지금 나오는 큰 목소리(대사·나레이션) · 작은 목소리(말풍선·안내 문구)
+let CURV=null,CURM=null;const MQ=[];
+function tickVoiceQ(){if(!MQ.length||(CURV&&CURV.live())||(CURM&&CURM.live()))return;const q=MQ.shift();if(clock.t-q.t>6){vlog('skip',null,q.v.text);return;}voice(q.v);} // 지금 나오는 큰 목소리(대사·나레이션) · 작은 목소리(말풍선·안내 문구)
 function voice(v){let id=v.id,e=null;if(!id&&!SHOT&&VB.dir){e=vbFind(v.who,v.text);if(e&&e.has&&!e.mute){id='vo:'+e.id;SRC[id]=e.url;}}
   const busy=!!(CURV&&CURV.live())||!!(v.minor&&CURM&&CURM.live()),can=!!id&&(VS.on||!e&&!String(id).startsWith('vo:'))&&!(v.minor&&busy);
+  /* 작은 목소리 줄 세우기(2026-11-15 — 말풍선 대사가 연달아 뜰 때: 아기 토끼 떡방아 구경): 다른 작은 목소리가 나오는 중이면 건너뛰지 않고 줄을 섰다가 끝나면 차례로(6초 넘게 기다린 줄은 버림). 큰 목소리(대사·나레이션) 중이면 예전처럼 건너뜀 */
+  if(v.minor&&!v._q&&id&&VS.on&&!(CURV&&CURV.live())&&CURM&&CURM.live()){if(MQ.length<3){MQ.push({v:{...v,_q:1},t:clock.t});vlog('queue',e&&e.id,v.text);}else vlog('skip',e&&e.id,v.text);return null;}
   if(v.quiet&&!can){if(!SHOT&&VB.dir)vlog(!id?(e?'nofile':'unlisted'):!VS.on?'off':'skip',e&&e.id,v.text);return null;}
   const t0=clock.t,dur=(can&&LEN[id])||estimate(v.text),sp={end:t0+dur};SPEAK.add(sp);
   if(can&&!v.minor){if(CURV&&CURV.live()){vlog('replaced',CURV.id,v.text);CURV.stop();} /* 시험용 기록: 새 목소리가 앞 목소리를 끊음 */if(CURM&&CURM.live())CURM.stop();} /* 큰 목소리가 시작되면 앞 목소리(큰 것·작은 것)는 멈춤 */
@@ -146,7 +149,7 @@ const duckState=()=>ctx?{st:DK.st,k:+duckNow(ctx.currentTime).toFixed(4),bus:+mu
 function tickBed(dt){
   if(want){if(!cues.includes(want.cue))want.cue=bedCue(want); // 영상 캡처가 녹화 시작 때 기록을 비우면 그 시점부터 다시
     want.cue.dur=+(clock.t-want.cue.t).toFixed(3);}
-  if(!awake())return;const c=ctx;
+  if(!awake())return;const c=ctx;tickVoiceQ();
   {let talk=false;SPEAK.forEach(sp=>{if(clock.t<sp.end)talk=true;else SPEAK.delete(sp);});if(!talk&&hooks.talkBusy&&hooks.talkBusy())talk=true;
    /* 대화하는 동안 배경음 줄이기(값은 맨 위 MIX): 목소리가 나오거나 대화창이 떠 있으면 duck배로, 끝나고 hold초 조용하면 back초에 걸쳐 부드럽게(처음 느리게·끝에서 살며시) 원래 크기 MIX.bus로 정확히.
       예전(2026-11-13까지)에는 목소리가 끝나자마자 시상수 0.25초로 올라와 대사 한 줄마다 줄었다 커졌다 했고 갑자기 커져 크게 들렸다 */
