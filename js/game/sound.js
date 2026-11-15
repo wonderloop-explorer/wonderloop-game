@@ -180,7 +180,7 @@ function bedTone({lp=20000,gain=1}={},sec=2){const c=audio();if(!c||!toneLP)retu
 function bedLevel(level,sec=1){const c=audio();if(!c||!bedBus)return;const now=c.currentTime;bedBus.gain.cancelScheduledValues(now);bedBus.gain.setValueAtTime(bedBus.gain.value,now);bedBus.gain.linearRampToValueAtTime(level,now+Math.max(.02,sec));}
 const travelOut=()=>!SHOT&&ctx&&ctx.state==='running'?{ctx,bus:travelBus}:null; // 소리를 꺼 둔 채 출발해도 테마는 돌림(전체 out이 0) — 도중에 켜면 그대로 들림
 /* 시험 도구용(소리 포함 녹화): 전체 소리와 목소리를 MediaStream으로도 내보냄(실제 출력은 그대로) */
-function tap(which){const c=audio();if(!c)return null;const d=c.createMediaStreamDestination();if(which==='bed')bedBus.connect(d);else if(which==='travel')travelBus.connect(d);else{out.connect(d);voiceOut.connect(d);}return d.stream;} // which 'bed' = 배경음만(크기 재기 — 전체 크기·소리 끄기 앞)
+function tap(which){const c=audio();if(!c)return null;const d=c.createMediaStreamDestination();if(which==='bed')bedBus.connect(d);else if(which==='travel')travelBus.connect(d);else if(which==='voice')voiceOut.connect(d);else if(which==='sfx')sfxBus.connect(d);else{out.connect(d);voiceOut.connect(d);}return d.stream;} // which 'bed' = 배경음만(크기 재기 — 전체 크기·소리 끄기 앞)
 const audioNow=()=>ctx?ctx.currentTime:null;
 const QF={};
 function quietBuf(url){if(QF[url])return QF[url];const c=audio();if(!c||SHOT)return Promise.resolve(null);
