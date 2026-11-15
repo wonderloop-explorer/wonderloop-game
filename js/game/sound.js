@@ -106,8 +106,10 @@ function voiceBook(dir){if(SHOT)return null;dir=dir||null;if(VB.dir===dir)return
 const vbFind=(who,text)=>{const t=vnorm(text);return VB.map.get(vbase(who||'나레이터')+'|'+t)||VB.map.get('*|'+t)||null;}; /* 이름이 바뀐 주인공·'삐삐 (카세트)' 같은 이름표도 대사 글로 찾음 */
 function voiceStage(st){if(!VB.ready)return;VB.ready.then(()=>{for(const L of VB.lines)if(L.has&&!L.mute&&(L.st===st||L.st==='TR')){const id='vo:'+L.id;SRC[id]=L.url;load(id);}});}
 const vlog=(ev,id,text,dur)=>{VB.log.push({t:ctx?+ctx.currentTime.toFixed(3):0,g:+clock.t.toFixed(3),ev,id:id||null,text:String(text||'').slice(0,24),dur:dur?+dur.toFixed(3):0,n:VOICES.size});if(VB.log.length>600)VB.log.shift();};
+/* 카드 나레이션이 나오는 중(2026-11-15 — 발견 카드·지도 카드·도착 안내의 나레이션, voice({hold:true})): 끝나고 MIX.voiceTail초 뒤까지 참 → game/dialog가 다음 장면 대사를 그때까지 기다린다 */
+const voiceHold=()=>!!(CURV&&CURV.hold&&(CURV.live()||(CURV.doneT!=null&&clock.t<CURV.doneT+MIX.voiceTail)));
 const voiceNow=()=>({n:VOICES.size,id:CURV&&CURV.live()?CURV.id:null}); // 시험용: 지금 나오는 목소리 수·번호
-const voiceLog=()=>({log:VB.log.slice(),max:VB.max,dir:VB.dir,temp:VTEMP,lines:VB.lines.length,has:VB.lines.filter(l=>l.has).length,set:{...VS}}); // 시험용
+const voiceLog=()=>({mute:VB.lines.filter(l=>l.mute&&!l.fx).map(l=>l.text),log:VB.log.slice(),max:VB.max,dir:VB.dir,temp:VTEMP,lines:VB.lines.length,has:VB.lines.filter(l=>l.has).length,set:{...VS}}); // 시험용
 /* 목소리 하나 (대사·나레이션 공통): {id,text,who,kind, minor(말풍선·안내 문구 — 다른 목소리가 나오는 중이면 건너뜀), quiet(파일이 있을 때만 — 없으면 아무 일도 안 함: 시점 기록·배경음 줄이기 없음)}
    → {dur, end, live(), stop()}. 한 번에 하나: 새 대사·나레이션이 시작되면 앞 목소리는 멈춘다(CURV). 파일을 아직 못 읽었으면 읽는 대로(1.2초 안) 틀고 길이를 고친다 */
 const SPEAK=new Set(); // 지금 말하는 목소리 (배경음 줄이기)
@@ -119,10 +121,10 @@ function voice(v){let id=v.id,e=null;if(!id&&!SHOT&&VB.dir){e=vbFind(v.who,v.tex
   if(can&&!v.minor){if(CURV&&CURV.live())CURV.stop();if(CURM&&CURM.live())CURM.stop();} /* 큰 목소리가 시작되면 앞 목소리(큰 것·작은 것)는 멈춤 */
   let src=null,ended=!can,stopped=false,pend=false;
   const c=cue({kind:v.kind||'dialogue',id:(e&&e.id)||v.id||null,file:SRC[id]||null,text:v.text||'',who:v.who||'',dur:+dur.toFixed(3)});
-  const H={id,dur,end:t0+dur,cue:c,live:()=>!stopped&&(pend||(!!src&&!ended)),
-    stop(){stopped=true;SPEAK.delete(sp);if(src){try{src.stop();}catch(x){}VOICES.delete(src);}if(S.tts)try{speechSynthesis.cancel();}catch(x){}if(CURV===H)CURV=null;if(CURM===H)CURM=null;if(clock.t<c.t+H.dur-1e-3)c.cut=+(clock.t-c.t).toFixed(4);}}; // 다 끝난 뒤 멈추면 끊김 아님
+  const H={id,dur,end:t0+dur,cue:c,hold:!!v.hold,doneT:null,live:()=>!stopped&&(pend||(!!src&&!ended)),
+    stop(why){if(H.live()&&H.hold)vlog(why==='user'?'userclose':'cut',e&&e.id,v.text);stopped=true;if(H.doneT==null)H.doneT=clock.t;SPEAK.delete(sp);if(src){try{src.stop();}catch(x){}VOICES.delete(src);}if(S.tts)try{speechSynthesis.cancel();}catch(x){}if(CURV===H)CURV=null;if(CURM===H)CURM=null;if(clock.t<c.t+H.dur-1e-3)c.cut=+(clock.t-c.t).toFixed(4);}}; // 다 끝난 뒤 멈추면 끊김 아님
   const start=()=>{src=play(id,{bus:'voice'});if(!src){ended=true;vlog('asleep',e&&e.id,v.text);return;}VOICES.add(src);VB.max=Math.max(VB.max,VOICES.size);vlog('play',(e&&e.id)||id,v.text,LEN[id]);
-    src.onended=(f=>()=>{VOICES.delete(src);ended=true;if(f)f();})(src.onended);};
+    src.onended=(f=>()=>{VOICES.delete(src);ended=true;if(H.doneT==null)H.doneT=clock.t;sp.end=Math.min(sp.end,clock.t);if(f)f();})(src.onended);};
   if(can){if(BUF[id])start();else{pend=true;load(id).then(b=>{pend=false;if(stopped||!b||clock.t>t0+1.2){ended=true;vlog('late',e&&e.id,v.text);return;}H.dur=b.duration;H.end=clock.t+b.duration;sp.end=H.end;c.dur=+b.duration.toFixed(3);start();});}
     if(v.minor)CURM=H;else CURV=H;}
   else{if(!SHOT&&VB.dir)vlog(!id?(e?'nofile':'unlisted'):!VS.on?'off':'skip',e&&e.id,v.text);if(v.id&&SRC[v.id])load(v.id);if(!id)tts(v.text,v.who);}
@@ -190,4 +192,4 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {voiceBook,voiceStage,voiceLog,voiceNow,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};

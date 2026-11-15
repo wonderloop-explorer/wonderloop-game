@@ -317,7 +317,7 @@ async function call(W,U){const cam=G.view.camera;faceTo(pipi,ROCKD.c[0],ROCKD.c[
   await say('원더룹','(배낭 속 카세트!) 삐삐 말을 녹음해서 둥둥에게 들려주면 되겠다!',3.6,{hear:'혼잣말'});
   G.state.setFlag(K.call,true);
   if(!F[DISC.sound]){G.state.setFlag(DISC.sound,true);G.react.react('awe',{sound:'card-secret'});
-    await G.ui.secret({kicker:'새 발견',title:'화성의 두 가지 소리 빠르기',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요(1초에 약 250m와 240m). 공기가 아주 엷어서 소리가 금방 작아지기도 해요. 그래서 멀리서 부르면 말이 엇갈려 도착해요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}}
+    await G.ui.secret({kicker:'새 발견',title:'화성의 두 가지 소리 빠르기',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요(1초에 약 250m와 240m). 공기가 아주 엷어서 소리가 금방 작아지기도 해요. 그래서 멀리서 부르면 말이 엇갈려 도착해요.',vo:'화성에선 높은 소리가 조금 더 빨리 달려요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}}
 /* ③ 녹음 — 카세트를 꺼내 삐삐 말을 녹음 */
 async function recordA(W,U){faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);holdCas(W,true);G.sound.sfx('item-pickup',{gain:.7});await wait(.5);
   G.sound.sfx('cassette-click');cas.rec(true);tapeRun(true);await wait(.35);
@@ -382,7 +382,7 @@ async function finale(W,U){SK.to(1,9);G.sound.bedLevel(.55,3);
   await wait(1.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','…같이… 보니까… 더… 파랗다…',3.4,{look:'노을'});dung.mode='idle';
   G.ui.toast(PHOTO_TIP,4.6);await wait(4.9); /* 안내 문구가 사라진 뒤 발견 카드 */
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
-    await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
+    await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',vo:'화성의 노을은 파랗게 물들어요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
   /* 유리 조각 건네기(2026-11-11): 노을을 보며 하는 말은 위 두 줄까지 — 여기부터 삐삐가 원더룹 쪽으로 돌아서 한 걸음 다가와 두 손으로 유리 조각을 내밀고, 원더룹도 삐삐를 보고,
      카메라는 대화 카메라(말하는 삐삐 얼굴이 보이는 어깨 너머 — view.pairCam)로. 둥둥의 작별도 같은 식으로 원더룹을 보며. 끝나면 셋 다 다시 노을 쪽(st.sunFace) */
   let gl=null;const give=!F[K.glass];
@@ -529,7 +529,7 @@ async function flagScene(W,U){ /* 꽂은 뒤: 뿌듯한 폴짝 → 한 바퀴 �
   if(U.setExpr)U.setExpr('기본');
   /* 카드는 한 번에 하나(2026-11-14 — 발견 띠 카드와 사진 안내가 함께 떠 뒤의 '금성행 회오리' 이름표를 가렸다): 발견 카드가 닫힌 뒤에 사진 안내 */
   if(!F[DISC.vol]){G.state.setFlag(DISC.vol,true);G.react.react('awe',{sound:'card-secret'});
-    await G.ui.secret({kicker:'새 발견',title:'큰 화산 꼭대기',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 에베레스트보다 약 2.5배 높지만 경사는 아주 완만한 방패 모양이고, 꼭대기에는 여러 번 무너져 생긴 거대한 분화구가 있어요.',count:`발견 ${discN()}/${DISC_TOTAL}`});await wait(.4);}
+    await G.ui.secret({kicker:'새 발견',title:'큰 화산 꼭대기',text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 에베레스트보다 약 2.5배 높지만 경사는 아주 완만한 방패 모양이고, 꼭대기에는 여러 번 무너져 생긴 거대한 분화구가 있어요.',vo:'태양계에서 가장 높은 화산, 올림푸스 산이에요.',count:`발견 ${discN()}/${DISC_TOTAL}`});await wait(.4);}
   G.ui.toast(PHOTO_TIP,4.6);await wait(1.6);if(st.summit)st.summit.t=0;
   st.lastQ=null;}
 function plantNow(){G.state.setFlag(K.flag,true);setFlagPlanted();st.flagPop=0;G.sound.sfx('land',{gain:.8});G.sound.sfx('event-sparkle');G.sound.sfx('event-dust');puffAt(FLAGSPOT[0],FLAGSPOT[1],14);
@@ -546,7 +546,7 @@ G.sound.songs({'mars-bgm-code':MARS_SONG});G.travel.prepare(SPACE.travel); /* �
 probeBgm();
 const pend=RIDE.pending;RIDE.pending=null;let arr=null,started=false;
 function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)return;const U=W.userData,P=W.position;
-  if(pend&&!started&&G.view.camera){started=true;arr=arrival({G,root,WL:W,groundY,mob:MOB,dust,onDone:()=>{st.arrDone=true;G.ui.toast('붉은 화성에 도착했어요! 화성 중력은 지구의 약 38%예요',4.2);}});}
+  if(pend&&!started&&G.view.camera){started=true;arr=arrival({G,root,WL:W,groundY,mob:MOB,dust,onDone:()=>{st.arrDone=true;G.ui.toast('붉은 화성에 도착했어요! 화성 중력은 지구의 약 38%예요',4.2,'붉은 화성에 도착했어요!');}});}
   if(arr)arr.tick(dt,t);dust.tick(dt);fine.tick(dt,t,P);
   /* 꼭대기에 있는 동안 먼지 안개를 걷는다(2026-11-12 — 85m 위라 '먼지 위로 올라온' 자리: 낮 안개 60~330m → 190~950m, 올라가고 내려오는 동안 천천히) */
   {const hi=st.summit||((st.ride||st.bigTick)&&W.position.y>20)?1:0;st.clearK=(st.clearK||0)+(hi-(st.clearK||0))*Math.min(1,dt*.8);const k=st.clearK;SK.fogPush=k>.002?[130*k,620*k]:null;

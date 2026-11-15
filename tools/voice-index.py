@@ -22,7 +22,8 @@ def index(R, root='assets/voice'):
         if not w: continue
         d = os.path.join(root, w); os.makedirs(d, exist_ok=True)
         st = r['번호'].split('-')[1]
-        out.setdefault(w, []).append({'id': r['번호'], 'st': st, 'who': r['말하는 사람'], 'text': r['대사'], 'file': r['파일 이름'], 'has': 1 if has_file(d, r['파일 이름']) else 0,
+        out.setdefault(w, []).append({'id': r['번호'], 'st': st, 'who': r['말하는 사람'], 'text': r.get('나레이션 글') or r['대사'],  # 게임이 줄을 찾는 글 = 나레이션 글(있으면) 아니면 대사
+                                     'file': r['파일 이름'], 'has': 1 if has_file(d, r['파일 이름']) else 0,
                                      **({'fx': 1} if st == 'FX' else {}), **({'mute': 1} if r['상태'].startswith(('목소리 없음', '효과음')) else {})})
     for w, L in out.items():
         p = os.path.join(root, w, 'index.json'); s = json.dumps({'world': w, 'lines': L}, ensure_ascii=False, separators=(',', ':'))
@@ -31,13 +32,13 @@ def index(R, root='assets/voice'):
 def md(R):
     by = {}
     for r in R: by.setdefault(r['스테이지'], []).append(r)
-    L = ['# 목소리 대본 목록', '', '`docs/voice/script.csv`와 같은 내용입니다(이 파일은 `python3 tools/voice-index.py`가 만듭니다 — 고칠 때는 csv를 고치세요).', '',
+    L = ['# 목소리 대본 목록', '', '**나레이션 글** 칸이 있는 줄은 화면에는 \'대사(화면 글)\'이 그대로 뜨고, 나레이터는 나레이션 글만 읽습니다(게임은 나레이션 글로 파일을 찾습니다).', '', '`docs/voice/script.csv`와 같은 내용입니다(이 파일은 `python3 tools/voice-index.py`가 만듭니다 — 고칠 때는 csv를 고치세요).', '',
          '- 줄 수: 모두 %d줄 — ' % len(R) + ' · '.join('%s %d' % (k, len(v)) for k, v in by.items()),
          '- 말하는 사람별: ' + ' · '.join('%s %d' % (k, n) for k, n in sorted(count(R, '말하는 사람').items(), key=lambda x: -x[1])),
          '- 상태별: ' + ' · '.join('%s %d' % (k, n) for k, n in count(R, '상태').items()), '']
     for st, rs in by.items():
-        L += ['## ' + st, '', '| 번호 | 장면 | 말하는 사람 | 듣는 사람 | 대사 | 감정 | 파일 이름 | 상태 | 비고 |', '|---|---|---|---|---|---|---|---|---|']
-        for r in rs: L.append('| ' + ' | '.join((r[k] or '').replace('|', '\\|') for k in ['번호', '장면', '말하는 사람', '듣는 사람', '대사', '감정', '파일 이름', '상태', '비고']) + ' |')
+        L += ['## ' + st, '', '| 번호 | 장면 | 말하는 사람 | 듣는 사람 | 대사(화면 글) | 나레이션 글 | 감정 | 파일 이름 | 상태 | 비고 |', '|---|---|---|---|---|---|---|---|---|---|']
+        for r in rs: L.append('| ' + ' | '.join((r[k] or '').replace('|', '\\|') for k in ['번호', '장면', '말하는 사람', '듣는 사람', '대사', '나레이션 글', '감정', '파일 이름', '상태', '비고']) + ' |')
         L.append('')
     open('docs/voice/script.md', 'w', encoding='utf-8').write('\n'.join(L))
 def count(R, k):
@@ -48,7 +49,8 @@ def check(R):
     src = '\n'.join(open(p, encoding='utf-8').read() for p in SRC if os.path.isfile(p)); bad = []
     for r in R:
         if r['번호'].split('-')[1] == 'FX': continue
-        if r['대사'] not in src and r['대사'].replace("'", "\\'") not in src: bad.append(r['번호'])
+        for t in [r['대사'], r.get('나레이션 글') or '']:
+            if t and t not in src and t.replace("'", "\\'") not in src: bad.append(r['번호']); break
     ids = [r['번호'] for r in R]; dup = sorted({i for i in ids if ids.count(i) > 1})
     return bad, dup
 def temp(R):
@@ -56,12 +58,12 @@ def temp(R):
     n = 0
     for r in R:
         w = WORLDS.get(r['번호'].split('-')[0]); st = r['번호'].split('-')[1]
-        if not w or st == 'FX' or r['상태'].startswith(('목소리 없음', '효과음')) or r['번호'].endswith('7'): continue
+        if not w or st == 'FX' or r['상태'].startswith(('목소리 없음', '효과음')) or (r['번호'].endswith('7') and not r.get('나레이션 글')): continue
         d = os.path.join('assets/voice-temp', w); os.makedirs(d, exist_ok=True); out = os.path.join(d, r['파일 이름'])
-        sig = hashlib.md5((r['말하는 사람'] + r['대사']).encode()).hexdigest()[:10]; mark = out + '.sig'
+        say = r.get('나레이션 글') or r['대사']; sig = hashlib.md5((r['말하는 사람'] + say).encode()).hexdigest()[:10]; mark = out + '.sig'
         if os.path.isfile(out) and os.path.isfile(mark) and open(mark).read() == sig: continue
         rate, pk = TEMP_VOICE.get(base(r['말하는 사람']), (220, 1.4) if '토끼' in r['말하는 사람'] else (180, 1.0))
-        txt = re.sub(r'[()]', '', r['대사']).replace('…', ', ').replace('—', ', ')
+        txt = re.sub(r'[()]', '', say).replace('…', ', ').replace('—', ', ')
         subprocess.run(['say', '-v', 'Yuna', '-r', str(rate), '-o', out + '.aiff', txt], check=True)
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', out + '.aiff', '-af', 'asetrate=22050*%s,aresample=44100,atempo=%s' % (pk, round(1 / pk, 3)), '-ac', '1', '-b:a', '64k', out], check=True); os.remove(out + '.aiff')
         if os.path.getsize(out) < 2000: raise SystemExit('임시 목소리가 비었음: ' + out)

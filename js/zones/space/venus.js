@@ -21,7 +21,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[];
   const SK=G.sky.sky({parent:root,keys:[KEY,KEY,KEY],t:0,nStars:0});
   const pend=RIDE.pending&&RIDE.pending.cloud?RIDE.pending:null;if(pend)RIDE.pending=null;let arr=null,started=false;const st={arrDone:!pend};
   const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
-  function update(dt,t){const W=U0();if(!W)return;if(pend&&!started){started=true;arr=cloudArrival({G,root,WL:W,groundY,mob:MOB,onDone:()=>{st.arrDone=true;}});}if(arr)arr.tick(dt,t);}
+  function update(dt,t){const W=U0();if(!W)return;if(pend&&!started){started=true;arr=cloudArrival({G,root,WL:W,groundY,mob:MOB,onDone:()=>{st.arrDone=true;G.ui.toast('구름 행성 금성에 도착했어요! 금성은 온통 두꺼운 구름에 덮여 있어요',4.2,'구름 행성 금성에 도착했어요!');} /* 도착 안내 + 나레이션 한 문장(대본 목록 SPC-TR-004 — 2026-11-15) */});}if(arr)arr.tick(dt,t);}
   function lateUpdate(dt,t){if(arr)arr.late(dt,t);}
   return {name:'금성 구름',kind:'outdoor',start:{compass:true},world:null,
     spawn:{x:0,z:0,ry:PI*.8},

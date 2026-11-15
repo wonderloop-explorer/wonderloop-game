@@ -13,7 +13,7 @@
    - say()는 끝까지 보여 주면 true, 구역을 바꿔 지워지면 false로 끝난다 — 이어지는 진행은 결과를 보고(.then(ok=>ok&&…)). */
 import * as THREE from 'three';
 import {block,blocking,blockedOnlyBy,clock} from './core.js';
-import {sfx,voice,soundHooks,MIX} from './sound.js';
+import {sfx,voice,soundHooks,MIX,voiceHold} from './sound.js';
 import {hideDialog,hint,hintsVisible,setPrompt,showDialog,uiHooks} from './ui.js';
 import {flags,setFlag} from './state.js';
 import {bentPos} from './bend.js';
@@ -46,7 +46,7 @@ function advance(){if(!talk)return false;talk.i++;show();return true;}
 function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined,hear:o?o.hear:undefined,hearName:o&&o.hearName,heroLook:o&&o.heroLook}));}
 function tickSay(){
   if(saying&&clock.t>=saying.end&&!(saying.h&&saying.h.live())){hideDialog();const r=saying.r;saying=null;r(true);} /* 목소리가 아직 나오는 중이면 기다림(2026-11-15) */
-  if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
+  if(!saying&&!talk&&sayQ.length&&!blocking()&&!voiceHold()){const s=sayQ.shift(); /* 카드 나레이션이 끝난 뒤(+0.35초)에 다음 장면 대사 — 2026-11-15 */showDialog(s.who,s.text,'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
     s.end=clock.t+Math.max(s.sec||0,h.dur+(h.id?MIX.voiceTail:0));s.h=h;s.t0=clock.t;saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
    아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).

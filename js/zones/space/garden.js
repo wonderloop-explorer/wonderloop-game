@@ -400,7 +400,7 @@ function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope
   const close=e=>{if(performance.now()-open<350)return;if(e&&e.type==='keydown'&&e.repeat)return;scopeClose();};el.addEventListener('pointerdown',close);addEventListener('keydown',close,true);el._close=close;}
 function scopeClose(){const el=scopeEl;if(!el)return;scopeEl=null;clearInterval(el._iv);if(el._vo)el._vo.stop();removeEventListener('keydown',el._close,true);el.remove();popShown('scope',false);G.core.block('scope',false);G.sound.sfx('ui-click');
   if(!F[DISC.scope]){G.state.setFlag(DISC.scope,true);G.react.react('awe',{sound:'card-secret'});
-    G.ui.secret({kicker:'새 발견',title:'망원경으로 본 목성',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}}
+    G.ui.secret({kicker:'새 발견',title:'망원경으로 본 목성',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.',vo:'목성의 붉은 폭풍은 지구보다 커요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}}
 G.interact.add({root:scopeMark,at:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],face:SCOPE_EYE,label:'살펴보기',action:'들여다보기',dur:.9,near:1.8,once:false,onDone:()=>scopeOpen()});
 /* ── 떡방아 체험(마을 구석 절구, 2026-11-08): 절구 앞에서 '찧기' → 원더룹이 두 손으로 떡메를 작게 들어 각도로 내려침(아래 '떡메 찧기'), 맞으면 떡이 말랑하게 눌렸다 출렁, 세 번 찧으면 떡 완성.
    찧을 때마다 떡 조각·가루가 둥실 떠올랐다가 아주 천천히 내려옴(낮은 중력 — 위로 0.8~1.4m/초, 중력 0.2m/초²: 몇 초 동안 떠 있음).
@@ -656,7 +656,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
       G.dialog.say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.5).then(ok=>{if(ok&&!F[K.demo])hopDemo();});}return;} /* 대사가 끝난 뒤에 뜀(2026-11-11 — 대사 0.9초 뒤에 뛰면 떠오른 할아버지가 위쪽 대화창 뒤로 들어가고, 대화창이 아래로 피하면 원더룹을 덮었다) */
   if(!F[K.rock]){if(!st.hop)quest('할아버지처럼 둥실 뛰어 높은 바위에 올라요 (점프)',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
     const V=U.vert;if(V&&V.y>ROCK_TOP-.2&&dist(P.x,P.z,ROCK.c)<ROCK.r+.2){G.state.setFlag(K.rock,true);G.react.react('joy');
-      G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()});}return;}
+      G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',vo:'보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()});}return;}
   if(!F[K.clear]){quest('행성 끝 출구 빛기둥까지 가요',{at:EXIT,label:'출구',style:'ant',h:4});
     if(dist(P.x,P.z,EXIT)<1.7){G.state.setFlag(K.clear,true);quest('',null);startRide(true);}}
   else{quest('',null);if(dist(P.x,P.z,EXIT)>3)st.exitOut=true;else if(st.exitOut&&dist(P.x,P.z,EXIT)<1.5&&!G.ui.cardShown())startRide(false);}} // 다시 들어서면 또 타고 감(화성으로)
@@ -684,7 +684,7 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
 const ICON_MAP=()=>SPACE.icons.map();
 // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
 function caveSecret(){G.state.setFlag(K.cave,true);G.react.react('awe',{sound:'card-secret'});
-  G.ui.secret({kicker:'숨겨진 비밀',title:'그늘 분화구의 얼음 동굴',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 아주 오래오래 그대로 남은 곳이에요. 차갑게 반짝이는 얼음 결이 천장까지 자랐어요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}
+  G.ui.secret({kicker:'숨겨진 비밀',title:'그늘 분화구의 얼음 동굴',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 아주 오래오래 그대로 남은 곳이에요. 차갑게 반짝이는 얼음 결이 천장까지 자랐어요.',vo:'햇빛이 한 번도 들지 않은 얼음 동굴이에요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}
 function tickWeather(dt,t,w){const M=meteors,cam=G.view.camera;
   /* 별똥별: 그림판 좌표(화면 위쪽 하늘)에서 비스듬히 쉭 — 머리 반짝, 꼬리 어둡게. 유성우 날씨에만 */
   const tv=cam?Math.tan(cam.fov*PI/360):.27,th=cam?tv*cam.aspect:.48;
