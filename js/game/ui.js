@@ -14,7 +14,7 @@ const sideVoice=(text,who)=>{try{if(text)voice({text,who:who||'나레이터',kin
    카드는 나레이션이 끝나고 1초 뒤까지 머물고(voDone), 카드를 누르거나 닫히면 나레이션도 멈춘다. vo가 없으면 예전처럼 화면 글로 찾는 작은 목소리 */
 const cardVoice=(vo,text)=>{try{if(vo)return voice({text:vo,who:'나레이터',kind:'narration',quiet:true,hold:true});sideVoice(text);}catch(e){}return null;};
 const voDone=h=>!h||(!h.live()&&clock.t>=(h.doneT??h.end)+1);
-let scVo=null,ntVo=null,tsVo=null; /* 안내 문구·띠 카드·알림 카드의 글: 대본 목록에 그 줄의 파일이 있을 때만 목소리(없으면 아무 일도 없음 — 2026-11-15) */
+let scVo=null,ntVo=null,tsVo=null,ntVoh=null; /* 안내 문구·띠 카드·알림 카드의 글: 대본 목록에 그 줄의 파일이 있을 때만 목소리(없으면 아무 일도 없음 — 2026-11-15) */
 import {injectFelt} from './felt.js';
 import {popShown} from './popup.js';
 const HINT_LAYER=5;
@@ -166,10 +166,10 @@ const closers={};const cardCloser=(kind,fn)=>{closers[kind]=fn;}; // 다른 모�
    - 카드가 떠 있는 동안 대화가 시작되면 카드를 먼저 닫는다(showDialog). 장면 대사(say)는 카드가 닫힐 때까지 줄을 선다(game/dialog — 카드가 막는 동안 기다림).
    - 화면 위 가운데는 미션 카드 자리(game/layout — 비켜 가지 않음, 카드가 있는 동안 대화창은 위로 못 올라감) */
 const nt=$('#wlNotice');let ntDone=null,ntCue=null,ntEnd=0,ntPend=0,ntGen=0;
-function notice({kicker='미션',title='',text='',icon=null,after=null,onOpen=null,vo=null}){const gen=ntGen,busy=()=>dlg.style.display==='block'||!!(uiHooks.dialogBusy&&uiHooks.dialogBusy());
+function notice({kicker='미션',title='',text='',icon=null,after=null,onOpen=null,vo=null,voh=null}){ /* voh: 이 카드와 함께 나오는 나레이션 목소리를 돌려주는 함수(첫 미션 — game/mission) → 저절로 닫힐 때 그 목소리가 끝나고 1초 뒤까지 기다림 */const gen=ntGen,busy=()=>dlg.style.display==='block'||!!(uiHooks.dialogBusy&&uiHooks.dialogBusy());
   const open=()=>enqueue('notice',r=>{ntDone=r;if(onOpen)try{onOpen();}catch(e){console.error(e);}nt.querySelector('.k').textContent=kicker;nt.querySelector('.t').textContent=title;nt.querySelector('.s').textContent=text;
   const img=nt.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');nt.querySelector('.h').textContent=coarse?'화면을 누르면 닫혀요':'아무 키나 누르면 닫혀요';
-  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');uiHooks.layout&&uiHooks.layout();block('notice',true);ntEnd=clock.t+6;sfx('mission-start');ntVo=cardVoice(vo,text);});
+  ntCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});nt.classList.add('on');uiHooks.layout&&uiHooks.layout();block('notice',true);ntEnd=clock.t+6;sfx('mission-start');ntVo=cardVoice(vo,text);ntVoh=voh;});
   if(!after&&!busy())return open(); /* 기다릴 것이 없으면 예전처럼 바로 줄에(카드 줄 순서 그대로) */
   ntPend++;return Promise.resolve(after).then(()=>busy()?until(()=>!busy(),120):0).then(()=>{ntPend=Math.max(0,ntPend-1);return gen!==ntGen?-1:open();});} // 개미굴 미션 카드: sus 소리, 6초 뒤 저절로 닫힘
 function closeNotice(why){if(cardOn!=='notice')return;if(ntVo){ntVo.stop(why==='auto'?'auto':'user');ntVo=null;}nt.classList.remove('on');uiHooks.layout&&uiHooks.layout();endCue(ntCue);ntCue=null;if(why==='dialog'||SHOT_UI)block('notice',false);else wait(.32).then(()=>{if(cardOn!=='notice')block('notice',false);}); /* 게임 시간으로(촬영 모드는 예전처럼 바로 — 기준 촬영·규칙 시험 그대로) */ /* 사라지는 0.3초 동안은 기다리던 대사가 뜨지 않게(카드와 대화창이 겹쳐 보였다) — 대화가 카드를 닫은 때는 바로 */const d=ntDone;ntDone=null;cardDone();if(d)d(why);} // why 'auto' = 6초 뒤 저절로(그 밖 = 플레이어가 닫음)
@@ -269,7 +269,7 @@ function count(o){if(!o){if(cnt)cnt.classList.remove('on');uiHooks.layout&&uiHoo
   let bt=0;for(const id of ['wlQuest','wlItems','wlMenu','dbgBtn']){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;const r=e.getBoundingClientRect();if(r.height&&r.top<innerHeight*.35)bt=Math.max(bt,r.bottom);}
   cnt.style.top=Math.round((bt||58)+10)+'px';cnt.classList.add('on');uiHooks.layout&&uiHooks.layout();}
 function toast(msg,sec=2.8,vo=null){ts.textContent=msg;if(tsVo){tsVo.stop();tsVo=null;}tsVo=cardVoice(vo,msg);if(uiHooks.layout){ts.classList.add('on');uiHooks.layout();}else{toastTop();ts.classList.add('on');}tsEnd=clock.t+sec;}
-const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd&&voDone(ntVo))closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='secret'&&clock.t>=scEnd&&voDone(scVo))closeSecret();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
+const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd&&voDone(ntVo)&&voDone(ntVoh&&ntVoh()))closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='secret'&&clock.t>=scEnd&&voDone(scVo))closeSecret();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
   if(tsEnd&&clock.t>=tsEnd&&voDone(tsVo)){tsVo=null;ts.classList.remove('on');tsEnd=0;uiHooks.layout&&uiHooks.layout();}tickFade();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));

@@ -194,7 +194,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
         g.beginPath();g.arc(x,y,s*.62,0,PI*2);g.fill();g.stroke();if(f.im&&f.im.complete&&f.im.naturalWidth)g.drawImage(f.im,x-s*.5,y-s*.5,s,s);else if(f.draw){g.translate(x,y);f.draw(g,s);}g.restore();});}
     if(t<sec+2)requestAnimationFrame(draw);}
   requestAnimationFrame(draw);
-  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;COVERING=false;if(lineVo)lineVo.stop();cv.remove();blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
+  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;COVERING=false;cv.remove(); /* 지도 자막 목소리는 멈추지 않고 끝까지(지도가 걷힌 뒤 구름·먼지 덮개 위로 이어짐 — 4.4초짜리 줄의 끝이 잘렸다, 2026-11-15) */blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
 let MAPSKIP=null;
 /* 우주 지도를 지금 끝냄(화면을 눌러 넘길 때 — map()의 약속이 바로 풀림) */
 export function mapSkip(){if(MAPSKIP)MAPSKIP();}
