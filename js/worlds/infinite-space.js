@@ -149,7 +149,7 @@ export default {
   travel:{theme:{file:'assets/audio/travel-theme.mp3',lufs:-13.1,from:13,to:37,resolve:33.5,bar:1.3765,beat0:12.35,jumpAt:25},
     map:{bodies:[{id:'sun',name:'해',color:'#F6C85A',r:.06,glow:true},{id:'venus',name:'금성',color:'#C9A6E0',r:.05,zone:'space-venus'},{id:'moon',name:'달',color:'#BFC3CC',r:.05,zone:'space-garden'},
       {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true}]},
-    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파래대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'}},
+    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파랗대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'}},
     facts:{'space-garden':[{flag:'have:infinite-space:necklace',img:()=>ICON_NECK()},{flag:'secret:infinite-space:icecave',img:()=>ICON_ICE()},
       {flag:'secret:infinite-space:telescope',img:()=>ICON_SCOPE()},{flag:'item:infinite-space:dalddeok',img:()=>ICON_CAKE()}],
       'space-mars':[{flag:'secret:infinite-space:bluesunset',img:()=>ICON_DUSK()},{flag:'secret:infinite-space:marssound',img:()=>ICON_VOICE()}]}},
