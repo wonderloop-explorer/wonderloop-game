@@ -108,6 +108,8 @@ function voiceStage(st){if(!VB.ready)return;VB.ready.then(()=>{for(const L of VB
 const vlog=(ev,id,text,dur)=>{VB.log.push({t:ctx?+ctx.currentTime.toFixed(3):0,g:+clock.t.toFixed(3),ev,id:id||null,text:String(text||'').slice(0,24),dur:dur?+dur.toFixed(3):0,n:VOICES.size});if(VB.log.length>600)VB.log.shift();};
 /* 카드 나레이션이 나오는 중(2026-11-15 — 발견 카드·지도 카드·도착 안내의 나레이션, voice({hold:true})): 끝나고 MIX.voiceTail초 뒤까지 참 → game/dialog가 다음 장면 대사를 그때까지 기다린다 */
 const voiceHold=()=>!!(CURV&&CURV.hold&&(CURV.live()||(CURV.doneT!=null&&clock.t<CURV.doneT+MIX.voiceTail)));
+/* 큰 목소리(대사·나레이션)가 나오는 중이거나 끝난 지 MIX.voiceTail초 안 — 뒤에 올 자막(망원경 등)이 앞 대사를 끊지 않고 기다릴 때(2026-11-15) */
+const voiceBusy=()=>!!(CURV&&(CURV.live()||(CURV.doneT!=null&&clock.t<CURV.doneT+MIX.voiceTail)));
 const voiceNow=()=>({n:VOICES.size,id:CURV&&CURV.live()?CURV.id:null}); // 시험용: 지금 나오는 목소리 수·번호
 const voiceLog=()=>({mute:VB.lines.filter(l=>l.mute&&!l.fx).map(l=>l.text),log:VB.log.slice(),max:VB.max,dir:VB.dir,temp:VTEMP,lines:VB.lines.length,has:VB.lines.filter(l=>l.has).length,set:{...VS}}); // 시험용
 /* 목소리 하나 (대사·나레이션 공통): {id,text,who,kind, minor(말풍선·안내 문구 — 다른 목소리가 나오는 중이면 건너뜀), quiet(파일이 있을 때만 — 없으면 아무 일도 안 함: 시점 기록·배경음 줄이기 없음)}
@@ -118,7 +120,7 @@ function voice(v){let id=v.id,e=null;if(!id&&!SHOT&&VB.dir){e=vbFind(v.who,v.tex
   const busy=!!(CURV&&CURV.live())||!!(v.minor&&CURM&&CURM.live()),can=!!id&&(VS.on||!e&&!String(id).startsWith('vo:'))&&!(v.minor&&busy);
   if(v.quiet&&!can){if(!SHOT&&VB.dir)vlog(!id?(e?'nofile':'unlisted'):!VS.on?'off':'skip',e&&e.id,v.text);return null;}
   const t0=clock.t,dur=(can&&LEN[id])||estimate(v.text),sp={end:t0+dur};SPEAK.add(sp);
-  if(can&&!v.minor){if(CURV&&CURV.live())CURV.stop();if(CURM&&CURM.live())CURM.stop();} /* 큰 목소리가 시작되면 앞 목소리(큰 것·작은 것)는 멈춤 */
+  if(can&&!v.minor){if(CURV&&CURV.live()){vlog('replaced',CURV.id,v.text);CURV.stop();} /* 시험용 기록: 새 목소리가 앞 목소리를 끊음 */if(CURM&&CURM.live())CURM.stop();} /* 큰 목소리가 시작되면 앞 목소리(큰 것·작은 것)는 멈춤 */
   let src=null,ended=!can,stopped=false,pend=false;
   const c=cue({kind:v.kind||'dialogue',id:(e&&e.id)||v.id||null,file:SRC[id]||null,text:v.text||'',who:v.who||'',dur:+dur.toFixed(3)});
   const H={id,dur,end:t0+dur,cue:c,hold:!!v.hold,doneT:null,live:()=>!stopped&&(pend||(!!src&&!ended)),
@@ -192,4 +194,4 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};

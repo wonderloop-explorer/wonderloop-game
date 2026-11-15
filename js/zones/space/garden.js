@@ -378,7 +378,8 @@ function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope
 @keyframes wlScIn{from{opacity:0}}@keyframes wlScLens{from{transform:scale(.6);opacity:0}}
 @media (prefers-reduced-motion: reduce){#wlScope,#wlScope .lens{animation:none}}`;document.head.appendChild(st);}
   document.body.appendChild(el);scopeEl=el;const line='저 줄무늬 행성 보이지? 저기가 우리가 마지막에 갈 곳이란다.';
-  {const pEl=el.querySelector('.say p');let i=0;const iv=setInterval(()=>{i++;pEl.textContent=line.slice(0,i);if(i>=line.length)clearInterval(iv);},36);el._iv=iv;el._vo=G.sound.voice({text:line,who:'보름 할아버지',kind:'dialogue'});} /* 망원경 자막도 대사 한 줄(시점 기록 + 대본 목록에 파일이 있으면 목소리) */
+  {const pEl=el.querySelector('.say p');const go=()=>{if(scopeEl!==el)return;if(G.sound.voiceBusy()){el._w=setTimeout(go,50);return;} /* 앞 대사(망원경으로 부르는 말 등)의 목소리가 끝나고 0.35초 뒤에 자막·목소리 시작 — 앞 대사를 끊지 않게(2026-11-15) */
+    let i=0;const iv=setInterval(()=>{i++;pEl.textContent=line.slice(0,i);if(i>=line.length)clearInterval(iv);},36);el._iv=iv;el._vo=G.sound.voice({text:line,who:'보름 할아버지',kind:'dialogue'});};go();} /* 망원경 자막도 대사 한 줄(시점 기록 + 대본 목록에 파일이 있으면 목소리) */
   const cv=el.querySelector('canvas'),g=cv.getContext('2d'),src=jup.U.uMap.value.image,stars=[];{const r=srand(77);for(let i=0;i<90;i++)stars.push([r(),r(),.4+r()*1.4,r()]);}
   let u0=-.03,last=performance.now(),open=performance.now(); // 붉은 폭풍(그림 u .17)이 가운데 조금 왼쪽에서 시작
   const draw=now=>{if(!scopeEl)return;const dt=Math.min(.05,(now-last)/1000);last=now;u0-=dt*.0045; // 천천히 돌아 줄무늬가 흐름
@@ -398,7 +399,7 @@ function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope
     requestAnimationFrame(draw);};
   requestAnimationFrame(draw);
   const close=e=>{if(performance.now()-open<350)return;if(e&&e.type==='keydown'&&e.repeat)return;scopeClose();};el.addEventListener('pointerdown',close);addEventListener('keydown',close,true);el._close=close;}
-function scopeClose(){const el=scopeEl;if(!el)return;scopeEl=null;clearInterval(el._iv);if(el._vo)el._vo.stop();removeEventListener('keydown',el._close,true);el.remove();popShown('scope',false);G.core.block('scope',false);G.sound.sfx('ui-click');
+function scopeClose(){const el=scopeEl;if(!el)return;scopeEl=null;clearTimeout(el._w);clearInterval(el._iv);if(el._vo)el._vo.stop();removeEventListener('keydown',el._close,true);el.remove();popShown('scope',false);G.core.block('scope',false);G.sound.sfx('ui-click');
   if(!F[DISC.scope]){G.state.setFlag(DISC.scope,true);G.react.react('awe',{sound:'card-secret'});
     G.ui.secret({kicker:'새 발견',title:'망원경으로 본 목성',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.',vo:'목성의 붉은 폭풍은 지구보다 커요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}}
 G.interact.add({root:scopeMark,at:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],face:SCOPE_EYE,label:'살펴보기',action:'들여다보기',dur:.9,near:1.8,once:false,onDone:()=>scopeOpen()});
