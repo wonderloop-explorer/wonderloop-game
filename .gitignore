@@ -15,3 +15,6 @@ captures/
 
 # 음악 원본(수노 WAV 등 — 게임에는 assets/audio/에 mp3로 넣음, 원본 보관은 wonderloop-studio/<세계>/audio/)
 /bgm/
+
+# 임시 목소리(맥 say로 만든 시험용 — tools/voice-index.py --temp, 게임 주소 ?voiceTemp)
+/assets/voice-temp/

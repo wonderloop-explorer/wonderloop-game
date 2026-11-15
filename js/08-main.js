@@ -68,7 +68,8 @@ const DEV_HEAD=new URLSearchParams(location.search).has('debug');document.body.c
 function zoneLook(z){const U=WL.userData;setZoneBend(z.bend);bendBtn(); // 둥근 땅 세기는 구역 정보 bend(없으면 끔 — 실내·베이스캠프)
   {const h=document.querySelector('header');if(h)h.style.display=z.world||!DEV_HEAD?'none':''; /* 개발용 머리말('원더룹 베이스캠프 / … 실험')은 주소에 ?debug일 때만(2026-11-04) */document.body.classList.toggle('wl-world',!!z.world);} // 세계 구역: 베이스캠프 머리말·아래 조작 안내 글자 숨김(조작법 창에 다 있음) // 세계 구역에서는 베이스캠프 머리말(실험 안내 글자)을 숨긴다
   if(z.hood){U.setOutfit(z.outfit||'explorer');U.setHood(z.hood);}else if(z.outfit)U.setOutfit(z.outfit);
-  {const W=z.world||WORLD;GAME.sound.useWorld(W.sfxWorld||W.id||null,W.sfx||null);} // 효과음: 그 세계 전용 묶음(js/sfx/<세계>.js) + 세계 설정 sfx로 몇 종류만 바꿔 끼우기(game/sound useWorld)
+  {const W=z.world||WORLD;GAME.sound.useWorld(W.sfxWorld||W.id||null,W.sfx||null);
+   const V=W.voice||null;GAME.sound.voiceBook(V&&V.dir);if(V&&V.stages&&V.stages[z.id])GAME.sound.voiceStage(V.stages[z.id]);} /* 목소리 책: 세계 설정 voice {dir, stages:{구역 id:스테이지}} — 대본 목록 색인을 읽고 그 스테이지 파일을 미리(game/sound) */ // 효과음: 그 세계 전용 묶음(js/sfx/<세계>.js) + 세계 설정 sfx로 몇 종류만 바꿔 끼우기(game/sound useWorld)
   GAME.front.applyLook(U);setCharFog(z.charFog);markChar(WL); /* 캐릭터 안개(game/bend): 원더룹은 구역 정보 charFog만큼만 안개를 받음(없으면 1 — 예전 그대로) */} // 플레이어가 옷 갈아입기에서 고른 옷·머리(저장 — 없으면 세계 옷 그대로, 탈은 그대로)
 window.wlCharFog=setCharFog; // 시험용: 캐릭터 안개 배율 바꿔 보기(전후 비교 — 구역을 옮기면 구역 값으로)
 zoneLook(zone.cur); // 처음 구역 (?zone=…로 바로 들어와도)

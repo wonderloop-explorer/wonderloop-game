@@ -110,6 +110,8 @@ export default {
     {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',open:'화산 꼭대기에 올라가면 알게 돼요', /* open: 숨겨진 비밀이 아니라 꼭 지나가는 발견(2026-11-13 — 깃발을 꽂아야 금성으로 떠남) */text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}}],
   map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:'space-venus'}],
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
+  /* 목소리(2026-11-15 — docs/voice/README.md): 대본 목록 docs/voice/script.csv의 번호 SPC-…, 파일 assets/voice/space/<번호>.mp3. stages = 구역마다 미리 읽을 스테이지 */
+  voice:{dir:'space',stages:{'space-garden':'S1','space-mars':'S2','space-venus':'S3'}},
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,
     bars:[45,41,43,40,45,41,38,40].map((r,i)=>{const q=[3,4,4,3,3,4,4,4][i];return {bass:r,pad:[r+24,r+24+q,r+31]};}),
     mel:[[76,null,null,79,81,null,null,null],[77,null,76,null,72,null,null,null],[74,null,null,79,83,null,81,null],[79,null,null,null,76,null,null,null],

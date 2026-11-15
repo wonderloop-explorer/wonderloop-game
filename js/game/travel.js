@@ -17,7 +17,7 @@
      o: {bodies:[{id,name,color,r,ring?,glow?}], from:id, to:id, facts:[{img(데이터 주소)|draw(g,s)}], line:'예고 한 줄', lineId, sec}
      세계 설정 travel.map.bodies, travel.lines['<지나온 구역>><다음 구역>'] — 세계마다 행성·문구만 바꿔 쓴다.
    촬영 모드(?shot)는 소리를 틀지 않음(sound가 막음), 지도 장면은 그대로 그림. */
-import {sfx,bedLevel,travelOut,quietBuf,lufsGain,MIX} from './sound.js';
+import {sfx,voice,bedLevel,travelOut,quietBuf,lufsGain,MIX} from './sound.js';
 import {cue,clock} from './core.js';
 const PI=Math.PI,mf=m=>440*Math.pow(2,(m-69)/12);
 let CFG={},T=null;
@@ -138,7 +138,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
   const cap=document.createElement('div');cap.id='wlTravelLine';cap.setAttribute('role','status');cap.textContent=o.line||'';
   cap.style.cssText='position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 9%);transform:translate(-50%,8px);z-index:59;pointer-events:none;max-width:min(88vw,560px);box-sizing:border-box;padding:.6rem 1.15rem;border-radius:16px;background:rgba(44,30,42,.86);color:#fbe9d8;font-family:"Gowun Dodum",sans-serif;font-size:clamp(15px,2.2vw,19px);line-height:1.45;text-align:center;word-break:keep-all;opacity:0;transition:opacity .45s,transform .45s';
   if(o.line)document.body.appendChild(cap);
-  if(o.line)cue({kind:'narration',id:o.lineId||null,file:null,text:o.line,who:'나레이션',dur:+Math.max(2.4,o.line.replace(/\s+/g,'').length*.11+.5).toFixed(3)});
+  const lineVo=o.line?voice({text:o.line,who:'나레이터',kind:'narration'}):null; /* 지도 자막 = 나레이션 한 줄(대본 목록에 파일이 있으면 그 목소리 — 2026-11-15) */
   const g=cv.getContext('2d'),B=o.bodies||[],iF=B.findIndex(b=>b.id===o.from),iT=B.findIndex(b=>b.id===o.to);
   const IM=(o.facts||[]).map(f=>{if(f.img){const im=new Image();im.src=f.img;return {im};}return {draw:f.draw};});
   /* 2026-11-10: 어두운 바탕에 작은 행성 한 줄이라 허전하고 발자국 점선이 거의 안 보였다 → 행성 1.45배, 별 많이 + 네 갈래 반짝이·색 구름, 발자국은 크게 + 크림 테두리·빛 받침, 발견 그림도 크게 */
@@ -194,7 +194,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
         g.beginPath();g.arc(x,y,s*.62,0,PI*2);g.fill();g.stroke();if(f.im&&f.im.complete&&f.im.naturalWidth)g.drawImage(f.im,x-s*.5,y-s*.5,s,s);else if(f.draw){g.translate(x,y);f.draw(g,s);}g.restore();});}
     if(t<sec+2)requestAnimationFrame(draw);}
   requestAnimationFrame(draw);
-  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;COVERING=false;cv.remove();blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
+  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;COVERING=false;if(lineVo)lineVo.stop();cv.remove();blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
 let MAPSKIP=null;
 /* 우주 지도를 지금 끝냄(화면을 눌러 넘길 때 — map()의 약속이 바로 풀림) */
 export function mapSkip(){if(MAPSKIP)MAPSKIP();}

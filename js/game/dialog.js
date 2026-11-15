@@ -13,7 +13,7 @@
    - say()는 끝까지 보여 주면 true, 구역을 바꿔 지워지면 false로 끝난다 — 이어지는 진행은 결과를 보고(.then(ok=>ok&&…)). */
 import * as THREE from 'three';
 import {block,blocking,blockedOnlyBy,clock} from './core.js';
-import {sfx,voice,soundHooks} from './sound.js';
+import {sfx,voice,soundHooks,MIX} from './sound.js';
 import {hideDialog,hint,hintsVisible,setPrompt,showDialog,uiHooks} from './ui.js';
 import {flags,setFlag} from './state.js';
 import {bentPos} from './bend.js';
@@ -33,7 +33,7 @@ function show(){const L=talk.L;if(talk.i>=L.length){endTalk(true);return;}const 
   showDialog(talk.n.name,text,coarse?(last?'눌러서 닫기':'눌러서 계속'):(last?'E 또는 클릭으로 닫기':'E 또는 클릭으로 계속'));
   sfx(talk.i?'talk-next':'talk-start');if(talk.h)talk.h.stop();talk.h=voice({id:talk.n.voice&&talk.n.voice[text],text,who:talk.n.name,kind:'dialogue'});}
 function startTalk(n){if(!talkable(n)||talk)return false;
-if(saying){const r=saying.r;saying=null;r(true);} // 떠 있던 혼잣말은 끝내고
+if(saying){const r=saying.r;if(saying.h)saying.h.stop();saying=null;r(true);} // 떠 있던 혼잣말은 끝내고(목소리도 멈춤)
   const R=rawLines(n);talk={n,i:0,h:null,L:linesOf(n),sig:sigOf(R)};block('talk',true);show();return true;}
 function endTalk(done=false){if(!talk)return;const n=talk.n,talk0sig=talk.sig;if(talk.h)talk.h.stop();talk=null;hideDialog();block('talk',false);
   if(!done)return; // 중간에 닫힘: 진행 그대로(저장 안 함 — 다시 말 걸면 처음부터)
@@ -45,9 +45,9 @@ function advance(){if(!talk)return false;talk.i++;show();return true;}
    to: 이 줄을 듣는(또는 원더룹이 말을 거는) 상대 물체 — 이름으로 못 찾는 줄(카세트 소리를 둥둥에게 들려줌)에. to:null이면 상대 없음(혼잣말). face:false는 look의 옛 이름 */
 function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined,hear:o?o.hear:undefined,hearName:o&&o.hearName,heroLook:o&&o.heroLook}));}
 function tickSay(){
-  if(saying&&clock.t>=saying.end){hideDialog();const r=saying.r;saying=null;r(true);}
+  if(saying&&clock.t>=saying.end&&!(saying.h&&saying.h.live())){hideDialog();const r=saying.r;saying=null;r(true);} /* 목소리가 아직 나오는 중이면 기다림(2026-11-15) */
   if(!saying&&!talk&&sayQ.length&&!blocking()){const s=sayQ.shift();showDialog(s.who,s.text,'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
-    s.end=clock.t+Math.max(s.sec||0,h.dur);s.t0=clock.t;saying=s;}}
+    s.end=clock.t+Math.max(s.sec||0,h.dur+(h.id?MIX.voiceTail:0));s.h=h;s.t0=clock.t;saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
    아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).
    위아래로 살짝 흔들림(움직임 줄이기면 멈춤). 깊이를 봐서 잎 뒤로 숨은 인물의 말풍선은 같이 가려진다. 가까이 가면 조금 작게(원더룹 얼굴·화면 위 안내 문구와 겹치지 않게).
@@ -156,7 +156,7 @@ function initDialog(c){ctx=c;makeBubble(c.scene);soundHooks.talkBusy=()=>!!(talk
   document.getElementById('wlAct').addEventListener('pointerdown',e=>{e.preventDefault();act();});
   document.getElementById('wlDlg').addEventListener('pointerdown',e=>{if(talk){e.preventDefault();e.stopPropagation();advance();}});} // 대화창을 눌러도 다음
 function clearDialog(){if(talk)endTalk(false);NPCS.length=0;near=null; // 구역을 바꿀 때: 기다리던 혼잣말·떠 있는 혼잣말도 비우고 false로 끝낸다
-  LAST=null;sayQ.splice(0).forEach(s=>s.r(false));if(saying){hideDialog();const r=saying.r;saying=null;r(false);}}
+  LAST=null;sayQ.splice(0).forEach(s=>s.r(false));if(saying){hideDialog();const r=saying.r;if(saying.h)saying.h.stop();saying=null;r(false);}}
 const talking=()=>!!talk,talkNPC=()=>talk?talk.n:null; /* 지금 이야기하는 주민(대화 카메라 — game/index) */
 const npcList=()=>NPCS; // 시험 도구(game/devcheck 크기 확인)
 const findNPC=name=>NPCS.find(n=>n.name===name)||null;

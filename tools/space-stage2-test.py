@@ -28,6 +28,7 @@ with sync_playwright() as p:
     CX = o['viewport']['width'] // 2
     c = b.new_context(**o)
     if COVER: c.add_init_script(open(os.path.join(ROOT, 'tools/cover-probe.js')).read())
+    if os.environ.get('WL_INIT'): c.add_init_script(open(os.path.join(ROOT, os.environ['WL_INIT'])).read())  # 덧붙일 측정 스크립트(목소리 시험 tools/voice-probe.js — WL_Q는 주소 뒤에 붙일 글)
     c.add_init_script(open(os.path.join(ROOT, 'tools/face-probe.js')).read())  # 마주 보기 전수 검사(대사 한 줄마다 서로를 향한 각도) — 늘 잼
     FACE = []
     def faceDump():
@@ -39,7 +40,7 @@ with sync_playwright() as p:
     mark = lambda k: T.__setitem__(k, round(time.time() - V0, 1))
     shot = lambda n: pg.screenshot(path=os.path.join(OUT, pre + n + '.png'))
     W0 = CX
-    pg.goto('http://localhost:' + PORT + '/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '')); pg.evaluate('localStorage.clear()'); pg.reload()
+    pg.goto('http://localhost:' + PORT + '/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '') + os.environ.get('WL_Q', '')); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots', timeout=120000); pg.wait_for_timeout(2500)
     pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock'].forEach(k=>wlGame.state.setFlag(k,true))")
     ex = pg.evaluate('wlZone.cur.spots.exit')
@@ -253,6 +254,9 @@ with sync_playwright() as p:
         cv = CV0 or pg.evaluate('window.__cover.report()'); R['가림'] = {'화면': cv['screens'], '가려짐': cv['covered']}; json.dump(cv, open(os.path.join(OUT, pre + 'cover.json'), 'w'), ensure_ascii=False, indent=1)
     faceDump(); bad = [x for x in FACE if x['flag'] == '어긋남']; R['마주 보기'] = {'대사': len(FACE), '45도 넘게 어긋남': len(bad), '예외(보는 곳 표시)': sum(1 for x in FACE if x['flag'].startswith('예외')), '원더룹이 아닌 듣는 사람': [[x['who'], x['text'][:26], x.get('hear')] for x in FACE if x.get('hear') not in (None, '원더룹')], '어긋난 줄': [x['who'] + ': ' + x['text'][:22] for x in bad]}
     json.dump(FACE, open(os.path.join(OUT, pre + 'face-s2-' + (a[a.index('--face') + 1] if '--face' in a else 'after') + '.json'), 'w'), ensure_ascii=False, indent=1)
+    if os.environ.get('WL_VOUT'):
+        try: json.dump(pg.evaluate('window.__voice.report()'), open(os.environ['WL_VOUT'], 'w'), ensure_ascii=False, indent=1)
+        except Exception as e: print('목소리 기록 실패', e)
     c.close(); b.close()
     if vid: shutil.move(vid, os.path.join(OUT, pre + 'stage2.webm')); shutil.rmtree(os.path.join(OUT, 'vid-' + pre[:-1]), ignore_errors=True)
 json.dump(R, open(os.path.join(OUT, pre + 'result.json'), 'w'), ensure_ascii=False, indent=1)

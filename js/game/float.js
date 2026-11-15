@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import {bentPos} from './bend.js';
 import {clock} from './core.js';
+import {voice} from './sound.js';
 import {hint,hintsVisible} from './ui.js';
 import {topEdge} from './layout.js';
 const L=[];let ctx=null,css=false;const _p=new THREE.Vector3();
@@ -35,7 +36,7 @@ function add(o){if(!css){css=true;const s=document.createElement('style');s.text
   const it={el,o,on:true,end:o.sec?clock.t+o.sec:0,prio:o.prio||0,
     set(t){el.textContent=t;},html(h){el.innerHTML=h;},show(v){it.on=!!v;},remove(){const i=L.indexOf(it);if(i>=0)L.splice(i,1);el.classList.remove('on');setTimeout(()=>el.remove(),220);}};
   L.push(it);L.sort((a,b)=>b.prio-a.prio);return it;}
-const bubble=o=>add({cls:'wl-fbub',prio:1,sec:2.6,far:22,...o});
+const bubble=o=>{try{voice({text:o.text,who:o.who,kind:'dialogue',minor:true,quiet:true});}catch(e){} /* 말풍선 글: 대본 목록에 파일이 있을 때만 작은 목소리(다른 목소리가 나오는 중이면 건너뜀 — 2026-11-15) */return add({cls:'wl-fbub',prio:1,sec:2.6,far:22,...o});};
 function count(o){const draw=n=>{let h='<span></span>';for(let i=0;i<o.max;i++)h+=i<n?'<i class="f"></i>':'<i></i>';return h+'<b>'+n+'/'+o.max+'</b>';};
   const it=add({cls:'wl-fcnt',prio:5,far:30,clamp:true,...o,html:draw(o.n||0)});it.el.firstChild.textContent=o.label||'';
   const set=n=>{it.html(draw(n));it.el.firstChild.textContent=o.label||'';it.el.classList.remove('pop');void it.el.offsetWidth;it.el.classList.add('pop');};return {el:it.el,set,remove:it.remove,show:it.show};}

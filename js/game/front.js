@@ -13,7 +13,7 @@
    2026-11-03 개미굴 흐름으로: 첫 화면(로고·소개 두 줄·새로 시작|조작법·소리 안내) → 탐험가 소개 패널(옷 갈아입기 창이 이것 — 이름·소개·목표·색·화관·표정·모험 지도) → 이야기 소개(front.story) → 게임.
    왼쪽 위는 받은 물건 칩 대신 '가방' 단추 하나 → 탐험 가방 창(front.bag — 받은 물건·만난 친구·숨겨진 비밀). 시간대는 열 때마다 무작위(startTime). */
 import {block,blocking} from './core.js';
-import {bed,preload,register,setMuted,sfx,songs,soundSettings,voice} from './sound.js';
+import {bed,preload,register,setMuted,sfx,songs,soundSettings,voice,voiceSet,voiceSettings} from './sound.js';
 import {startMission} from './mission.js';
 import {cardShown,setHints,toast,transition} from './ui.js';
 import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './controls.js';
@@ -195,7 +195,11 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   const snd=chip('',()=>{setMuted(!soundSettings.muted);sfx('ui-click');sndLabel();}),sndLabel=()=>{snd.textContent=soundSettings.muted?'소리 꺼짐':'소리 켜짐';};
   /* 절전 모드(2026-11-10 — 08 window.wlEco: 낮은 화질·30프레임 고정, 기본 꺼짐, 이 기기에 기억) */
   const eco=chip('',()=>{sfx('ui-click');if(window.wlEco){window.wlEco.set(!window.wlEco.on);ecoLabel();toast(window.wlEco.on?'절전 모드 켜짐 — 화질을 낮추고 30프레임으로':'절전 모드 꺼짐');}}),ecoLabel=()=>{eco.textContent='절전 모드: '+(window.wlEco&&window.wlEco.on?'켜짐':'꺼짐');};
-  ls.append(snd,eco,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
+  /* 목소리(2026-11-15 — game/sound voiceSet, 배경음·효과음과 따로 이 기기에 기억 'wl-voice'): 켜짐/꺼짐 + 크기(누를 때마다 100 → 125 → 150 → 50 → 75%) */
+  const VSTEP=[1,1.25,1.5,.5,.75];
+  const vo=chip('',()=>{voiceSet({on:!voiceSettings.on});sfx('ui-click');voLabel();}),vv=chip('',()=>{const i=VSTEP.findIndex(x=>Math.abs(x-voiceSettings.vol)<.01);voiceSet({vol:VSTEP[(i+1)%VSTEP.length]});sfx('ui-click');voLabel();}),
+    voLabel=()=>{vo.textContent=voiceSettings.on?'목소리 켜짐':'목소리 꺼짐';vv.textContent='목소리 크기 '+Math.round(voiceSettings.vol*100)+'%';vv.style.opacity=voiceSettings.on?'':'.55';};voLabel();
+  ls.append(snd,vo,vv,eco,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
   /* 버전 표시(2026-11-14 — 휴대폰이 예전 버전을 보고 있는지 확인): 메뉴 맨 아래 작은 글자 '버전 7b75f60a35'(= version.json, 공개 주소 index.html의 WL_V — 한 파일 HTML은 빌드 해시) */
   {const v=document.createElement('div');v.className='wl-ver';v.textContent='버전 '+(window.WL_V||'-')+(window.WL_BUILD&&window.WL_BUILD.commit?' · '+window.WL_BUILD.commit:'');ls.append(v);}
   const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on){sndLabel();ecoLabel();}};

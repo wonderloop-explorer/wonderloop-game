@@ -22,6 +22,7 @@ def files():
     out = []
     for top in ('js', 'assets'):
         for d, _, fs in os.walk(os.path.join(ROOT, top)):
+            if 'voice-temp' in d.split(os.sep): continue  # 임시 목소리(시험용, .gitignore)는 버전에 넣지 않음
             out += [os.path.join(d, f) for f in fs if f.endswith(EXT)]
     return sorted(out)
 
@@ -75,6 +76,8 @@ def stamp(html, v):
 if __name__ == '__main__':
     with open(INDEX, encoding='utf-8') as f:
         old = f.read()
+    if '--check' not in sys.argv and os.path.isfile(os.path.join(ROOT, 'docs/voice/script.csv')):  # 목소리 색인(대본 목록 + 넣어 둔 파일 → assets/voice/<세계>/index.json) — 파일만 넣고 커밋해도 맞게
+        import subprocess; subprocess.run([sys.executable, os.path.join(ROOT, 'tools/voice-index.py')], check=False, stdout=subprocess.DEVNULL)
     v = version(); new = stamp(old, v)
     if '--check' in sys.argv:
         if new != old:
