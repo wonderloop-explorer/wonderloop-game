@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="5f7f2bb649";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="6dacd83e76";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 ca6a81d, 버전 6c8194d05a, 2026-11-15)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 d012aeb, 버전 5feb971e29, 2026-11-15)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="6c8194d05a";
-window.WL_BUILD={"commit":"ca6a81d","date":"2026-11-15","stage":"basecamp"};
+window.WL_V="5feb971e29";
+window.WL_BUILD={"commit":"d012aeb","date":"2026-11-15","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 </script>
 <script type="text/x-wl-module" data-path="js/01-textures.js">
@@ -5858,6 +5858,8 @@ function voiceStage(st){if(!VB.ready)return;VB.ready.then(()=>{for(const L of VB
 const vlog=(ev,id,text,dur)=>{VB.log.push({t:ctx?+ctx.currentTime.toFixed(3):0,g:+clock.t.toFixed(3),ev,id:id||null,text:String(text||'').slice(0,24),dur:dur?+dur.toFixed(3):0,n:VOICES.size});if(VB.log.length>600)VB.log.shift();};
 /* 카드 나레이션이 나오는 중(2026-11-15 — 발견 카드·지도 카드·도착 안내의 나레이션, voice({hold:true})): 끝나고 MIX.voiceTail초 뒤까지 참 → game/dialog가 다음 장면 대사를 그때까지 기다린다 */
 const voiceHold=()=>!!(CURV&&CURV.hold&&(CURV.live()||(CURV.doneT!=null&&clock.t<CURV.doneT+MIX.voiceTail)));
+/* 큰 목소리(대사·나레이션)가 나오는 중이거나 끝난 지 MIX.voiceTail초 안 — 뒤에 올 자막(망원경 등)이 앞 대사를 끊지 않고 기다릴 때(2026-11-15) */
+const voiceBusy=()=>!!(CURV&&(CURV.live()||(CURV.doneT!=null&&clock.t<CURV.doneT+MIX.voiceTail)));
 const voiceNow=()=>({n:VOICES.size,id:CURV&&CURV.live()?CURV.id:null}); // 시험용: 지금 나오는 목소리 수·번호
 const voiceLog=()=>({mute:VB.lines.filter(l=>l.mute&&!l.fx).map(l=>l.text),log:VB.log.slice(),max:VB.max,dir:VB.dir,temp:VTEMP,lines:VB.lines.length,has:VB.lines.filter(l=>l.has).length,set:{...VS}}); // 시험용
 /* 목소리 하나 (대사·나레이션 공통): {id,text,who,kind, minor(말풍선·안내 문구 — 다른 목소리가 나오는 중이면 건너뜀), quiet(파일이 있을 때만 — 없으면 아무 일도 안 함: 시점 기록·배경음 줄이기 없음)}
@@ -5868,7 +5870,7 @@ function voice(v){let id=v.id,e=null;if(!id&&!SHOT&&VB.dir){e=vbFind(v.who,v.tex
   const busy=!!(CURV&&CURV.live())||!!(v.minor&&CURM&&CURM.live()),can=!!id&&(VS.on||!e&&!String(id).startsWith('vo:'))&&!(v.minor&&busy);
   if(v.quiet&&!can){if(!SHOT&&VB.dir)vlog(!id?(e?'nofile':'unlisted'):!VS.on?'off':'skip',e&&e.id,v.text);return null;}
   const t0=clock.t,dur=(can&&LEN[id])||estimate(v.text),sp={end:t0+dur};SPEAK.add(sp);
-  if(can&&!v.minor){if(CURV&&CURV.live())CURV.stop();if(CURM&&CURM.live())CURM.stop();} /* 큰 목소리가 시작되면 앞 목소리(큰 것·작은 것)는 멈춤 */
+  if(can&&!v.minor){if(CURV&&CURV.live()){vlog('replaced',CURV.id,v.text);CURV.stop();} /* 시험용 기록: 새 목소리가 앞 목소리를 끊음 */if(CURM&&CURM.live())CURM.stop();} /* 큰 목소리가 시작되면 앞 목소리(큰 것·작은 것)는 멈춤 */
   let src=null,ended=!can,stopped=false,pend=false;
   const c=cue({kind:v.kind||'dialogue',id:(e&&e.id)||v.id||null,file:SRC[id]||null,text:v.text||'',who:v.who||'',dur:+dur.toFixed(3)});
   const H={id,dur,end:t0+dur,cue:c,hold:!!v.hold,doneT:null,live:()=>!stopped&&(pend||(!!src&&!ended)),
@@ -5942,7 +5944,7 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
 
 </script>
 <script type="text/x-wl-module" data-path="js/game/stage.js">
@@ -10094,7 +10096,8 @@ function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope
 @keyframes wlScIn{from{opacity:0}}@keyframes wlScLens{from{transform:scale(.6);opacity:0}}
 @media (prefers-reduced-motion: reduce){#wlScope,#wlScope .lens{animation:none}}`;document.head.appendChild(st);}
   document.body.appendChild(el);scopeEl=el;const line='저 줄무늬 행성 보이지? 저기가 우리가 마지막에 갈 곳이란다.';
-  {const pEl=el.querySelector('.say p');let i=0;const iv=setInterval(()=>{i++;pEl.textContent=line.slice(0,i);if(i>=line.length)clearInterval(iv);},36);el._iv=iv;el._vo=G.sound.voice({text:line,who:'보름 할아버지',kind:'dialogue'});} /* 망원경 자막도 대사 한 줄(시점 기록 + 대본 목록에 파일이 있으면 목소리) */
+  {const pEl=el.querySelector('.say p');const go=()=>{if(scopeEl!==el)return;if(G.sound.voiceBusy()){el._w=setTimeout(go,50);return;} /* 앞 대사(망원경으로 부르는 말 등)의 목소리가 끝나고 0.35초 뒤에 자막·목소리 시작 — 앞 대사를 끊지 않게(2026-11-15) */
+    let i=0;const iv=setInterval(()=>{i++;pEl.textContent=line.slice(0,i);if(i>=line.length)clearInterval(iv);},36);el._iv=iv;el._vo=G.sound.voice({text:line,who:'보름 할아버지',kind:'dialogue'});};go();} /* 망원경 자막도 대사 한 줄(시점 기록 + 대본 목록에 파일이 있으면 목소리) */
   const cv=el.querySelector('canvas'),g=cv.getContext('2d'),src=jup.U.uMap.value.image,stars=[];{const r=srand(77);for(let i=0;i<90;i++)stars.push([r(),r(),.4+r()*1.4,r()]);}
   let u0=-.03,last=performance.now(),open=performance.now(); // 붉은 폭풍(그림 u .17)이 가운데 조금 왼쪽에서 시작
   const draw=now=>{if(!scopeEl)return;const dt=Math.min(.05,(now-last)/1000);last=now;u0-=dt*.0045; // 천천히 돌아 줄무늬가 흐름
@@ -10114,7 +10117,7 @@ function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope
     requestAnimationFrame(draw);};
   requestAnimationFrame(draw);
   const close=e=>{if(performance.now()-open<350)return;if(e&&e.type==='keydown'&&e.repeat)return;scopeClose();};el.addEventListener('pointerdown',close);addEventListener('keydown',close,true);el._close=close;}
-function scopeClose(){const el=scopeEl;if(!el)return;scopeEl=null;clearInterval(el._iv);if(el._vo)el._vo.stop();removeEventListener('keydown',el._close,true);el.remove();popShown('scope',false);G.core.block('scope',false);G.sound.sfx('ui-click');
+function scopeClose(){const el=scopeEl;if(!el)return;scopeEl=null;clearTimeout(el._w);clearInterval(el._iv);if(el._vo)el._vo.stop();removeEventListener('keydown',el._close,true);el.remove();popShown('scope',false);G.core.block('scope',false);G.sound.sfx('ui-click');
   if(!F[DISC.scope]){G.state.setFlag(DISC.scope,true);G.react.react('awe',{sound:'card-secret'});
     G.ui.secret({kicker:'새 발견',title:'망원경으로 본 목성',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.',vo:'목성의 붉은 폭풍은 지구보다 커요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}}
 G.interact.add({root:scopeMark,at:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],face:SCOPE_EYE,label:'살펴보기',action:'들여다보기',dur:.9,near:1.8,once:false,onDone:()=>scopeOpen()});
