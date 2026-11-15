@@ -142,7 +142,7 @@ function bed(id,o={}){if((want&&want.id)===(id||undefined))return;
   nullT=0;} // 바로 끄지 않는다 — 같은 곡을 곧 다시 틀면(처음부터 다시 하기로 구역을 다시 만들 때) 끊김 없이 이어지게(2026-11-03). 끄는 건 tickBed가
 const DK={st:'up',t0:0,from:1,last:0}; // 배경음 줄이기 상태: up 원래 크기 · down 줄어듦(줄어드는 중) · rise 되돌아오는 중
 function duckNow(now){if(DK.st==='down')return MIX.duck+(DK.from-MIX.duck)*Math.exp(-(now-DK.t0)/MIX.duckIn);if(DK.st==='rise'){const u=Math.min(1,(now-DK.t0)/MIX.back);return DK.from+(1-DK.from)*u*u*(3-2*u);}return 1;}
-const duckState=()=>ctx?{st:DK.st,k:+duckNow(ctx.currentTime).toFixed(4),bus:+musicBus.gain.value.toFixed(4),t:+ctx.currentTime.toFixed(3)}:null; // 시험용: 지금 줄이기 배율·실제 묶음 값
+const duckState=()=>ctx?{st:DK.st,k:+duckNow(ctx.currentTime).toFixed(4),bus:+musicBus.gain.value.toFixed(4),bed:+bedBus.gain.value.toFixed(3),t:+ctx.currentTime.toFixed(3)}:null; // 시험용: 지금 줄이기 배율·실제 묶음 값
 function tickBed(dt){
   if(want){if(!cues.includes(want.cue))want.cue=bedCue(want); // 영상 캡처가 녹화 시작 때 기록을 비우면 그 시점부터 다시
     want.cue.dur=+(clock.t-want.cue.t).toFixed(3);}

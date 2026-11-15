@@ -231,6 +231,7 @@ with sync_playwright() as p:
     R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.mission.hero().userData.sceneLock&&!wlGame.core.blocking()")
     P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
     R['금성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
+    if os.environ.get('WL_VOUT'): pg.wait_for_timeout(7000)  # 목소리 시험: 금성 도착 안내(나레이션 + 안내 문구)가 끝날 때까지 기다림
     # 끝낸 뒤의 모습(2026-11-11): 게임을 다시 열어도 노을·삐삐·둥둥 마지막 자리 그대로인지 — 다시 연 직후(착지 자리)와 노을 언덕에서 한 장씩
     import re as _re
     u2 = pg.url; u2 = _re.sub(r'zone=[^&]*', 'zone=space-mars', u2) if 'zone=' in u2 else u2 + ('&' if '?' in u2 else '?') + 'zone=space-mars'; u2 = _re.sub(r'&time=\d', '', u2)
