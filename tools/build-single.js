@@ -21,6 +21,7 @@ const ROOT = path.resolve(__dirname, '..');
 const THREE_V = '0.186.1';
 const THREE_FILES = ['build/three.module.js', 'build/three.core.js', 'examples/jsm/controls/OrbitControls.js', 'examples/jsm/utils/BufferGeometryUtils.js'];
 const LIMIT = 15 * 1024 * 1024;
+const REMOTE = 'https://wonderloop-explorer.github.io/wonderloop-game/'; // 한 파일판이 소리 파일을 받아 오는 공개 주소(GitHub Pages — 다른 곳에서 받아 가도 되게 열려 있음)
 
 const STAGES = {
   // 시리즈 공통 틀(2026-11-04): 지금 세계 설정(js/worlds CURRENT — 개미굴)의 타이틀 화면 + 시작 공간(backdrop.zone — 이식 전까지 베이스캠프)
@@ -28,7 +29,7 @@ const STAGES = {
     out: 'dist/wonderloop-frame.html',
     copy: 'wonderloop-frame.html', // 게임 폴더(저장소 맨 위)에도 한 부 — 컴퓨터에서 더블클릭해 바로 열기(.gitignore, 2026-11-04)
     title: '원더룹 — 시리즈 공통 틀 (개미굴 설정)',
-    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/audio/antvillage/*', 'assets/audio/travel-theme.mp3', 'assets/audio/mars-bgm.mp3', 'assets/audio/moon-bgm.mp3', 'assets/voice/*/*'], /* 목소리 색인·파일(2026-11-15) */ // 개미굴 나레이션(모험 시작 연출·첫 미션), 스테이지 이동 테마(무한 우주)
+    assets: ['assets/rand/recorded.json', 'assets/textures/*/textures.json', 'assets/voice/*/index.json'], /* 목소리 색인만(2026-11-16) — 소리 파일(배경음·이동 테마·목소리·개미굴 나레이션)은 넣지 않고 공개 주소에서 받는다(시작 스크립트 fetch) */ // 개미굴 나레이션(모험 시작 연출·첫 미션), 스테이지 이동 테마(무한 우주)
   },
   'fairy-dock': {
     out: 'dist/fairy-forest-stage01.html',
@@ -78,6 +79,13 @@ const BOOT = `/* ===== 시작 스크립트 (tools/build-single.js가 넣음) ===
     var k = key(u);
     if (!k) return fetch0(u, o);
     if (FILES[k]) return fetch0(FILES[k]);
+    /* 소리 파일(배경음·이동 테마·목소리·나레이션)은 한 파일에 넣지 않고 공개 주소에서 받는다(2026-11-16 — 소리가 한 파일의 71%였고 행성마다 늘어난다).
+       못 받으면(인터넷 없음 등) 404처럼 돌려줘 게임이 지금처럼 소리 없이 자막만 낸다(오류 없음) */
+    if (/\\.(mp3|ogg|wav|m4a)$/i.test(k)) {
+      var q = String(u && u.url ? u.url : u).split('?')[1];
+      return fetch0(window.WL_REMOTE + k + (q ? '?' + q.split('#')[0] : ''), { method: (o && o.method) || 'GET', mode: 'cors' })
+        .catch(function () { return new Response(null, { status: 404, statusText: 'offline' }); });
+    }
     return Promise.resolve(new Response(null, { status: 404, statusText: 'not in single file' }));
   };
   var srcD = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
@@ -157,6 +165,7 @@ async function main() {
 window.WL_V=${JSON.stringify(ver)};
 window.WL_BUILD=${JSON.stringify({ commit: head + dirty, date, stage: name })};
 window.WL_START_ZONE=${JSON.stringify(name)};
+window.WL_REMOTE=${JSON.stringify(REMOTE)}; /* 소리 파일을 받아 올 공개 주소 */
 </script>\n`;
   const modTags = Object.keys(mods).map(p => `<script type="text/x-wl-module" data-path="${p}">\n/* ===== 원본: ${p.startsWith('three/') ? 'three.js ' + THREE_V + ' (' + p.slice(6) + ')' : p} ===== */\n${esc(mods[p])}\n</script>\n`).join('');
   const fileTag = `<script>/* 그림·목록 파일 (data URI, 원본 경로 → 내용) — 시작 스크립트의 fetch·<img>가 쓴다 */\nwindow.WL_FILES={\n${Object.entries(files).map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(',\n')}\n};</script>\n`;

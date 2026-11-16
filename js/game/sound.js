@@ -32,7 +32,7 @@ const MIX={bus:.5,travelBus:.42,target:-21.5,duck:.4,duckIn:.12,hold:1.5,back:1.
 /* voice 목소리 묶음 크기(메뉴 '목소리 크기' 배율을 곱함) · voiceTail 목소리가 끝난 뒤 대화창이 머무는 시간(초).
    목소리가 나오는 동안에도 같은 duck·hold·back을 쓴다(목소리 파일 유무와 상관없이 대화창이 떠 있으면 줄어든 채 — 줄마다 줄었다 커졌다 하지 않음) */
 const lufsGain=(lufs,bus=MIX.bus)=>lufs==null?1:Math.pow(10,(MIX.target-lufs)/20)/bus;
-const SRC={},BUF={},LEN={},SYN={},PEND={};const VHEAD=.5;let voicePost=null;let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null,bedBus=null,travelBus=null,toneLP=null,toneGain=null;
+const SRC={},BUF={},LEN={},SYN={},PEND={},FAILT={};const VHEAD=.5;let voicePost=null;let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null,bedBus=null,travelBus=null,toneLP=null,toneGain=null;
 const S={muted:false,tts:false};
 /* 목소리 설정(2026-11-15 — 메뉴 '목소리 켜짐/꺼짐'·'목소리 크기', 배경음·효과음과 따로 이 기기에 기억 'wl-voice'): 끄면 파일을 틀지 않고 자막만(길이는 글자 수 어림) */
 const VS=(()=>{try{const o=JSON.parse(localStorage.getItem('wl-voice')||'{}');return {on:o.on!==false,vol:typeof o.vol==='number'?Math.min(1.5,Math.max(.2,o.vol)):1};}catch(e){return {on:true,vol:1};}})();
@@ -81,7 +81,10 @@ function useWorld(id,ovr){const W=id&&WORLD_SFX[id]||null;if(W!==WSET){WSET=W;WA
 function kindOf(id){return SFX.ALIAS[id]||WALIAS[id]||id;}
 function resolve(id){const k=kindOf(id),o=WOVR[k];return o?(SFX.ALIAS[o]||WALIAS[o]||o):k;}
 function load(id){if(BUF[id]||!SRC[id])return Promise.resolve(BUF[id]);if(PEND[id])return PEND[id];const c=audio();if(!c)return Promise.resolve(null);
-  return PEND[id]=(async()=>{try{const ab=await (await fetch(SRC[id]+(SRC[id].includes('?')?'':'?v='+(window.WL_V||'')))).arrayBuffer();BUF[id]=await c.decodeAudioData(ab);LEN[id]=BUF[id].duration;}catch(e){console.warn('원더룹: 소리 파일을 못 읽음',id,e);}
+  if(FAILT[id]&&performance.now()-FAILT[id]<30000)return Promise.resolve(null); /* 방금 못 받은 파일은 30초 동안 다시 받지 않음 */
+  return PEND[id]=(async()=>{try{const r=await fetch(SRC[id]+(SRC[id].includes('?')?'':'?v='+(window.WL_V||'')));
+      if(!r.ok){FAILT[id]=performance.now();if(!FAILT._warned){FAILT._warned=1;console.warn('원더룹: 소리 파일을 못 받음('+r.status+') — 소리 없이 자막만 나옵니다',id);}} /* 한 파일판에서 인터넷이 없을 때 등 — 파일마다 경고를 남기지 않고 한 번만 */
+      else{const ab=await r.arrayBuffer();BUF[id]=await c.decodeAudioData(ab);LEN[id]=BUF[id].duration;}}catch(e){FAILT[id]=performance.now();console.warn('원더룹: 소리 파일을 못 읽음',id,e);}
     delete PEND[id];return BUF[id];})();}
 const preload=ids=>Promise.all(ids.map(load));
 const estimate=text=>Math.max(1.2,String(text||'').replace(/\s+/g,'').length*.11+.5); // 한국어 한 글자 약 0.11초
