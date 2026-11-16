@@ -323,7 +323,7 @@ function openIntro(W){const L=W.introNarration;storyOn=true;let i=0,full='',show
   const c={from:cam.position.toArray(),at:[...L[0].cam.at]};
   VIEW.hold(()=>{const now=performance.now(),dt=Math.min(.1,(now-last)/1000);last=now;st+=dt*(red?.4:1);const T=path(L[i].cam,st),k=1-Math.exp(-dt*1.6);
     for(let j=0;j<3;j++){c.from[j]+=(T.from[j]-c.from[j])*k;c.at[j]+=(T.at[j]-c.at[j])*k;}
-    if(typing){shown=Math.min(full.length,shown+dt*28);const tx=story.querySelector('.stext');if(tx)tx.textContent=full.slice(0,Math.floor(shown));if(shown>=full.length)typing=false;}
+    if(typing){const cps=vo&&vo.live&&vo.live()?Math.min(28,full.length/Math.max(1.5,vo.dur-.6)):28; /* 목소리가 나오는 동안은 글자를 목소리 길이에 맞춰(끝나기 0.6초 전에 다 써짐 — 2026-11-16), 목소리가 없으면 예전 초당 28자 */shown=Math.min(full.length,shown+dt*cps);const tx=story.querySelector('.stext');if(tx)tx.textContent=full.slice(0,Math.floor(shown));if(shown>=full.length)typing=false;}
     return {from:[...c.from],at:[...c.at]};});
   const stopVO=()=>{tok++;if(vo){vo.stop();vo=null;}};
   const say=()=>{stopVO();const S=L[i],t=tok,id='intro:'+W.id+':'+i;if(S.vo){register({[id]:S.vo});preload([id]).then(()=>{if(t===tok&&storyOn)vo=voice({id,text:S.text,kind:'narration'});});}else vo=voice({text:S.text,kind:'narration'});};

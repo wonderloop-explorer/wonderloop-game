@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """목소리·배경음·효과음이 게임에서 실제로 나가는 크기 재기 (2026-11-15) — 촬영 서버(8000)가 떠 있을 때 저장소 루트에서:
-     python3 tools/voice-loud-rec.py [--zone space-garden|space-mars] [--tag 이름] [--quick]
+     python3 tools/voice-loud-rec.py [--zone space-garden|space-mars] [--tag 이름] [--quick] [--vol 1.5]
    게임 소리 묶음을 따로 녹음(sound.tap 'voice'·'bed'·'sfx' → MediaRecorder)해 ffmpeg ebur128로 체감 크기(LUFS)를 잰다.
    - 목소리: 말하는 사람마다 대본 목록의 줄을 차례로 틀어 그 구간의 크기(목소리 묶음 = 스피커로 나가는 값 그대로)
    - 배경음: 평소 6초, 목소리가 나오는 동안(줄이기 40%) — 배경음 묶음 값에 전체 크기 0.85(−1.4dB)를 더한 값
@@ -10,6 +10,7 @@ import base64, csv, json, os, re, subprocess, sys, collections
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')); a = sys.argv[1:]
 arg = lambda k, d: a[a.index(k) + 1] if k in a else d
+VOL = float(arg('--vol', '1'));  # 메뉴 '목소리 크기'(1 = 100%)
 ZONE = arg('--zone', 'space-garden'); TAG = arg('--tag', 'after'); OUT = os.path.join(ROOT, 'docs/compare/voice'); os.makedirs(OUT, exist_ok=True)
 R = [r for r in csv.DictReader(open(os.path.join(ROOT, 'docs/voice/script.csv'), encoding='utf-8-sig')) if r['상태'] == '녹음 필요']
 G = collections.OrderedDict()
@@ -37,6 +38,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)[:200]))
     pg.goto('http://localhost:8000/?world=infinite-space&zone=%s&notitle&time=0' % ZONE); pg.wait_for_function('window.wlGame&&wlGame.state&&window.wlZone&&wlZone.cur', timeout=120000); pg.wait_for_timeout(5000)
     pg.keyboard.press('Shift'); pg.mouse.click(400, 300); pg.wait_for_timeout(9000)  # 배경음이 다 커질 때까지
+    pg.evaluate('v=>wlGame.sound.voiceSet({on:true,vol:v})', VOL); pg.wait_for_timeout(400)
     D = pg.evaluate(JS, [list(G.items()), SFX]); b.close()
 RES = {'구역': ZONE, 'MIX': D.pop('mix'), '목소리 설정': D.pop('set'), '오류': errs}; OUTDB = -1.41  # 전체 크기 0.85
 for k, v in D.items():

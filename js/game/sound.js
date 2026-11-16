@@ -32,12 +32,12 @@ const MIX={bus:.5,travelBus:.42,target:-21.5,duck:.4,duckIn:.12,hold:1.5,back:1.
 /* voice 목소리 묶음 크기(메뉴 '목소리 크기' 배율을 곱함) · voiceTail 목소리가 끝난 뒤 대화창이 머무는 시간(초).
    목소리가 나오는 동안에도 같은 duck·hold·back을 쓴다(목소리 파일 유무와 상관없이 대화창이 떠 있으면 줄어든 채 — 줄마다 줄었다 커졌다 하지 않음) */
 const lufsGain=(lufs,bus=MIX.bus)=>lufs==null?1:Math.pow(10,(MIX.target-lufs)/20)/bus;
-const SRC={},BUF={},LEN={},SYN={},PEND={};let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null,bedBus=null,travelBus=null,toneLP=null,toneGain=null;
+const SRC={},BUF={},LEN={},SYN={},PEND={};const VHEAD=.5;let voicePost=null;let ctx=null,out=null,sfxBus=null,musicBus=null,voiceOut=null,ambBus=null,bedBus=null,travelBus=null,toneLP=null,toneGain=null;
 const S={muted:false,tts:false};
 /* 목소리 설정(2026-11-15 — 메뉴 '목소리 켜짐/꺼짐'·'목소리 크기', 배경음·효과음과 따로 이 기기에 기억 'wl-voice'): 끄면 파일을 틀지 않고 자막만(길이는 글자 수 어림) */
 const VS=(()=>{try{const o=JSON.parse(localStorage.getItem('wl-voice')||'{}');return {on:o.on!==false,vol:typeof o.vol==='number'?Math.min(1.5,Math.max(.2,o.vol)):1};}catch(e){return {on:true,vol:1};}})();
 function voiceSet(o){if(o.on!=null)VS.on=!!o.on;if(o.vol!=null)VS.vol=Math.min(1.5,Math.max(.2,+o.vol||1));try{localStorage.setItem('wl-voice',JSON.stringify(VS));}catch(e){}
-  if(ctx&&voiceOut)voiceOut.gain.setTargetAtTime(VS.on?VS.vol*MIX.voice:0,ctx.currentTime,.05);if(!VS.on&&CURV)CURV.stop();return VS;}
+  if(ctx&&voiceOut)voiceOut.gain.setTargetAtTime(VS.on?VS.vol*MIX.voice*VHEAD:0,ctx.currentTime,.05);if(!VS.on&&CURV)CURV.stop();return VS;}
 const SHOT=/[?&]shot(?=&|=|$)/.test(location.search);
 function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webkitAudioContext)();
     out=ctx.createGain();out.gain.value=S.muted?0:.85;out.connect(ctx.destination);           // 전체 (개미굴 master)
@@ -47,7 +47,11 @@ function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webk
     musicBus=ctx.createGain();musicBus.gain.value=MIX.bus;musicBus.connect(toneLP);              // 배경음
     travelBus=ctx.createGain();travelBus.gain.value=MIX.travelBus;travelBus.connect(out);             // 이동 테마(game/travel — 전체를 거쳐 M·메뉴 소리 끄기를 같이 따름, 효과음보다 살짝 작게)
     ambBus=ctx.createGain();ambBus.gain.value=.32;ambBus.connect(out);                     // 공간음(game/weather — 새소리·풀벌레·빗소리·바람, 음악을 덮지 않게 작게, 2026-11-04)
-    voiceOut=ctx.createGain();voiceOut.gain.value=VS.on?VS.vol*MIX.voice:0;voiceOut.connect(ctx.destination);}    // 목소리 (개미굴 voOut — 전체를 거치지 않음)
+    /* 목소리 끝의 부드러운 리미터(2026-11-16 — 메뉴 '목소리 크기' 125·150%에서 최고점이 0dB를 넘어 찢어졌다): 목소리 묶음 → 파형 다듬기(WaveShaper) → 스피커.
+       최고점 0.89(−1dB) 아래는 입력 그대로(곧은 선 — 100% 이하에서는 파일 최고점이 −1.5dB라 소리가 예전과 똑같다), 그 위는 0.985로 부드럽게 눌러 0dB를 넘지 않는다.
+       다듬기 곡선의 입력 범위가 −1~1이라 묶음 크기를 절반(VHEAD)으로 넣고 곡선에서 두 배로 되돌린다(150% × 최고점 0.84 = 1.26까지 곡선 안) */
+    voiceOut=ctx.createGain();voiceOut.gain.value=VS.on?VS.vol*MIX.voice*VHEAD:0;voicePost=ctx.createWaveShaper();{const N=8193,cv=new Float32Array(N),K=.89,L=.985;for(let i=0;i<N;i++){const x=(i/(N-1)*2-1)/VHEAD,a=Math.abs(x);cv[i]=a<=K?x:Math.sign(x)*(K+(L-K)*Math.tanh((a-K)/(L-K)));}voicePost.curve=cv;voicePost.oversample='none';}
+    voiceOut.connect(voicePost);voicePost.connect(ctx.destination);}    // 목소리 (개미굴 voOut — 전체를 거치지 않음)
   catch(e){ctx=null;}return ctx;}
 const awake=()=>!SHOT&&!S.muted&&ctx&&ctx.state==='running';
 // 소리 깨우기 (개미굴 wakeAudio): 아이폰은 사용자 입력 안에서만 소리가 켜지고, 다른 앱에 다녀오면 멈춰 있을 때가 있다
@@ -110,6 +114,8 @@ const vlog=(ev,id,text,dur)=>{VB.log.push({t:ctx?+ctx.currentTime.toFixed(3):0,g
 const voiceHold=()=>!!(CURV&&CURV.hold&&(CURV.live()||(CURV.doneT!=null&&clock.t<CURV.doneT+MIX.voiceTail)));
 /* 큰 목소리(대사·나레이션)가 나오는 중이거나 끝난 지 MIX.voiceTail초 안 — 뒤에 올 자막(망원경 등)이 앞 대사를 끊지 않고 기다릴 때(2026-11-15) */
 const voiceBusy=()=>!!(CURV&&(CURV.live()||(CURV.doneT!=null&&clock.t<CURV.doneT+MIX.voiceTail)));
+/* 시험용: 리미터 뒤 목소리 파형의 최고값(0~1) — 부를 때마다 그사이 최고값을 돌려주고 0으로. 매 프레임 불러야 빠짐없이 잰다 */
+let VPK=null;function voicePeak(){const c=audio();if(!c||!voicePost)return 0;if(!VPK){const a=c.createAnalyser();a.fftSize=2048;voicePost.connect(a);VPK={a,buf:new Float32Array(2048)};}VPK.a.getFloatTimeDomainData(VPK.buf);let m=0;for(let i=0;i<2048;i++){const v=Math.abs(VPK.buf[i]);if(v>m)m=v;}return m;}
 const voiceNow=()=>({n:VOICES.size,id:CURV&&CURV.live()?CURV.id:null}); // 시험용: 지금 나오는 목소리 수·번호
 const voiceLog=()=>({mute:VB.lines.filter(l=>l.mute&&!l.fx).map(l=>l.text),log:VB.log.slice(),max:VB.max,dir:VB.dir,temp:VTEMP,lines:VB.lines.length,has:VB.lines.filter(l=>l.has).length,set:{...VS}}); // 시험용
 /* 목소리 하나 (대사·나레이션 공통): {id,text,who,kind, minor(말풍선·안내 문구 — 다른 목소리가 나오는 중이면 건너뜀), quiet(파일이 있을 때만 — 없으면 아무 일도 안 함: 시점 기록·배경음 줄이기 없음)}
@@ -180,7 +186,7 @@ function bedTone({lp=20000,gain=1}={},sec=2){const c=audio();if(!c||!toneLP)retu
 function bedLevel(level,sec=1){const c=audio();if(!c||!bedBus)return;const now=c.currentTime;bedBus.gain.cancelScheduledValues(now);bedBus.gain.setValueAtTime(bedBus.gain.value,now);bedBus.gain.linearRampToValueAtTime(level,now+Math.max(.02,sec));}
 const travelOut=()=>!SHOT&&ctx&&ctx.state==='running'?{ctx,bus:travelBus}:null; // 소리를 꺼 둔 채 출발해도 테마는 돌림(전체 out이 0) — 도중에 켜면 그대로 들림
 /* 시험 도구용(소리 포함 녹화): 전체 소리와 목소리를 MediaStream으로도 내보냄(실제 출력은 그대로) */
-function tap(which){const c=audio();if(!c)return null;const d=c.createMediaStreamDestination();if(which==='bed')bedBus.connect(d);else if(which==='travel')travelBus.connect(d);else if(which==='voice')voiceOut.connect(d);else if(which==='sfx')sfxBus.connect(d);else{out.connect(d);voiceOut.connect(d);}return d.stream;} // which 'bed' = 배경음만(크기 재기 — 전체 크기·소리 끄기 앞)
+function tap(which){const c=audio();if(!c)return null;const d=c.createMediaStreamDestination();if(which==='bed')bedBus.connect(d);else if(which==='travel')travelBus.connect(d);else if(which==='voice')voicePost.connect(d);else if(which==='sfx')sfxBus.connect(d);else{out.connect(d);voicePost.connect(d);}return d.stream;} // which 'bed' = 배경음만(크기 재기 — 전체 크기·소리 끄기 앞)
 const audioNow=()=>ctx?ctx.currentTime:null;
 const QF={};
 function quietBuf(url){if(QF[url])return QF[url];const c=audio();if(!c||SHOT)return Promise.resolve(null);
@@ -197,4 +203,4 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voicePeak,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
