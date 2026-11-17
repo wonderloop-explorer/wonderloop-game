@@ -109,14 +109,15 @@ export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
     fragmentShader:'uniform float uA;varying float vA;varying float vK;void main(){vec2 d=gl_PointCoord-.5;float k=1.-smoothstep(.2,.5,length(d));vec3 c=pow(mix(vec3(.72,.46,.33),vec3(.95,.78,.6),vK),vec3(2.2));gl_FragColor=vec4(c,k*vA*min(1.,uA*1.7));\n#include <colorspace_fragment>\n}'});
   gm.userData.noStorybook=true;const grains=new THREE.Points(gg,gm);grains.frustumCulled=false;grains.userData.noMerge=true;grains.renderOrder=4;me.add(grains);
   /* 2026-11-10: 너무 진해서 안에 탄 원더룹이 안 보였다 → 평소에도 옅게(.55), 누가 타는 동안(clear(true))은 훨씬 옅게(.16) — 0.4초쯤에 걸쳐 */
-  let H=height,A0=U.uA.value,aGoal=A0;
+  let H=height,A0=U.uA.value,aGoal=A0,aCur=A0,vk=1,vg=1,vis=true;
   return {me,mat,
     setBase(x,y,z){me.position.set(x,y,z);},setHeight(h){H=h;U.uH.value=h;},get height(){return H;},
-    tick(dt){U.uT.value+=dt;me.rotation.y-=dt*(big?2.6:3.6);grains.rotation.y=-me.rotation.y;U.uA.value+=(aGoal-U.uA.value)*Math.min(1,dt*6);},
+    tick(dt){U.uT.value+=dt;me.rotation.y-=dt*(big?2.6:3.6);grains.rotation.y=-me.rotation.y;aCur+=(aGoal-aCur)*Math.min(1,dt*6);vk+=Math.max(-dt*.7,Math.min(dt*.7,vg-vk));U.uA.value=aCur*vk;me.visible=vis&&vk>.01;},
+    fade(on){vg=on?0:1;},get faded(){return vk<.6;}, /* 서서히 사라지기·다시 나타나기(약 1.4초 — 화산 꼭대기에 데려다준 회오리, 2026-11-17) */
     clear(on){aGoal=on?.16:A0;},
     /* 안에 탄 원더룹 둘레만 옅게(화면 자리 x·y·반지름은 -1~1 좌표, asp = 가로/세로) · 바깥 가장자리 결만 진하게 */
     setHole(x,y,r,asp){U.uHole.value.set(x,y,r,asp);},noHole(){U.uHole.value.z=0;},setRim(k){U.uRim.value=k;},
-    show(v){me.visible=v;},dispose(){geo.dispose();mat.dispose();gg.dispose();gm.dispose();me.removeFromParent();}};}
+    show(v){vis=v;me.visible=v&&vk>.01;},dispose(){geo.dispose();mat.dispose();gg.dispose();gm.dispose();me.removeFromParent();}};}
 /* ── 카세트 ── */
 export function makeCassette(){const g=new THREE.Group();g.name='cassette';const b=new THREE.Group();g.add(b);b.position.set(0,.03,.07);b.rotation.x=-.35;
   const W=.17,H=.11,D=.05;

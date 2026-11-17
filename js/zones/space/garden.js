@@ -73,8 +73,12 @@ function groundY(x,z){let y=.16*Math.sin(W2(3)*x+.7)*Math.sin(W2(2)*z+1.3)+.1*Ma
   for(const [hx,hz,hr,hh] of HILLS){const t=dist(x,z,[hx,hz])/hr;if(t<1)y+=hh*.5*(1+Math.cos(PI*t));}
   for(const C of CRATERS){const t=dist(x,z,C.c)/C.r;if(t<1)y+=-C.d*(1-t*t)+C.rim*ss(.55,1,t);else if(t<1.7)y+=C.rim*(1-(t-1)/.7)**2;}return y;}
 /* 할아버지의 오래된 발자국 길: 집 앞 → 그늘 분화구 → 행성을 크게 한 바퀴 → 출구 */
-const TRAIL=[[2.4,4.6],[1.6,0],...[[-.6,-5.5],[-2.6,-10.6]].map(sc),shd(-3.4,-14.2),...[[-8,-20],[-16,-24],[-26,-20],[-34,-8],[-40,6],[-36,20],[-24,30],[-8,36],[10,40],[26,34],[36,20],[40,4],[34,-12],[22,-26],[10,-32],[6,-35]].map(sc)]; // 마을 앞 두 점은 그대로, 분화구 안 한 점은 분화구 기준, 나머지는 S배
-function trailPts(step){const out=[];for(let i=0;i<TRAIL.length-1;i++){const [ax,az]=TRAIL[i],[bx,bz]=TRAIL[i+1],P0=TRAIL[Math.max(0,i-1)],P3=TRAIL[Math.min(TRAIL.length-1,i+2)];
+const TRAIL_OLD=[[2.4,4.6],[1.6,0],...[[-.6,-5.5],[-2.6,-10.6]].map(sc),shd(-3.4,-14.2),...[[-8,-20],[-16,-24],[-26,-20],[-34,-8],[-40,6],[-36,20],[-24,30],[-8,36],[10,40],[26,34],[36,20],[40,4],[34,-12],[22,-26],[10,-32],[6,-35]].map(sc)]; // 마을 앞 두 점은 그대로, 분화구 안 한 점은 분화구 기준, 나머지는 S배
+/* 2026-11-17 세 번째: 보이는 할아버지 발자국은 순서 길 위에(첫 만남 자리 → 떡방아 → 망원경 → 높은 바위 → 얼음 동굴 → 출구) — "내 발자국을 따라가 보렴"대로 따라가면 다음 목표에 닿음.
+   예전 길(TRAIL — 행성 한 바퀴)은 바위·돌 배치 기준으로만 남김(발자국은 안 찍음: 따라가면 목표와 다른 곳으로 갔다) */
+const WALK=(()=>{const R=ROCK.c,ms=[MORTAR[0]-.65,MORTAR[1]-.27],ss=[SCOPE[0]+.6,SCOPE[1]+1.25];
+  return [[1.0,8.3],[3.4,10.5],ms,[4.0,11.2],[.6,8.9],[-1.0,7.0],ss,[-4.4,5.4],[-5.6,1.0],[-6.0,-6.0],[R[0]+4.4,R[1]+6.7],[R[0]+1.15,R[1]+1.75],[R[0]+2.7,R[1]-.8],[CAVE[0]-1.9,CAVE[1]+2.1],[CAVE[0]-1.15,CAVE[1]+1.0],[CAVE[0]+1.6,CAVE[1]-2.6],[(CAVE[0]+EXIT[0])/2,(CAVE[1]+EXIT[1])/2-1],EXIT];})();
+function trailPts(step,TRAIL0){const TRAIL=TRAIL0||TRAIL_OLD,out=[];for(let i=0;i<TRAIL.length-1;i++){const [ax,az]=TRAIL[i],[bx,bz]=TRAIL[i+1],P0=TRAIL[Math.max(0,i-1)],P3=TRAIL[Math.min(TRAIL.length-1,i+2)];
     const n=Math.ceil(Math.hypot(bx-ax,bz-az)/step);for(let k=0;k<n;k++){const t=k/n,t2=t*t,t3=t2*t,cr=(p0,p1,p2,p3)=>.5*(2*p1+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);
       out.push([cr(P0[0],ax,bx,P3[0]),cr(P0[1],az,bz,P3[1])]);}}return out;}
 /* 달 배경음 되풀이 구간(초): 박자가 자유로운 곡(루바토)이라 박자 계산 대신 소리가 잦아드는 구절 경계를 소리에서 찾음 — 1:27.07에 끝 구절이 내림마장조 으뜸화음으로 풀리는데,
@@ -285,7 +289,7 @@ const dotTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;
 /* ── 발자국: 보름 할아버지의 오래된 발자국 길(토끼 발 — 긴 타원 둘이 나란히, 바닥보다 또렷하게 진한 연보라 회색) + 원더룹 발자국(걸은 만큼 계속 남음, 최대 개수를 넘치면 가장 오래된 것부터 아주 천천히 흐려짐) */
 const printGeo=new THREE.CircleGeometry(1,10);printGeo.rotateX(-PI/2);
 const prMat=sbMat('#ffffff');prMat.polygonOffset=true;prMat.polygonOffsetFactor=-2;prMat.polygonOffsetUnits=-2;
-const old=trailPts(.7),OLDN=old.length*2,oldIM=new THREE.InstancedMesh(printGeo,prMat,OLDN);
+const old=trailPts(.7,WALK).filter(([x,z])=>dist(x,z,ROCK.c)>ROCK.r+.3&&!obstacles.some(o=>o.c&&Math.hypot(x-o.c[0],z-o.c[1])<o.c[2]+.2)),OLDN=old.length*2,oldIM=new THREE.InstancedMesh(printGeo,prMat,OLDN);
 {const m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),c=col('#6c6479');let k=0;
   old.forEach(([x,z],i)=>{const [nx,nz]=old[Math.min(old.length-1,i+1)],[px,pz]=old[Math.max(0,i-1)],a=Math.atan2(nx-px,nz-pz);
     [-1,1].forEach(s=>{const ox=Math.cos(a)*s*.095,oz=-Math.sin(a)*s*.095,X=x+ox,Z=z+oz;e.set(0,a,0);q.setFromEuler(e);
@@ -336,13 +340,12 @@ const BUN=[{id:'kongkong',name:'콩콩',fur:'#d8d8e0',scarf:'#ff9eb3',way:[[-.6,
   {id:'mongsil',name:'몽실',fur:'#e2d3bd',scarf:'#9bd46b',way:[[3.0,11.8],[1.2,13.0],[-.6,12.0],[1.8,10.9]],line:'여기선 톡 뛰면 한참 동안 떠 있어. 같이 뛰어 볼래?'},
   {id:'bosul',name:'보슬',fur:'#cdc6dc',scarf:'#7fb6e8',way:[[-5.6,8.6],[-4.2,10.8],[-1.8,12.2],[-6.4,11.2]],line:'할아버지 망원경으로 보면 목성 줄무늬가 다 보여!'}];
 const bunBlob=blobMany(BUN.length+1);if(bunBlob){bunBlob.frustumCulled=false;root.add(bunBlob);keep.push(bunBlob);}
+const bunTalkOK=()=>!GATHER.on&&!!F[K.demo]&&!st.scene&&!ride;
 const bunnies=BUN.map((b,i)=>{const m=makeBunny(b.fur,b.scarf);const [x,z]=b.way[0];m.root.position.set(x,groundY(x,z),z);root.add(m.root);keep.push(m.root);
   const st={i:0,t:0,wait:RR(.5,2.5),from:[x,z],to:null,ry:0};
-  /* 2026-11-17: 말 걸 상대가 아님 — 원더룹이 약 3m 안으로 오면 머리 위 글자 말풍선 한마디(목소리 없음, 한 번에 하나씩 · 같은 토끼는 12초 뒤에 다시), 처음 본 순간 친구 카드에 조용히 넣음(tickBunTalk) */return {...b,m,st,sayT:-99};});
-let bunSayT=-99;
-function tickBunTalk(t,P){if(GATHER.on||st.scene||ride||!F[K.demo]||G.core.blocking()||G.ui.cardShown()||t<bunSayT+4.2)return;
-  let best=null,bd=3;for(const b of bunnies){if(t<b.sayT+12)continue;const r=b.m.root.position,d=dist(P.x,P.z,[r.x,r.z]);if(d<bd){bd=d;best=b;}}
-  if(!best)return;best.sayT=t;bunSayT=t;G.float.bubble({root:best.m.root,y:1.02,text:best.line,sec:3.6});if(!G.profile.seen('bunnies'))G.profile.found('bunnies',best.m.root);}
+  /* 2026-11-17 세 번째: 저절로 뜨는 말풍선 없음('…'도 — bubbleR) — 가까이 가면 '말 걸기'만, 걸면 아래 대사창에 글자로(목소리 없음), 처음 이야기하면 친구 카드에 조용히 넣음 */
+  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:1.4,bubbleR:.01,onDone:()=>{if(!G.profile.seen('bunnies'))G.profile.found('bunnies',m.root);},variants:[{when:bunTalkOK,lines:[b.line]},{when:()=>!bunTalkOK(),lines:[]}]});
+  return {...b,m,st};});
 function tickBunnies(dt,t,P){
   if(WAVE.on&&P){bunnies.forEach((b,i)=>{const r=b.m.root,a=i*2.1+.6,x=BOBO[0]+Math.cos(a)*1.5,z=BOBO[1]+Math.sin(a)*1.5,hop=Math.abs(Math.sin(t*4.2+i*1.7)); // 별똥별 타고 가는 원더룹에게: 할아버지 둘레에서 통통 뛰며 몸을 좌우로 흔듦(손 흔들기 — 토끼는 팔이 따로 없다)
       r.position.set(x,groundY(x,z)+hop*.45,z);const ry=Math.atan2(wd(P.x-x),wd(P.z-z));b.st.ry+=Math.atan2(Math.sin(ry-b.st.ry),Math.cos(ry-b.st.ry))*Math.min(1,dt*4);r.rotation.y=b.st.ry;
@@ -493,16 +496,15 @@ const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(
 function cntShow(n){G.ui.count(n==null?null:{label:'떡 찧기',n,max:3});}
 const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
   onPress:()=>{st.poundGo=true;G.goal.set(null);}, /* 2026-11-17: '찧기'를 누르는 순간 떡방아 빛기둥·길 안내를 바로 끔(찧는 동안 남아 있었다) — 그만두고 떠나면 다시 */
-  onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=true;st.cntK=(st.cntK||0)+1;cntShow(PEST.n);},
+  onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=!F[CAKE_KEY];if(st.cntOn){st.cntK=(st.cntK||0)+1;cntShow(PEST.n);}}, /* 이미 달떡을 얻은 뒤 다시 찧을 때는 횟수 표시 없음(2026-11-17) */
   onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;
-    cntShow(n);
+    if(st.cntOn)cntShow(n);
     if(n<3)return; /* 횟수는 절구 위 표시가 맡는다(단추 글자는 '찧기' 그대로) */
     mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;cntShow(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
 function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return;st.cakeT=null;const first=!F[CAKE_KEY]; /* 처음이면 기쁨 리액션(카메라를 봄)·획득 카드가 끝난 뒤에 할아버지 대사 — 깃발을 켠 뒤에 물어 늘 0.4초였고, 원더룹이 카메라를 본 채 대사가 나왔다(2026-11-11) */
   if(first){G.state.setFlag(CAKE_KEY,true);G.react.react('joy');const it=(SPACE.items||[]).find(i=>i.id==='dalddeok');
-    G.ui.itemCard({title:'달떡을 얻었어요!',text:'낮은 중력에서 찧은 쫀득한 달떡 — 가방에 넣었어요',icon:it&&it.icon?it.icon():null,sec:4,sound:'item-get'});}
-  if(first)setTimeout(()=>G.ui.toast(CAKE_NAR,4.6,CAKE_NAR),4300); /* 획득 카드가 사라진 뒤 나레이션 한 줄(2026-11-17 — 할아버지·토끼 대사 대신) */
-  setTimeout(()=>{GATHER.on=false;},first?8200:5000);}
+    G.ui.itemCard({title:'달떡을 얻었어요!',text:'낮은 중력에서 찧은 쫀득한 달떡 — 가방에 넣었어요',icon:it&&it.icon?it.icon():null,sec:4,sound:'item-get',vo:CAKE_NAR});} /* 2026-11-17 세 번째: 획득 카드가 뜨는 순간 나레이션(S1-035)이 같이 — 목소리만(글은 따로 안 띄움) */
+  setTimeout(()=>{GATHER.on=false;},first?6000:5000);}
 const CAKE_NAR='아기 토끼들이 둥실둥실 날아다니는 떡을 보고 신이 났어요.';
 /* ── 체험 안내(2026-11-10 — 떡방아·망원경을 그냥 지나치기 쉬웠다): 아직 안 해 본 체험 자리 위에 멀리서도 보이는 반짝이 표시(game/float mark, 그리기 0),
    7m 안이면 설 자리 발밑에 민트 동그라미(안내 표시 — 영상에 안 나옴), 3.4m 안이면 한 줄 안내, 가까이 왔다가 그냥 멀어지면(10m) 보름 할아버지·아기 토끼가 한 번 불러 세움(판마다 한 번). 해 보면 모두 사라짐 */
@@ -645,6 +647,7 @@ function tickCome(dt){const c=st.come;if(!c)return;c.t+=dt;const T=.62,u=Math.mi
   bobo.root.position.set(x,groundY(x,z)+Math.sin(u*PI)*.42,z);bobo.root.rotation.y=Math.atan2(c.to[0]-c.from[0],c.to[1]-c.from[1]);boboOb.c[0]=x;boboOb.c[1]=z;
   if(u>=1){c.i++;c.t=0;G.sound.sfx('step');if(c.i>=c.n){st.come=null;placeBobo(c.to);c.res();}}}
 const faceEach=W=>{const b=bobo.root.position,P=W.position;W.rotation.y=Math.atan2(wd(b.x-P.x),wd(b.z-P.z));bobo.root.rotation.y=Math.atan2(wd(P.x-b.x),wd(P.z-b.z));};
+const COLD_MSG='햇빛이 안 드는 그늘 분화구는 영하 160도 — 서리가 그대로 얼어 있어요';
 const JUMP_TIP=coarse?'점프 버튼을 눌러요':'점프 버튼(Space)을 눌러요';
 async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopWalk();U.sceneLock=true;quest('',null);let pc=null;
   const cam=on=>{if(on){pc=G.view.pairCam(bobo.root,1.62);if(pc)G.view.hold(pc);}else{if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);pc=null;}};
@@ -656,7 +659,7 @@ async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopW
     cam(false);await hopDemo();faceEach(W);
     await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);
     /* 점프를 기다림: 조작을 돌려주고(점프 단추가 다시 보임) 대화창에 안내 — 뛰어오르면 닫힘 */
-    U.sceneLock=false;let jumped=false;const jl=say('',JUMP_TIP,0,{until:()=>jumped,hear:'혼잣말'});
+    U.sceneLock=false;let jumped=false;const jl=say('',JUMP_TIP,0,{until:()=>jumped,hear:'혼잣말',pin:'top'});
     await G.core.until(()=>{const V=U.vert;if(V&&V.air&&V.vy>0)jumped=true;return jumped;},600);await jl;
     await G.core.until(()=>!(U.vert&&U.vert.air),4);if(U.stopWalk)U.stopWalk();U.sceneLock=true;faceEach(W);cam(true);
     await say('보름 할아버지','내 발자국을 따라가 보렴. 다 그대로 남아 있을 게야.',3.6);
@@ -668,7 +671,8 @@ const W0=P=>P; // 손 흔들기: 원더룹 자리(할아버지·토끼가 바라
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
   if(st.cntOn&&dist(P.x,P.z,MORTAR)>4.5){st.cntOn=false;cntShow(null);}
-  if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 얼음 동굴(2026-11-17부터 꼭 지나가는 단계 — 출구는 이 카드를 본 뒤에)
+  if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown()){ /* 2026-11-17 세 번째: 그늘 안내 문구가 떠 있으면 지우고 카드 먼저(겹쳐 떴다) — 다 못 읽었으면(2.6초 안) 카드가 닫힌 뒤 다시 */
+    if(st.coldT!=null&&G.clock.t-st.coldT<4.4){G.ui.toast(COLD_MSG,0);if(G.clock.t-st.coldT<2.6)st.cold=false;}st.coldT=null;st.caveT=G.clock.t;caveSecret();} // 얼음 동굴(2026-11-17부터 꼭 지나가는 단계 — 출구는 이 카드를 본 뒤에)
   bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);tickTry(dt,t,P);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
@@ -687,11 +691,10 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   // 사실 안내(처음 한 번씩 — 첫 만남 대화가 끝난 뒤부터)
   if(!st.start&&F[K.demo]&&st.introT!=null&&G.clock.t>st.introT+7&&!G.ui.cardShown()&&!G.core.blocking()){st.start=true;G.ui.toast('공기가 거의 없어서 낮인데도 하늘이 까맣고 별이 보여요',4.2);}
   if(!st.warm&&dist(P.x,P.z,WARM)<9){st.warm=true;G.ui.toast('햇빛이 닿는 땅은 뜨겁게 일렁여요 — 수성은 낮에 430도까지 올라요',4.2);}
-  if(!st.cold&&dist(P.x,P.z,SHADE.c)<SHADE.r&&!G.ui.cardShown()){st.cold=true;G.ui.toast('햇빛이 안 드는 그늘 분화구는 영하 160도 — 서리가 그대로 얼어 있어요',4.2);}
+  if(!st.cold&&dist(P.x,P.z,SHADE.c)<SHADE.r&&!G.ui.cardShown()&&G.clock.t>(st.caveT??-9)+.8){st.cold=true;st.coldT=G.clock.t;G.ui.toast(COLD_MSG,4.2);}
   if(!F[HAVE])return;
   // 첫 만남: 목걸이를 차는 연출이 끝나면 할아버지가 다가와 이어지는 대화
   if(!F[K.demo]){quest('',null);if(!G.core.blocking('itemget')&&!G.ui.cardShown()&&!G.core.blocking())intro(WL,U);return;}
-  tickBunTalk(t,P);
   const step=nextStep(),onRockTop=(()=>{const V=U.vert;return !!(V&&V.y>ROCK_TOP-.2&&!V.air&&dist(P.x,P.z,ROCK.c)<ROCK.r+.2);})();
   if(!onRockTop)st.rockWarn=false;
   if(!F[K.rock]&&onRockTop){const left=leftList();
@@ -755,7 +758,7 @@ function wrapShift(k,sh){if(fpLast)fpLast[k]+=sh;if(ride)ride.shift(k,sh);
 }
 return {
   name:'회색 정원',kind:'outdoor',
-  spots:{neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R,hut:[HUT[0],HUT[1],groundY(...HUT),Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])],win:Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])-2*PI/14},
+  spots:{trail:old,neck:NECK,rock:ROCK.c,rockR:ROCK.r,rockTop:ROCK_TOP,cave:CAVE,exit:EXIT,shade:SHADE.c,scope:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],mortar:MSTAND,bobo:BOBO,R,hut:[HUT[0],HUT[1],groundY(...HUT),Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])],win:Math.atan2(VIL[0]-HUT[0],VIL[1]-HUT[1])-2*PI/14},
   ride:()=>ride,flyK:()=>FLY.k, /* 별똥별 꼬리 타기 확인(tools/space-meteor-rec.py) */
   poundInfo:()=>({hits:PEST.hits,stand:MSTAND,d:+POUND_D.toFixed(3),cakeTop:+CAKE_TOP.toFixed(3),squish:+CSQ.x.toFixed(3),head:(()=>{pestle.updateMatrixWorld(true);const h=HEAD_C.clone().addScaledVector(HEAD_AX,-.12);pestle.localToWorld(h);return h.toArray().map(n=>+n.toFixed(3));})()}), /* 떡방아 확인(tools/space-pound-rec.py) */ // 시험 도구가 읽는 자리(tools/space-stage1-test.py)
 start:{compass:true},world:null,

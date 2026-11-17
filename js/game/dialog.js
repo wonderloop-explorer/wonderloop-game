@@ -43,10 +43,10 @@ function advance(){if(!talk)return false;talk.i++;show();return true;}
 /* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 true, 구역을 바꿔 지워지면 false */
 /* 옵션 o(2026-11-11 — 모든 대사 마주 보기): look '보는 곳' 표시 = 마주 보지 않는 예외 줄 — 이름만('노을')이면 지금 보는 곳 그대로, {at:[x,z]|물체, name}이면 말하는 주민과 원더룹이 그곳을 봄.
    to: 이 줄을 듣는(또는 원더룹이 말을 거는) 상대 물체 — 이름으로 못 찾는 줄(카세트 소리를 둥둥에게 들려줌)에. to:null이면 상대 없음(혼잣말). face:false는 look의 옛 이름 */
-function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined,hear:o?o.hear:undefined,hearName:o&&o.hearName,heroLook:o&&o.heroLook,until:o&&o.until,more:o&&o.more}));} /* until: 이 함수가 참이 될 때까지 대화창을 그대로 둠(점프 단추를 누를 때까지 기다리는 줄 — 2026-11-17), more: 대화창 아래 작은 안내 글 */
+function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined,hear:o?o.hear:undefined,hearName:o&&o.hearName,heroLook:o&&o.heroLook,until:o&&o.until,more:o&&o.more,pin:o&&o.pin}));} /* pin:'top' — 대화창을 처음부터 위쪽 자리에 고정(인물을 피해 오르내리지 않음, 2026-11-17) */ /* until: 이 함수가 참이 될 때까지 대화창을 그대로 둠(점프 단추를 누를 때까지 기다리는 줄 — 2026-11-17), more: 대화창 아래 작은 안내 글 */
 function tickSay(){
   if(saying&&clock.t>=saying.end&&!(saying.h&&saying.h.live())&&!(saying.until&&!saying.until())){hideDialog();const r=saying.r;saying=null;r(true);} /* 목소리가 아직 나오는 중이면 기다림(2026-11-15) */
-  if(!saying&&!talk&&sayQ.length&&!blocking()&&!voiceHold()){const s=sayQ.shift(); /* 카드 나레이션이 끝난 뒤(+0.35초)에 다음 장면 대사 — 2026-11-15 */showDialog(s.who,s.text,s.more||'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
+  if(!saying&&!talk&&sayQ.length&&!blocking()&&!voiceHold()){const s=sayQ.shift(); /* 카드 나레이션이 끝난 뒤(+0.35초)에 다음 장면 대사 — 2026-11-15 */showDialog(s.who,s.text,s.more||'',s.pin);sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
     s.end=clock.t+Math.max(s.sec||0,h.dur+(h.id?MIX.voiceTail:0));s.h=h;s.t0=clock.t;saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
    아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).

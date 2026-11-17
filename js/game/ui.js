@@ -142,7 +142,7 @@ const coarse=matchMedia('(pointer:coarse)').matches,SHOT_UI=new URLSearchParams(
 const dlg=$('#wlDlg');
 /* 탐험가 이름(탐험가 소개 창에서 바꾼 이름 — localStorage 'wl-look2'.name): 대화창 이름표의 '원더룹'을 그 이름으로. 촬영 모드는 늘 '원더룹' */
 const heroName=()=>{if(SHOT_UI)return '원더룹';try{const n=(JSON.parse(localStorage.getItem('wl-look2')||'{}').name||'').trim();return n||'원더룹';}catch(e){return '원더룹';}};
-function showDialog(who,text,more){if(cardOn==='notice')closeNotice('dialog'); /* 미션 카드가 떠 있는데 대화가 시작되면 카드를 먼저 닫는다(동시에 뜨지 않게 — 2026-11-12) */if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';fitDialog();uiHooks.layout&&uiHooks.layout();}
+function showDialog(who,text,more,pin){dlg.dataset.pin=pin||'';if(cardOn==='notice')closeNotice('dialog'); /* 미션 카드가 떠 있는데 대화가 시작되면 카드를 먼저 닫는다(동시에 뜨지 않게 — 2026-11-12) */if(who==='원더룹')who=heroName();dlg.querySelector('.who').textContent=who||'';dlg.querySelector('.who').style.display=who?'':'none';dlg.querySelector('.line').textContent=text;dlg.querySelector('.more').textContent=more||'';dlg.style.display='block';fitDialog();uiHooks.layout&&uiHooks.layout();}
 /* 대화창은 세 줄까지(화면 가림 규칙 1): 넘으면 글자를 조금씩 줄인다(0.86배까지 — 그래도 넘으면 그대로 보여 줌) */
 function fitDialog(){const l=dlg.querySelector('.line');l.style.fontSize='';const cs=getComputedStyle(l),f0=parseFloat(cs.fontSize),lh=parseFloat(cs.lineHeight)/f0||1.6;let f=f0;for(let i=0;i<6&&l.offsetHeight>f*lh*3+2;i++){f*=.97;l.style.fontSize=f+'px';}}
 const uiHooks={layout:null}; /* game/layout이 넣음 — 무엇이 뜨거나 닫힐 때 바로 자리를 다시 잡게 */
@@ -179,7 +179,7 @@ const sc=$('#wlStrip');let scDone=null,scCue=null,scEnd=0;
 /* 2026-11-10 화면 가림 규칙 3: 위쪽 띠 카드로 — 막지 않고 sec초(기본 글 길이에 따라 4.5~7초, 게임 시간) 뒤 저절로, 띠를 누르거나 Esc로도 닫힘. count는 꼬리표 옆에('숨겨진 비밀 · 2/3'). 닫힐 때 resolve(예전과 같음) */
 function secret(o){ /* 발견 카드는 대사가 끝난 뒤에(2026-11-17, 모든 세계 — 대사와 동시에 뜨지 않게): 대화창이 떠 있거나 기다리는 대사가 있으면 끝날 때까지 기다렸다가 띄움(촬영 모드는 예전처럼 바로) */
   const busy=()=>dlg.style.display==='block'||!!(uiHooks.dialogBusy&&uiHooks.dialogBusy());if(SHOT_UI||!busy())return secretNow(o);const gen=ntGen;ntPend++;return until(()=>!busy(),60).then(()=>wait(.3)).then(()=>{ntPend=Math.max(0,ntPend-1);return gen!==ntGen?-1:secretNow(o);});}
-function secretNow({kicker='숨겨진 비밀',title='',text='',icon=null,count='',sec=null,onOpen=null,vo=null}){return enqueue('secret',r=>{scVo=cardVoice(vo,text);scDone=r;sc.querySelector('.k').textContent=kicker+(count?' · '+count:'');sc.querySelector('.t').textContent=title;sc.querySelector('.f').textContent=text;if(onOpen)try{onOpen();}catch(e){console.error(e);}
+function secretNow({kicker='숨겨진 비밀',title='',text='',icon=null,count='',sec=null,onOpen=null,vo=null,at=null}){return enqueue('secret',r=>{sc.dataset.pin=at||''; /* at:'bottom' — 띠 카드를 화면 아래쪽에(노을 장면: 위에 뜨면 해를 가렸다, 2026-11-17) */scVo=cardVoice(vo,text);scDone=r;sc.querySelector('.k').textContent=kicker+(count?' · '+count:'');sc.querySelector('.t').textContent=title;sc.querySelector('.f').textContent=text;if(onOpen)try{onOpen();}catch(e){console.error(e);}
   const img=sc.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');scEnd=clock.t+(sec||Math.min(7,Math.max(4.5,2.5+(title.length+text.length)*.06)));
   scCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});sc.classList.add('on');uiHooks.layout&&uiHooks.layout();});}
 function closeSecret(why){if(cardOn!=='secret')return;if(scVo){scVo.stop(why);scVo=null;}sc.classList.remove('on');endCue(scCue);scCue=null;const d=scDone;scDone=null;cardDone();uiHooks.layout&&uiHooks.layout();if(d)d();}
@@ -212,7 +212,8 @@ function tickFade(){if(!fade)return;const f=fade,e=clock.t-f.t0;
 const gt=$('#wlGet');let gtDone=null,gtCue=null,gtEnd=0;
 /* 아이템 획득 카드 — 같은 모양으로 스테이지 완료 안내도(sound·who만 바꿔) */
 let gtSpin=0;
-function itemCard({title='',text='',icon=null,frames=null,sec=2.8,sound='item-get',who='아이템'}){return enqueue('item',r=>{gtDone=r;gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
+let gtVo=null;
+function itemCard({title='',text='',icon=null,frames=null,sec=2.8,sound='item-get',who='아이템',vo=null}){return enqueue('item',r=>{gtDone=r;gtVo=vo?cardVoice(vo,''):null; /* vo: 카드가 뜨는 순간 같이 나오는 나레이션(목소리만 — 2026-11-17) */gt.querySelector('.t').textContent=title;gt.querySelector('.s').textContent=text;
   const img=gt.querySelector('img');clearInterval(gtSpin);gt.classList.toggle('spin',!!(frames&&frames.length));if(frames&&frames.length){let k=0;img.src=frames[0];if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gtSpin=setInterval(()=>{k=(k+1)%frames.length;img.src=frames[k];},90);}else if(icon)img.src=icon;else img.removeAttribute('src'); /* frames: 도는 물건(game/profile spinFrames) — 아이콘 대신 */gtEnd=clock.t+sec;gtCue=cue({kind:'card',who,text:title,sub:text,dur:0});gt.classList.add('on');stackGet();sfx(sound);});}
 function closeItemCard(){if(cardOn!=='item')return;clearInterval(gtSpin);gt.classList.remove('on');stackGet();endCue(gtCue);gtCue=null;const d=gtDone;gtDone=null;cardDone();if(d)d();}
 cardCloser('item',closeItemCard);
@@ -279,7 +280,7 @@ function todo(list){if(!list){if(todoEl){todoEl.remove();todoEl=null;uiHooks.lay
   todoEl.innerHTML='';for(const o of list){const sp=document.createElement('span');if(o.done)sp.className='d';const b=document.createElement('i');b.textContent=o.done?'✓':'';sp.appendChild(b);sp.appendChild(document.createTextNode(o.t));todoEl.appendChild(sp);}
   todoEl.setAttribute('aria-label','할 일: '+list.map(o=>o.t+(o.done?' 끝':'')).join(', '));uiHooks.layout&&uiHooks.layout();}
 function toast(msg,sec=2.8,vo=null){ts.textContent=msg;if(tsVo){tsVo.stop();tsVo=null;}tsVo=cardVoice(vo,msg);if(uiHooks.layout){ts.classList.add('on');uiHooks.layout();}else{toastTop();ts.classList.add('on');}tsEnd=clock.t+sec;}
-const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd&&voDone(ntVo)&&voDone(ntVoh&&ntVoh()))closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd)closeItemCard();if(cardOn==='secret'&&clock.t>=scEnd&&voDone(scVo))closeSecret();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
+const tickCut=()=>{if(cardOn==='badge'&&clock.t>=bdEnd){if(!bdOut){bdOut=clock.t;bd.classList.add('out');}else if(clock.t-bdOut>=.45)closeBadge();}if(cardOn==='cut'&&clock.t>=ctEnd)closeCut();if(cardOn==='notice'&&clock.t>=ntEnd&&voDone(ntVo)&&voDone(ntVoh&&ntVoh()))closeNotice('auto');if(cardOn==='item'&&clock.t>=gtEnd&&voDone(gtVo))closeItemCard();if(cardOn==='secret'&&clock.t>=scEnd&&voDone(scVo))closeSecret();if(cardOn==='profile'&&clock.t>=pfEnd)closeProfile();
   if(tsEnd&&clock.t>=tsEnd&&voDone(tsVo)){tsVo=null;ts.classList.remove('on');tsEnd=0;uiHooks.layout&&uiHooks.layout();}tickFade();};
 cardCloser('cut',closeCut);
 ['keydown','pointerdown'].forEach(ev=>window.addEventListener(ev,()=>{if(cardOn==='cut'&&performance.now()-cardOpenT>600)closeCut();}));

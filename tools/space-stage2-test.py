@@ -168,6 +168,7 @@ with sync_playwright() as p:
     readAll(until="wlGame.state.flags['mars:call']&&!wlZone.cur.state().scene"); readAll()
     R['부르기·소리 발견'] = pg.evaluate("[!!wlGame.state.flags['mars:call'],!!wlGame.state.flags['secret:infinite-space:marssound']]")
     # ③ 녹음
+    walk(sp[0] - 1.5, sp[1] + .5, 8)  # 삐삐가 먼저 와 있으면 부르기 장면이 4.6m 밖에서 시작됨 → 녹음하려면 가까이(2.3m 안)
     act('녹음하기'); pg.wait_for_timeout(1600); shot('record'); mark('녹음')
     readAll(until="wlGame.state.flags['mars:recA']&&!wlZone.cur.state().scene"); readAll()
     R['녹음'] = pg.evaluate("!!wlGame.state.flags['mars:recA']")
