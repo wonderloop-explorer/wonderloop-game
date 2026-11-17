@@ -11,8 +11,8 @@
      이야기 소개 → 시작 자리 바로 앞 숨방울 목걸이를 바로 줍고 참(세계 설정 firstMission quick)
      → 보름 할아버지가 둥실둥실 다가와 한 번에 이어지는 대화(intro: S1-005 → 009 → 033 → 010 → 할아버지 제자리 둥실 → 034
        → '점프 버튼을 눌러요'를 띄우고 원더룹이 뛸 때까지 기다림 → 007 → 친구 카드 → 할아버지는 제자리로)
-     → 떡방아(달떡) → 망원경(목성·발견) → 높은 바위(둘을 끝내야 지도 첫 빈칸) → 얼음 동굴(안내만 — 숨겨진 비밀) → 출구 빛기둥 한가운데(반지름 1.1m) → 'STAGE 1 완료' → 별똥별.
-     길 안내(빛기둥·발밑 동그라미 길·반짝이)는 다음 목표 하나에만(nextStep), 왼쪽 위 작은 할 일 표시(떡방아·망원경·높은 바위 — ui.todo).
+     → 떡방아(달떡) → 망원경(목성·발견) → 높은 바위(둘을 끝내야 지도 첫 빈칸) → 얼음 동굴(꼭 지나감 — 카드를 본 뒤에만 출구 안내·완료) → 출구 빛기둥 한가운데(반지름 1.1m) → 'STAGE 1 완료' → 별똥별.
+     길 안내(빛기둥·발밑 동그라미 길·반짝이)는 다음 목표 하나에만(nextStep), 왼쪽 위 작은 할 일 표시(떡방아·망원경·높은 바위·얼음 동굴 — ui.todo).
      아기 토끼는 말 걸 상대가 아니라 3m 안에서 글자 말풍선 하나씩(tickBunTalk).
      (예전 흐름: 목걸이는 그늘 분화구 → 할아버지에게 돌아가 둥실 뛰기 시범 → 높은 바위 → 출구, 떡방아·망원경은 지나가다 해 보는 체험이었다)
    채우기(2026-11-07, 개미굴처럼 어디를 봐도 볼거리 — docs/series-rules.md '화면 밀도'):
@@ -619,11 +619,12 @@ function placeBobo(at,ry){bobo.root.position.set(at[0],groundY(...at),at[1]);if(
 function quest(q,goal){if(q!==st.lastQ){st.lastQ=q;G.ui.setQuest(q);}G.goal.set(goal||null);}
 const say=(who,text,sec,o)=>G.dialog.say(who,text,sec,undefined,o);
 /* 순서(2026-11-17 — 한 바퀴): 떡방아 → 망원경 → 높은 바위(지도) → 얼음 동굴 → 출구. 길 안내(빛기둥·발밑 동그라미 길·반짝이)는 다음 목표 하나에만.
-   떡방아·망원경은 어느 쪽을 먼저 해도 되지만 둘 다 끝내야 높은 바위에서 지도가 채워진다. 얼음 동굴은 안내만 하고 지나쳐도 출구에서 끝남 */
-const nextStep=()=>!F[K.demo]?'intro':!F[CAKE_KEY]?'mortar':!F[DISC.scope]?'scope':!F[K.rock]?'rock':(!F[K.cave]&&!st.caveSkip)?'cave':!F[K.clear]?'exit':'done';
+   떡방아·망원경은 어느 쪽을 먼저 해도 되지만 둘 다 끝내야 높은 바위에서 지도가 채워진다.
+   얼음 동굴도 꼭 지나감(2026-11-17 — 동굴 카드를 본 뒤에만 출구 길 안내·완료 판정. 동굴은 높은 바위 → 출구 곧은 길에서 1.8m 옆이라 돌아가는 길이 거의 없다) */
+const nextStep=()=>!F[K.demo]?'intro':!F[CAKE_KEY]?'mortar':!F[DISC.scope]?'scope':!F[K.rock]?'rock':!F[K.cave]?'cave':!F[K.clear]?'exit':'done';
 const leftList=()=>[!F[CAKE_KEY]&&'떡방아',!F[DISC.scope]&&'망원경'].filter(Boolean);
-function showTodo(){const on=!!F[K.demo]&&!F[K.clear]&&!ride;const sig=on?[F[CAKE_KEY],F[DISC.scope],F[K.rock]].map(v=>v?1:0).join(''):'';if(sig===st.todoSig)return;st.todoSig=sig;
-  G.ui.todo(on?[{t:'떡방아',done:!!F[CAKE_KEY]},{t:'망원경',done:!!F[DISC.scope]},{t:'높은 바위',done:!!F[K.rock]}]:null);}
+function showTodo(){const on=!!F[K.demo]&&!F[K.clear]&&!ride;const sig=on?[F[CAKE_KEY],F[DISC.scope],F[K.rock],F[K.cave]].map(v=>v?1:0).join(''):'';if(sig===st.todoSig)return;st.todoSig=sig;
+  G.ui.todo(on?[{t:'떡방아',done:!!F[CAKE_KEY]},{t:'망원경',done:!!F[DISC.scope]},{t:'높은 바위',done:!!F[K.rock]},{t:'얼음 동굴',done:!!F[K.cave]}]:null);}
 /* 둥실 뛰기(할아버지): 제자리에서 한 번 높이 둥실(높이 2.6m, 1.9초) — 카메라는 원더룹 등 뒤 위에서 둘을 함께(view.hold, 그려지는 자리 bentPos) */
 function hopDemo(){const W=U0();return new Promise(res=>{const b=bobo.root.position;st.hop={t:0,from:[b.x,b.z],y0:b.y,to:[b.x,b.z],T:1.9,H:2.6,res};
   const P=W.position,dx=wd(b.x-P.x),dz=wd(b.z-P.z),dl=Math.hypot(dx,dz)||1,ux=dx/dl,uz=dz/dl;
@@ -666,7 +667,7 @@ const W0=P=>P; // 손 흔들기: 원더룹 자리(할아버지·토끼가 바라
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
   if(st.cntOn&&dist(P.x,P.z,MORTAR)>4.5){st.cntOn=false;cntShow(null);}
-  if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
+  if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 얼음 동굴(2026-11-17부터 꼭 지나가는 단계 — 출구는 이 카드를 본 뒤에)
   bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);tickTry(dt,t,P);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
@@ -699,13 +700,13 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   if(step==='mortar')quest('떡방아를 찧어 봐요',{at:MORTAR,label:'떡방아',style:'ant',h:3});
   else if(step==='scope')quest('망원경으로 목성을 봐요',{at:SCOPE,label:'망원경',style:'ant',h:3.4});
   else if(step==='rock')quest('높은 바위에 올라요',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
-  else if(step==='cave'){quest('얼음 동굴에 들어가 봐요',{at:CAVE,label:'얼음 동굴',style:'ant',h:3.4});if(dist(P.x,P.z,EXIT)<8)st.caveSkip=true;} /* 동굴을 지나쳐 출구 가까이 오면 출구 안내로 */
+  else if(step==='cave'){quest('얼음 동굴에 들어가 봐요',{at:CAVE,label:'얼음 동굴',style:'ant',h:3.4});}
   else if(step==='exit')quest('빛기둥 한가운데로 가요',{at:EXIT,label:'출구',style:'ant',h:4});
   else quest('',null);
   /* 출구: 빛기둥 한가운데(반지름 EXIT_R 안)에 들어서야 끝남(2026-11-17 — 예전 1.7m는 받침돌 가장자리에서 끝났다) */
   const de=dist(P.x,P.z,EXIT);
-  if(!F[K.clear]){if(de<EXIT_R&&!G.ui.cardShown()){if(F[K.rock]){G.state.setFlag(K.clear,true);quest('',null);showTodo();startRide(true);}
-      else if(!st.exitWarn){st.exitWarn=true;G.ui.toast('아직 해 볼 게 남았어요: '+[...leftList(),'높은 바위'].join(', '),4);}}
+  if(!F[K.clear]){if(de<EXIT_R&&!G.ui.cardShown()){if(F[K.rock]&&F[K.cave]){G.state.setFlag(K.clear,true);quest('',null);showTodo();startRide(true);}
+      else if(!st.exitWarn){st.exitWarn=true;G.ui.toast('아직 해 볼 게 남았어요: '+[...leftList(),!F[K.rock]&&'높은 바위',!F[K.cave]&&'얼음 동굴'].filter(Boolean).join(', '),4);}}
     else if(de>4)st.exitWarn=false;}
   else{if(de>3)st.exitOut=true;else if(st.exitOut&&de<EXIT_R&&!G.ui.cardShown())startRide(false);}} // 다시 들어서면 또 타고 감(화성으로)
 const EXIT_R=1.1;
@@ -731,7 +732,7 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
   if(first){G.react.react('hop');Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]).then(()=>setTimeout(go,250));}
   else go();}
 const ICON_MAP=()=>SPACE.icons.map();
-// 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
+// 얼음 동굴 카드(꼭 지나가는 단계 — 카드 모양은 그대로 '숨겨진 비밀')
 function caveSecret(){G.state.setFlag(K.cave,true);G.react.react('awe',{sound:'card-secret'});
   G.ui.secret({kicker:'숨겨진 비밀',title:'그늘 분화구의 얼음 동굴',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 아주 오래오래 그대로 남은 곳이에요. 차갑게 반짝이는 얼음 결이 천장까지 자랐어요.',vo:'햇빛이 한 번도 들지 않은 얼음 동굴이에요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}
 function tickWeather(dt,t,w){const M=meteors,cam=G.view.camera;

@@ -331,12 +331,12 @@ async function recordA(W,U){faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi
 /* ⑤ 둥둥에게 다가가면 끊김 없이 이어지는 대화(2026-11-17): S2-015 → 카세트로 삐삐의 말(S2-010) → S2-016 → S2-040 → S2-041 → 친구 카드
    → ⑥ 원더룹과 둥둥이 함께 회오리에 실려 삐삐 언덕으로(조작 없이) → S2-039 → S2-022 → ⑦ 노을. 둥둥은 쉼표 없이 또박또박 말함(대사에서 '…'를 뺌) */
 async function deliverA(W,U){faceTo(dung,W.position.x,W.position.z);faceWL(W,dung);
-  dung.mode='talk';mumble(true,2.2);await say('둥둥','응? 작은 친구네! 너도 우리랑 닮았구나.',3);dung.mode='idle';
+  dung.mode='talk';mumble(true,2.2);await say('둥둥','작은 친구네? 너도 우리랑 닮았구나!',3);dung.mode='idle';
   holdCas(W,true);await wait(.4);G.sound.sfx('cassette-rewind');cas.run(true);await wait(.95);cas.run(false);G.sound.sfx('cassette-click');tapeRun(true);
   mumble(false,3.4,{tape:true});await say('삐삐 (카세트)',LINE_A,4.6,{to:dung.root}); /* 카세트 소리를 둥둥에게 들려줌 — 마주 보는 상대는 둥둥 */tapeRun(false);G.sound.sfx('cassette-click');await wait(.3);holdCas(W,false);
-  dung.mode='talk';mumble(true,2.6);await say('둥둥','삐삐 목소리가 이렇게 또렷하게 들리는 건 처음이야!',3.6);
+  dung.mode='talk';mumble(true,2.6);await say('둥둥','삐삐 목소리가 이렇게 또렷하게 들리는 건 처음이야!',3.2);
   mumble(true,3.6);await say('둥둥','근데 나는 내 바위에서 계속 기다렸는데! 우리, 서로 다른 언덕에서 기다린 거였어?',5);
-  mumble(true,2.2);await say('둥둥','오늘은 같이 보자! 삐삐 언덕으로 가자!',3);dung.mode='idle';
+  mumble(true,2.2);await say('둥둥','오늘은 같이 보자! 삐삐 언덕으로 가자!',2.7);dung.mode='idle';
   G.state.setFlag(K.recB,true);await G.profile.meet('dungdung',dung.root);
   await crossTogether(W,U);
   await hillMeet(W,U);G.state.setFlag(K.told,true);await finale(W,U);}
@@ -379,7 +379,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   /* 카메라: 셋 뒤 비스듬히 위에서 서쪽(해 쪽)을 — 셋과 낮게 걸린 파란 해가 한 화면에. 노을을 보는 동안 완전히 고정(2026-11-17 — 예전엔 처음 각도만 잡아 주고 따라가기 카메라로 넘어가 위아래로 흔들렸다). 만지면 플레이어 것 */
   const c=[SUNSET.wl[0],groundY(...SUNSET.wl),SUNSET.wl[1]],fix=()=>{const k=pk(),pt=k>1.3;return {at:[c[0]-3,c[1]+2.4,c[2]],from:[c[0]+7.4*k*(pt?1.12:1),c[1]+1.7+.9*(k-1),c[2]-(pt?0:.6)]};};G.view.hold(fix); /* 세로 화면은 셋이 다 들어오게 정면 뒤에서 조금 더 멀리 */ /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
   await wait(1.6);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
-  await wait(.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','같이 보니까 더 파랗다!',3,{look:'노을'});dung.mode='idle';
+  await wait(.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','같이 보니까 더 파랗다!',2.4,{look:'노을'});dung.mode='idle';
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
     await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',vo:'화성의 노을은 파랗게 물들어요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}
   if(G.view.req&&G.view.req.fn===fix)G.view.hold(null);st.sunFace=false;
@@ -398,9 +398,9 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
     G.state.setFlag(K.glass,true);gl.removeFromParent();}
   pipi.mode='idle';
   {const pc=G.view.pairCam(dung.root,2.02);if(pc)G.view.hold(pc);st.pc=pc;}
-  dung.mode='talk';mumble(true,3);await say('둥둥','언젠가 그 유리에 좋은 빛을 담아 보렴.',3.6);dung.mode='idle';
+  dung.mode='talk';mumble(true,3);await say('둥둥','언젠가 그 유리에 좋은 빛을 담아 보렴!',2.9);dung.mode='idle';
   {const pc=G.view.pairCam(pipi.root,1.12);if(pc)G.view.hold(pc);st.pc=pc;}
-  pipi.mode='talk';mumble(false,2.6);await say('삐삐',F[K.flag]?'꼭대기에 네 깃발이 보여! 거기 가면 큰 회오리가 하늘까지 데려다줄 거야.':'거기 깃발 하나 꽂고 와! 그럼 큰 회오리가 하늘까지 데려다줄 거야.',4.2);pipi.mode='idle';
+  pipi.mode='talk';mumble(false,2.6);await say('삐삐',F[K.flag]?'꼭대기에 네 깃발이 보여! 거기 가면 큰 회오리가 하늘까지 데려다줄 거야.':'화산 꼭대기에 깃발 하나 꽂고 와! 그럼 큰 회오리가 하늘까지 데려다줄 거야.',4.2);pipi.mode='idle';
   if(st.pc&&G.view.req&&G.view.req.fn===st.pc)G.view.hold(null);st.pc=null;
   /* 삐삐를 한 걸음 다가오기 전 자리로 돌려보내고, 셋 다 다시 노을 쪽으로(부드럽게) — 완료 뒤 둘은 이 자리에 그대로 서 있음(2026-11-17: 옮겨 서지 않음) */
   st.sunFace=true;{const a=[pipi.root.position.x,pipi.root.position.z],t0=G.clock.t;await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/.9),e=u*u*(3-2*u);place(pipi,pipiOb,lerp(a[0],SUNSET.pipi[0],e),lerp(a[1],SUNSET.pipi[1],e));

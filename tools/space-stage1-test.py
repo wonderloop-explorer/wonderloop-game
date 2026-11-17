@@ -143,6 +143,12 @@ with sync_playwright() as p:
     R['바위 뒤 안내'] = pg.evaluate("document.getElementById('wlToast').textContent"); pg.wait_for_timeout(int((3 if REAL else .3) * 1000))
     # 얼음 동굴(입구는 분화구 가운데 쪽) → 출구 한가운데
     mark('얼음 동굴로'); R['할 일(바위 뒤)'] = pg.evaluate("document.getElementById('wlQuest').textContent")
+    R['할 일 표시(바위 뒤)'] = pg.evaluate("(document.getElementById('wlTodo')||{}).textContent||''")
+    if not REAL:  # 2026-11-17: 얼음 동굴을 안 지나고 출구에 서면 끝나지 않고 안내만(자리만 잠깐 옮겨 봄 — 걸린 시간을 잴 때는 건너뜀)
+        P0 = hero('[P.x,P.y,P.z]'); ex0 = S['exit']
+        pg.evaluate("(e)=>{const W=wlGame.mission.hero();if(W.userData.stopWalk)W.userData.stopWalk();W.position.x=e[0];W.position.z=e[1];}", ex0); pg.wait_for_timeout(900)
+        R['동굴 전 출구에서 완료'] = pg.evaluate("!!wlGame.state.flags['clear:space-garden']"); R['동굴 전 출구 안내'] = pg.evaluate("document.getElementById('wlToast').textContent"); shot('exit-before-cave')
+        pg.evaluate("(p)=>{const W=wlGame.mission.hero();W.position.x=p[0];W.position.z=p[2];}", P0); pg.wait_for_timeout(600)
     cv = S['cave']; walk(cv[0], cv[1] + 2.3); walk(cv[0], cv[1] + .2, 8); pg.wait_for_timeout(1500); shot('icecave'); R['비밀'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:icecave']"); pg.wait_for_timeout(int((3 if REAL else .3) * 1000))
     walk(cv[0], cv[1] + 3.5); R['할 일(동굴 뒤)'] = pg.evaluate("document.getElementById('wlQuest').textContent")
     ex = S['exit']; mark('출구로 출발')

@@ -44,7 +44,7 @@ with sync_playwright() as p:
     W0 = CX
     pg.goto('http://localhost:' + PORT + '/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '') + os.environ.get('WL_Q', '')); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots', timeout=120000); pg.wait_for_timeout(2500)
-    pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock'].forEach(k=>wlGame.state.setFlag(k,true))")
+    pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock','secret:infinite-space:icecave'].forEach(k=>wlGame.state.setFlag(k,true))")
     ex = pg.evaluate('wlZone.cur.spots.exit')
     pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.x=x-3.2;W.position.z=z+.4;}", ex); pg.wait_for_timeout(800)
     pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", ex)

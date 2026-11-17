@@ -18,7 +18,7 @@ SIZE = """(()=>{window.__sz=[];const t0=performance.now();const L=()=>{try{const
     ix=Math.max(0,Math.min(1,r[2])-Math.max(0,r[0])),iy=Math.max(0,Math.min(1,r[3])-Math.max(0,r[1])),out=w>0&&h>0?1-ix*iy/(w*h):0;const hd=W.getObjectByName('head')||W,hp=new W.position.constructor(),fw=new W.position.constructor();hd.getWorldPosition(hp);hd.getWorldDirection(fw);fw.y=0;fw.normalize();const cv=G.view.camera.position.clone().sub(hp).normalize();
     __sz.push([+((performance.now()-t0)/1000).toFixed(2),+h.toFixed(4),+out.toFixed(3),+(fw.x*cv.x+fw.z*cv.z).toFixed(3)]);}}}catch(e){}requestAnimationFrame(L);};L();})()"""
 NOWH = "()=>{const s=window.__sz||[];return s.length?s[s.length-1][1]:null}"
-FL_M = ['have:infinite-space:necklace', 'space:demo', 'space:rock', 'moon:bgm-intro']
+FL_M = ['have:infinite-space:necklace', 'space:demo', 'space:rock', 'secret:infinite-space:icecave', 'moon:bgm-intro']
 FL_W = ['have:infinite-space:necklace', 'mars:met', 'mars:call', 'mars:recA', 'mars:recB', 'mars:told', 'clear:space-mars', 'item:infinite-space:bluesunset-glass', 'meet:infinite-space:pipi', 'meet:infinite-space:dungdung',
         'secret:infinite-space:marssound', 'secret:infinite-space:bluesunset', 'secret:infinite-space:volcano', 'mars:flag', 'mars:bgm-intro']
 R = {}; SHOTS = {}

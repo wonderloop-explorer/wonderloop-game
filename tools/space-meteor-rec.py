@@ -33,7 +33,7 @@ with sync_playwright() as p:
     pg.on('console', lambda m: m.type in ('error', 'warning') and '404' not in m.text and 'AudioContext' not in m.text and errs.append(m.text[:300]))
     pg.goto('http://localhost:8000/?world=infinite-space&zone=space-garden&notitle&time=0' + ('&quality=mobile' if PHONE else '') + (f'&travelTheme={THM}' if THM else '')); pg.evaluate('localStorage.clear()'); pg.reload()
     pg.wait_for_function('window.wlZone&&wlZone.cur&&wlZone.cur.spots', timeout=120000); pg.wait_for_timeout(2500)
-    pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock'].forEach(k=>wlGame.state.setFlag(k,true))")
+    pg.evaluate("['have:infinite-space:necklace','space:demo','space:rock','secret:infinite-space:icecave'].forEach(k=>wlGame.state.setFlag(k,true))")
     ex = pg.evaluate('wlZone.cur.spots.exit')
     pg.evaluate(CLIPLOG)
     if AUD:  # 소리 포함(--audio): 세계 배경음을 틀고(첫 화면을 건너뛰어 안 켜져 있음), 게임 소리 전체를 MediaRecorder로 받아 적음 — 영상과 합침

@@ -101,7 +101,7 @@ export default {
     /* 아기 토끼 셋은 카드 한 장(2026-11-10 — 가방 '만난 친구'에 기록되게): 셋 가운데 누구든 처음 이야기하면 */
     bunnies:{name:'아기 토끼들',where:'STAGE 1 회색 정원',intro:'보름 할아버지 마을에서 둥실둥실 뛰노는 콩콩·몽실·보슬',likes:'떡방아 구경',quote:'여기선 톡 뛰면 한참 동안 떠 있어!',bg:'#e6e4f0',portrait:{side:.45,lift:.1}},
     pipi:{name:'삐삐',where:'STAGE 2 붉은 모래 언덕',intro:'말이 먼저 도착하는 작은 화성 친구',likes:'파란 노을',quote:'둥둥아! …둥둥아? 내 말 들려?',bg:'#fbe3d2',portrait:{side:.45,lift:.08}},
-    dungdung:{name:'둥둥',where:'STAGE 2 붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은… 항상… 조금… 늦어.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
+    dungdung:{name:'둥둥',where:'STAGE 2 붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은 늘 조금 늦게 도착해.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
   /* 가방 '숨겨진 비밀·발견'(game/front — flag는 구역이 켜는 발견 깃발, note = 덧붙는 한 줄) */
   finds:[{flag:'secret:infinite-space:telescope',name:'망원경으로 본 목성',where:'STAGE 1 회색 정원',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.'},
     {flag:'secret:infinite-space:icecave',name:'그늘 분화구의 얼음 동굴',where:'STAGE 1 회색 정원',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 오래오래 남은 곳이에요.'},

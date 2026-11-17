@@ -32,7 +32,7 @@ PROBE = """(()=>{const S=window.__tp={rec:[],on:false,gl:null};const P=WebGL2Ren
      let fr=0;if(S.ride==='whirl'){try{const z=wlZone.cur.state?wlZone.cur.state():null;if(z&&z.pipi&&z.dung){const cam=G.view.camera,V=W.position.constructor;let n=0;for(const p of [z.pipi,z.dung]){const a=new V(p[0],p[1]+.6,p[2]).project(cam);if(a.z<1&&Math.abs(a.x)<.95&&Math.abs(a.y)<.95)n++;}fr=n;}}catch(e){}}
      S.rec.push([+((t0-t00)/1000).toFixed(3),ph,+h.toFixed(4),+cy.toFixed(4),+out.toFixed(3),+dot.toFixed(3),+(t1-t0).toFixed(2),calls-c0,last&&!S.skip&&!S.pause?+(t0-last).toFixed(1):0,veil?1:0,!!U.riding,fr]);}catch(e){S.err=String(e);}
    S.skip=0;last=t0;});})()"""
-FL_M = ['have:infinite-space:necklace', 'space:demo', 'space:rock', 'moon:bgm-intro']
+FL_M = ['have:infinite-space:necklace', 'space:demo', 'space:rock', 'secret:infinite-space:icecave', 'moon:bgm-intro']
 FL_W = ['have:infinite-space:necklace', 'mars:met', 'mars:call', 'mars:recA', 'mars:recB', 'mars:told', 'clear:space-mars', 'item:infinite-space:bluesunset-glass', 'meet:infinite-space:pipi', 'meet:infinite-space:dungdung',
         'secret:infinite-space:marssound', 'secret:infinite-space:bluesunset', 'secret:infinite-space:volcano', 'mars:flag', 'mars:bgm-intro']
 LBN = {'come': '감쌈', 'grab': '감쌈', 'pull': '감쌈', 'rise': '떠오름', 'space': '우주', 'dest': '목적지', 'map': '지도', 'veil': '전환', 'arrive': '도착', 'fall': '도착', 'hop': '도착', 'stand': '도착', 'cloud': '도착'}
