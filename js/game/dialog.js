@@ -43,10 +43,10 @@ function advance(){if(!talk)return false;talk.i++;show();return true;}
 /* 혼잣말: say(누가, 대사, 초) — 화면이 막혀 있으면(대화·카드·결과) 기다렸다가 나온다. 끝나면 true, 구역을 바꿔 지워지면 false */
 /* 옵션 o(2026-11-11 — 모든 대사 마주 보기): look '보는 곳' 표시 = 마주 보지 않는 예외 줄 — 이름만('노을')이면 지금 보는 곳 그대로, {at:[x,z]|물체, name}이면 말하는 주민과 원더룹이 그곳을 봄.
    to: 이 줄을 듣는(또는 원더룹이 말을 거는) 상대 물체 — 이름으로 못 찾는 줄(카세트 소리를 둥둥에게 들려줌)에. to:null이면 상대 없음(혼잣말). face:false는 look의 옛 이름 */
-function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined,hear:o?o.hear:undefined,hearName:o&&o.hearName,heroLook:o&&o.heroLook}));}
+function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id,r,face:o&&o.face,look:o&&o.look,to:o?o.to:undefined,hear:o?o.hear:undefined,hearName:o&&o.hearName,heroLook:o&&o.heroLook,until:o&&o.until,more:o&&o.more}));} /* until: 이 함수가 참이 될 때까지 대화창을 그대로 둠(점프 단추를 누를 때까지 기다리는 줄 — 2026-11-17), more: 대화창 아래 작은 안내 글 */
 function tickSay(){
-  if(saying&&clock.t>=saying.end&&!(saying.h&&saying.h.live())){hideDialog();const r=saying.r;saying=null;r(true);} /* 목소리가 아직 나오는 중이면 기다림(2026-11-15) */
-  if(!saying&&!talk&&sayQ.length&&!blocking()&&!voiceHold()){const s=sayQ.shift(); /* 카드 나레이션이 끝난 뒤(+0.35초)에 다음 장면 대사 — 2026-11-15 */showDialog(s.who,s.text,'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
+  if(saying&&clock.t>=saying.end&&!(saying.h&&saying.h.live())&&!(saying.until&&!saying.until())){hideDialog();const r=saying.r;saying=null;r(true);} /* 목소리가 아직 나오는 중이면 기다림(2026-11-15) */
+  if(!saying&&!talk&&sayQ.length&&!blocking()&&!voiceHold()){const s=sayQ.shift(); /* 카드 나레이션이 끝난 뒤(+0.35초)에 다음 장면 대사 — 2026-11-15 */showDialog(s.who,s.text,s.more||'');sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
     s.end=clock.t+Math.max(s.sec||0,h.dur+(h.id?MIX.voiceTail:0));s.h=h;s.t0=clock.t;saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
    아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).
@@ -129,7 +129,7 @@ function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
   placePrompt(talk?null:near);
   // 말풍선: 9m 안 가까운 주민들 위에 늘(대화 중인 상대는 빼고) — 아직 끝까지 이야기하지 않은 주민은 '…', 이야기한 주민은 작은 하트(조금 작게)
-  const L=[];if(hintsVisible()&&!(blocking()&&!talk)){for(const n of NPCS){if(!talkable(n)||(talk&&talk.n===n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<9)L.push([d,n]);}L.sort((a,b)=>a[0]-b[0]);}
+  const L=[];if(hintsVisible()&&!(blocking()&&!talk)){for(const n of NPCS){if(!talkable(n)||(talk&&talk.n===n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<(n.bubbleR||9))L.push([d,n]);} /* bubbleR: 이 주민의 '…' 말풍선이 보이는 거리(없으면 9m — 화성 삐삐·둥둥은 가까이 갔을 때만, 2026-11-17) */L.sort((a,b)=>a[0]-b[0]);}
   for(let i=0;i<BUBS.length;i++){const b=BUBS[i],e=L[i];if(!e){if(b.visible){b.visible=false;if(b.parent)b.parent.remove(b);}continue;}const [wd,who]=e,hm=met(who);
     if(b.material.map!==(hm?heartTex:bubTex)){b.material.map=hm?heartTex:bubTex;b.material.needsUpdate=true;}
     who.root.getWorldPosition(_q);const cam=ctx.camera,h=bubbleSize(cam,cam.position.distanceTo(_q))*(.72+.28*Math.min(1,Math.max(0,(wd-1.5)/2.5)))*(hm?.78:1);b.scale.set(h*1.1/.82,h,1); // 대화 거리 가까이는 72%까지 작게

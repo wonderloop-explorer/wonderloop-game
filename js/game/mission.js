@@ -30,7 +30,7 @@ function initMission(c){ctx=c;if(SHOT||!c.WL)return;
 function tickLamp(dt){if(!light)return;const want=lampOn&&!!(ctx.WL.userData.heldObj)?1:0;lampK+=(want-lampK)*Math.min(1,dt*6);
   light.intensity=1.3*Math.PI*lampK;pool.visible=lampK>.01;if(pool.visible){const P=ctx.WL.position,x=P.x-.25,z=P.z+.15;pool.position.set(x,(ctx.ground?ctx.ground(x,z):0)+.03,z);pool.material.opacity=lampK;}}
 /* 나레이션 한 줄: 세계 설정의 vo(파일 주소)를 등록해 읽은 뒤 튼다. 앞 줄은 멈춘다. 파일이 없으면 글자 수만큼(읽어 주기가 켜졌으면 읽어 줌) */
-function sayVO(id,src,text){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,kind:'narration'});return tok;}
+function sayVO(id,src,text,hold){stopVO();const tok=++voTok;if(src){register({[id]:src});preload([id]).then(()=>{if(tok===voTok)vo=voice({id,text,kind:'narration'});});}else vo=voice({text,who:'나레이터',kind:'narration',hold:!!hold});return tok;} /* hold: 이 나레이션이 끝난 뒤(+0.35초)에 다음 장면 대사(획득 나레이션 → 첫 만남 대화) */
 function stopVO(){voTok++;if(vo){vo.stop();vo=null;}}
 const textOf=v=>v&&typeof v==='object'?(coarse?v.touch:v.key):v;
 function giveHeld(W,it){const U=ctx.WL.userData;if(it.wear){it.wear(ctx.WL,THREE);return;} /* 몸에 다는 물건(무한 우주 숨방울 목걸이 — 세계 설정 item.wear(WL,THREE)): 손에 쥐지 않고 세계 쪽이 단다 */if(!it.model||!U.setHeld)return;const h=storybook(it.model(THREE,{held:true}));h.userData.missionItem=true;U.setHeld(h);lampOn=!!it.light;
@@ -39,6 +39,8 @@ function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;cons
   if(flags[haveKey(W,it)]){giveHeld(W,it);if(F.next)setQuest(F.next);return false;} // 이미 받았으면 쥔 채로
   M={W,F,it,got:false,at:F.goal&&F.goal.at||it.at};t=0;
   if(it.model){obj=storybook(it.model(THREE,{held:false}));obj.position.set(it.at[0],(ctx.ground?ctx.ground(it.at[0],it.at[1]):0)+(it.y??1.1),it.at[1]);obj.userData.y0=obj.position.y;ctx.scene.add(obj);}
+  /* quick(2026-11-17 — 무한 우주): 물건이 시작 자리 바로 옆에 있어 시작하자마자 줍는다 — 미션 카드·길 안내 없이 획득 연출부터(모험 시작 카메라가 내려온 뒤 0.9초) */
+  if(F.quick){setQuest('');return true;}
   setQuest(F.quest||'');
   setGoal({at:M.at,label:F.goal&&F.goal.label||it.name,style:'ant',h:3.4});
   const P=F.popup||{};
@@ -48,11 +50,11 @@ function startMission(W){const F=W&&W.firstMission;if(!F||!ctx)return false;cons
   return true;}
 function tickMission(dt){tickLamp(dt);if(!M||M.got||!ctx)return;t+=dt;const it=M.it;
   if(obj){obj.rotation.y+=dt*1.3;obj.position.y=obj.userData.y0+Math.sin(t*2)*.15;if(obj.userData.tick)obj.userData.tick(t);}
-  const P=ctx.WL.position,r=it.pickR||1.5;if(Math.hypot(P.x-it.at[0],P.z-it.at[1])<r)pick();}
+  if(M.F.quick&&t<.9)return;const P=ctx.WL.position,r=it.pickR||1.5;if(Math.hypot(P.x-it.at[0],P.z-it.at[1])<r)pick();}
 function pick(){const {W,F,it}=M;M.got=true;const o=obj;obj=null;
   setFlag(haveKey(W,it),true);setGoal(null);
   const G=F.got||{};if(cardShown()==='notice')stopVO();
-  if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title);
+  if(G.vo||G.narration)sayVO('got:'+W.id,G.vo,G.narration||G.title,true);
   setQuest(F.next||'');
   /* 아이템 획득 공통 연출(game/itemget — 개미굴 꿀방울 그대로): 떠 있던 물건이 머리 위로 날아와 잠시 떠 있고, 원더룹은 카메라를 보며 웃고, 아래 획득 카드 → 오른손에 쥠 */
   const card={title:G.title||(it.name+'을 얻었어요!'),text:textOf(G.text)||'',icon:it.icon?it.icon():null,sec:3.2};

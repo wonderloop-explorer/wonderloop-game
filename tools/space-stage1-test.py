@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """무한 우주 STAGE 1 회색 정원 처음부터 끝까지 (2026-11-07, 2026-11-08 망원경·떡방아·행성 24m) — 촬영 서버(8000)가 떠 있을 때 저장소 루트에서:
    python3 tools/space-stage1-test.py [--out docs/compare/space-stage1] [--phone] [--video] [--real]
+   2026-11-17 새 흐름: 타이틀 '새로 시작' → 탐험 준비 → 이야기 소개 → 바로 목걸이 → 할아버지가 다가와 이어지는 대화(점프 안내에서 Space)
+   → 떡방아 → 망원경 → 높은 바위 → 얼음 동굴 → 출구 한가운데 → 별똥별 → 화성(삐삐가 말을 검). 아래는 예전 설명.
    기록을 지운 첫 방문 ?world=infinite-space: 타이틀 '새로 시작' → 탐험 준비 '모험 떠나기' → 이야기 소개 세 단계 → 미션(숨방울 목걸이) →
    망원경 '살펴보기'(시야·발견) → 떡방아 '찧기' 세 번(달떡) → 목걸이까지 걸어감 → 얻음·목에 걺 → 얼음 동굴(비밀) → 할아버지에게 돌아감 → 둥실 뛰기 시범 →
    높은 바위로 둥실 뛰어 오름 → 첫 빈칸 → 출구 → STAGE 1 완료 → 별똥별 꼬리 타기 → 화성 착지(조작 풀림·화면 UI 돌아옴·걸음). 자리는 구역이 알려 줌(wlZone.cur.spots — 행성 크기가 바뀌어도 그대로).
@@ -49,12 +51,13 @@ with sync_playwright() as p:
     if pg.evaluate("!document.getElementById('wlHelp').hidden"): pg.wait_for_timeout(int(READ * 1000)); pg.click('#wlHelp .close'); pg.wait_for_timeout(400)
     pg.wait_for_timeout(1200); shot('mission-card'); mark('미션 시작')
     S = pg.evaluate('wlZone.cur.spots'); R['행성 반지름'] = S['R']
-    R['할 일'] = pg.evaluate("document.getElementById('wlQuest').textContent")
     def hero(js): return pg.evaluate("(()=>{const W=wlGame.mission.hero(),P=W.position,U=W.userData;return (" + js + ")})()")
     def readAll():
         for _ in range(30):
             if pg.evaluate('wlGame.ui.dialogShown()'):
                 pg.wait_for_timeout(int(READ * 1000)); pg.keyboard.press('e'); pg.wait_for_timeout(250); continue
+            if pg.evaluate("wlGame.ui.cardShown()==='profile'"):  # 친구 카드는 단추로 닫음
+                pg.wait_for_timeout(int(READ * 1000)); pg.evaluate("document.querySelector('#wlProf button').click()"); pg.wait_for_timeout(400); continue
             if pg.evaluate('wlGame.ui.cardShown()'):
                 pg.wait_for_timeout(int(READ * 1000)); pg.mouse.click(CX, 300); pg.wait_for_timeout(400); continue
             break
@@ -70,36 +73,51 @@ with sync_playwright() as p:
             pg.wait_for_timeout(200)
         pg.keyboard.press('e'); pg.wait_for_timeout(300)
         if not pg.evaluate('wlGame.interact.busy()') and word in pg.evaluate('wlGame.interact.prompt()'): pg.evaluate('wlGame.interact.act()')
-    readAll(); pg.wait_for_timeout(4000 if REAL else 1500); readAll()
-    # 망원경
-    walk(*S['scope']); act('살펴보기'); pg.wait_for_timeout(2600); mark('망원경 시야'); pg.wait_for_timeout(3000); shot('telescope')
-    R['망원경 시야'] = pg.evaluate("!!document.getElementById('wlScope')"); pg.wait_for_timeout(int((6 if REAL else 1) * 1000))
-    pg.mouse.click(CX, 300); pg.wait_for_timeout(800); readAll(); R['망원경 발견'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:telescope']")
+    def waitSay(sec=60):  # 장면 대사(누르지 않아도 넘어감)가 끝날 때까지
+        for _ in range(int(sec * 5)):
+            if not pg.evaluate('wlGame.ui.dialogShown()'): break
+            pg.wait_for_timeout(200)
+    # 2026-11-17 새 흐름: 시작하면 바로 목걸이 → 할아버지가 다가와 이어지는 대화 → 점프 → 떡방아 → 망원경 → 높은 바위 → 얼음 동굴 → 출구
+    for _ in range(60):
+        if pg.evaluate('wlGame.mission.missionState()?.got'): break
+        pg.wait_for_timeout(250)
+    mark('목걸이 얻음'); pg.wait_for_timeout(1200); shot('necklace-get')
+    for _ in range(40):
+        if not pg.evaluate("wlGame.itemget.itemGetting()"): break
+        pg.wait_for_timeout(200)
+    R['목걸이'] = hero('!!U.breathBubble')
+    said = []; tip = False
+    for _ in range(600):  # 이어지는 대화: 대사를 모으다가 '점프 버튼' 안내가 뜨면 뜀
+        tx = pg.evaluate("wlGame.ui.dialogShown()?document.querySelector('#wlDlg .line').textContent:''")
+        if tx and (not said or said[-1] != tx):
+            said.append(tx)
+            if len(said) == 1: mark('첫 만남 대화'); pg.wait_for_timeout(900); shot('intro-talk')
+        if '점프' in tx and '눌러' in tx:
+            tip = True; pg.wait_for_timeout(700); shot('jump-tip'); pg.wait_for_timeout(int((1.5 if REAL else .2) * 1000)); pg.keyboard.press('Space'); mark('점프'); break
+        pg.wait_for_timeout(100)
+    R['점프 안내'] = tip
+    for _ in range(200):
+        tx = pg.evaluate("wlGame.ui.dialogShown()?document.querySelector('#wlDlg .line').textContent:''")
+        if tx and said[-1] != tx: said.append(tx)
+        if pg.evaluate("!!wlGame.state.flags['space:demo']"): break
+        pg.wait_for_timeout(100)
+    R['첫 만남 대사'] = said; R['시범'] = pg.evaluate("!!wlGame.state.flags['space:demo']"); pg.wait_for_timeout(900); shot('friend-card'); readAll(); mark('첫 만남 끝')
+    pg.wait_for_timeout(600); shot('todo'); R['할 일'] = pg.evaluate("document.getElementById('wlQuest').textContent"); R['할 일 표시'] = pg.evaluate("(document.getElementById('wlTodo')||{}).textContent||''")
     # 떡방아
     walk(*S['mortar'])
     pg.evaluate("()=>{const C=wlGame.controls.input.cam;C.user=(C.user||0)+1;C.yaw=-.5;C.pitch=.32;}")
     for k in range(3):
         act('찧기'); pg.wait_for_timeout(1250)
         if k == 0: mark('떡방아 첫 찧기'); pg.wait_for_timeout(700); shot('ricecake')
-        pg.wait_for_timeout(1200); readAll()
-    pg.wait_for_timeout(3000); readAll(); pg.wait_for_timeout(4500); readAll()
-    R['달떡'] = pg.evaluate("!!wlGame.state.flags['item:infinite-space:dalddeok']")
-    # 목걸이
-    mark('목걸이로 출발'); walk(*S['neck'], 60)
-    for _ in range(40):
-        if pg.evaluate('wlGame.mission.missionState()?.got'): break
-        pg.wait_for_timeout(250)
-    pg.wait_for_timeout(1200); shot('necklace-get')
-    for _ in range(30):
-        if not pg.evaluate("wlGame.itemget.itemGetting()"): break
-        pg.wait_for_timeout(200)
-    pg.wait_for_timeout(600); readAll(); R['목걸이'] = hero('!!U.breathBubble')
-    # 비밀: 얼음 동굴(입구는 분화구 가운데 쪽)
-    cv = S['cave']; walk(cv[0], cv[1] + 2.3); walk(cv[0], cv[1] + .2, 8); pg.wait_for_timeout(1500); shot('icecave'); R['비밀'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:icecave']"); readAll()
-    walk(cv[0], cv[1] + 3.5)
-    # 할아버지에게 돌아감 → 시범
-    bo = S['bobo']; walk(bo[0] - .8, bo[1] - 2.6, 60); pg.wait_for_timeout(1400); shot('demo-say'); pg.wait_for_timeout(2400); shot('demo-hop'); pg.wait_for_timeout(2600)
-    R['시범'] = pg.evaluate("!!wlGame.state.flags['space:demo']"); readAll()
+        pg.wait_for_timeout(int((1.2 if REAL else .5) * 1000))
+    pg.wait_for_timeout(3200); shot('ricecake-card'); pg.wait_for_timeout(2600); shot('ricecake-nar'); pg.wait_for_timeout(int((2.5 if REAL else 1.2) * 1000))
+    R['달떡'] = pg.evaluate("!!wlGame.state.flags['item:infinite-space:dalddeok']"); R['할 일(떡방아 뒤)'] = pg.evaluate("document.getElementById('wlQuest').textContent")
+    # 망원경
+    walk(*S['scope']); act('살펴보기'); pg.wait_for_timeout(2600); mark('망원경 시야'); pg.wait_for_timeout(2000); shot('telescope')
+    R['망원경 시야'] = pg.evaluate("!!document.getElementById('wlScope')"); R['망원경 자막'] = pg.evaluate("(document.querySelector('#wlScope .say')||{}).textContent||''"); pg.wait_for_timeout(int((4 if REAL else .6) * 1000))
+    pg.mouse.click(CX, 300); pg.wait_for_timeout(1200); shot('telescope-card'); pg.wait_for_timeout(int((3 if REAL else .4) * 1000)); R['망원경 발견'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:telescope']")
+    R['할 일(망원경 뒤)'] = pg.evaluate("document.getElementById('wlQuest').textContent"); R['할 일 표시(망원경 뒤)'] = pg.evaluate("(document.getElementById('wlTodo')||{}).innerHTML||''").count('class="d"')
+    bo = S['bobo']
     # 높은 바위: 할아버지 쪽 가장자리 → 바위 쪽으로 W를 누른 채 Space, 가운데 위에 오면 W를 뗌
     rc, rr = S['rock'], S['rockR']; dx, dz = bo[0] - rc[0], bo[1] - rc[1]; dl = (dx * dx + dz * dz) ** .5; edge = [rc[0] + dx / dl * (rr + 1.3), rc[1] + dz / dl * (rr + 1.3)]
     walk(*edge, 60); mark('바위 앞')
@@ -117,17 +135,22 @@ with sync_playwright() as p:
         pg.keyboard.up('w'); pg.wait_for_timeout(2200)
         if hero('U.vert.y') > S['rockTop'] - .3: break
     R['바위 위 높이'] = hero('U.vert.y'); pg.wait_for_timeout(800); shot('rock-top')
-    pg.wait_for_timeout(700); shot('first-blank'); R['첫 빈칸'] = pg.evaluate("!!wlGame.state.flags['space:rock']"); readAll()
+    pg.wait_for_timeout(700); shot('first-blank'); R['첫 빈칸'] = pg.evaluate("!!wlGame.state.flags['space:rock']"); readAll(); pg.wait_for_timeout(900); shot('after-map')
     # 바위에서 내려와 바위 뒤쪽(원더룹 앞에 바위가 보이게)에서 한 장 — PC에서 바위가 또렷한지
     walk(edge[0] + (edge[0] - rc[0]) * .3, edge[1] + (edge[1] - rc[1]) * .3, 10)
     pg.evaluate("(c)=>{const P=wlGame.mission.hero().position,C=wlGame.controls.input.cam,dx=c[0]-P.x,dz=c[1]-P.z;C.yaw=Math.atan2(-dx,-dz);C.pitch=.3;C.user=(C.user||0)+1;}", rc); pg.wait_for_timeout(1500); shot('rock-clear')
     R['바위 흐림(0이면 또렷)'] = pg.evaluate("(()=>{let k=null;const sc=wlGame.mission.hero().parent;sc.traverse(o=>{if(o.name==='highrock')k=o.material.opacity;});return k==null?null:+(1-k).toFixed(2)})()")
-    # 출구: 곧게 가 보고, 막히면 옆으로 돌아서
+    R['바위 뒤 안내'] = pg.evaluate("document.getElementById('wlToast').textContent"); pg.wait_for_timeout(int((3 if REAL else .3) * 1000))
+    # 얼음 동굴(입구는 분화구 가운데 쪽) → 출구 한가운데
+    mark('얼음 동굴로'); R['할 일(바위 뒤)'] = pg.evaluate("document.getElementById('wlQuest').textContent")
+    cv = S['cave']; walk(cv[0], cv[1] + 2.3); walk(cv[0], cv[1] + .2, 8); pg.wait_for_timeout(1500); shot('icecave'); R['비밀'] = pg.evaluate("!!wlGame.state.flags['secret:infinite-space:icecave']"); pg.wait_for_timeout(int((3 if REAL else .3) * 1000))
+    walk(cv[0], cv[1] + 3.5); R['할 일(동굴 뒤)'] = pg.evaluate("document.getElementById('wlQuest').textContent")
     ex = S['exit']; mark('출구로 출발')
     sh = S['shade']; walk(rc[0] - .5, sh[1] - 9.5, 40) # 그늘 분화구·얼음 동굴 서쪽으로 돌아서
+    walk(ex[0] - 1.45, ex[1], 60); pg.wait_for_timeout(700); R['출구 가장자리(1.45m)에서 완료'] = pg.evaluate("!!wlGame.state.flags['clear:space-garden']"); shot('exit-edge')
     for k in range(6):
-        d = walk(*ex, 60)
-        if d < 1.7 or pg.evaluate("!!wlGame.state.flags['clear:space-garden']"): break
+        d = walk(*ex, 20)
+        if pg.evaluate("!!wlGame.state.flags['clear:space-garden']"): break
         P = hero('[P.x,P.z]'); walk(P[0] + (3 if k % 2 else -3), P[1] + 2, 6)
     pg.wait_for_timeout(1500); shot('stage-clear'); R['완료'] = pg.evaluate("!!wlGame.state.flags['clear:space-garden']"); mark('STAGE 1 완료')
     R['처음부터 끝까지(초)'] = round(time.time() - t_start, 1); R['읽는 시간 넣음'] = REAL
@@ -143,8 +166,10 @@ with sync_playwright() as p:
     R['화성 착지'] = pg.evaluate("!!(wlZone.cur.arrival&&wlZone.cur.arrival()&&wlZone.cur.arrival().state.done)")
     R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.core.blocking('meteor')")
     R['화면 UI 돌아옴'] = pg.evaluate("wlGame.ui.hintsVisible()&&!document.getElementById('wlRideCam')&&getComputedStyle(document.getElementById('wlHud')).visibility!=='hidden'")
-    P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
-    R['화성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
+    for _ in range(60):  # 2026-11-17: 착지하면 곧 삐삐가 달려와 말을 검(조작은 그 장면이 끝난 뒤)
+        if pg.evaluate('wlGame.ui.dialogShown()'): break
+        pg.wait_for_timeout(100)
+    R['화성: 삐삐가 말을 검'] = pg.evaluate('wlGame.ui.dialogShown()'); shot('mars-pipi')
     R['오류'] = errs; R['영상 시각(초)'] = T
     vid = pg.video.path() if VIDEO else None
     if COVER:

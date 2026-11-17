@@ -224,12 +224,14 @@ export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mo
       if(T>=1.9){st.phase='fall';G.travel.note('phase','fall');st.vy=0;U.action='서기';U.at=0;G.sound.sfx('event-whoosh',{gain:.8});st.rel=head.clone();G.react.react('startle',{sound:null});G.travel.landIn(Math.sqrt(2*Math.max(0,st.y-gy)/G2));} /* 놓아준 순간 착지 시각을 알림 → 이동 테마 해결 화음이 착지에 */}
     else{if(st.rel){const k=T-1.9;head.copy(st.rel).addScaledVector(away,k*(.5+k*.6));if(k>3){M.show(false);}}
       if(st.phase==='fall'||st.phase==='hop'){st.vy-=G2*dt;st.y+=st.vy*dt;if(st.y<=gy){st.y=gy;const v=-st.vy;
-          if(st.bounce===0){st.bounce=1;st.phase='hop';G.travel.note('phase','hop');st.vy=2.5;land(v*1.6,true);st.landT=T;G.travel.mark('land');}else if(st.bounce===1){st.bounce=2;st.vy=1.05;land(v*1.3);}else{st.phase='stand';G.travel.note('phase','stand');st.standT=T;land(v);}}}
+          if(st.bounce===0){st.bounce=1;st.phase='hop';G.travel.note('phase','hop');st.vy=2.5;land(v*1.6,true);st.landT=T;G.travel.mark('land');if(o.onLand)o.onLand();}else if(st.bounce===1){st.bounce=2;st.vy=1.05;land(v*1.3);}else{st.phase='stand';G.travel.note('phase','stand');st.standT=T;land(v);}}}
       if(st.phase==='stand'){const k=T-st.standT;
-        if(k>.9&&!st.r1){st.r1=1;G.react.react('startle');}
+        /* quick(2026-11-17 — 화성: 착지하고 2~3초 안에 삐삐가 달려와 말을 검): 서서 두리번거리는 리액션 없이 깜짝 한 번 → 1초 뒤 조작을 돌려줌(예전 5.6초) */
+        if(o.quick){if(k>.2&&!st.r1){st.r1=1;G.react.react('startle');}if(k>1){st.done=true;U.action='서기';U.at=0;M.show(false);SC.tick(0,false);lockOff(G,WL);G.travel.end();if(o.onDone)o.onDone();}}
+        else{if(k>.9&&!st.r1){st.r1=1;G.react.react('startle');}
         if(k>2.1&&!st.r2){st.r2=1;G.react.react('tilt');}
         if(k>3.5&&!st.r3){st.r3=1;U.action='두리번';U.at=0;}
-        if(k>5.6){st.done=true;U.action='서기';U.at=0;M.show(false);SC.tick(0,false);lockOff(G,WL);G.travel.end();if(o.onDone)o.onDone();}}}
+        if(k>5.6){st.done=true;U.action='서기';U.at=0;M.show(false);SC.tick(0,false);lockOff(G,WL);G.travel.end();if(o.onDone)o.onDone();}}}}
     WL.position.y=st.y;U.riding&&(U.riding.y=st.y);
     M.tick(dt,t,{emit:st.phase==='down'?(o.mob?20:36):(st.rel&&T-1.9<2.5?(o.mob?14:26):0)});}
   function late(dt,t){if(st.done)return;const T=st.t;applySquish(WL,S.step(dt,1,180,8));handsMid(WL,mid);

@@ -4,6 +4,7 @@
      python3 tools/voice-index.py --temp     # + 임시 목소리(맥 say)를 assets/voice-temp/<세계>/에 만들고 그쪽 색인도(.gitignore — 시험용, ?voiceTemp)
      python3 tools/voice-index.py --check    # 대본의 대사가 게임 코드에 그대로 있는지만 확인
    대본 목록이 기준이다: '파일 이름' 칸의 파일이 assets/voice/<세계>/에 있으면 색인에 has:1 → 게임이 그 줄에서 파일을 튼다. 없으면 자막만.
+   상태가 '다시 녹음 필요…'인 줄은 파일이 있어도 has:0(대사가 바뀌어 예전 녹음이 맞지 않음 — 새 파일을 넣은 뒤 상태를 '녹음 필요'로).
    tools/stamp.py가 커밋 때마다 이 도구를 불러, 파일만 넣고 커밋해도 색인이 맞는다.
    세계 폴더: 번호 앞머리로 정함(SPC → space). 새 세계는 WORLDS에 한 줄."""
 import csv, json, os, re, subprocess, sys, hashlib
@@ -23,7 +24,7 @@ def index(R, root='assets/voice'):
         d = os.path.join(root, w); os.makedirs(d, exist_ok=True)
         st = r['번호'].split('-')[1]
         out.setdefault(w, []).append({'id': r['번호'], 'st': st, 'who': r['말하는 사람'], 'text': r.get('나레이션 글') or r['대사'],  # 게임이 줄을 찾는 글 = 나레이션 글(있으면) 아니면 대사
-                                     'file': r['파일 이름'], 'has': 1 if has_file(d, r['파일 이름']) else 0,
+                                     'file': r['파일 이름'], 'has': 1 if has_file(d, r['파일 이름']) and not r['상태'].startswith('다시 녹음') else 0,  # '다시 녹음 필요' = 대사가 바뀌어 예전 파일이 맞지 않는 줄 — 새 파일을 넣고 상태를 '녹음 필요'로 되돌릴 때까지 글자만
                                      **({'fx': 1} if st == 'FX' else {}), **({'mute': 1} if r['상태'].startswith(('목소리 없음', '효과음')) else {})})
     for w, L in out.items():
         p = os.path.join(root, w, 'index.json'); s = json.dumps({'world': w, 'lines': L}, ensure_ascii=False, separators=(',', ':'))

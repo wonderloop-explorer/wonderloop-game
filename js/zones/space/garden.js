@@ -7,8 +7,14 @@
    이어 붙는 선(x·z = ±L/2) 가까이에는 장애물을 두지 않는다(충돌 판정은 이어 붙이지 않음). 높낮이·색 무늬는 L 주기(sin(2πk·x/L))로 이음매가 없게.
    이 행성의 진짜 사실: 공기가 거의 없어 낮에도 하늘이 까맣고 별이 보임 · 바람이 없어 발자국이 오래 남음(원더룹 발자국 + 보름 할아버지의 수십 년 된 발자국 길)
      · 햇빛 쪽은 따뜻하게 일렁임(수성 낮 430도) · 햇빛이 안 드는 그늘 분화구엔 서리·얼음 결(영하 160도) · 낮은 중력(둥실 뛰기 — gravity .38, jumpK 1.15: 높이 약 2.7m, 체공 약 2초).
-   흐름: 이야기 소개 → 첫 미션 숨방울 목걸이(세계 설정 firstMission — 그늘 분화구) → 할아버지에게 돌아가면 둥실 뛰기 시범(바위 쪽으로 한 번 크게 — 카메라가 원더룹 뒤에서 할아버지를 따라 봄)
-     → 원더룹이 높은 바위에 오르면 첫 빈칸(지도 조각) → 출구 빛기둥 → 'STAGE 1 완료'(별똥별 이동은 2차). 비밀: 그늘 분화구 깊은 곳 얼음 동굴(감탄 + 발견).
+   흐름(2026-11-17 다시 짬 — 처음 하는 사람 약 3분, docs/series-rules.md '스테이지 길이·한 번에 이어지는 대화·순서 안내'):
+     이야기 소개 → 시작 자리 바로 앞 숨방울 목걸이를 바로 줍고 참(세계 설정 firstMission quick)
+     → 보름 할아버지가 둥실둥실 다가와 한 번에 이어지는 대화(intro: S1-005 → 009 → 033 → 010 → 할아버지 제자리 둥실 → 034
+       → '점프 버튼을 눌러요'를 띄우고 원더룹이 뛸 때까지 기다림 → 007 → 친구 카드 → 할아버지는 제자리로)
+     → 떡방아(달떡) → 망원경(목성·발견) → 높은 바위(둘을 끝내야 지도 첫 빈칸) → 얼음 동굴(안내만 — 숨겨진 비밀) → 출구 빛기둥 한가운데(반지름 1.1m) → 'STAGE 1 완료' → 별똥별.
+     길 안내(빛기둥·발밑 동그라미 길·반짝이)는 다음 목표 하나에만(nextStep), 왼쪽 위 작은 할 일 표시(떡방아·망원경·높은 바위 — ui.todo).
+     아기 토끼는 말 걸 상대가 아니라 3m 안에서 글자 말풍선 하나씩(tickBunTalk).
+     (예전 흐름: 목걸이는 그늘 분화구 → 할아버지에게 돌아가 둥실 뛰기 시범 → 높은 바위 → 출구, 떡방아·망원경은 지나가다 해 보는 체험이었다)
    채우기(2026-11-07, 개미굴처럼 어디를 봐도 볼거리 — docs/series-rules.md '화면 밀도'):
      · 색: 회색 바닥에 색연필 얼룩 — 그늘·분화구 안은 연보라(#A884C9 계열), 햇빛 쪽(+x 비탈·따뜻한 땅)은 크림빛. 분화구 안쪽 가장자리에 작게 빛나는 파스텔 수정(분홍·하늘·노랑),
        그늘 분화구 얼음은 은은한 푸른 빛 + 바닥 빛 웅덩이. 조명: 따뜻한 햇빛 + 연보라 보조광(구역 빛) + 원더룹 둘레 빛 테두리(구역 정보 rim → 08).
@@ -47,7 +53,7 @@ const sc=p=>[p[0]*S,p[1]*S]; // 17m 때 자리 → 지금 크기
 /* 자리 */
 const SPAWN=[0,9.5],BOBO=[2.1,5.4],SHADE={c:sc([-5,-15]),r:6,d:1.3,rim:.5},EXIT=sc([6,-35]),WARM=sc([16,8]);
 const shd=(x,z)=>[x+5+SHADE.c[0],z+15+SHADE.c[1]]; // 그늘 분화구 둘레 자리(17m 때 좌표 → 분화구 가운데 기준으로 옮김)
-const ROCK={c:shd(-11.8,-13.5),r:1.65},CAVE=shd(-5,-19.7),NECK=shd(-3.2,-15.2);
+const ROCK={c:shd(-11.8,-13.5),r:1.65},CAVE=shd(-5,-19.7),NECK=[SPAWN[0]+.15,SPAWN[1]-1.25]; /* 2026-11-17: 숨방울 목걸이는 시작 자리 바로 앞(시작하면 바로 줍고 참 — 예전엔 그늘 분화구) */
 SPACE.firstMission.item.at=NECK; // 첫 미션 목걸이 자리(세계 설정)도 새 크기에 맞춤
 /* 둥실 뛰기 시범: 할아버지가 바위 쪽으로 한 번 크게 뛰어(약 9m) 내려앉는 곳(원더룹 뒤 카메라에 늘 들어오는 거리) */
 const DEMO_LAND=(()=>{const dx=ROCK.c[0]-BOBO[0],dz=ROCK.c[1]-BOBO[1],d=Math.hypot(dx,dz);return [BOBO[0]+dx/d*9,BOBO[1]+dz/d*9];})();
@@ -332,7 +338,11 @@ const BUN=[{id:'kongkong',name:'콩콩',fur:'#d8d8e0',scarf:'#ff9eb3',way:[[-.6,
 const bunBlob=blobMany(BUN.length+1);if(bunBlob){bunBlob.frustumCulled=false;root.add(bunBlob);keep.push(bunBlob);}
 const bunnies=BUN.map((b,i)=>{const m=makeBunny(b.fur,b.scarf);const [x,z]=b.way[0];m.root.position.set(x,groundY(x,z),z);root.add(m.root);keep.push(m.root);
   const st={i:0,t:0,wait:RR(.5,2.5),from:[x,z],to:null,ry:0};
-  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:1.4,onDone:()=>G.profile.meet('bunnies',m.root),variants:[{when:()=>!GATHER.on,lines:[b.line]}]}); /* 망원경·절구에서 조금 떨어져 뛰놀고(가까우면 E가 '말 걸기'로 먼저 가서 체험이 안 됐다), 떡방아 구경 중엔 말 걸 상대가 아님 */return {...b,m,st};});
+  /* 2026-11-17: 말 걸 상대가 아님 — 원더룹이 약 3m 안으로 오면 머리 위 글자 말풍선 한마디(목소리 없음, 한 번에 하나씩 · 같은 토끼는 12초 뒤에 다시), 처음 본 순간 친구 카드에 조용히 넣음(tickBunTalk) */return {...b,m,st,sayT:-99};});
+let bunSayT=-99;
+function tickBunTalk(t,P){if(GATHER.on||st.scene||ride||!F[K.demo]||G.core.blocking()||G.ui.cardShown()||t<bunSayT+4.2)return;
+  let best=null,bd=3;for(const b of bunnies){if(t<b.sayT+12)continue;const r=b.m.root.position,d=dist(P.x,P.z,[r.x,r.z]);if(d<bd){bd=d;best=b;}}
+  if(!best)return;best.sayT=t;bunSayT=t;G.float.bubble({root:best.m.root,y:1.02,text:best.line,sec:3.6});if(!G.profile.seen('bunnies'))G.profile.found('bunnies',best.m.root);}
 function tickBunnies(dt,t,P){
   if(WAVE.on&&P){bunnies.forEach((b,i)=>{const r=b.m.root,a=i*2.1+.6,x=BOBO[0]+Math.cos(a)*1.5,z=BOBO[1]+Math.sin(a)*1.5,hop=Math.abs(Math.sin(t*4.2+i*1.7)); // 별똥별 타고 가는 원더룹에게: 할아버지 둘레에서 통통 뛰며 몸을 좌우로 흔듦(손 흔들기 — 토끼는 팔이 따로 없다)
       r.position.set(x,groundY(x,z)+hop*.45,z);const ry=Math.atan2(wd(P.x-x),wd(P.z-z));b.st.ry+=Math.atan2(Math.sin(ry-b.st.ry),Math.cos(ry-b.st.ry))*Math.min(1,dt*4);r.rotation.y=b.st.ry;
@@ -340,7 +350,7 @@ function tickBunnies(dt,t,P){
   bunnies.forEach((b,i)=>{const s=b.st,r=b.m.root,gs=GATHER.on&&GATHER.spots[i],near=!gs&&P&&dist(P.x,P.z,[r.position.x,r.position.z])<2.4;
   if(!s.to&&gs){const dx=gs[0]-s.from[0],dz=gs[1]-s.from[1],d=Math.hypot(dx,dz); // 떡방아 구경: 절구 둘레 자리로 둥실둥실 모여 절구를 봄
     if(d>.3){const n=Math.max(1,Math.ceil(d/2.1));s.to=[s.from[0]+dx/n,s.from[1]+dz/n];s.goal=gs;s.t=0;s.ry=Math.atan2(dx,dz);}
-    else{const a=Math.atan2(MORTAR[0]-s.from[0],MORTAR[1]-s.from[1]);s.ry+=Math.atan2(Math.sin(a-s.ry),Math.cos(a-s.ry))*Math.min(1,dt*4);r.position.set(s.from[0],groundY(...s.from)+Math.abs(Math.sin(t*5+i))*.06,s.from[1]);b.m.squash(0,t);}}
+    else{const a=Math.atan2(MORTAR[0]-s.from[0],MORTAR[1]-s.from[1]);s.ry+=Math.atan2(Math.sin(a-s.ry),Math.cos(a-s.ry))*Math.min(1,dt*4);const hp=Math.abs(Math.sin(t*4.6+i*1.3));r.position.set(s.from[0],groundY(...s.from)+hp*.4,s.from[1]);b.m.squash(hp>.9?(hp-.9)/.1*.5:0,t);}} /* 2026-11-17: 말풍선 없이 제자리에서 깡충깡충(신이 남) */
   else if(!s.to){if(near){const a=Math.atan2(wd(P.x-r.position.x),wd(P.z-r.position.z));s.ry+=Math.atan2(Math.sin(a-s.ry),Math.cos(a-s.ry))*Math.min(1,dt*4);}
     else{s.wait-=dt;if(s.wait<0){s.i=(s.i+1)%b.way.length;const w=b.way[s.i],dx=w[0]-s.from[0],dz=w[1]-s.from[1],d=Math.hypot(dx,dz),n=Math.max(1,Math.ceil(d/2.1));
       s.to=[s.from[0]+dx/n,s.from[1]+dz/n];s.goal=w;s.t=0;s.ry=Math.atan2(dx,dz);}}
@@ -366,7 +376,7 @@ const DISC={cave:'secret:'+WID+':icecave',scope:'secret:'+WID+':telescope'},disc
 let scopeEl=null;
 function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope',true);popShown('scope',true);G.sound.sfx('ui-open');
   const el=document.createElement('div');el.id='wlScope';el.setAttribute('role','dialog');el.setAttribute('aria-label','망원경으로 본 목성');
-  el.innerHTML='<div class="lens"><canvas></canvas></div><div class="say"><b>보름 할아버지</b><p></p></div><p class="tip">화면을 누르면 망원경에서 나와요</p>';
+  el.innerHTML='<div class="lens"><canvas></canvas></div><div class="say"><p></p></div><p class="tip">화면을 누르면 망원경에서 나와요</p>';
   if(!document.querySelector('style[data-wl="scope"]')){const st=document.createElement('style');st.dataset.wl='scope';st.textContent=`
 #wlScope{position:fixed;inset:0;z-index:40;background:radial-gradient(circle at 50% 46%,#120c26 0,#07050f 70%);display:grid;place-items:center;animation:wlScIn .5s ease both;touch-action:none;cursor:pointer}
 #wlScope .lens{width:min(84vw,70vh);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 10px #b8893e,0 0 0 16px #6e4630,0 0 60px 10px rgba(150,120,255,.25),inset 0 0 40px 18px rgba(8,4,20,.85);animation:wlScLens .7s cubic-bezier(.2,1.2,.4,1) both}
@@ -377,9 +387,9 @@ function scopeOpen(){if(scopeEl)return;const C=G.view.camera;G.core.block('scope
 #wlScope .tip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + .8rem);left:0;right:0;text-align:center;color:rgba(251,233,216,.6);font:.85rem "Gowun Dodum",sans-serif;margin:0}
 @keyframes wlScIn{from{opacity:0}}@keyframes wlScLens{from{transform:scale(.6);opacity:0}}
 @media (prefers-reduced-motion: reduce){#wlScope,#wlScope .lens{animation:none}}`;document.head.appendChild(st);}
-  document.body.appendChild(el);scopeEl=el;const line='저 줄무늬 행성 보이지? 저기가 우리가 마지막에 갈 곳이란다.';
+  document.body.appendChild(el);scopeEl=el;const line='저 줄무늬 행성이 목성이에요. 이 여행의 마지막에 가게 될 곳이에요.'; /* 2026-11-17: 나레이터 자막(이름표 없음) */
   {const pEl=el.querySelector('.say p');const go=()=>{if(scopeEl!==el)return;if(G.sound.voiceBusy()){el._w=setTimeout(go,50);return;} /* 앞 대사(망원경으로 부르는 말 등)의 목소리가 끝나고 0.35초 뒤에 자막·목소리 시작 — 앞 대사를 끊지 않게(2026-11-15) */
-    el._vo=G.sound.voice({text:line,who:'보름 할아버지',kind:'dialogue'});let i=0,acc=0,last=performance.now();
+    el._vo=G.sound.voice({text:line,who:'나레이터',kind:'narration'});let i=0,acc=0,last=performance.now();
     const iv=setInterval(()=>{const now=performance.now(),dt=(now-last)/1000;last=now;const v=el._vo,cps=v&&v.live()?Math.min(28,line.length/Math.max(1.2,v.dur-.6)):28; /* 목소리가 나오는 동안은 글자를 목소리 길이에 맞춰(2026-11-16), 없으면 예전 빠르기(초당 약 28자) */acc+=dt*cps;const n=Math.min(line.length,Math.floor(acc)+1);if(n!==i){i=n;pEl.textContent=line.slice(0,i);}if(i>=line.length)clearInterval(iv);},30);el._iv=iv;};go();} /* 망원경 자막도 대사 한 줄(시점 기록 + 대본 목록에 파일이 있으면 목소리) */
   const cv=el.querySelector('canvas'),g=cv.getContext('2d'),src=jup.U.uMap.value.image,stars=[];{const r=srand(77);for(let i=0;i<90;i++)stars.push([r(),r(),.4+r()*1.4,r()]);}
   let u0=-.03,last=performance.now(),open=performance.now(); // 붉은 폭풍(그림 u .17)이 가운데 조금 왼쪽에서 시작
@@ -478,36 +488,33 @@ function tickBits(dt){let any=false;const GR=.2; // 낮은 중력(지구 9.8의 
     flPos.set([f.p.x,f.p.y,f.p.z],i*3);const k=Math.max(0,f.a);flCol.set([k,k*.98,k*.94],i*3);});
   bitIM.visible=flour.visible=any;if(any){bitIM.instanceMatrix.needsUpdate=true;flGeo.attributes.position.needsUpdate=true;flGeo.attributes.color.needsUpdate=true;}}
 const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(...MORTAR)+.5,MORTAR[1]);root.add(mortarMark);
-const BUN_SAY=[['콩콩','와, 떡이 날아다녀!'],['몽실','천천히 떨어져서 받아먹을 수도 있겠다!'],['보슬','콩! 하고 찧으니까 둥실 올라가!']];
 /* 횟수 표시(2026-11-10 두 번째): 절구 바로 위에 크게(game/float count — 화면 위 가운데 칩도 세로가 낮은 창 1280×632에서 대화창에 가려졌다). 대화창·획득 카드가 뜨면 그 위로 비켜남 */
 /* 횟수는 화면 위쪽 고정 자리(할 일 안내 바로 아래 — 화면 가림 규칙 4, 2026-11-10: 절구 위에 띄우면 가까이 잡은 카메라에서 원더룹 얼굴에 걸렸다) */
 function cntShow(n){G.ui.count(n==null?null:{label:'떡 찧기',n,max:3});}
 const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
   onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=true;st.cntK=(st.cntK||0)+1;cntShow(PEST.n);},
-  onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;const bi=(n-1)%3,say=BUN_SAY[bi];G.float.bubble({root:bunnies[bi].m.root,y:1.02,text:say[1],sec:3}); /* 떡방아 동안 토끼 말은 아래 대화창 대신 머리 위 작은 말풍선(대화창이 횟수·절구를 가렸다) */
+  onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;
     cntShow(n);
     if(n<3)return; /* 횟수는 절구 위 표시가 맡는다(단추 글자는 '찧기' 그대로) */
     mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;cntShow(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
 function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return;st.cakeT=null;const first=!F[CAKE_KEY]; /* 처음이면 기쁨 리액션(카메라를 봄)·획득 카드가 끝난 뒤에 할아버지 대사 — 깃발을 켠 뒤에 물어 늘 0.4초였고, 원더룹이 카메라를 본 채 대사가 나왔다(2026-11-11) */
   if(first){G.state.setFlag(CAKE_KEY,true);G.react.react('joy');const it=(SPACE.items||[]).find(i=>i.id==='dalddeok');
     G.ui.itemCard({title:'달떡을 얻었어요!',text:'낮은 중력에서 찧은 쫀득한 달떡 — 가방에 넣었어요',icon:it&&it.icon?it.icon():null,sec:4,sound:'item-get'});}
-  setTimeout(()=>G.dialog.say('보름 할아버지','옛날엔 나도 이걸로 떡을 찧었단다. 여기선 떡도 둥실둥실 날아다니지.',5),first?4200:400);
-  setTimeout(()=>{GATHER.on=false;},9000);}
+  if(first)setTimeout(()=>G.ui.toast(CAKE_NAR,4.6,CAKE_NAR),4300); /* 획득 카드가 사라진 뒤 나레이션 한 줄(2026-11-17 — 할아버지·토끼 대사 대신) */
+  setTimeout(()=>{GATHER.on=false;},first?8200:5000);}
+const CAKE_NAR='아기 토끼들이 둥실둥실 날아다니는 떡을 보고 신이 났어요.';
 /* ── 체험 안내(2026-11-10 — 떡방아·망원경을 그냥 지나치기 쉬웠다): 아직 안 해 본 체험 자리 위에 멀리서도 보이는 반짝이 표시(game/float mark, 그리기 0),
    7m 안이면 설 자리 발밑에 민트 동그라미(안내 표시 — 영상에 안 나옴), 3.4m 안이면 한 줄 안내, 가까이 왔다가 그냥 멀어지면(10m) 보름 할아버지·아기 토끼가 한 번 불러 세움(판마다 한 번). 해 보면 모두 사라짐 */
-const TRY=[{key:DISC.scope,at:SCOPE,stand:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],h:2.15,msg:'망원경으로 하늘을 볼 수 있어요',
-    call:()=>G.dialog.say('보름 할아버지','얘야, 망원경으로 하늘 한번 보고 가렴. 목성이 아주 잘 보인단다.',4.2)},
-  {key:CAKE_KEY,at:MORTAR,stand:MSTAND,h:1.75,msg:'떡방아를 찧어 볼 수 있어요',
-    call:()=>{G.float.bubble({root:bunnies[0].m.root,y:1.02,text:'떡방아 찧고 가!',sec:3.4});G.dialog.say('아기 토끼 콩콩','원더룹! 떡방아 한번 찧어 보고 가! 떡이 둥실둥실 날아다녀!',4);}}];
-TRY.forEach(q=>{q.mark=G.float.mark({at:[q.at[0],groundY(...q.at),q.at[1]],y:q.h,far:11, /* 그 물건 둘레 11m 안에서만(이 작은 행성은 26m면 지평선 너머까지 — 숨방울 미션 자리에서도 하늘에 떠 보였다, 2026-11-12) */when:()=>!F[q.key]&&!st.cntOn});
+const TRY=[{id:'mortar',key:CAKE_KEY,at:MORTAR,stand:MSTAND,h:1.75,msg:'절구 앞에서 찧기를 눌러요'},
+  {id:'scope',key:DISC.scope,at:SCOPE,stand:[SCOPE_EYE[0]+.35,SCOPE_EYE[1]+.75],h:2.15,msg:'망원경 앞에서 살펴보기를 눌러요'}];
+/* 2026-11-17: 다음 목표 하나만 — 반짝이·발밑 동그라미·한 줄 안내는 지금 차례(nextStep)인 체험에만. 지나쳐도 부르지 않는다(대사 삭제) */
+TRY.forEach(q=>{q.mark=G.float.mark({at:[q.at[0],groundY(...q.at),q.at[1]],y:q.h,far:11,when:()=>!F[q.key]&&!st.cntOn&&nextStep()===q.id});
   const g=new THREE.RingGeometry(.5,.66,30);g.rotateX(-PI/2);const m=new THREE.MeshBasicMaterial({color:new THREE.Color('#5cc4b9'),transparent:true,opacity:.9,depthWrite:false});m.userData.noStorybook=true;
   q.ring=new THREE.Mesh(g,m);q.ring.position.set(q.stand[0],groundY(...q.stand)+.05,q.stand[1]);q.ring.visible=false;q.ring.frustumCulled=false;q.ring.userData.noMerge=true;q.ring.renderOrder=2;G.ui.hint(q.ring);root.add(q.ring);keep.push(q.ring);});
-function tickTry(dt,t,P){for(const q of TRY){const done=!!F[q.key],d=dist(P.x,P.z,q.at),on=!done&&d<7&&!st.cntOn&&!GATHER.on&&G.ui.hintsVisible();
+function tickTry(dt,t,P){const cur=nextStep();for(const q of TRY){const done=!!F[q.key],d=dist(P.x,P.z,q.at),on=!done&&cur===q.id&&d<7&&!st.cntOn&&!GATHER.on&&G.ui.hintsVisible();
     if(q.ring.visible!==on)q.ring.visible=on;if(on){const k=1+Math.sin(t*4)*.08;q.ring.scale.set(k,1,k);q.ring.material.opacity=.55+.35*(.5+.5*Math.sin(t*4));}
-    if(done)continue;
-    if(d<3.4&&!q.told&&!G.core.blocking()){q.told=true;q.seen=true;G.ui.toast(q.msg,3.6);}
-    if(d<7&&F[HAVE])q.seen=true;if(d>9)q.told=false; /* 불러 세우기는 첫 미션(숨방울)을 받은 뒤부터 — 시작 자리가 망원경 곁이라 첫 미션 길을 나서자마자 불렀다 */
-    if(q.seen&&!q.called&&d>10&&d<16&&!G.core.blocking()&&!ride){q.called=true;q.call();}}}
+    if(done||cur!==q.id)continue;
+    if(d<3.4&&!q.told&&!G.core.blocking()){q.told=true;G.ui.toast(q.msg,3.2);}if(d>9)q.told=false;}}
 /* ── 하늘: 남보라 우주(공기가 없어 낮에도 까맣고 별) + 은하수, 하늘 그림판(anchor — 카메라를 늦게 따라오며 늘 화면에): 해·토성·큰 목성·성운·은하수 띠·별똥별 */
 const key={top:'#151331',horizon:'#2b2560',hemi:'#c4c6e6',ground:'#56506e',hemiI:.52,sun:'#ffe8c4',sunI:.95,sunDir:[-6,-3.6,-9],fill:.24,fog:'#2e2a5c',fogNear:70,fogFar:150,stars:0,milky:1.1}; // 별은 아래 그림판 별(점 별·깜빡임·네 갈래 반짝이)이 맡는다 — 공용 하늘 별·첫별은 끔
 const SK=G.sky.sky({parent:root,keys:[key,key,key],t:0,nStars:MOB?220:340,starSize:3,space:true});
@@ -601,28 +608,58 @@ const platforms=[{c:[ROCK.c[0],ROCK.c[1],ROCK.r*.98],top:ROCK_TOP}];
 /* ── 이야기 진행 */
 const F=G.state.flags,HAVE='have:'+WID+':necklace',K={demo:'space:demo',rock:'space:rock',clear:'clear:space-garden',cave:'secret:'+WID+':icecave'};
 G.profile.setup({world:WID,cards:SPACE.cards}); /* 친구 카드는 세계 설정(스테이지마다 같은 목록 — '만난 친구 n/m'이 세계 전체 수) */
-const st={said:false,warm:false,cold:false,start:false,hop:null,lastQ:'',culled:false,demoSaid:false,cam:0};
-if(F[K.demo])placeBobo(DEMO_LAND);
+const st={warm:false,cold:false,start:false,hop:null,lastQ:'',culled:false,cam:0,scene:false};
+const coarse=matchMedia('(pointer:coarse)').matches;
+/* 다시 말 걸 때만(2026-11-17): 첫 만남 대화는 목걸이를 찬 직후 할아버지가 다가와 한 번에 이어서 함(intro) */
 G.dialog.npc({id:'bobo',name:'보름 할아버지',root:bobo.root,bubbleY:1.62,talkR:2.4,
-  repeatLine:'바람이 없어서 발자국이 오래오래 남는단다. 네 발자국도 그대로 있을 게야.',
-  onDone:()=>G.profile.meet('bobo',bobo.root),
-  variants:[
-    {when:()=>!F[HAVE],lines:['어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.','여긴 공기가 거의 없어서, 숨방울 하나는 꼭 챙겨야 한단다.','내 발자국을 따라가 보렴. 다 그대로 남아 있을 게야.']},
-    {when:()=>F[HAVE]&&!F[K.rock],lines:['숨방울이 잘 어울리는구나!','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.','저 높은 바위에 올라 보렴. 거기서 보면 지도의 첫 빈칸이 채워질 게야.']},
-    {when:()=>F[K.rock]&&!F[K.clear],lines:['첫 빈칸을 채웠구나! 내 지도에 네 발자국도 그려 두마.','행성 끝, 빛기둥이 선 곳이 출구란다. 저 하늘의 큰 행성들이 다음 목적지를 알려 줄 게야.']},
-    {when:()=>!!F[K.clear],lines:['또 오렴. 네 발자국은 여기 오래오래 남아 있을 테니.']}]});
-function placeBobo(at){bobo.root.position.set(at[0],groundY(...at),at[1]);bobo.root.rotation.y=Math.atan2(ROCK.c[0]-at[0],ROCK.c[1]-at[1])+.9;boboOb.c[0]=at[0];boboOb.c[1]=at[1];}
+  variants:[{when:()=>!!F[K.demo]&&!st.scene,lines:['바람이 없어서 발자국이 오래오래 남는단다. 네 발자국도 그대로 있을 게야.']},
+    {when:()=>!!F[K.clear]&&!st.scene,lines:['또 오렴. 네 발자국은 여기 오래오래 남아 있을 테니.']},
+    {when:()=>!F[K.demo]||st.scene,lines:[]}]});
+function placeBobo(at,ry){bobo.root.position.set(at[0],groundY(...at),at[1]);if(ry!=null)bobo.root.rotation.y=ry;boboOb.c[0]=at[0];boboOb.c[1]=at[1];}
 function quest(q,goal){if(q!==st.lastQ){st.lastQ=q;G.ui.setQuest(q);}G.goal.set(goal||null);}
-/* 둥실 뛰기 시범: 할아버지가 바위 쪽으로 한 번 크게 둥실(약 9m, 꼭대기 3.2m, 2.6초). 카메라는 원더룹 등 뒤 위에서 원더룹과 할아버지를 함께 — 할아버지를 따라 고개를 돌림(view.hold, 그려지는 자리 bentPos) */
-function hopDemo(){const W=U0();st.hop={t:0,from:[bobo.root.position.x,bobo.root.position.z],y0:bobo.root.position.y,to:DEMO_LAND};G.state.setFlag(K.demo,true);
-  const P=W.position,mid=[(st.hop.from[0]+DEMO_LAND[0])/2,(st.hop.from[1]+DEMO_LAND[1])/2],dx=wd(mid[0]-P.x),dz=wd(mid[1]-P.z),dl=Math.hypot(dx,dz)||1,ux=dx/dl,uz=dz/dl;
+const say=(who,text,sec,o)=>G.dialog.say(who,text,sec,undefined,o);
+/* 순서(2026-11-17 — 한 바퀴): 떡방아 → 망원경 → 높은 바위(지도) → 얼음 동굴 → 출구. 길 안내(빛기둥·발밑 동그라미 길·반짝이)는 다음 목표 하나에만.
+   떡방아·망원경은 어느 쪽을 먼저 해도 되지만 둘 다 끝내야 높은 바위에서 지도가 채워진다. 얼음 동굴은 안내만 하고 지나쳐도 출구에서 끝남 */
+const nextStep=()=>!F[K.demo]?'intro':!F[CAKE_KEY]?'mortar':!F[DISC.scope]?'scope':!F[K.rock]?'rock':(!F[K.cave]&&!st.caveSkip)?'cave':!F[K.clear]?'exit':'done';
+const leftList=()=>[!F[CAKE_KEY]&&'떡방아',!F[DISC.scope]&&'망원경'].filter(Boolean);
+function showTodo(){const on=!!F[K.demo]&&!F[K.clear]&&!ride;const sig=on?[F[CAKE_KEY],F[DISC.scope],F[K.rock]].map(v=>v?1:0).join(''):'';if(sig===st.todoSig)return;st.todoSig=sig;
+  G.ui.todo(on?[{t:'떡방아',done:!!F[CAKE_KEY]},{t:'망원경',done:!!F[DISC.scope]},{t:'높은 바위',done:!!F[K.rock]}]:null);}
+/* 둥실 뛰기(할아버지): 제자리에서 한 번 높이 둥실(높이 2.6m, 1.9초) — 카메라는 원더룹 등 뒤 위에서 둘을 함께(view.hold, 그려지는 자리 bentPos) */
+function hopDemo(){const W=U0();return new Promise(res=>{const b=bobo.root.position;st.hop={t:0,from:[b.x,b.z],y0:b.y,to:[b.x,b.z],T:1.9,H:2.6,res};
+  const P=W.position,dx=wd(b.x-P.x),dz=wd(b.z-P.z),dl=Math.hypot(dx,dz)||1,ux=dx/dl,uz=dz/dl;
   const base={x:P.x-ux*5.5+uz*1.4,z:P.z-uz*5.5-ux*1.4};let tEnd=0;
-  G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:Math.max(1,Math.min(1.7,620/innerHeight)) /* 낮은 가로 화면도 멀리(2026-11-10 — 휴대폰 가로에서 원더룹이 화면 아래로 잘렸다) */,b=bobo.root.position,Wp=W.position;
-    if(!st.hop){tEnd+=1/60;if(tEnd>1.2)return null;}
-    /* 가로 화면(2026-11-11): 떠오르는 할아버지를 따라 고개를 들면 원더룹이 화면 아래로 잘리고 아래로 내려온 대화창에 덮였다 → 올려다보지 않고 1.2배 물러나 보는 높이를 고정(원더룹 발 ~ 떠오른 할아버지 꼭대기가 한 화면에 — 대사는 뛰기 전에 끝남). 세로 화면은 그대로 */
+  G.view.hold(()=>{const cam=G.view.camera,k=cam&&cam.aspect<1?1.7:Math.max(1,Math.min(1.7,620/innerHeight)),b=bobo.root.position,Wp=W.position;
+    if(!st.hop){tEnd+=1/60;if(tEnd>.35)return null;}
     const wide=!(cam&&cam.aspect<1),kk=wide?Math.max(1.2,k):k;
     const at=bentPos({x:Wp.x*.35+b.x*.65,y:wide?Wp.y+1.7:Math.max(Wp.y,b.y)*.65+1.1,z:Wp.z*.35+b.z*.65}),from=bentPos({x:Wp.x+(base.x-Wp.x)*kk,y:Wp.y+3.4*kk,z:Wp.z+(base.z-Wp.z)*kk});
-    return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};});}
+    return {at:[at.x,at.y,at.z],from:[from.x,from.y,from.z]};});});}
+/* 첫 만남(2026-11-17 — 삐삐 첫 만남처럼): 목걸이를 찬 직후 할아버지가 둥실둥실 다가와 끊김 없이 한 번에 이어지는 대화
+   S1-005 → 009 → 033 → 010 → (할아버지가 제자리에서 둥실) → 034 → [점프 단추를 누를 때까지 기다림 — 대화창 '점프 버튼을 눌러요', 조작을 돌려줌] → 원더룹이 뜀 → 007 → 친구 카드 */
+function boboCome(W){return new Promise(res=>{const b=bobo.root.position,P=W.position,dx=wd(b.x-P.x),dz=wd(b.z-P.z),d=Math.hypot(dx,dz)||1,to=[P.x+dx/d*1.6,P.z+dz/d*1.6],len=Math.hypot(to[0]-b.x,to[1]-b.z);
+  if(len<.4){res();return;}const n=Math.max(1,Math.ceil(len/1.7));st.come={from:[b.x,b.z],to,n,i:0,t:0,res};});}
+/* 첫 만남이 끝나면 제자리(BOBO)로 둥실둥실 돌아감 — 다가와 선 자리는 떡방아 ↔ 망원경 길 한가운데라 원더룹 길을 막았다 */
+function boboHome(){const b=bobo.root.position,len=Math.hypot(BOBO[0]-b.x,BOBO[1]-b.z);if(len<.4||st.come)return;st.come={from:[b.x,b.z],to:[BOBO[0],BOBO[1]],n:Math.max(1,Math.ceil(len/1.7)),i:0,t:0,res:()=>{bobo.root.rotation.y=Math.atan2(SPAWN[0]-BOBO[0],SPAWN[1]-BOBO[1]);}};}
+function tickCome(dt){const c=st.come;if(!c)return;c.t+=dt;const T=.62,u=Math.min(1,c.t/T),a=(c.i+u)/c.n,x=c.from[0]+(c.to[0]-c.from[0])*a,z=c.from[1]+(c.to[1]-c.from[1])*a;
+  bobo.root.position.set(x,groundY(x,z)+Math.sin(u*PI)*.42,z);bobo.root.rotation.y=Math.atan2(c.to[0]-c.from[0],c.to[1]-c.from[1]);boboOb.c[0]=x;boboOb.c[1]=z;
+  if(u>=1){c.i++;c.t=0;G.sound.sfx('step');if(c.i>=c.n){st.come=null;placeBobo(c.to);c.res();}}}
+const faceEach=W=>{const b=bobo.root.position,P=W.position;W.rotation.y=Math.atan2(wd(b.x-P.x),wd(b.z-P.z));bobo.root.rotation.y=Math.atan2(wd(P.x-b.x),wd(P.z-b.z));};
+const JUMP_TIP=coarse?'점프 버튼을 눌러요':'점프 버튼(Space)을 눌러요';
+async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopWalk();U.sceneLock=true;quest('',null);let pc=null;
+  const cam=on=>{if(on){pc=G.view.pairCam(bobo.root,1.62);if(pc)G.view.hold(pc);}else{if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);pc=null;}};
+  try{await boboCome(W);faceEach(W);cam(true);
+    await say('보름 할아버지','어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.',4.4);
+    await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2);
+    await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라 보렴.',6.4);
+    await say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.4);
+    cam(false);await hopDemo();faceEach(W);
+    await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);
+    /* 점프를 기다림: 조작을 돌려주고(점프 단추가 다시 보임) 대화창에 안내 — 뛰어오르면 닫힘 */
+    U.sceneLock=false;let jumped=false;const jl=say('',JUMP_TIP,0,{until:()=>jumped,hear:'혼잣말'});
+    await G.core.until(()=>{const V=U.vert;if(V&&V.air&&V.vy>0)jumped=true;return jumped;},600);await jl;
+    await G.core.until(()=>!(U.vert&&U.vert.air),4);if(U.stopWalk)U.stopWalk();U.sceneLock=true;faceEach(W);cam(true);
+    await say('보름 할아버지','내 발자국을 따라가 보렴. 다 그대로 남아 있을 게야.',3.6);
+    cam(false);G.state.setFlag(K.demo,true);U.sceneLock=false;await G.profile.meet('bobo',bobo.root);
+  }catch(e){console.error(e);}finally{cam(false);U.sceneLock=false;st.scene=false;st.lastQ=null;st.introT=G.clock.t;boboHome();}}
 let fpLast=null;
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
 const W0=P=>P; // 손 흔들기: 원더룹 자리(할아버지·토끼가 바라볼 곳)
@@ -630,7 +667,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
   if(st.cntOn&&dist(P.x,P.z,MORTAR)>4.5){st.cntOn=false;cntShow(null);}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown())caveSecret(); // 비밀: 얼음 동굴(놓쳐도 진행 영향 없음)
-  bobo.tick(dt,t,st.hop,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);tickTry(dt,t,P);
+  bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);tickTry(dt,t,P);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}
@@ -640,28 +677,38 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   if(!st.bgm){st.bgm=1;if(!/[?&]moonBgm=code/.test(location.search)){const first=!G.state.flags['moon:bgm-intro'];if(first)G.state.setFlag('moon:bgm-intro',true);G.sound.zoneMusic({id:'moon-bgm',fade:2,loop:MOON_LOOP,intro:first,lufs:MOON_LUFS});}}
   /* 처음 조작을 넘겨받을 때 한 번: 카메라를 조금 낮춰 지평선이 화면 위쪽 3분의 1쯤(하늘 그림판이 원더룹 뒤로 보이게) — 1.2초에 걸쳐, 플레이어가 만지면 그만 */
   {const C=G.controls.input.cam;if(st.cam<1.2&&C&&C.on&&C.ready&&!G.view.aim&&!G.view.req){if(st.cam===0)st.camUser=C.user;if(C.user!==st.camUser)st.cam=9;else{st.cam+=dt;const goal=(cam.aspect<1?.58:.5)-(S-1)*.2; /* 지평선이 화면 위쪽 3분의 1(행성이 클수록 지평선이 덜 떨어져 조금 덜 내려다봄 — 24m: .42·세로 .5) */C.pitch+=(goal-C.pitch)*Math.min(1,dt*3);}}}
-  // 할아버지 둥실 건너뛰기(시범)
-  if(st.hop){const h=st.hop;h.t+=dt;const T=2.6,u=Math.min(1,h.t/T),x=h.from[0]+(h.to[0]-h.from[0])*u,z=h.from[1]+(h.to[1]-h.from[1])*u,y0=h.y0+(groundY(...h.to)-h.y0)*u;
-    bobo.root.position.set(x,y0+Math.sin(u*PI)*3.2,z);bobo.root.rotation.y=Math.atan2(h.to[0]-h.from[0],h.to[1]-h.from[1]);boboOb.c[0]=x;boboOb.c[1]=z;
-    if(u>=1){st.hop=null;placeBobo(DEMO_LAND);G.sound.sfx('land');if(!st.demoSaid){st.demoSaid=true;setTimeout(()=>G.dialog.say('보름 할아버지','톡! 하고 뛰면 둥실 떠오른단다. 저 높은 바위 꼭대기까지 충분해.',4),500);}}}
-  const ms=G.mission.missionState();
-  // 사실 안내(처음 한 번씩)
-  if(!st.start&&ms){st.start=true;setTimeout(()=>G.ui.toast('공기가 거의 없어서 낮인데도 하늘이 까맣고 별이 보여요',4.2),9000);}
+  // 할아버지 둥실(시범 — 제자리)·다가오기
+  tickCome(dt);
+  if(st.hop){const h=st.hop;h.t+=dt;const u=Math.min(1,h.t/h.T);bobo.root.position.y=h.y0+Math.sin(u*PI)*h.H;
+    if(u>=1){st.hop=null;placeBobo(h.to);G.sound.sfx('land');h.res&&h.res();}}
+  showTodo();if(st.scene)return;
+  // 사실 안내(처음 한 번씩 — 첫 만남 대화가 끝난 뒤부터)
+  if(!st.start&&F[K.demo]&&st.introT!=null&&G.clock.t>st.introT+7&&!G.ui.cardShown()&&!G.core.blocking()){st.start=true;G.ui.toast('공기가 거의 없어서 낮인데도 하늘이 까맣고 별이 보여요',4.2);}
   if(!st.warm&&dist(P.x,P.z,WARM)<9){st.warm=true;G.ui.toast('햇빛이 닿는 땅은 뜨겁게 일렁여요 — 수성은 낮에 430도까지 올라요',4.2);}
-  if(!st.cold&&dist(P.x,P.z,SHADE.c)<SHADE.r){st.cold=true;G.ui.toast('햇빛이 안 드는 그늘 분화구는 영하 160도 — 서리가 그대로 얼어 있어요',4.2);}
-  // 첫 미션 동안: 할아버지 한마디(미션 카드 뒤)
-  if(ms&&!ms.got&&!st.said&&!G.ui.cardShown()){st.said=true;G.dialog.say('보름 할아버지','여긴 공기가 거의 없어서, 숨방울 하나는 꼭 챙겨야 한단다.',4).then(ok=>ok&&G.dialog.say('보름 할아버지','내 발자국을 따라가 보렴. 다 그대로 남아 있을 게야.',4));}
+  if(!st.cold&&dist(P.x,P.z,SHADE.c)<SHADE.r&&!G.ui.cardShown()){st.cold=true;G.ui.toast('햇빛이 안 드는 그늘 분화구는 영하 160도 — 서리가 그대로 얼어 있어요',4.2);}
   if(!F[HAVE])return;
-  // 둥실 뛰기 익히기
-  if(!F[K.demo]){quest('보름 할아버지에게 돌아가요',{at:[bobo.root.position.x,bobo.root.position.z],label:'보름 할아버지',style:'ant',h:3});
-    if(!st.demoQ&&dist(P.x,P.z,[bobo.root.position.x,bobo.root.position.z])<4.2&&!G.ui.cardShown()&&!st.hop){st.demoQ=true;U.stopWalk&&U.stopWalk();
-      G.dialog.say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.5).then(ok=>{if(ok&&!F[K.demo])hopDemo();});}return;} /* 대사가 끝난 뒤에 뜀(2026-11-11 — 대사 0.9초 뒤에 뛰면 떠오른 할아버지가 위쪽 대화창 뒤로 들어가고, 대화창이 아래로 피하면 원더룹을 덮었다) */
-  if(!F[K.rock]){if(!st.hop)quest('할아버지처럼 둥실 뛰어 높은 바위에 올라요 (점프)',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
-    const V=U.vert;if(V&&V.y>ROCK_TOP-.2&&dist(P.x,P.z,ROCK.c)<ROCK.r+.2){G.state.setFlag(K.rock,true);G.react.react('joy');
-      G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',vo:'보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()});}return;}
-  if(!F[K.clear]){quest('행성 끝 출구 빛기둥까지 가요',{at:EXIT,label:'출구',style:'ant',h:4});
-    if(dist(P.x,P.z,EXIT)<1.7){G.state.setFlag(K.clear,true);quest('',null);startRide(true);}}
-  else{quest('',null);if(dist(P.x,P.z,EXIT)>3)st.exitOut=true;else if(st.exitOut&&dist(P.x,P.z,EXIT)<1.5&&!G.ui.cardShown())startRide(false);}} // 다시 들어서면 또 타고 감(화성으로)
+  // 첫 만남: 목걸이를 차는 연출이 끝나면 할아버지가 다가와 이어지는 대화
+  if(!F[K.demo]){quest('',null);if(!G.core.blocking('itemget')&&!G.ui.cardShown()&&!G.core.blocking())intro(WL,U);return;}
+  tickBunTalk(t,P);
+  const step=nextStep(),onRockTop=(()=>{const V=U.vert;return !!(V&&V.y>ROCK_TOP-.2&&!V.air&&dist(P.x,P.z,ROCK.c)<ROCK.r+.2);})();
+  if(!onRockTop)st.rockWarn=false;
+  if(!F[K.rock]&&onRockTop){const left=leftList();
+    if(left.length){if(!st.rockWarn){st.rockWarn=true;G.ui.toast('아직 해 볼 게 남았어요: '+left.join(', '),4);}}
+    else{G.state.setFlag(K.rock,true);G.react.react('joy');const NEXT='얼음 동굴을 지나면 빛기둥 출구가 있어요. 빛기둥 한가운데로 들어가 봐요.';
+      G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',vo:'보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()}).then(w=>{if(w!==-1)G.ui.toast(NEXT,6,NEXT);});}}
+  if(step==='mortar')quest('떡방아를 찧어 봐요',{at:MORTAR,label:'떡방아',style:'ant',h:3});
+  else if(step==='scope')quest('망원경으로 목성을 봐요',{at:SCOPE,label:'망원경',style:'ant',h:3.4});
+  else if(step==='rock')quest('높은 바위에 올라요',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
+  else if(step==='cave'){quest('얼음 동굴에 들어가 봐요',{at:CAVE,label:'얼음 동굴',style:'ant',h:3.4});if(dist(P.x,P.z,EXIT)<8)st.caveSkip=true;} /* 동굴을 지나쳐 출구 가까이 오면 출구 안내로 */
+  else if(step==='exit')quest('빛기둥 한가운데로 가요',{at:EXIT,label:'출구',style:'ant',h:4});
+  else quest('',null);
+  /* 출구: 빛기둥 한가운데(반지름 EXIT_R 안)에 들어서야 끝남(2026-11-17 — 예전 1.7m는 받침돌 가장자리에서 끝났다) */
+  const de=dist(P.x,P.z,EXIT);
+  if(!F[K.clear]){if(de<EXIT_R&&!G.ui.cardShown()){if(F[K.rock]){G.state.setFlag(K.clear,true);quest('',null);showTodo();startRide(true);}
+      else if(!st.exitWarn){st.exitWarn=true;G.ui.toast('아직 해 볼 게 남았어요: '+[...leftList(),'높은 바위'].join(', '),4);}}
+    else if(de>4)st.exitWarn=false;}
+  else{if(de>3)st.exitOut=true;else if(st.exitOut&&de<EXIT_R&&!G.ui.cardShown())startRide(false);}} // 다시 들어서면 또 타고 감(화성으로)
+const EXIT_R=1.1;
 /* ── 출구 → 별똥별 꼬리 타기(meteor-ride.js 맨 위 주석): 처음이면 'STAGE 1 완료!' 카드(그동안 서 있음) 뒤 연출.
    비행 길(별똥별 머리 자리): 출구 → 마을 위(약 17m — 보름 할아버지·아기 토끼가 손 흔듦) → 계속 오르며 행성이 작아짐(작은 행성 그림이 원더룹 높이만큼 아래로 — 위로 70m),
    하늘 그림판의 토성·목성이 옆으로 스쳐 지나가고(FLY.k), 끝에 붉은 화성이 커짐 → 화면 전환으로 화성(space-mars) */
@@ -674,7 +721,7 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
     const sx=P.x+ux*1.25,sz=P.z+uz*1.25,sy=P.y+2.9,y0=P.y;
     ride=departure({G,root,WL:W,groundY,mob:MOB,fly:13,after:3.6+.75+.06+1.9+1.385, // 비행 뒤 착지까지: 지도 3.6 + 먼지구름 덮음 .75 + 구역 바꿈 약 .06 + 내려옴 1.9 + 떨어짐 1.385(화성 중력, 3.55m)
       path:u=>{const e1=ss(0,.5,u),e2=ss(.5,1,u),d=vl*1.15*e1+26*e2;return {x:sx+ux*d,y:y0+2.9+14*ss(0,.45,u)+56*Math.pow(ss(.4,1,u),1.3),z:sz+uz*d};},
-      onWave:on=>{WAVE.on=on;if(on)placeBobo(BOBO);},
+      onWave:on=>{WAVE.on=on;if(on)placeBobo(BOBO);if(on)G.ui.todo(null);},
       onFly:u=>{FLY.k=u;if(u>.3&&!st.marsPre){st.marsPre=true;import('./mars.js').catch(()=>{});}}, // 화성 구역을 비행 중에 미리 불러 둠(넘어갈 때 기다리지 않게)
       /* 비행 끝: 우주 지도 장면(game/travel 공통 — 달 → 화성 발자국 점선·발견한 것·예고 한 줄, 약 3.6초) → 화성 대기로 들어섬(낮은 우웅 + 먼지구름 휙) →
          파스텔 먼지구름이 화면을 덮었다 걷힘(어두운 화면 없이 — 예전 ui.transition은 1초쯤 어두웠다) */
@@ -714,7 +761,7 @@ start:{compass:true},world:null,
   sun:ZSUN,lights:[lav],light,rim:.32,
   sky:SK,bend:{sphere:R,wrap:L},gravity:.38,jumpK:1.15,
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
-  update,lateUpdate,dispose(){cntShow(null);scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
+  update,lateUpdate,dispose(){cntShow(null);G.ui.todo(null);scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
 /* 바닥 크레용 결(storybook 크레용 결과 같은 그리기): 획은 연보라·크림 위주(진한 갈색 획은 휴대폰에서 지저분한 얼룩처럼 보였다), 진하기는 공용 결과 한 단계 진한 결의 중간 — 파스텔 색연필 */

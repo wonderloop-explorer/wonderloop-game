@@ -141,7 +141,7 @@ export default {
   /* 첫 미션 — 개미굴 광장 '버섯 랜턴을 찾아요' 그대로(카드 문구·나레이션 m_lamp·g_lamp·민트 빛기둥·냄새 길). 자리는 베이스캠프 방 안(광장 이식 때 바꿈) */
   firstMission:{
     item:{id:'lantern',name:'버섯 랜턴',at:[.8,-1.2],y:1.1,pickR:1.5,icon:()=>ICON_LAMP(),model:lantern,light:true,desc:'어두운 굴을 환하게 비춰 주는 버섯 랜턴. 켜고 끌 수 있어요.',where:'첫 미션',tool:{on:'버섯 랜턴 켜짐',off:'버섯 랜턴 꺼짐'}},
-    quest:'광장 어딘가에 떨어진 버섯 랜턴을 찾아요',
+    quest:'떨어진 버섯 랜턴을 찾아요', /* 할 일 글은 18자 안(2026-11-17 — 휴대폰에서 잘림) */
     popup:{kicker:'미션',title:'버섯 랜턴을 찾아요',text:'깊은 개미굴은 아주 어두워요. 광장 어딘가에 떨어진 버섯 랜턴을 먼저 찾아보세요. 청록 빛기둥이 솟은 바위 위에 있어요.'},
     narration:{vo:'assets/audio/antvillage/m_lamp.mp3'},
     goal:{label:'버섯 랜턴'},
