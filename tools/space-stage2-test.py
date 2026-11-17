@@ -49,11 +49,11 @@ with sync_playwright() as p:
     pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.x=x-3.2;W.position.z=z+.4;}", ex); pg.wait_for_timeout(800)
     pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", ex)
     t_touch = None; t_pipi = None
-    for _ in range(1500):  # 2026-11-17: 땅에 처음 닿은 순간 → 삐삐 첫 대사까지 걸린 시간도 잼(목표 2~3초)
+    for _ in range(1500):  # 2026-11-17: 땅에 처음 닿은 순간 → 삐삐 첫 대사까지 걸린 시간도 잼(도착 나레이션이 끝나고 2초 뒤 달려옴 — 약 6~7초)
         on = pg.evaluate("!!(wlZone.cur&&wlZone.cur.name==='붉은 모래 언덕'&&wlZone.cur.arrival&&wlZone.cur.arrival())")
         if on and t_touch is None and pg.evaluate("wlZone.cur.arrival().state.landT!=null"): t_touch = time.time(); mark('화성에 닿음')
         if on and t_touch and t_pipi is None and pg.evaluate("wlGame.ui.dialogShown()"): t_pipi = time.time(); mark('삐삐 첫 대사'); break
-        if on and t_touch and time.time() - t_touch > 15: break
+        if on and t_touch and time.time() - t_touch > 25: break
         pg.wait_for_timeout(100)
     R['착지 → 삐삐 첫 대사(초)'] = round(t_pipi - t_touch, 1) if t_pipi and t_touch else None
     mark('화성 착지'); t_land = t_touch or time.time(); shot('landed'); pg.evaluate(CLIP)

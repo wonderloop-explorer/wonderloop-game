@@ -172,7 +172,7 @@ with sync_playwright() as p:
     R['화성 착지'] = pg.evaluate("!!(wlZone.cur.arrival&&wlZone.cur.arrival()&&wlZone.cur.arrival().state.done)")
     R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.core.blocking('meteor')")
     R['화면 UI 돌아옴'] = pg.evaluate("wlGame.ui.hintsVisible()&&!document.getElementById('wlRideCam')&&getComputedStyle(document.getElementById('wlHud')).visibility!=='hidden'")
-    for _ in range(60):  # 2026-11-17: 착지하면 곧 삐삐가 달려와 말을 검(조작은 그 장면이 끝난 뒤)
+    for _ in range(160):  # 2026-11-17: 착지하면 곧(도착 나레이션 + 2초 뒤) 삐삐가 달려와 말을 검(조작은 그 장면이 끝난 뒤)
         if pg.evaluate('wlGame.ui.dialogShown()'): break
         pg.wait_for_timeout(100)
     R['화성: 삐삐가 말을 검'] = pg.evaluate('wlGame.ui.dialogShown()'); shot('mars-pipi')

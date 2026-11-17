@@ -492,6 +492,7 @@ const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(
 /* 횟수는 화면 위쪽 고정 자리(할 일 안내 바로 아래 — 화면 가림 규칙 4, 2026-11-10: 절구 위에 띄우면 가까이 잡은 카메라에서 원더룹 얼굴에 걸렸다) */
 function cntShow(n){G.ui.count(n==null?null:{label:'떡 찧기',n,max:3});}
 const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
+  onPress:()=>{st.poundGo=true;G.goal.set(null);}, /* 2026-11-17: '찧기'를 누르는 순간 떡방아 빛기둥·길 안내를 바로 끔(찧는 동안 남아 있었다) — 그만두고 떠나면 다시 */
   onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=true;st.cntK=(st.cntK||0)+1;cntShow(PEST.n);},
   onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;
     cntShow(n);
@@ -650,7 +651,7 @@ async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopW
   try{await boboCome(W);faceEach(W);cam(true);
     await say('보름 할아버지','어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.',4.4);
     await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2);
-    await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라 보렴.',6.4);
+    await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라가 보렴.',6.4);
     await say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.4);
     cam(false);await hopDemo();faceEach(W);
     await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);
@@ -697,7 +698,8 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
     if(left.length){if(!st.rockWarn){st.rockWarn=true;G.ui.toast('아직 해 볼 게 남았어요: '+left.join(', '),4);}}
     else{G.state.setFlag(K.rock,true);G.react.react('joy');const NEXT='얼음 동굴을 지나면 빛기둥 출구가 있어요. 빛기둥 한가운데로 들어가 봐요.';
       G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',vo:'보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()}).then(w=>{if(w!==-1)G.ui.toast(NEXT,6,NEXT);});}}
-  if(step==='mortar')quest('떡방아를 찧어 봐요',{at:MORTAR,label:'떡방아',style:'ant',h:3});
+  if(st.poundGo){if(G.interact.busy()||poundingNow(WL)||st.cntOn)st.poundOff=0;else{st.poundOff=(st.poundOff||0)+dt;if(st.poundOff>.4)st.poundGo=false;}}
+  if(step==='mortar')quest('떡방아를 찧어 봐요',st.poundGo?null:{at:MORTAR,label:'떡방아',style:'ant',h:3});
   else if(step==='scope')quest('망원경으로 목성을 봐요',{at:SCOPE,label:'망원경',style:'ant',h:3.4});
   else if(step==='rock')quest('높은 바위에 올라요',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
   else if(step==='cave'){quest('얼음 동굴에 들어가 봐요',{at:CAVE,label:'얼음 동굴',style:'ant',h:3.4});}

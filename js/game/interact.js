@@ -1,5 +1,5 @@
 /* 원더룹 — 손으로 하는 상호작용: 원더룹은 무언가를 할 때 손으로 한다(발로 밟아 해결하지 않기).
-   add({root, at:[x,z], face:[x,z], label:'돌리기', action:'돌리기', dur:1.6, near:1.6, when:()=>참, onStart(it), onDone(it), once:true}) → it
+   add({root, at:[x,z], face:[x,z], label:'돌리기', action:'돌리기', dur:1.6, near:1.6, when:()=>참, onPress(it), onStart(it), onDone(it), once:true}) → it
    - root(3D 물체)를 누르거나, 가까이(near) 와서 E·터치 단추(label)를 누르면 → 원더룹이 at으로 걸어가 face 쪽을 보고 action 동작(07)을 dur초 하고 → onDone.
      at이 없으면 root 자리에서 0.75 떨어진 원더룹 쪽, face가 없으면 root 자리를 본다.
    - 가까운 것 하나만 고른다. 말 걸 상대가 가까우면 대화가 먼저(dialog). 대화·카드가 열려 있으면 기다린다.
@@ -17,7 +17,7 @@ function spot(it){it.root.getWorldPosition(_p);const P=ctx.WL.position;
   if(it.at)return {x:it.at[0],z:it.at[1],fx:it.face?it.face[0]:_p.x,fz:it.face?it.face[1]:_p.z};
   const dx=P.x-_p.x,dz=P.z-_p.z,d=Math.hypot(dx,dz)||1;return {x:_p.x+dx/d*.75,z:_p.z+dz/d*.75,fx:_p.x,fz:_p.z};}
 function start(it){if(!usable(it)||blocking())return false;const s=spot(it),U=ctx.WL.userData;
-  doing={it,s,phase:'go',t0:0};U.walkTo(s.x,s.z);return true;}
+  doing={it,s,phase:'go',t0:0};U.walkTo(s.x,s.z);if(it.onPress)try{it.onPress(it);}catch(e){console.error(e);}return true;} /* onPress: 단추·E를 누른 바로 그 순간(걸어가기 전 — onStart는 자리에 서서 손 동작을 시작할 때) */
 function stop(){if(!doing)return;const U=ctx.WL.userData;if(doing.phase==='do'&&U.action===doing.it.action){U.action='서기';U.at=0;}doing=null;}
 function tickInteract(){if(!ctx)return;const WL=ctx.WL,U=WL.userData,P=WL.position;
   if(doing){const {it,s}=doing;

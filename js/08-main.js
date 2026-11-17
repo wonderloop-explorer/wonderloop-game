@@ -34,6 +34,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(!ph&&GAME.clickNPC(ray))return; // 대화 중이면 다음 대사, NPC를 누르면 말 걸기
   if(!ph&&GAME.interact.click(ray))return; // 손으로 할 물건을 누르면 걸어가서 손 동작(game/interact)
   if(!ph&&zone.cur.click&&zone.cur.click(ray))return; // 구역의 클릭할 것 (베이스캠프: 버섯 램프)
+  {const U=WL.userData,c=GAME.core.blocking;if(U.sceneLock||U.riding||GAME.dialog.talking()||c('itemget')||c('caught')||c('bigget')||c('finale')||c('meteor')||c('fade')||c('front'))return;} /* 2026-11-17: 대화·이야기 장면·탈것·획득 연출 동안은 화면을 눌러도 걷지도 깡충 뛰지도 않음(조이스틱·키는 driveInput이 막고 있었지만 '눌러서 걷기'가 빠져 노을 장면에서 원더룹이 자리를 떠났다) */
   if(ray.intersectObjects(wlHit,false).length){hopWL();return;}
   if(zone.cur.ground){const h=ray.intersectObjects(zone.cur.ground,false)[0];if(h)setWalkTarget(h.point.x,h.point.z);return;} // 높낮이 있는 땅
   const r0=ray.ray;if(r0.direction.y<-0.01){const tt=-r0.origin.y/r0.direction.y;setWalkTarget(r0.origin.x+r0.direction.x*tt,r0.origin.z+r0.direction.z*tt);}

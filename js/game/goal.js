@@ -96,4 +96,5 @@ function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hi
 function tagRect(){const cam=ctx&&ctx.camera;if(!G||!G.visible||!cur||!tag||tag.material.opacity<.3||!cam)return null;_v.copy(tag.position).project(cam);if(_v.z>1)return null;
   const depth=cam.position.distanceTo(tag.position),ppm=innerHeight/(2*Math.tan(cam.fov*Math.PI/360)*depth),w=tag.scale.x*ppm,h=tag.scale.y*ppm,cx=(_v.x+1)/2*innerWidth,cy=(1-_v.y)/2*innerHeight;
   return {label:cur.label||'',r:[cx-w*tag.center.x,cy-h*(1-tag.center.y),cx+w*(1-tag.center.x),cy+h*tag.center.y]};}
-export {clearGoal,initGoal,set,tagRect,tickGoal};
+const shown=()=>!!(G&&G.visible&&cur); /* 시험용: 지금 목표 안내(빛기둥·길)가 떠 있는지 */
+export {clearGoal,initGoal,set,shown,tagRect,tickGoal};
