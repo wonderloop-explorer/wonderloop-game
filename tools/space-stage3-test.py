@@ -62,23 +62,21 @@ with sync_playwright() as p:
         walk(S['cake'][0] - .9, S['cake'][1] + .7, 10, .5); pg.wait_for_timeout(500); pg.keyboard.press('e'); until("!!wlZone.cur.state().T.candle", 12); pg.wait_for_timeout(1200); shot('s4-candle-card'); until(free, 14)
         R['비밀 발견(촛불)'] = bool(st()['T'].get('candle')); walk(0, -6.5)
     # ③ 갈림길 셋
-    inc = [[0, -1], [-1, 0], [0, 1]]
+    via = [[], [2, 3, 4], [6, 7, 8]]  # 갈림길 사이 굽이(PATH 꼭짓점 번호)
     for i, f in enumerate(S['forks']):
-        cx, cz = f['c']
-        if i == 2:
-            for q in [S['path'][3], S['path'][5]]: walk(q[0], q[1], 20, .8)
-        walk(cx - inc[i][0] * 2.6, cz - inc[i][1] * 2.6, 40, .6); look(inc[i][0], inc[i][1], .8); pg.wait_for_timeout(HES * 1000 if HES else 1300); shot('1%d-fork%d' % (i, i + 1))
-        # 위에서 본 갈림길(기둥·그림자가 한 화면에 — 보고용)
-        pg.evaluate("()=>{const C=wlGame.controls.input.cam;window.__d0=C.dist;C.dist=13;C.pitch=1.02;}"); pg.wait_for_timeout(1500); shot('1%d-fork%d-top' % (i, i + 1)); pg.evaluate("()=>{const C=wlGame.controls.input.cam;C.dist=window.__d0;C.pitch=.6;}"); pg.wait_for_timeout(500)
+        cx, cz = f['c']; inc = f['inc']
+        for q in via[i]: walk(S['path'][q][0], S['path'][q][1], 20, .8)
+        walk(cx - inc[0] * 5.5, cz - inc[1] * 5.5, 40, .7); pg.wait_for_timeout(1900); shot('1%d-fork%d' % (i, i + 1))  # 갈림길 구역에 들어선 순간 — 위로 올라간 카메라
+        walk(cx - inc[0] * 1.6, cz - inc[1] * 1.6, 20, .6); pg.wait_for_timeout(HES * 1000 if HES else 800); shot('1%d-fork%d-center' % (i, i + 1))  # 처음 하는 사람: 갈림길마다 그림자를 살피는 시간
         nw = (2 if i == 0 else 1 if i == 1 else 0) if WRONG else 0
         for k in range(nw):
-            wb = [b for b in f['br'] if not b['ok']][0]; walk(cx + wb['d'][0] * 6, cz + wb['d'][1] * 6, 10, .4); pg.wait_for_timeout(500); shot('1%d-fork%d-wrong%d' % (i, i + 1, k + 1)); until(free, 20); pg.wait_for_timeout(400)
+            wb = [b for b in f['br'] if not b['ok']][-1]; walk(cx + wb['d'][0] * 6, cz + wb['d'][1] * 6, 10, .4); pg.wait_for_timeout(500); shot('1%d-fork%d-wrong%d' % (i, i + 1, k + 1)); until(free, 20); pg.wait_for_timeout(400)
         ok = [b for b in f['br'] if b['ok']][0]; n0 = st()['solved']; walk(cx + ok['d'][0] * 6.5, cz + ok['d'][1] * 6.5, 20, .5)
         until("wlZone.cur.state().solved>%d" % n0, 6); pg.wait_for_timeout(700); shot('1%d-fork%d-right' % (i, i + 1))
     until("document.getElementById('wlStrip').classList.contains('on')", 30); pg.wait_for_timeout(1300); shot('20-fog-lift-card1'); until("!!wlZone.cur.state().T.card1", 30); until(free, 20)
     R['틀린 횟수'] = st()['wrong']; R['도움말(S3-005)'] = [k for k in st()['T'] if k.startswith('hint')]
     # ④ 뭉게 문지기
-    gs, gate = S['gs'], S['gate']; look(-1, 0, .5); walk(gs[0] + .2, gs[1], 40, .5); until("wlZone.cur.state().gateSaid", 10); pg.wait_for_timeout(1500); shot('30-gate-shh'); until(free, 15)
+    gs, gate = S['gs'], S['gate']; walk(gs[0] + .2, gs[1], 40, .5); until("wlZone.cur.state().gateSaid", 10); pg.wait_for_timeout(1500); shot('30-gate-shh'); until(free, 15)
     t0 = time.time(); shots = set(); clumsy = CLUMSY
     while time.time() - t0 < 90:
         s = st(); h = hero(); note()
@@ -92,9 +90,9 @@ with sync_playwright() as p:
         else:
             pg.evaluate('wlGame.mission.hero().userData.stopWalk()')
             if 'ask' not in shots:
-                shots.add('ask'); pg.wait_for_timeout(350); shot('32-gate-ask')
+                shots.add('ask'); pg.wait_for_timeout(450); shot('32-gate-ask')
             elif 'ask2' not in shots and s['gateN'] >= 2:  # 뭉게 문지기 가까이(보고용 — 카메라만 잠깐)
-                shots.add('ask2'); pg.evaluate("(([x,z])=>{window.__mc=()=>({at:[x,1.1,z],from:[x+5.2,1.9,z+2.6]});wlGame.view.hold(window.__mc)})(wlZone.cur.spots.munge)"); pg.wait_for_timeout(600); shot('32-munge-ask-close'); pg.evaluate('wlGame.view.hold(null)')
+                shots.add('ask2'); pg.wait_for_timeout(450); shot('32-gate-ask2')
         if s['caught'] and clumsy: clumsy = False; shot('33-gate-caught')
         pg.wait_for_timeout(90)
     s = st(); R["문지기 '?' 횟수"] = s['gateN']; R["'!' 밀려남"] = s['caught']; pg.wait_for_timeout(900); shot('34-gate-pass'); until(free, 20)

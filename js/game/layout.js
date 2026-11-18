@@ -83,7 +83,7 @@ function place(){if(!ctx)return;safe();const H=innerHeight,W=innerWidth,C=chars(
   let dTop=H,dLeft=W;
   if(dOn){const w=dlg.offsetWidth,h=dlg.offsetHeight,x0=(W-w)/2,tag=22,low=docked||(ctl&&gapR-gapL>=w+8),bo=low?(coarse?14:22):(coarse?206:92);
     const yB=H-safeB-bo-h,cands=[[x0,yB-tag]];clear(w);if(dlg.dataset.pin==='top'&&!ntOn){cands.length=0;cands.push([x0,y]);} /* pin:'top'(say 옵션) — 처음부터 위쪽 자리에 고정('점프 버튼을 눌러요'가 아래 ↔ 위를 오갔다, 2026-11-17) */
-    else if(!ntOn&&y+tag+h<H*.62&&!(docked&&camFn&&camFn()&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
+    else if(dlg.dataset.pin!=='bottom'&&!ntOn&&y+tag+h<H*.62&& /* pin:'bottom' — 아래 자리에 고정(금성 문지기 '?' — 위로 올라가면 머리 위 표시와 겹쳤다) */!(docked&&camFn&&camFn()&&performance.now()-dockAt<900))cands.push([x0,y]); /* 잠긴 직후 0.9초는 아래 그대로: 대화 카메라가 인물을 대화창 위 띠로 옮기는 중 */
     const k=pick(w,h+tag,C,cands,0),was=dlg._slot,isTop=cands[k][1]===y&&cands[k]!==cands[0]||(dlg.dataset.pin==='top'&&!ntOn);dlg._slot=isTop?1:0;SLOT.dlg=isTop?'top':'bot';const dsnap=was===k; /* 아래 ↔ 위로 비켜 갈 때만 부드럽게(대사가 바뀌어 높이가 달라질 때는 바로) */
     if(SLOT.dlg==='top'){setPos(dlg,y+tag,null,dsnap);y+=tag+h+10;dLeft=x0;}
     else{setPos(dlg,yB,null,dsnap);dTop=yB-tag;}dlgTopPx=SLOT.dlg==='bot'&&(docked||H<520)?dTop:0;}
