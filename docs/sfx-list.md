@@ -111,7 +111,9 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `event-roll` | 원본 `roll` | 굴러감(데구르르 — 원본 공벌레) | 공벌레 데구르르·지네 지나감 | — | 1.8 | -15.1 |
 | `event-tok` | 원본 `pickup` | 톡 하고 제자리로(굴러간 물건에 닿음 — 원본 꿀단지 줍기) | 랜턴 줍기·꿀단지 줍기·비밀 자리·옷장 표정 | game/incident.js (scatter 기본) | 0.46 | -28.6 |
 | `event-sparkle` | 원본 `chime` | 반짝임(클로버 돌림 · 나침반 반짝) | 날씨 바꾸기·장식 고르기·퀴즈 정답·꿀방울 선물 | game/devcheck.js, zones/fairy/dock.js | 1.16 | -28.8 |
-| `event-open` | **새로 만듦** | 길 열림 | — | — | 1.5 | -29.7 |
+| `event-open` | **새로 만듦** | 길 열림(금성 갈림길 맞는 갈래 — 2026-11-18부터 씀) | — | zones/space/venus.js | 1.5 | -29.7 |
+| `event-snore` | 원본 `snore` (2026-11-18 공통으로) | 코골이 한 번(드르렁 — 금성 뭉게 문지기, 숨 박자마다) | 보모 코골이 | zones/space/venus.js | 1.1 | — |
+| `tune-birthday` | **새로 만듦** (2026-11-18) | 오르골 생일 노래 한 구절(`{phrase:n}` 네 구절 차례로 — 금성 또생일, 가까울수록 크게) | — | zones/space/venus.js | 3 | — |
 | `event-pop` | 원본 `pop` | 퐁(탈것에 올라탐 · 무언가 튀어나옴) | 흙더미 뒤집기·아기 개미 합류·지네 도감·날개 개미·나침반 | zones/fairy/dock.js | 0.5 | -26.2 |
 | `event-whoosh` | 원본 `whoosh` | 휙(굴러옴 · 물 가르기) | 경비개미 덤빔 | zones/fairy/dock.js | 0.36 | -29.8 |
 | `event-tremble` | 원본 `tremble` | 파르르(나침반 바늘 떨림) | 나침반 바늘 떨림 | game/react.js (후덜덜) | 1.02 | -29.9 |

@@ -1,6 +1,6 @@
 /* 원더룹 세계 설정 — 무한 우주 탐방 (2026-11-07 1차: 세계 뼈대 + 외계인 탈 + STAGE 1 회색 정원)
    형식은 antvillage.js 맨 위 주석 그대로. 공개 주소의 기본 세계는 개미굴(js/worlds/index.js CURRENT) — 이 세계는 ?world=infinite-space 로 연다.
-   스테이지 4개: ① 회색 정원(달 + 수성, 걸어서 한 바퀴 도는 작은 행성 — js/zones/space/garden.js) ② 붉은 모래 언덕(화성) ③ 파란 노을 ④ 금성 구름(이름은 지도 자리만, 2차부터).
+   스테이지(기획서 순서 — 2026-11-18 바로잡음): ① 회색 정원(달 + 수성 — garden.js) → ② 붉은 모래 언덕(화성 — mars.js) → ③ 구름 행성(금성 — venus.js) → 쉼터(토성) → ④ 붉은 폭풍(목성 + 해). 쉼터·④는 아직 지도 자리만(zone null).
    색: 바탕 남보라 #211F45(글자엔 안 씀) · 달 회색 #BFC3CC · 화성 주황 #D9704A · 파란 노을 #7FB6E8 · 금성 연보라 #C9A6E0 · 탈 연두 #9BD46B */
 /* 숨방울 목걸이 — 가는 은빛 끈 고리 + 가슴 앞 투명한 숨방울(안에 작은 빛 알갱이). 떠 있을 때는 숨방울이 가운데(원점 = 밑).
    얻으면(첫 미션) 손에 쥐지 않고 목에 건다: wear(WL) → 목 뼈에 목걸이, 머리 뼈에 탈 둘레 옅은 숨방울 막(둥근 반투명 공 + 테두리 빛) */
@@ -101,14 +101,21 @@ export default {
     /* 아기 토끼 셋은 카드 한 장(2026-11-10 — 가방 '만난 친구'에 기록되게): 셋 가운데 누구든 처음 이야기하면 */
     bunnies:{name:'아기 토끼들',where:'STAGE 1 회색 정원',intro:'보름 할아버지 마을에서 둥실둥실 뛰노는 콩콩·몽실·보슬',likes:'떡방아 구경',quote:'여기선 톡 뛰면 한참 동안 떠 있어!',bg:'#e6e4f0',portrait:{side:.45,lift:.1}},
     pipi:{name:'삐삐',where:'STAGE 2 붉은 모래 언덕',intro:'말이 먼저 도착하는 작은 화성 친구',likes:'파란 노을',quote:'둥둥아! …둥둥아? 내 말 들려?',bg:'#fbe3d2',portrait:{side:.45,lift:.08}},
+    /* STAGE 3 구름 행성 — 문구는 기획서 '주민 소개 카드' 그대로 */
+    geokkuri:{name:'거꾸리',where:'STAGE 3 구름 행성',intro:'해가 서쪽에서 뜨는 곳의 길잡이',likes:'저녁에 뜨는 해',quote:'녕안! 그림자 반대쪽이 앞이야.',bg:'#eadcf6',portrait:{side:.45,lift:.08}},
+    munge:{name:'뭉게 문지기',where:'STAGE 3 구름 행성',intro:'구름 문을 지키는 잠꾸러기',likes:'긴 낮잠',quote:'드르륵… 음? 누구야…?',bg:'#f0eaf8',portrait:{side:.4,lift:.06}},
+    ddo:{name:'또생일',where:'STAGE 3 구름 행성',secret:true,intro:'늘 생일인 꼬마',likes:'초 불기',quote:'오늘 생일이야! 하루가 다 가기 전에 1년이 지나 버렸거든!',bg:'#fde6ee',portrait:{side:.45,lift:.1}},
     dungdung:{name:'둥둥',where:'STAGE 2 붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은 늘 조금 늦게 도착해.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
   /* 가방 '숨겨진 비밀·발견'(game/front — flag는 구역이 켜는 발견 깃발, note = 덧붙는 한 줄) */
   finds:[{flag:'secret:infinite-space:telescope',name:'망원경으로 본 목성',where:'STAGE 1 회색 정원',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.'},
     {flag:'secret:infinite-space:icecave',name:'그늘 분화구의 얼음 동굴',where:'STAGE 1 회색 정원',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 오래오래 남은 곳이에요.'},
     {flag:'secret:infinite-space:marssound',name:'화성의 두 가지 소리 빠르기',where:'STAGE 2 붉은 모래 언덕',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요.'},
     {flag:'secret:infinite-space:bluesunset',name:'화성의 노을은 파래요',where:'STAGE 2 붉은 모래 언덕',text:'해 질 녘엔 해 둘레가 파랗게 물들어요.'},
-    {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',open:'화산 꼭대기에 올라가면 알게 돼요', /* open: 숨겨진 비밀이 아니라 꼭 지나가는 발견(2026-11-13 — 깃발을 꽂아야 금성으로 떠남) */text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}}],
-  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'파란 노을',zone:null},{name:'금성 구름',zone:'space-venus'}],
+    {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',open:'화산 꼭대기에 올라가면 알게 돼요', /* open: 숨겨진 비밀이 아니라 꼭 지나가는 발견(2026-11-13 — 깃발을 꽂아야 금성으로 떠남) */text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}},
+    {flag:'secret:infinite-space:venussun',name:'해가 서쪽에서 떠요',where:'STAGE 3 구름 행성',open:'그림자 길을 끝까지 가면 알게 돼요',text:'금성은 다른 행성과 거꾸로 돌아서, 해가 서쪽에서 뜨고 동쪽으로 져요.'},
+    {flag:'secret:infinite-space:venusair',name:'구름 위는 지구와 비슷해요',where:'STAGE 3 구름 행성',open:'구름 끝에서 알게 돼요',text:'금성 땅은 아주 뜨겁지만, 구름 위 높은 곳은 기압과 온도가 지구와 비슷해요.'},
+    {flag:'secret:infinite-space:venusday',name:'하루가 1년보다 길어요',where:'STAGE 3 구름 행성',text:'금성은 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요.'}],
+  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'구름 행성',zone:'space-venus'},{name:'쉼터',zone:null,rest:true},{name:'붉은 폭풍',zone:null}], /* rest: 번호 없는 쉼터(토성) — 아직 없는 곳은 zone null */
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   /* 목소리(2026-11-15 — docs/voice/README.md): 대본 목록 docs/voice/script.csv의 번호 SPC-…, 파일 assets/voice/space/<번호>.mp3. stages = 구역마다 미리 읽을 스테이지 */
   voice:{dir:'space',stages:{'space-garden':'S1','space-mars':'S2','space-venus':'S3'}},

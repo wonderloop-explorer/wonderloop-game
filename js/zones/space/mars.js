@@ -407,7 +407,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
       const d=SUNSET.face-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.12;return u>=1;},2);}
   /* 맨 마지막에 'STAGE 2 완료!' 카드(2026-11-17) → 사진 안내 한 줄(막지 않음) */
   G.sound.sfx('mission-clear');G.state.setFlag(K.clear,true);saveAfterMars();
-  await Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 금성 구름',icon:SPACE.icons.map(),sec:3.2,sound:null,who:'완료'}),wait(3.8)]);
+  await Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 구름 행성',icon:SPACE.icons.map(),sec:3.2,sound:null,who:'완료'}),wait(3.8)]);
   G.ui.toast(PHOTO_TIP,4.6);saveAfterMars();}
 /* ⑧ 화성 → 금성(2026-11-14 다시 — 행성 이동 공통 틀, meteor-ride departure 맨 위 주석): 달 → 화성 별똥별 이동과 같은 시간표·카메라 키, 탈것만 큰 회오리.
    0~2.4초 큰 회오리가 다가와 감쌈 → 2.4초 들림(두 팔 벌리기, 땅에서 천천히 뜸) → 3.75초부터 비행 13초: 꼭대기에서 노을 언덕의 삐삐·둥둥 쪽으로 휙(아래로 손 흔드는 둘 — 내려다보는 장면 약 2초)

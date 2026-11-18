@@ -94,7 +94,7 @@ const css=`
 #wlWard .acclock{margin:.35rem 0 0;font-size:.8rem;color:#75565e}
 #wlWard .map{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.3rem;counter-reset:z}
 #wlWard .map li{counter-increment:z;font-size:.85rem;padding:.3rem .6rem;border-radius:999px;background:rgba(127,90,96,.12);color:#75565e}
-#wlWard .map li::before{content:counter(z) ". "}#wlWard .map li.on{background:rgba(63,159,160,.18);color:#3e2834}#wlWard .map li:not(.on)::after{content:" · 준비 중";font-size:.75rem}
+#wlWard .map li::before{content:counter(z) ". "}#wlWard .map li.rest{counter-increment:none}#wlWard .map li.rest::before{content:""}#wlWard .map li.on{background:rgba(63,159,160,.18);color:#3e2834}#wlWard .map li:not(.on)::after{content:" · 준비 중";font-size:.75rem}
 #wlWard .spin{display:flex;gap:.5rem;margin-top:.9rem}#wlWard .spin button{flex:1;border:2px solid #3f9fa0;background:transparent;color:#3e2834;border-radius:12px;font:inherit;font-size:.92rem;padding:.4rem;min-height:40px;cursor:pointer}
 #wlWard .done{flex:none;display:block;width:100%;text-align:center;box-sizing:border-box;margin-top:1rem;border:0;border-radius:14px;background:#3f9fa0;color:#fffaf2;font:inherit;font-size:1.05rem;padding:.8rem 1.6rem;min-height:48px;cursor:pointer}
 /* 시리즈 공통 틀(body.wl-antui): 미션 카드·아이템 카드를 개미굴 #mission·#getCard 그대로 — 크림 판·그림자, 제목도 고운돋움, 아이콘은 동그라미 없이 */
@@ -362,7 +362,7 @@ function opts(list,cur,pick,dots=null){const box=document.createElement('div');b
     b.setAttribute('aria-pressed',i===cur?'true':'false');box.appendChild(b);});
   return box;}
 function lab(t){const p=document.createElement('p');p.className='lab';p.textContent=t;return p;}
-function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),E=X?{bio:X.guide&&X.guide.text,goal:X.guide&&X.guide.goal,map:(X.map||[]).map(m=>[m.name,1])}:F.explorer||{};ward.innerHTML='';const P=document.createElement('div');P.className='panel wl-pop-card';const B=document.createElement('div');B.className='body wl-pop-body'; // 팝업 공통(game/popup): 내용만 스크롤, 아래 단추는 늘 보이게
+function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),E=X?{bio:X.guide&&X.guide.text,goal:X.guide&&X.guide.goal,map:(X.map||[]).map(m=>[m.name,m.zone||'',m.rest])}:F.explorer||{};ward.innerHTML='';const P=document.createElement('div');P.className='panel wl-pop-card';const B=document.createElement('div');B.className='body wl-pop-body'; // 팝업 공통(game/popup): 내용만 스크롤, 아래 단추는 늘 보이게
   const k=document.createElement('p');k.className='k';k.textContent='탐험가 소개';
   const nl=document.createElement('label');nl.className='namel';nl.htmlFor='wlNameIn';nl.textContent='이름';
   const ni=document.createElement('input');ni.id='wlNameIn';ni.maxLength=8;ni.autocomplete='off';ni.placeholder='원더룹';ni.value=look.name||'';ni.addEventListener('input',()=>{look.name=ni.value;save();});
@@ -384,7 +384,7 @@ function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),
     const lk=E.deco.list.find(d=>d.flag&&!flags[d.flag]);if(lk){const n=document.createElement('p');n.className='acclock';n.textContent=lk.lock;B.appendChild(n);}}}
   const faces=U.exprNames||[];B.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('talk-next');}));
   if(E.map){const cur=(zone().root&&zone().root.name||'').replace(/^zone:/,'');B.appendChild(lab('모험 지도'));const ol=document.createElement('ol');ol.className='map';
-    E.map.forEach(([n,id])=>{const li=document.createElement('li');li.textContent=n;if(id)li.className='on';if(id===cur)li.setAttribute('aria-current','true');ol.appendChild(li);});B.appendChild(ol);}
+    E.map.forEach(([n,id,rest])=>{const li=document.createElement('li');li.textContent=n;li.className=(id?'on':'')+(rest?' rest':''); /* rest: 스테이지 사이 쉼터 — 번호 없음(세계 설정 map[].rest), zone이 없으면 '준비 중' */if(id===cur)li.setAttribute('aria-current','true');ol.appendChild(li);});B.appendChild(ol);}
   const spin=document.createElement('div');spin.className='spin';spin.append(pbtn('','↺ 돌려 보기',()=>{ctx.WL.rotation.y+=Math.PI/4;spinHold=performance.now();}),pbtn('','돌려 보기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;spinHold=performance.now();}));B.appendChild(spin);
   P.append(B,pbtn('done wl-pop-foot',mode==='start'?'모험 떠나기':'다 골랐어요',()=>closeWardrobe(mode==='start')));ward.appendChild(P);}
 function save(){store.set(LOOK_KEY,JSON.stringify(look));}
@@ -422,7 +422,7 @@ function initFront(o){ctx=o.ctx;VIEW=o.view;zone=o.zone;restart=o.restart;WORLD=
     if(bagOn&&(e.code==='Escape'||e.code==='KeyB')){e.preventDefault();e.stopImmediatePropagation();closeBag();return;}
     if(!wardOn)return;if(e.target&&e.target.tagName==='INPUT')return;if(e.code==='Escape'||(e.code==='KeyC'&&wardFrom==='game')){e.preventDefault();e.stopImmediatePropagation();closeWardrobe();}},true);
   controlHooks.onBag=()=>{if(bagOn)closeBag();else openBag();};
-  if(titleWorld()){document.body.classList.add('wl-antui');['wlNotice','wlGet','wlDlg'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('wl-felt');});{const w=document.querySelector('#wlDlg .who');if(w)w.classList.remove('wl-tape','mint','wl-mk');}} // 시리즈 공통 틀: 미션 카드·아이템 카드도 개미굴 #mission·#getCard 모양(펠트 없음)
+  if(curWorld()){document.body.classList.add('wl-antui');['wlNotice','wlGet','wlDlg'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('wl-felt');});{const w=document.querySelector('#wlDlg .who');if(w)w.classList.remove('wl-tape','mint','wl-mk');}} // 시리즈 공통 틀: 미션 카드·아이템 카드도 개미굴 #mission·#getCard 모양(펠트 없음)
   const Z=zone(),F=Z&&Z.front;if(titleWorld())setHelpNote(WORLD.controlsNote||null);else setHelpExtra(F&&F.help,F&&F.play);if(F&&F.theme)setTheme(F.theme); // 세계 색(펠트 한 벌은 game/felt)
   if(NO||!openFront()){startTime();corner.classList.add('on');}}
 const frontShown=()=>frontOn,wardrobeShown=()=>wardOn,bagShown=()=>bagOn;
