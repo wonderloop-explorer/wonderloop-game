@@ -101,3 +101,44 @@ export function pillarParts(x,z,gy,h=3.2,seed=0){const out=[],n=5,cols=['#b99ad8
   for(let i=0;i<n;i++){const u=i/(n-1),r=.82-.3*u+Math.sin(seed*3.1+i*1.7)*.07,ox=Math.sin(seed*2.3+i*2.1)*.2*(.3+u),oz=Math.cos(seed*1.7+i*1.3)*.2*(.3+u);out.push([puff(r,x+ox,gy+.35+u*(h-.8),z+oz,[1,.92,1]),i===n-1?'#e9dcf7':cols[(i+Math.abs(seed|0))%4]]);}
   out.push([puff(.5,x+.55,gy+.25,z+.2),cols[3]]);out.push([puff(.45,x-.5,gy+.22,z-.3),cols[1]]);return out;}
 export {puff};
+/* ── 거꾸로 마을 소품(2026-11-18 세 번째) — 모두 lump 목록에 넣을 [geo, 색]들. 자리(x,z)·땅 높이 gy·방향 ry ── */
+const W4=(x,gy,z,ry,s=1)=>M4([x,gy,z],[0,ry||0,0],[s,s,s]);
+const wpt=(l,x,gy,z,ry)=>[x+l[0]*Math.cos(ry)+l[2]*Math.sin(ry),gy+l[1],z-l[0]*Math.sin(ry)+l[2]*Math.cos(ry)];
+/* 거꾸로 집: 지붕(뒤집힌 네모뿔) 꼭짓점이 땅에 닿고 몸통이 그 위, 문은 벽 맨 위에 거꾸로(문턱이 위), 굴뚝은 지붕 비탈에서 아래로 — 연기 나오는 자리 smoke, 앞 창문 자리 win */
+export function houseParts(x,z,gy,ry,o={}){const out=[],W=o.w||2.5,RH=1.5,BH=2.0,wall=o.wall||'#f8ecd8',roof=o.roof||'#e59ab4',trim=o.trim||'#c9788f',win=o.win||'#fff0b8',m=W4(x,gy,z,ry);
+  const P=(g,c,p,r)=>out.push([g.applyMatrix4(M4(p,r||[0,0,0])).applyMatrix4(m),c]);
+  P(new THREE.ConeGeometry(W*.9,RH,4),roof,[0,RH/2-.05,0],[PI,PI/4,0]);P(new THREE.BoxGeometry(W*1.3,.14,W*1.3),trim,[0,RH,0]);
+  P(new THREE.BoxGeometry(W,BH,W),wall,[0,RH+BH/2,0]);P(new THREE.BoxGeometry(W*1.06,.1,W*1.06),trim,[0,RH+BH,0]);
+  P(new THREE.BoxGeometry(.62,1.0,.08),'#9a6a4a',[.38,RH+BH-.56,W/2+.03]);P(sph(.05,6,5),'#ffd27a',[.2,RH+BH-.5,W/2+.09]);P(new THREE.BoxGeometry(.9,.09,.36),trim,[.38,RH+BH,W/2+.2]);
+  P(new THREE.BoxGeometry(.6,.6,.08),win,[-.62,RH+.72,W/2+.03]);P(new THREE.BoxGeometry(.68,.07,.1),trim,[-.62,RH+.72,W/2+.04]);P(new THREE.BoxGeometry(.07,.68,.1),trim,[-.62,RH+.72,W/2+.04]);
+  P(new THREE.BoxGeometry(.08,.5,.5),win,[W/2+.03,RH+1.05,.1]);P(new THREE.BoxGeometry(.08,.5,.5),win,[-W/2-.03,RH+.8,-.2]);
+  P(new THREE.BoxGeometry(.3,.8,.3),trim,[-W*.5,1.0,-W*.12]);P(new THREE.BoxGeometry(.4,.1,.4),wall,[-W*.5,.58,-W*.12]);
+  return {parts:out,smoke:wpt([-W*.5,.48,-W*.12],x,gy,z,ry),win:wpt([-.62,RH+.72,W/2+.12],x,gy,z,ry),r:W*.72};}
+/* 거꾸로 선 우산 나무: 우산 갓이 그릇처럼 땅에(꼭지가 땅), 줄기가 위로, 뿌리가 맨 위에서 벌어짐 */
+export function treeParts(x,z,gy,seed=0,s=1){const out=[],cols=['#9fd8c4','#b7a4ea','#f4b6cb','#a9d4f0'],c=cols[Math.abs(seed)%4],m=W4(x,gy,z,seed*1.3,s),P=(g,col,p,r)=>out.push([g.applyMatrix4(M4(p,r||[0,0,0])).applyMatrix4(m),col]);
+  P(new THREE.ConeGeometry(1.35,.95,9),c,[0,.43,0],[PI,0,0]);for(let i=0;i<9;i++){const a=i/9*PI*2;P(sph(.19,6,5),'#fbf6ff',[Math.cos(a)*1.3,.9,Math.sin(a)*1.3]);}
+  P(new THREE.CylinderGeometry(.11,.16,2.0,7),'#b58d6c',[0,1.85,0]);
+  for(let i=0;i<4;i++){const a=i/4*PI*2+.5;P(new THREE.ConeGeometry(.07,.62,5),'#b58d6c',[Math.cos(a)*.2,3.0,Math.sin(a)*.2],[Math.sin(a)*.75,0,-Math.cos(a)*.75]);}
+  return out;}
+/* 물구나무 선 우체통: 통이 땅에, 기둥이 위로, 받침이 맨 위 */
+export function mailboxParts(x,z,gy,ry){const out=[],m=W4(x,gy,z,ry),P=(g,col,p,r)=>out.push([g.applyMatrix4(M4(p,r||[0,0,0])).applyMatrix4(m),col]);
+  P(new THREE.BoxGeometry(.46,.3,.32),'#e8556a',[0,.16,0]);P(new THREE.CylinderGeometry(.16,.16,.46,10).applyMatrix4(M4([0,0,0],[0,0,PI/2])),'#e8556a',[0,.04,0]);P(new THREE.BoxGeometry(.24,.035,.03),'#fff6e6',[0,.2,.165]);
+  P(new THREE.CylinderGeometry(.035,.035,.95,6),'#f6ead8',[0,.78,0]);P(new THREE.CylinderGeometry(.17,.17,.05,10),'#c9a56a',[0,1.27,0]);P(new THREE.BoxGeometry(.04,.2,.13),'#ffd27a',[.25,.22,0]);return out;}
+/* 조는 구름 양: 납작 엎드린 양털 구름 + 땅에 턱을 괸 얼굴 */
+export function sheepParts(x,z,gy,ry,seed=0){const out=[],m=W4(x,gy,z,ry),P=(g,col,p,r,s)=>out.push([g.applyMatrix4(M4(p,r||[0,0,0],s||[1,1,1])).applyMatrix4(m),col]),A='#fbf6ff',B='#eee2f8',F='#75618c';
+  P(sph(.4,10,8),A,[0,.3,0],[0,0,0],[1.3,.8,1]);[[-.3,.42,.1,.2],[.28,.44,-.08,.21],[0,.5,-.1,.22],[-.1,.36,.28,.17],[.2,.32,.26,.16],[-.42,.24,-.1,.17],[.44,.22,.05,.16]].forEach(([a,b,c,r],i)=>P(sph(r,7,5),i%2?B:A,[a,b,c]));
+  P(sph(.17,9,7),F,[0,.17,.46],[0,0,0],[1,.86,1.1]);P(sph(.1,7,5),A,[0,.31,.4]);for(const s of [-1,1]){P(sph(.06,6,4),F,[s*.17,.2,.4],[0,0,s*.5],[1.5,.5,.8]);P(sph(.02,5,4),'#f6ead8',[s*.07,.2,.615],[0,0,0],[1.6,.5,.6]);}
+  return out;}
+/* 광장 해시계 */
+export function sundialParts(x,z,gy){const out=[],m=W4(x,gy,z,0),P=(g,col,p,r)=>out.push([g.applyMatrix4(M4(p,r||[0,0,0])).applyMatrix4(m),col]);
+  P(new THREE.CylinderGeometry(.6,.72,.3,12),'#e6d6f6',[0,.15,0]);P(new THREE.CylinderGeometry(.54,.54,.05,16),'#fff6e0',[0,.32,0]);P(new THREE.CylinderGeometry(.36,.36,.05,3),'#8a5a3c',[0,.5,0],[PI/2,0,0]);
+  for(let i=0;i<8;i++){const a=i/8*PI*2;P(new THREE.BoxGeometry(.03,.02,.1),'#8a5a3c',[Math.sin(a)*.44,.35,Math.cos(a)*.44],[0,a,0]);}return out;}
+/* 낡은 비행선(풍선형): 기운 자국이 있는 풍선 + 줄에 매달린 곤돌라 + 꼬리 날개 — 구름 바다 너머에 천천히 떠다님(그리기 1) */
+export function makeAirship(){const g=new THREE.Group();g.name='venus-airship';const L=[],P=(geo,col,p,r,s)=>L.push([geo.applyMatrix4(M4(p||[0,0,0],r||[0,0,0],s||[1,1,1])),col]);
+  P(sph(1,14,10),'#ecd3a8',[0,0,0],[0,0,0],[3.1,1.2,1.2]);P(new THREE.TorusGeometry(1.13,.07,5,16),'#c98f7a',[.9,0,0],[0,PI/2,0]);P(new THREE.TorusGeometry(1.13,.07,5,16),'#c98f7a',[-.9,0,0],[0,PI/2,0]);
+  P(sph(1,8,6),'#9fb7c9',[1.7,.62,.5],[.5,0,-.3],[.5,.1,.42]);P(sph(1,8,6),'#d9a0a0',[-.4,.95,.52],[.5,0,0],[.46,.1,.4]);P(sph(1,8,6),'#b9c79a',[-1.8,.2,.86],[1.2,0,.2],[.4,.1,.36]);P(sph(1,8,6),'#9fb7c9',[.3,-.2,-1.12],[PI/2,0,0],[.5,.1,.4]);
+  P(new THREE.ConeGeometry(.3,.6,8),'#c98f7a',[3.2,0,0],[0,0,-PI/2]);
+  P(new THREE.BoxGeometry(1.1,1.5,.06),'#c98f7a',[-2.9,.55,0],[0,0,.5]);P(new THREE.BoxGeometry(1.1,1.2,.06),'#c98f7a',[-2.9,-.5,0],[0,0,-.5]);P(new THREE.BoxGeometry(1.1,.06,2.0),'#d9a98a',[-2.9,0,0]);
+  P(new THREE.BoxGeometry(1.5,.5,.7),'#8a5a3c',[.1,-1.95,0]);P(new THREE.BoxGeometry(1.6,.08,.8),'#b58d6c',[.1,-1.68,0]);for(const [a,b] of [[-.55,-.3],[-.55,.3],[.75,-.3],[.75,.3]])P(new THREE.CylinderGeometry(.02,.02,.8,4),'#6a4a36',[a,-1.3,b]);
+  P(new THREE.BoxGeometry(.06,.9,.12),'#6a4a36',[-.75,-1.95,0],[.6,0,0]);P(new THREE.BoxGeometry(.3,.2,.04),'#ffe9a8',[.3,-1.92,.36]);
+  const me=lump(L,false,1.2);me.frustumCulled=false;g.add(me);return g;}
