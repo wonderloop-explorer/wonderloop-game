@@ -104,7 +104,7 @@ export default {
     /* STAGE 3 구름 행성 — 문구는 기획서 '주민 소개 카드' 그대로 */
     geokkuri:{name:'거꾸리',where:'STAGE 3 구름 행성',intro:'해가 서쪽에서 뜨는 곳의 길잡이',likes:'저녁에 뜨는 해',quote:'녕안! 그림자 반대쪽이 앞이야.',bg:'#eadcf6',portrait:{side:.45,lift:.08}},
     munge:{name:'뭉게 문지기',where:'STAGE 3 구름 행성',intro:'구름 문을 지키는 잠꾸러기',likes:'긴 낮잠',quote:'드르륵… 음? 누구야…?',bg:'#f0eaf8',portrait:{side:.4,lift:.06}},
-    ddo:{name:'또생일',where:'STAGE 3 구름 행성',secret:true,intro:'늘 생일인 꼬마',likes:'초 불기',quote:'오늘 생일이야! 하루가 다 가기 전에 1년이 지나 버렸거든!',bg:'#fde6ee',portrait:{side:.45,lift:.1}},
+    ddo:{name:'또생일',where:'STAGE 3 구름 행성',intro:'늘 생일인 꼬마',likes:'초 불기',quote:'오늘 생일이야! 하루가 다 가기 전에 1년이 지나 버렸거든!',bg:'#fde6ee',portrait:{side:.45,lift:.1}},
     dungdung:{name:'둥둥',where:'STAGE 2 붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은 늘 조금 늦게 도착해.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
   /* 가방 '숨겨진 비밀·발견'(game/front — flag는 구역이 켜는 발견 깃발, note = 덧붙는 한 줄) */
   finds:[{flag:'secret:infinite-space:telescope',name:'망원경으로 본 목성',where:'STAGE 1 회색 정원',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.'},
@@ -114,7 +114,7 @@ export default {
     {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',open:'화산 꼭대기에 올라가면 알게 돼요', /* open: 숨겨진 비밀이 아니라 꼭 지나가는 발견(2026-11-13 — 깃발을 꽂아야 금성으로 떠남) */text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}},
     {flag:'secret:infinite-space:venussun',name:'해가 서쪽에서 떠요',where:'STAGE 3 구름 행성',open:'해돋이 광장에서 해 쪽으로 나가면 알게 돼요',text:'금성은 다른 행성과 거꾸로 돌아서, 해가 서쪽에서 뜨고 동쪽으로 져요.'},
     {flag:'secret:infinite-space:venusair',name:'구름 위는 지구와 비슷해요',where:'STAGE 3 구름 행성',open:'구름 끝에서 알게 돼요',text:'금성 땅은 아주 뜨겁지만, 구름 위 높은 곳은 기압과 온도가 지구와 비슷해요.'},
-    {flag:'secret:infinite-space:venusday',name:'하루가 1년보다 길어요',where:'STAGE 3 구름 행성',text:'금성은 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요.'}],
+    {flag:'secret:infinite-space:venusday',name:'하루가 1년보다 길어요',where:'STAGE 3 구름 행성',open:'또생일의 생일 초를 찾아 주면 알게 돼요',text:'금성은 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요.'}],
   map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'구름 행성',zone:'space-venus'},{name:'쉼터',zone:null,rest:true},{name:'붉은 폭풍',zone:null}], /* rest: 번호 없는 쉼터(토성) — 아직 없는 곳은 zone null */
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   /* 목소리(2026-11-15 — docs/voice/README.md): 대본 목록 docs/voice/script.csv의 번호 SPC-…, 파일 assets/voice/space/<번호>.mp3. stages = 구역마다 미리 읽을 스테이지 */
@@ -153,8 +153,8 @@ export default {
      0:33.5 D장조로 해결 → 0:37까지 울림. 한 마디 1.3765초(한 박 0.459초), 마디 자리 12.35초 기준, 늘이거나 줄이는 자리는 절정 안 24.74초 마디 경계 */
   travel:{theme:{file:'assets/audio/travel-theme.mp3',lufs:-13.1,from:13,to:37,resolve:33.5,bar:1.3765,beat0:12.35,jumpAt:25},
     map:{bodies:[{id:'sun',name:'해',color:'#F6C85A',r:.06,glow:true},{id:'venus',name:'금성',color:'#C9A6E0',r:.05,zone:'space-venus'},{id:'moon',name:'달',color:'#BFC3CC',r:.05,zone:'space-garden'},
-      {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true}]},
-    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파랗대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'}},
+      {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true,zone:'space-saturn'}]},
+    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파랗대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'},'space-venus>space-saturn':{id:'travel-venus-saturn',text:'[임시] 다음은 토성 고리 — 쉼터 이야기 예고'}},
     facts:{'space-garden':[{flag:'have:infinite-space:necklace',img:()=>ICON_NECK()},{flag:'secret:infinite-space:icecave',img:()=>ICON_ICE()},
       {flag:'secret:infinite-space:telescope',img:()=>ICON_SCOPE()},{flag:'item:infinite-space:dalddeok',img:()=>ICON_CAKE()}],
       'space-mars':[{flag:'secret:infinite-space:bluesunset',img:()=>ICON_DUSK()},{flag:'secret:infinite-space:marssound',img:()=>ICON_VOICE()}]}},

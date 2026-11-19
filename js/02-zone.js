@@ -41,6 +41,7 @@ const ZONES={
   'fairy-dock':()=>import('./zones/fairy/dock.js'), // 요정의 숲 ① 이슬방울 선착장
   'space-garden':()=>import('./zones/space/garden.js'), // 무한 우주 ① 회색 정원(걸어서 한 바퀴 도는 작은 행성)
   'space-venus':()=>import('./zones/space/venus.js'), // 무한 우주 ③ 구름 행성(금성) — STAGE 3 본편(거꾸리·그림자 길 찾기·뭉게 문지기·또생일, 2026-11-18). 예전 설명: 임시 구역(화성 → 금성 이동 연출이 내려앉는 연보라 안개·푹신한 구름 땅, STAGE 3 본편은 다음)
+  'space-saturn':()=>import('./zones/space/saturn.js'), // 무한 우주 쉼터 자리(토성 고리) — 임시 구역: 얼음 배가 내려 주고 '다음 이야기 준비 중'(2026-11-19)
   'space-mars':()=>import('./zones/space/mars.js'), // 무한 우주 ② 붉은 모래 언덕(화성) — STAGE 2 본편(삐삐·둥둥·협곡·회오리·파란 노을)
 };
 // 견본 구역(확인용, 하늘 없음)은 주소에 ?zonetest 를 붙였을 때만 목록에 들어간다 — 일반 주소에서는 문·wlZone.go·?zone= 어느 길로도 못 간다

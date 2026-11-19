@@ -30,7 +30,7 @@ const shown=e=>{if(!e)return false;const cs=getComputedStyle(e);return cs.displa
 function safe(){if(!probe){probe=document.createElement('div');probe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)';document.body.appendChild(probe);}
   const cs=getComputedStyle(probe);safeT=parseFloat(cs.paddingTop)||0;safeB=parseFloat(cs.paddingBottom)||0;safeL=parseFloat(cs.paddingLeft)||0;}
 /* 조작이 잠겼나: 주민 대화 · 이야기 장면 · 탈것 · 획득·결말 연출 · 화면 전환 */
-function locked(){if(!ctx)return false;const U=ctx.WL.userData;return !!((talkFn&&talkFn())||U.sceneLock||U.riding||blocking('itemget')||blocking('caught')||blocking('bigget')||blocking('finale')||blocking('meteor'));}
+function locked(){if(!ctx)return false;const U=ctx.WL.userData;return !!((talkFn&&talkFn())||U.sceneLock||(U.riding&&!U.riding.steer)||blocking('itemget')||blocking('caught')||blocking('bigget')||blocking('finale')||blocking('meteor'));}
 /* 화면에 비춘 인물 네모 [x0,y0,x1,y1, 얼굴 아래 끝 y] — 원더룹, 말하는 상대, avoid로 넣은 것 */
 function proj(x,y,z){const b=bentPos({x,y,z});_a.set(b.x,b.y,b.z).project(ctx.camera);return _a.z>1?null:[(_a.x+1)/2*innerWidth,(1-_a.y)/2*innerHeight];}
 function rectOf(x,y,z,h,wk,fk){const a=proj(x,y,z),b=proj(x,y+h,z);if(!a||!b)return null;const H=Math.abs(a[1]-b[1]),w=Math.max(18,H*wk),cx=(a[0]+b[0])/2,y0=Math.min(a[1],b[1]);return [cx-w/2,y0,cx+w/2,y0+H,y0+H*fk];}
