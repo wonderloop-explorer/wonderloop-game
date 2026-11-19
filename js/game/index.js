@@ -80,6 +80,7 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
 view.pairCam=pairCam;
 const PAIR={root:null,side:1,phi:0,y:1.4,t:-9},pairNow=()=>clock.t-PAIR.t<.25&&PAIR.root?PAIR:null;
 faceHook.pair=pairNow;
+pieceHook.hero=()=>{if(!HERO)return null;const P=HERO.position;return [[P.x,P.y,P.z,1.55]];};
 pieceHook.targets=()=>{const p=pairNow();if(!p||!HERO)return null;const e=p.root.matrixWorld.elements,P=HERO.position;return [[P.x,P.y,P.z,1.55],[e[12],e[13],e[14],p.y]];};
 function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}

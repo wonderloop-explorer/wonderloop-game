@@ -140,17 +140,17 @@ const list=()=>LIST; // 시험용: 지금 흐려진 물체 보기
    재질에 셰이더 몇 줄을 끼워, 조각마다 흐림 값(wlFadeA[번호], 1 = 그대로)보다 촘촘한 점무늬로 화소를 버린다(반투명 섞기가 아니라 그리기·정렬이 그대로 — 드로우콜 0 추가).
    대화 카메라가 잡힌 동안만(pieceHook.targets() — game/index가 원더룹·상대 자리를 줌) 카메라 → 두 사람 몸으로 가는 시선이 조각 상자를 지나면 0.18까지 약 0.2초에 흐리고,
    대화가 끝나면 되돌린다. 집처럼 큰 건물은 대상이 아니다(대화 카메라가 막히지 않는 쪽을 고름). 구역을 떠나면 clearOcclude가 비운다 */
-const PIECES=[],pieceHook={targets:null},_pr=new THREE.Ray(),_pb=new THREE.Box3(),_pt=new THREE.Vector3(),_ph=new THREE.Vector3();
+const PIECES=[],pieceHook={targets:null,hero:null},_pr=new THREE.Ray(),_pb=new THREE.Box3(),_pt=new THREE.Vector3(),_ph=new THREE.Vector3();
 function patchPieces(m,U){if(m.userData.wlPieceU){return;}m.userData.wlPieceU=U;const prev=m.onBeforeCompile;
   m.onBeforeCompile=function(sh,r){if(prev)prev.call(this,sh,r);sh.uniforms.wlFadeA=U;
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float wlPiece;uniform float wlFadeA[64];varying float vWlFade;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWlFade=wlFadeA[int(wlPiece+.5)];');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vWlFade;').replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(vWlFade<.995&&fract(dot(floor(gl_FragCoord.xy),vec2(.7548776662,.5698402910)))>vWlFade)discard;');};
   const key=m.customProgramCacheKey;m.customProgramCacheKey=function(){return (key?key.call(this):'')+'|wlPiece';};m.needsUpdate=true;}
-function pieces({meshes,boxes}){const m0=meshes.find(m=>m),U=(m0&&m0.material.userData.wlPieceU)||{value:new Float32Array(64).fill(1)};U.value.fill(1); /* 재질을 구역 사이에 다시 쓰면(캐시) 같은 표를 이어 씀 */
+function pieces({meshes,boxes,always}){const m0=meshes.find(m=>m),U=(m0&&m0.material.userData.wlPieceU)||{value:new Float32Array(64).fill(1)};U.value.fill(1); /* 재질을 구역 사이에 다시 쓰면(캐시) 같은 표를 이어 씀 */
   const list=Object.keys(boxes).map(k=>({id:+k,box:boxes[k],v:1})).filter(o=>o.id>0&&o.id<64);
-  for(const me of meshes){if(!me)continue;patchPieces(me.material,U);me.userData.wlFade=U.value;}const it={U,list,live:false};PIECES.push(it);return it;}
-function tickPieces(dt){if(!PIECES.length||!ctx)return;const T=pieceHook.targets&&pieceHook.targets(),cam=ctx.camera.position,k=Math.min(1,dt*8);
-  for(const it of PIECES){if(!T&&!it.live)continue;let live=false;
+  for(const me of meshes){if(!me)continue;patchPieces(me.material,U);me.userData.wlFade=U.value;}const it={U,list,live:false,always:!!always};PIECES.push(it);return it;}
+function tickPieces(dt){if(!PIECES.length||!ctx)return;const T0=pieceHook.targets&&pieceHook.targets(),cam=ctx.camera.position,k=Math.min(1,dt*8);
+  for(const it of PIECES){const T=T0||(it.always&&pieceHook.hero?pieceHook.hero():null); /* always: 대화 중이 아니어도 카메라 → 원더룹 시선에 걸리면(큰 덩어리에 합친 집 — 금성 휴대폰) */if(!T&&!it.live)continue;let live=false;
     for(const o of it.list){let goal=1;if(T){_pb.copy(o.box).expandByScalar(.14);
         const dc=_pb.distanceToPoint(cam);
         if(dc<.5)goal=.18;

@@ -60,8 +60,9 @@ with sync_playwright() as p:
     until("(document.getElementById('wlDlg').style.display==='block')", 20); pg.wait_for_timeout(1500); shot('03-geokkuri-talk')
     until("wlZone.cur.state().met&&" + free, 80); pg.wait_for_timeout(600); shot('04-guide')
     # ③ 또생일 부탁(다가가면 저절로)
-    walk(S['sec'][0] - 2.6, S['sec'][1] + 1.2, 20, .6); until("!!wlZone.cur.state().T.ask0", 8); pg.wait_for_timeout(1600); shot('05-ddo-ask')
-    until("wlZone.cur.state().ask&&" + free, 40); pg.wait_for_timeout(500); shot('06-ddo-podium')
+    walk(S['ddo0'][0] - 2.6, S['ddo0'][1] + 1.2, 20, .6); until("!!wlZone.cur.state().T.ask0", 8); pg.wait_for_timeout(1600); shot('05-ddo-ask')
+    until("wlZone.cur.state().ddoFly", 30); pg.wait_for_timeout(900); shot('06-ddo-flies-ahead'); pg.wait_for_timeout(800); shot('06a-ddo-flies-ahead2')
+    until("wlZone.cur.state().ask&&" + free, 40); pg.wait_for_timeout(500); shot('06b-umbrella-on-pad')
     # ④ 바람 타고 생일 초 잡기 — 다음 초 쪽으로 WASD(왼쪽·오른쪽·위·아래)
     KEYS = {'KeyA': False, 'KeyD': False, 'KeyW': False, 'KeyS': False}
     def key(k, on):
@@ -74,6 +75,7 @@ with sync_playwright() as p:
         if not until("!!wlZone.cur.state().ride", 12): continue  # 아직 출발 전이면 다시(조종 없이 지나가 버리지 않게)
         rides += 1; steer = not (WRONG and rides == 1); t0 = time.time()
         if rides == 1: pg.wait_for_timeout(900); shot('07-ride-start')
+        marks = [.18, .4, .62, .8, .92, .985] if rides == 1 else []
         while time.time() - t0 < 40:
             s = st(); r = s['ride']
             if not r: break
@@ -83,9 +85,11 @@ with sync_playwright() as p:
                 if r['du'] < .075 and ('c%d' % r['next']) not in shots and steer: shots.add('c%d' % r['next']); shot('08-ride-candle%d' % (r['next'] + 1))
             else:
                 for k in KEYS: key(k, False)
+            if marks and r['u'] >= marks[0]: shot('08a-ride-u%02d' % round(marks.pop(0) * 100))
             note(); pg.wait_for_timeout(60)
         for k in KEYS: key(k, False)
         pg.wait_for_timeout(700); shot('09-ride-end%d' % rides)
+        if st()['cand'] < 3: until("wlZone.cur.state().carry", 6); pg.wait_for_timeout(1500); shot('09a-carry-back%d' % rides); until(free, 12)
     R['바람 타기 횟수'] = rides; R['잡은 초'] = st()['cand']
     # ⑤ 케이크에 초 꽂기 → 촛불 → 생일 노래 → 발견 카드
     until(free, 20); walk(S['cake'][0] - 1.0, S['cake'][1] + .75, 25, .5); pg.wait_for_timeout(500); shot('0a-ddo-table'); pg.keyboard.press('e'); until("!!wlZone.cur.state().T.cake", 8); pg.wait_for_timeout(1500); shot('0b-candles-lit')
