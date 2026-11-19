@@ -98,7 +98,12 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   for(const [x,z,y,r] of [[5,25,3.6,5],[-6,32,6,6],[-19,31,5.5,6],[-30,23,4,5],[-11,15,2.4,4],[-32,9,3,4.4]]){A.push([puff(r,x,y,z,[1.3,.3,1.05]),'#f3e9fc']);A.push([puff(r*.6,x+r*.7,y+.3,z-r*.4,[1.2,.34,1]),'#e3d2f4']);A.push([puff(r*.5,x-r*.6,y-.2,z+r*.5,[1.2,.36,1]),'#eadcf8']);}
   /* 구름 집 넷(지붕이 위 — 평범한 집): 길 양옆에 번갈아(문이 길 쪽), 등불이 켜진 집 셋, 지붕 꼭대기 깃발은 모두 서쪽으로 펄럭임 */
   const HC=[{wall:'#f8ecd8',roof:'#e59ab4',trim:'#c9788f',win:'#ffd98a',lit:1},{wall:'#ece4fb',roof:'#9a86d6',trim:'#7c69b8'},{wall:'#e4f4ec',roof:'#7fc4b0',trim:'#5fa693',win:'#ffd98a',lit:1},{wall:'#fdeed6',roof:'#f0b072',trim:'#d18f52',win:'#ffd98a',lit:1}];
-  [[17,1],[34,-1],[54,1],[74,-1]].forEach(([s,sd],i)=>{const p=along(s,sd,5,1.9,1.7);if(!p)return;const h=houseParts(p[0],p[1],groundY(...p),toPath(p),HC[i]);{const m=lump([...h.parts,...poleParts(h.top[0],h.top[2],h.top[1]-.15,1.1)],true,.6),g=new THREE.Group(),gy=groundY(...p);g.name='venus-house';g.position.set(p[0],gy,p[1]);m.position.set(-p[0],-gy,-p[1]);m.frustumCulled=false;g.add(m);add(g);G.occlude.add(g,2.1,3.6,{near:true,speed:6});} /* 집은 한 채씩 따로(카메라와 원더룹 사이에 오면 흐려짐 — 지붕이 화면을 덮었다) */obstacles.push({c:[p[0],p[1],1.75]});smokes.push(h.smoke);houses.push(p);bl.push([p[0],p[1],1.75]);if(HC[i].lit)lamps.push(h.win);flagsAt.push([h.top[0],h.top[1]+.88,h.top[2],FC[i%4]]);});
+  const HS=[];
+  [[17,1],[34,-1],[54,1],[74,-1]].forEach(([s,sd],i)=>{const p=along(s,sd,5,1.9,1.7);if(!p)return;const h=houseParts(p[0],p[1],groundY(...p),toPath(p),HC[i]);HS.push({p,parts:[...h.parts,...poleParts(h.top[0],h.top[2],h.top[1]-.15,1.1)]});obstacles.push({c:[p[0],p[1],1.75]});smokes.push(h.smoke);houses.push(p);bl.push([p[0],p[1],1.75]);if(HC[i].lit)lamps.push(h.win);flagsAt.push([h.top[0],h.top[1]+.88,h.top[2],FC[i%4]]);});
+  /* 집은 카메라와 원더룹 사이에 오면 흐려진다(지붕이 화면을 덮었다): 컴퓨터는 한 채씩 따로, 휴대폰은 넷을 한 덩어리로(그리기 1 — 한 채가 가리면 넷이 함께 흐려짐, 2026-11-19 드로우콜 줄이기) */
+  {const mk=(list)=>{const m=lump(list.flatMap(h=>h.parts),true,.6),g=new THREE.Group(),c=list[0].p,gy=groundY(...c);g.name='venus-house';g.position.set(c[0],gy,c[1]);m.position.set(-c[0],-gy,-c[1]);m.frustumCulled=false;g.add(m);add(g);
+      G.occlude.add(g,2.1,3.6,{near:true,speed:6,boxes:list.map(h=>new THREE.Box3(new THREE.Vector3(h.p[0]-1.7,groundY(...h.p)-.2,h.p[1]-1.7),new THREE.Vector3(h.p[0]+1.7,groundY(...h.p)+3.5,h.p[1]+1.7)))});};
+    if(HS.length){if(MOB)mk(HS);else HS.forEach(h=>mk([h]));}}
   /* 조는 구름 양 넷 · 우체통 · 작은 해시계 넷(눈금은 반시계 방향) · 깃대와 바람개비 · 우산 나무(길 양옆) */
   [[26,-1],[45,1],[64,-1],[85,1]].forEach(([s,sd],i)=>{const p=along(s,sd,2.9,.5,2.1);if(!p)return;const gy=groundY(...p);V.push(...sheepParts(p[0],p[1],gy,toPath(p)+(i%2?1:-1)*.9,i));obstacles.push({c:[p[0],p[1],.42]});sheep.push(p);bl.push([p[0],p[1],.55]);});
   [[11.5,-1]].forEach(([s,sd])=>{const p=along(s,sd,2.6,.3,2);if(p)V.push(...mailboxParts(p[0],p[1],groundY(...p),toPath(p)));});
@@ -171,7 +176,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   ddo.root.position.set(SEC[0],groundY(...SEC)+PODH,SEC[1]);ddo.root.rotation.y=Math.atan2(0-SEC[0],-5-SEC[1]);
   cake.g.position.set(CAKE[0],groundY(...CAKE)+TBH+.03,CAKE[1]);cake.candles(!!F[DISC.day]);cake.lit(false);
   /* 등불이 켜진 집 창문·식탁 위의 따뜻한 빛(더하기 점 한 덩어리 — 작게: 큰 빛 판은 가까이서 카메라 앞을 뿌옇게 가렸다) */
-  {const pos=[];lamps.forEach(l=>pos.push(l[0],l[1],l[2]));const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));const m=new THREE.PointsMaterial({map:glowTex,size:1.3,color:'#ffc66e',transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.6,fog:false});m.userData.noStorybook=true;const pt=new THREE.Points(geo,m);pt.name='venus-lamps';pt.frustumCulled=false;pt.userData.noMerge=true;add(pt);}
+  if(!MOB){const pos=[];lamps.forEach(l=>pos.push(l[0],l[1],l[2]));const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));const m=new THREE.PointsMaterial({map:glowTex,size:1.3,color:'#ffc66e',transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.6,fog:false});m.userData.noStorybook=true;const pt=new THREE.Points(geo,m);pt.name='venus-lamps';pt.frustumCulled=false;pt.userData.noMerge=true;add(pt);}
   const blobs=blobMany(3+bl.length);if(blobs){blobs.frustumCulled=false;add(blobs);bl.forEach((b,i)=>blobs.set(3+i,b[0],groundY(b[0],b[1])+.03,b[1],b[2]));}
   const puffs=points(root,MOB?90:150,{map:glowTex,add:false,size:.6,grav:-.04,drag:1.6});keep.push(puffs.pts);
   const puffAt=(x,z,n,sp=.9,col=[.95,.9,1])=>{const y=groundY(x,z);for(let i=0;i<n;i++){const a=Math.random()*PI*2,r=.2+Math.random()*.6,v=sp*(.4+Math.random()*.7),k=.88+Math.random()*.12;puffs.emit(x+Math.cos(a)*r,y+.15+Math.random()*.5,z+Math.sin(a)*r,Math.cos(a)*v,.3+Math.random()*.6,Math.sin(a)*v,1.3+Math.random()*1.2,[col[0]*k,col[1]*k,col[2]*k]);}};
@@ -379,6 +384,8 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     /* 원더룹 빠르기(문지기 판정) */
     {if(st.lastP&&dt>0){const v=Math.hypot(P.x-st.lastP[0],P.z-st.lastP[1])/dt;st.spd+=(v-st.spd)*Math.min(1,dt*18);}st.lastP=[P.x,P.z];}
     /* 주민 움직임 */
+    /* 멀리 있어 안 보이는 것은 그리지 않음(드로우콜 줄이기): 또생일·케이크는 50m 밖, 문지기는 62m 밖, 비행선은 안개가 걷히기 전 */
+    if(!st.hid){const dd=Math.hypot(P.x-SEC[0],P.z-SEC[1])<50;ddo.root.visible=cake.g.visible=dd;munge.root.visible=Math.hypot(P.x-MUNGE[0],P.z-MUNGE[1])<62;ship.visible=!!F[K.plaza];}
     const beat=munge.tick(dt,t,st.mState);if(beat&&Math.hypot(P.x-MUNGE[0],P.z-MUNGE[1])<20&&!F[K.clear])G.sound.sfx('event-snore',{gain:Math.max(.25,1-Math.hypot(P.x-MUNGE[0],P.z-MUNGE[1])/22)});
     ddo.tick(dt,t,st.ddoHop>0?'talk':'idle');if(st.ddoHop>0)st.ddoHop-=dt;if(!st.scene)faceTo(ddo.root,P.x,P.z,Math.hypot(P.x-SEC[0],P.z-SEC[1])<5?dt:0);cake.tick(t);
     {const d=Math.hypot(P.x-SEC[0],P.z-SEC[1]);if(d<26&&!st.scene&&!st.sailing&&!G.dialog.talking()){st.songT-=dt;if(st.songT<=0){st.songT=3.3;G.sound.sfx('tune-birthday',{phrase:st.songK++,gain:Math.max(.35,1.2*(1-d/26))});}}} /* 생일 노래: 가까이 가면 분명히 들리게(예전보다 크게) */
