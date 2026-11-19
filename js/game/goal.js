@@ -54,7 +54,7 @@ function setArrow(ang){const q=document.getElementById('wlQuest');if(!q)return;i
   if(!arrow){arrow=document.createElement('span');arrow.className='wl-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='➜';}
   if(arrow.parentNode!==q&&q.textContent)q.prepend(arrow);arrow.style.transform=`rotate(${ang}rad)`;}
 /* 이름표가 화면 위 안내 글(할 일 안내·가방·메뉴·안내 문구)과 겹치면 기둥을 따라 아래로 비켜 내림(2026-11-04 — 개미굴 원본에서 '버섯 랜턴' 이름표와 할 일 안내가 겹쳐 잘렸다). 기둥 밑동 1.2m 위보다 낮게는 안 내린다 */
-const _v=new THREE.Vector3(),_b=new THREE.Vector3();let tagDrop=0,tagHide=false;
+const _v=new THREE.Vector3(),_b=new THREE.Vector3();let tagDrop=0,tagHide=false,tagOver=false;
 function hudRects(){const R=[];for(const id of ['wlQuest','wlItems','wlMenu','wlToast','wlPrompt','wlStrip','wlNotice','wlGet','wlCount']) /* 카드·띠·횟수도(2026-11-14 — 화산 꼭대기 발견 띠 카드가 '금성행 회오리' 이름표를 반쯤 가렸다) */{const e=document.getElementById(id);if(!e||!e.offsetParent&&getComputedStyle(e).position!=='fixed')continue;const r=e.getBoundingClientRect();if(r.width>2&&r.height>2&&getComputedStyle(e).visibility!=='hidden'&&+getComputedStyle(e).opacity>.05)R.push(r);}return R;}
 function avoidHud(gy,dt){const cam=ctx.camera;if(!cam||!cam.isPerspectiveCamera){tagDrop=0;return;}const W=innerWidth,H=innerHeight;
   const base=tag.position.y;_v.copy(tag.position);_v.y+=tag.scale.y*(1-tag.center.y);_v.project(cam);if(_v.z>1){tagDrop=0;return;}
@@ -64,9 +64,9 @@ function avoidHud(gy,dt){const cam=ctx.camera;if(!cam||!cam.isPerspectiveCamera)
 function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hintsVisible()){G.visible=false;setArrow(null);return;}G.visible=true;t0+=dt;
   const gy=P.y??cur.y??(ctx.ground?ctx.ground(P.x,P.z):0);beam.position.set(P.x,gy,P.z);beamA.position.set(P.x,gy,P.z);tag.position.set(P.x,gy+(cur.h||2.7)+Math.sin(t0*3)*.08,P.z);
   /* 이름표·노란 세모 크기 상한(2026-11-07 — 카메라 가까이 오면 화면을 크게 가렸다): 화면 높이의 11%(최대 96px)보다 커지지 않게 줄이고,
-     원더룹이 목표 1.6m 안이면 0.3초에 걸쳐 숨김(2.6m부터 옅어짐) */
+     원더룹이 목표 2m 안이면 0.3초에 걸쳐 숨김(2.8m부터 옅어짐), 더 멀어도 화면에서 이름표가 원더룹 탈과 겹치면 그동안 숨김(tagOver — 2026-11-19: '케이크' 이름표가 원더룹 바로 위에 겹쳤다) */
   {const cam=ctx.camera;let k=1;if(cam&&cam.isPerspectiveCamera){const depth=Math.max(.1,cam.position.distanceTo(tag.position)),ppm=innerHeight/(2*Math.tan(cam.fov*Math.PI/360)*depth),cap=Math.min(96,innerHeight*.11);k=Math.min(1,cap/(1.44*ppm),(innerWidth-16)/(2.3*tagW*ppm));} /* 화면 폭보다 넓어지지도 않게 */
-   tag.scale.set(2.3*k*tagW,1.44*k,1);const W0=ctx.WL,dl=W0?Math.hypot(P.x-W0.position.x,P.z-W0.position.z):9,want=tagHide?0:Math.min(1,Math.max(0,(dl-1.6)/1));
+   tag.scale.set(2.3*k*tagW,1.44*k,1);const W0=ctx.WL,dl=W0?Math.hypot(P.x-W0.position.x,P.z-W0.position.z):9,want=(tagHide||tagOver)?0:Math.min(1,Math.max(0,(dl-2)/.8));
    tagA+=(want-tagA)*Math.min(1,dt*6);tag.material.opacity=tagA;}
   avoidHud(gy,dt);
   /* 화면 가장자리에 걸리면 안쪽으로 밀어 넣음(2026-11-13 — 모든 세계 공통: 휴대폰에서 '먼지 회오리' 이름표가 화면 끝에서 잘렸다): 화면에서 좌우 8px 안에 들도록 카메라 오른쪽 방향으로 옮김 */
@@ -80,7 +80,11 @@ function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hi
       const limV=hv*(1-2*topPx/innerHeight),over=_v.y+tag.scale.y*.88-limV;if(over>0)tag.position.y=Math.max(gy+.55,tag.position.y-over/up);}
     _v.copy(tag.position).applyMatrix4(cam.matrixWorldInverse);depth=-_v.z;
     if(depth>cam.near+.2){const half=depth*tf*cam.aspect,hw=tag.scale.x*.5,lim=half*(1-16/innerWidth)-hw,ax=Math.abs(_v.x);
-      if(lim>0&&ax>lim&&ax<half+hw){_v.x=Math.sign(_v.x)*lim;tag.position.copy(_v.applyMatrix4(cam.matrixWorld));}}}}
+      if(lim>0&&ax>lim&&ax<half+hw){_v.x=Math.sign(_v.x)*lim;tag.position.copy(_v.applyMatrix4(cam.matrixWorld));}}
+    /* 이름표가 화면에서 원더룹 탈과 겹치는지(다음 프레임에 숨김 — 풀릴 때는 14px 여유) */
+    {const W0=ctx.WL,hp=W0.position,dT=cam.position.distanceTo(tag.position),dH=Math.hypot(cam.position.x-hp.x,cam.position.y-hp.y-1.2,cam.position.z-hp.z),pT=innerHeight/(2*tf*Math.max(.1,dT)),pH=innerHeight/(2*tf*Math.max(.1,dH));
+      _v.copy(tag.position).project(cam);_b.set(hp.x,hp.y+1.2,hp.z).project(cam);const dx=Math.abs(_v.x-_b.x)*innerWidth/2,dy=Math.abs(_v.y-_b.y)*innerHeight/2,m=tagOver?14:0;
+      tagOver=_v.z<1&&_b.z<1&&dx<tag.scale.x*.5*pT+.62*pH+m&&dy<tag.scale.y*.9*pT+.7*pH+m;}}}
   // 동그라미 길: 원더룹 앞 0.9m부터 목표 쪽으로 GAP마다, 목표 1.1m 앞까지(가까운 N개만)
   const w=W.position,dx=P.x-w.x,dz=P.z-w.z,L=Math.hypot(dx,dz),ux=dx/(L||1),uz=dz/(L||1);let n=0;
   for(let i=0;i<N;i++){const d=.9+i*GAP;if(d>L-1.1)break;const x=w.x+ux*d,z=w.z+uz*d,y=Math.max(ctx.ground?ctx.ground(x,z):0,-.05)+.03;
