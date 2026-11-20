@@ -162,7 +162,7 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
     else if(T<3.3){const w=(T-2.2)*3;head.copy(hover);head.x+=Math.cos(w)*.25*(1-ss(2.4,3.2,T));head.z+=Math.sin(w)*.25*(1-ss(2.4,3.2,T));head.y+=Math.sin(T*3)*.06;
       if(st.phase==='come'){st.phase='grab';G.travel.note('phase','grab');G.travel.begin({id:'meteor',expect:(3.75-T)+FLY+(o.after||0)}); /* 꼬리를 잡는 순간 이동 공통 틀(game/travel) 시작: 배경음 줄이고 이동 테마 — expect = 착지까지 남은 초 */U.action=CR?CR.pose.grab:'꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');if(!CR)WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y;}}
     else if(T<3.75){if(st.phase!=='pull'){st.phase='pull';G.travel.note('phase','pull');G.sound.sfx('event-whoosh',{gain:.85});}head.copy(hover);head.y+=ss(3.3,3.75,T)*.55;}
-    else{if(st.phase!=='fly'){st.phase='fly';G.travel.note('phase','fly');st.liftT=T;G.travel.depart();S.v+=2.2;lastH.copy(head);}
+    else{if(st.phase!=='fly'){st.phase='fly';G.travel.note('phase','fly');st.liftT=T;G.travel.depart();if(!(CR&&CR.plain))S.v+=2.2;lastH.copy(head);}
       const u=Math.min(1,(T-3.75)/FLY),p=o.path(u);head.set(p.x,p.y,p.z);
       if(o.onFly)o.onFly(u);if(!st.wave&&u>.12){st.wave=true;if(o.onWave)o.onWave(true);}
       {const ph=u<.31?'rise':u<.82?'space':'dest';if(ph!==st.ph2){st.ph2=ph;G.travel.note('phase',ph);}}
@@ -170,7 +170,7 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
       G.travel.tick(dt,'fly'); // 잔잔한 바람 + 꼬리 반짝이(작게)
       if(u>=1&&!st.end){st.end=true;if(o.onEnd)o.onEnd();}}
     // 몸 늘어남: 당기는 동안 1.38까지, 끌려 올라가면 1로(넘쳤다 돌아옴)
-    S.step(dt,st.phase==='pull'?1.38:1);
+    S.step(dt,st.phase==='pull'&&!(CR&&CR.plain)?1.38:1); /* carrier.plain(탈것에 앉아서 감 — 얼음 배): 몸 늘어남·목도리 펄럭임·몸 흔들림 없음 */
     // 원더룹 자리: 땅(당기기 전까지) → 머리 아래 매달림(늦게 따라오며 흔들림)
     if(st.phase==='fly'){if(dt>0)vel.lerp(_v.copy(head).sub(lastH).divideScalar(Math.max(dt,1e-3)),1-Math.exp(-dt*3));lastH.copy(head);
       const hv=Math.hypot(vel.x,vel.z);if(hv>.3)st.face+=Math.atan2(Math.sin(Math.atan2(vel.x,vel.z)-st.face),Math.cos(Math.atan2(vel.x,vel.z)-st.face))*Math.min(1,dt*2);
@@ -183,9 +183,9 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
   const _v=new THREE.Vector3();
   /* 07 뒤(구역 lateUpdate): 원더룹 자세·늘어남 → 손 자리 → 꼬리 끝 */
   function late(dt,t){const T=st.t;
-    if(st.phase==='fly'){WL.rotation.y=st.face;WL.rotation.z=Math.sin(T*1.7)*.07;WL.rotation.x=Math.sin(T*1.1)*.05;}
+    if(st.phase==='fly'){const pl=CR&&CR.plain?.25:1;WL.rotation.y=st.face;WL.rotation.z=Math.sin(T*1.7)*.07*pl;WL.rotation.x=Math.sin(T*1.1)*.05*pl;}
     applySquish(WL,S.x);
-    if(CR){CR.late&&CR.late(dt,t,st);SC.tick(t,st.phase==='fly',1);}else{handsMid(WL,mid);
+    if(CR){CR.late&&CR.late(dt,t,st);SC.tick(t,st.phase==='fly'&&!CR.plain,1);}else{handsMid(WL,mid);
     /* 꼬리: 손(가슴 앞)에서 앞으로 나가 위로 — 약 2등신이라 손을 머리 위로 못 올려, 꼬리가 위에서 곧게 내려오면 얼굴·탈을 지나간다.
        잡기 전 꼬리 끝은 손 앞 0.6m에 떠 있다가 0.45초에 걸쳐 손으로 */
     const grabK=st.phase==='come'?0:ss(0,.45,T-2.4),f1=Math.sin(st.face),f2=Math.cos(st.face);
@@ -221,7 +221,7 @@ export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mo
   G.sound.sfx('event-sparkle');
   function tick(dt,t){if(st.done)return;st.t+=dt;const T=st.t;
     if(st.phase==='down'){const u=ss(0,1.8,T);head.set(P.x+fx*1.9,gy+11-5*u+Math.sin(T*3)*.08,P.z+fz*1.9);st.y=head.y-2.45;
-      if(T>=1.9){st.phase='fall';G.travel.note('phase','fall');st.vy=0;U.action='서기';U.at=0;G.sound.sfx('event-whoosh',{gain:.8});st.rel=head.clone();G.react.react('startle',{sound:null});G.travel.landIn(Math.sqrt(2*Math.max(0,st.y-gy)/G2));} /* 놓아준 순간 착지 시각을 알림 → 이동 테마 해결 화음이 착지에 */}
+      if(T>=1.9||(T>=1.1&&(()=>{const l=G.travel.untilResolve();return l!=null&&l<=Math.sqrt(2*Math.max(0,st.y-gy)/G2)+.03;})())){st.phase='fall';G.travel.note('phase','fall');st.vy=0;U.action='서기';U.at=0;G.sound.sfx('event-whoosh',{gain:.8});st.rel=head.clone();G.react.react('startle',{sound:null});G.travel.landIn(Math.sqrt(2*Math.max(0,st.y-gy)/G2));} /* 놓아준 순간 착지 시각을 알림 → 이동 테마 해결 화음이 착지에 */}
     else{if(st.rel){const k=T-1.9;head.copy(st.rel).addScaledVector(away,k*(.5+k*.6));if(k>3){M.show(false);}}
       if(st.phase==='fall'||st.phase==='hop'){st.vy-=G2*dt;st.y+=st.vy*dt;if(st.y<=gy){st.y=gy;const v=-st.vy;
           if(st.bounce===0){st.bounce=1;st.phase='hop';G.travel.note('phase','hop');st.vy=2.5;land(v*1.6,true);st.landT=T;G.travel.mark('land');if(o.onLand)o.onLand();}else if(st.bounce===1){st.bounce=2;st.vy=1.05;land(v*1.3);}else{st.phase='stand';G.travel.note('phase','stand');st.standT=T;land(v);}}}

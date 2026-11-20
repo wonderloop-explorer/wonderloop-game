@@ -62,16 +62,17 @@ function fileTheme(c,D,buf,o,expect){const from=o.from||0,to=Math.min(buf.durati
   function seg(when,off,fadeIn){const s=c.createBufferSource(),g=c.createGain();s.buffer=buf;g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(1,when+fadeIn);s.connect(g);g.connect(D);
     s.start(when,Math.max(0,off),Math.max(.1,to-Math.max(0,off)));const n={s,g,t:when,off};segs.push(n);return n;}
   function cut(n,when,fade){n.g.gain.cancelScheduledValues(when);n.g.gain.setValueAtTime(1,when);n.g.gain.linearRampToValueAtTime(0,when+fade);try{n.s.stop(when+fade+.02);}catch(e){}}
-  const now0=c.currentTime+.03;let plan={k:0,start:from};
-  if(expect&&bar){const Dd=expect-(res-from),k=Math.round(Dd/bar),st=Math.max(0,from+k*bar-Dd);plan={k,start:+st.toFixed(3),D:+Dd.toFixed(3)};}
-  const a=seg(now0,plan.start,.3);
-  if(plan.k){const b0=o.beat0??from,ja=o.jumpAt??(from+res)/2;let J=b0+Math.round((ja-b0)/bar)*bar;while(J<=plan.start+1)J+=bar; // 절정 안 마디 경계
-    const tJ=now0+(J-plan.start);cut(a,tJ-XF/2,XF);seg(tJ-XF/2,J-plan.k*bar-XF/2,XF);plan.J=+J.toFixed(3);plan.to=+(J-plan.k*bar).toFixed(3);}
+  /* 2026-11-20: 곡을 뒤로 돌려 같은 구간을 두 번 들려주지 않는다(예전: 모자라는 시간만큼 절정에서 마디를 되풀이 + 착지 때 어긋나면 뒤로 되감아 고침 → 착지 직전 같은 구절이 두 번).
+     출발 때 계획만으로 맞춤: 해결 화음까지 남은 곡 길이 = 착지까지 남은 초가 되게 시작 자리를 res − expect로(더 길면 그만큼 늦게 시작). 건너뛰기·되풀이 없음 */
+  const now0=c.currentTime+.03;let plan={k:0,start:from},delay=0;
+  if(expect){const s0=res-expect;if(s0>=0)plan={k:0,start:+Math.min(s0,res-2).toFixed(3)};else{delay=-s0;plan={k:0,start:0,delay:+delay.toFixed(3)};}}
+  const a=seg(now0+delay,plan.start,.3);
   LOG.plan=plan;
   const curAt=t=>{let n=segs[0];for(const x of segs)if(x.t<=t)n=x;return n;},head=t=>{const n=curAt(t);return n.off+(t-n.t);};
   return {kind:'file',get landAt(){return landAt;},landIn(sec){if(landAt!=null||done)return;const now=c.currentTime;landAt=now+sec;
       const err=head(landAt)-res;LOG.err=+err.toFixed(3); // +면 곡이 앞서 감
-      if(Math.abs(err)>.06){const w=now+.03;segs.filter(x=>x.t>w).forEach(x=>{try{x.s.stop();}catch(e){}});const k=curAt(w);cut(k,w,.35);seg(w,head(w)-err,.35);LOG.fix=+err.toFixed(3);}
+      /* 곡이 뒤처졌으면(err<0) 앞으로만 건너뜀. 앞서 갔으면(err>0) 되돌리지 않음 — 해결 화음이 조금 먼저 나올 뿐(도착 연출이 untilResolve()로 내려앉는 시간을 맞춰 줄임) */
+      if(err<-.06){const w=now+.03;segs.filter(x=>x.t>w).forEach(x=>{try{x.s.stop();}catch(e){}});const k=curAt(w);cut(k,w,.35);seg(w,head(w)-err,.35);LOG.fix=+err.toFixed(3);}else if(err>.06)LOG.ahead=+err.toFixed(3);
       const n=curAt(landAt),e1=landAt+1.4,e2=Math.min(landAt+3.3,landAt+Math.max(1.6,to-res-.1)); /* 끝 울림은 끊지 않고 1.4초 뒤부터 약 1.9초에 걸쳐(2026-11-13 — 예전 0.8초 뒤 1.5초: 도착한 곳의 바람 소리로 넘어가기 전에 꺼졌다) */n.g.gain.setValueAtTime(1,e1);n.g.gain.linearRampToValueAtTime(0,e2);setTimeout(()=>{segs.forEach(x=>{try{x.s.stop();x.g.disconnect();}catch(e){}});},(e2-now)*1000+200);},
     /* 화면을 눌러 단계를 넘김(2026-11-13 두 번째 — 예전엔 곡 자리를 바로 건너뛰어 끊겨 들렸다): 곡은 지금 자리에서 그대로 흐르다가, 해결 화음까지 TAIL초 남는 순간에
        해결 화음 앞 구절(마디 경계 tail)로 0.9초에 걸쳐 부드럽게 넘어간다 → 해결 화음은 여전히 sec초 뒤(도착 순간). 남은 시간이 그보다 짧으면 지금 바로 0.6초에 걸쳐 넘어감. 거듭 누르면 다시 잡음 */
@@ -79,7 +80,7 @@ function fileTheme(c,D,buf,o,expect){const from=o.from||0,to=Math.min(buf.durati
       for(let i=segs.length-1;i>=0;i--)if(segs[i].t>w){try{segs[i].s.stop();}catch(e){}segs.splice(i,1);} /* 예약해 둔 넘어가기는 버림 */
       const k=curAt(w);k.g.gain.cancelScheduledValues(w);k.g.gain.setValueAtTime(1,w);planLand=tLand;LOG.retime=(LOG.retime||0)+1;
       if(Math.abs(head(tLand)-res)<=.06)return;const L=res-tail;
-      if(sec<=L+.5){cut(k,w,.6);seg(w,Math.max(0,res-(tLand-w)),.6);}else{const tS=tLand-L,XF=.9;cut(k,tS-XF/2,XF);seg(tS-XF/2,tail-XF/2,XF);}},
+      if(sec<=L+.5){const to2=Math.max(0,res-(tLand-w));if(to2>head(w)){cut(k,w,.6);seg(w,to2,.6);}}else{const tS=tLand-L,XF=.9;if(tail>head(tS)){cut(k,tS-XF/2,XF);seg(tS-XF/2,tail-XF/2,XF);}}}, /* 앞으로만 */
     /* 해결 화음까지 남은 초(눌러 넘긴 뒤에는 다시 잡은 도착 시각 기준) — 연출이 남은 장면 길이를 곡에 맞출 때 */
     left(){const now=c.currentTime;return planLand!=null?planLand-now:res-head(now);},
     stop(sec=.6){if(done)return;done=true;const now=c.currentTime;segs.forEach(n=>{n.g.gain.cancelScheduledValues(now);n.g.gain.setValueAtTime(n.g.gain.value,now);n.g.gain.linearRampToValueAtTime(0,now+sec);try{n.s.stop(now+sec+.05);}catch(e){}});}};}
@@ -120,7 +121,8 @@ export const active=()=>!!T;
 export function depart(){sfx('travel-depart',{gain:1.25});}
 /* 세계 설정으로 지도 장면: W.travel.map.bodies(행성마다 zone) · lines['지나온>다음'] · facts[지나온 구역](flag가 켜진 것만) */
 export function mapFor(W,from,to,flags={},opt={}){const C=W&&W.travel||{},B=C.map&&C.map.bodies||[],f=B.find(b=>b.zone===from),t=B.find(b=>b.zone===to),L=(C.lines||{})[from+'>'+to]||{};
-  return map({sec:opt.sec,bodies:B,from:f&&f.id,to:t&&t.id,line:L.text||'',lineId:L.id,facts:((C.facts||{})[from]||[]).filter(x=>flags[x.flag]).map(x=>({img:typeof x.img==='function'?x.img():x.img,draw:x.draw}))});}
+  const ord=C.order||[],ix=ord.indexOf(from),zid=z=>{const b=B.find(q=>q.zone===z);return b&&b.id;},past=[],seen=[];for(let i=0;i<=ix;i++){seen.push(zid(ord[i]));if(i<ix)past.push([zid(ord[i]),zid(ord[i+1])]);}
+  return map({sec:opt.sec,past,seen,bodies:B,from:f&&f.id,to:t&&t.id,line:L.text||'',lineId:L.id,facts:((C.facts||{})[from]||[]).filter(x=>flags[x.flag]).map(x=>({img:typeof x.img==='function'?x.img():x.img,draw:x.draw}))});}
 /* ── 우주 지도 장면 ── */
 function solePath(c){c.beginPath();c.moveTo(0,.02);c.bezierCurveTo(.05,.02,.062,-.04,.062,-.085);c.bezierCurveTo(.062,-.135,.035,-.165,.002,-.165);c.bezierCurveTo(-.04,-.165,-.062,-.125,-.056,-.075);
   c.bezierCurveTo(-.05,-.03,-.042,.02,0,.02);c.closePath();c.moveTo(.045,.075);c.ellipse(.003,.075,.042,.046,0,0,PI*2);} // 로딩 화면(index.html #wlBoot) 발자국과 같은 모양
@@ -145,7 +147,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
   const STAR=[];for(let i=0;i<300;i++)STAR.push([Math.random(),Math.random(),.4+Math.random()*1.5,Math.random()*6,Math.random()]);
   const TWK=[];for(let i=0;i<16;i++)TWK.push([Math.random(),Math.random()*.9,3+Math.random()*4,Math.random()*6]);
   const NEB=[[.2,.25,.5,'255,150,190',.16],[.78,.3,.55,'140,170,255',.16],[.5,.8,.6,'201,166,224',.18],[.9,.78,.4,'255,190,150',.1]];
-  const NSTEP=o.steps||8,STEP0=.72,CT=.4 /* 지도 그림·글자는 바탕이 화면을 다 덮은 뒤(0.4초)부터 — 앞 장면 위에 행성 이름이 비쳐 보였다(2026-11-14) */,STEPD=.27;let bgC=null,stepN=0,t0=performance.now(),on=true,w=0,h=0,dpr=1;
+  const NSTEP=o.steps||8,STEP0=.72,CT=.4 /* 지도 그림·글자는 바탕이 화면을 다 덮은 뒤(0.4초)부터 — 앞 장면 위에 행성 이름이 비쳐 보였다(2026-11-14) */,STEPD=.27;let bgC=null,stepN=0,stampS=false,t0=performance.now(),on=true,w=0,h=0,dpr=1;
   requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{if(on)COVERING=true;},420); /* 지도가 화면을 다 덮은 동안 3D 그리기 쉼(08 — covering()) */setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
   // 자리: 지나온 행성 → 다음 행성 사이를 넓게(발자국 길), 나머지는 고르게. 가로 화면은 왼쪽 → 오른쪽 완만한 물결, 세로 화면은 아래 → 위 지그재그
   const GW=B.map((b,i)=>i===0?0:((i===iF&&i-1===iT)||(i===iT&&i-1===iF))?2.6:1),GS=[];{let a=0;GW.forEach(v=>{a+=v;GS.push(a);});}
@@ -176,18 +178,27 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
     // 미니어처 카메라: 한눈에 보다가(0~0.4초) 발자국 길 쪽으로 살짝 다가감
     {let cx=w/2,cy=h/2;if(iF>=0&&iT>=0){cx=(L[iF].x+L[iT].x)/2;cy=(L[iF].y+L[iT].y)/2;}const k=ss(.35,2.4,t),z=1+(h>w?.12:.24)*k,fx=w/2+(cx-w/2)*k*.9,fy=h/2+(cy-h/2)*k*.9;
      g.setTransform(z,0,0,z,w/2-fx*z,h/2-fy*z);}
-    // 궤도 길(옅은 점선)
-    g.save();g.globalAlpha=ss(CT,CT+.25,t);g.setLineDash([3*dpr,8*dpr]);g.strokeStyle='rgba(251,233,216,.34)';g.lineWidth=2*dpr;g.beginPath();L.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.stroke();g.restore();
-    // 발자국: 지나온 행성 가장자리 → 다음 행성 가장자리, 휜 길을 따라 한 칸씩
-    if(iF>=0&&iT>=0){const A=L[iF],Bq=L[iT],dx=Bq.x-A.x,dy=Bq.y-A.y,dl=Math.hypot(dx,dy)||1,nx=-dy/dl,ny=dx/dl,bow=dl*.18;
-      const P=u=>{const x=A.x+dx*u+nx*bow*Math.sin(u*PI),y=A.y+dy*u+ny*bow*Math.sin(u*PI);return [x,y];};
-      const u0=(A.R*1.2)/dl,u1=1-(Bq.R*1.25)/dl,FOOT=Math.min(w,h)*.215;
+    /* 길(2026-11-20 — 예전: 행성을 차례로 잇는 점선 하나 + 곧게 휜 발자국 길이라 금성 → 토성처럼 떨어진 행성 사이에서는 발자국이 목성 그림과 겹쳤다):
+       길마다 다른 행성 그림·이름과 안 겹치는 휜 곡선을 고름(curveFor). 지난번까지 간 길은 옅은 점선 + 흐린 작은 발자국, 이번 길은 또렷한 점선 위에 발자국이 차례로 */
+    const FOOT=Math.min(w,h)*.215,by=id=>L[B.findIndex(b=>b.id===id)];
+    const curveFor=(A,Bq)=>{const dx=Bq.x-A.x,dy=Bq.y-A.y,dl=Math.hypot(dx,dy)||1,nx=-dy/dl,ny=dx/dl;let best=null;
+      for(const bw of [.18,-.18,.32,-.32,.46,-.46,.6,-.6]){const P=u=>[A.x+dx*u+nx*dl*bw*Math.sin(u*PI),A.y+dy*u+ny*dl*bw*Math.sin(u*PI)];let cl=1e9;
+        for(let k=1;k<18;k++){const [x,y]=P(k/18);for(const p of L){if(p===A||p===Bq)continue;cl=Math.min(cl,Math.hypot(x-p.x,y-p.y)-p.R*1.4-FOOT*.09,Math.hypot(x-p.x,y-p.y-p.R*1.7)-p.R*.75);}cl=Math.min(cl,x-w*.07,w*.93-x,y-h*.1,h*.82-y);}
+        if(cl>0)return {P,dl,nx,ny,A,Bq};if(!best||cl>best.cl)best={P,dl,nx,ny,A,Bq,cl};}return best;};
+    const dash=(C,al,lw)=>{g.save();g.globalAlpha=al;g.setLineDash([4*dpr,8*dpr]);g.strokeStyle='rgba(251,233,216,1)';g.lineWidth=lw*dpr;g.beginPath();const u0=(C.A.R*1.1)/C.dl,u1=1-(C.Bq.R*1.1)/C.dl;for(let k=0;k<=24;k++){const [x,y]=C.P(u0+(u1-u0)*k/24);k?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();g.restore();};
+    const foot=(C,u,left,sc,al,glow)=>{const [x,y]=C.P(u),[x2,y2]=C.P(u+.01),ang=Math.atan2(y2-y,x2-x)+PI/2,fx=x+C.nx*(left?-1:1)*sc*.09,fy=y+C.ny*(left?-1:1)*sc*.09;
+      if(glow){const gl=g.createRadialGradient(fx,fy,0,fx,fy,sc*.2);gl.addColorStop(0,`rgba(255,196,206,${.5*al})`);gl.addColorStop(1,'rgba(255,196,206,0)');g.fillStyle=gl;g.fillRect(fx-sc*.2,fy-sc*.2,sc*.4,sc*.4);}
+      g.save();g.translate(fx,fy);g.rotate(ang);g.scale((left?-1:1)*sc,sc);g.translate(0,.045);solePath(g);g.globalAlpha=al;g.lineJoin='round';if(glow){g.strokeStyle='#fff3e6';g.lineWidth=.03;g.stroke();}g.fillStyle=glow?'#F2899A':'#e9b6c2';g.fill();g.restore();};
+    {const k0=ss(CT,CT+.25,t);if(k0>0)for(const [a,b] of (o.past||[])){const A=by(a),Bq=by(b);if(!A||!Bq)continue;const C=curveFor(A,Bq);dash(C,.2*k0,1.6);const u0=(A.R*1.25)/C.dl,u1=1-(Bq.R*1.3)/C.dl;for(let i=0;i<5;i++)foot(C,u0+(u1-u0)*(i+.5)/5,i%2===0,FOOT*.6,.34*k0,false);}}
+    // 발자국: 지나온 행성 가장자리 → 다음 행성 가장자리, 이번 길의 점선 위에 한 칸씩
+    if(iF>=0&&iT>=0){const A=L[iF],Bq=L[iT],C=curveFor(A,Bq),dl=C.dl,P=C.P,nx=C.nx,ny=C.ny;dash(C,.6*ss(CT,CT+.25,t),2.2);
+      const u0=(A.R*1.2)/dl,u1=1-(Bq.R*1.25)/dl;
       const want=Math.min(NSTEP,Math.max(0,Math.floor((t-STEP0)/STEPD)+1));while(stepN<want){sfx('travel-step',{step:stepN,gain:1.3,cue:stepN===0});stepN++;}
-      for(let i=0;i<stepN;i++){const u=u0+(u1-u0)*(i+.5)/NSTEP,[x,y]=P(u),[x2,y2]=P(u+.01),ang=Math.atan2(y2-y,x2-x)+PI/2,left=i%2===0,pop=ss(0,.18,t-(STEP0+i*STEPD)),sc=FOOT*(pop<1?.6+.55*pop-.15*pop*pop:1);
-        const fx=x+nx*(left?-1:1)*FOOT*.09,fy=y+ny*(left?-1:1)*FOOT*.09,al=Math.min(1,pop*1.4);
-        {const gl=g.createRadialGradient(fx,fy,0,fx,fy,sc*.2);gl.addColorStop(0,`rgba(255,196,206,${.5*al})`);gl.addColorStop(1,'rgba(255,196,206,0)');g.fillStyle=gl;g.fillRect(fx-sc*.2,fy-sc*.2,sc*.4,sc*.4);} // 빛 받침
-        g.save();g.translate(fx,fy);g.rotate(ang);g.scale((left?-1:1)*sc,sc);g.translate(0,.045);solePath(g);g.globalAlpha=al;g.lineJoin='round';g.strokeStyle='#fff3e6';g.lineWidth=.03;g.stroke();g.fillStyle='#F2899A';g.fill();g.restore();}}
+      for(let i=0;i<stepN;i++){const pop=ss(0,.18,t-(STEP0+i*STEPD));foot(C,u0+(u1-u0)*(i+.5)/NSTEP,i%2===0,FOOT*(pop<1?.6+.55*pop-.15*pop*pop:1),Math.min(1,pop*1.4),true);}}
     L.forEach((p,i)=>planet(p,ss(CT+.02*i,CT+.25+.02*i,t),i===iT&&stepN>=NSTEP?t:0));
+    /* 다녀온 행성에는 발자국 도장(지나온 행성은 지도가 뜨자마자 톡 찍힘 — 스테이지마다 띄우던 '지도 카드'를 대신, 2026-11-20) */
+    for(const id of (o.seen||[])){const p=by(id);if(!p)continue;const cur=id===o.from,k=cur?ss(CT+.3,CT+.5,t):ss(CT,CT+.25,t);if(k<=0)continue;if(cur&&!stampS){stampS=true;sfx('travel-step',{step:7,gain:1.2});}
+      const s=p.R*(cur?2.3-1.1*k:1.2)*1.9,x=p.x+p.R*.05,y=p.y-p.R*.02;g.save();g.translate(x,y);g.rotate(-.35);g.scale(s,s);g.translate(0,.045);solePath(g);g.globalAlpha=(cur?.95:.7)*k;g.lineJoin='round';g.strokeStyle='#fff3e6';g.lineWidth=.035;g.stroke();g.fillStyle='#F2899A';g.fill();g.restore();}
     // 지나온 행성 둘레에 발견한 것 — 작은 그림이 톡톡(0.2초부터 하나씩)
     if(iF>=0&&IM.length){const A=L[iF],n=IM.length,S=Math.max(46*dpr,A.R*1.05);IM.forEach((f,i)=>{const a=-PI*.92+i*(PI*1.0/Math.max(1,n-1)),k=ss(CT+.15+i*.14,CT+.4+i*.14,t);if(k<=0)return;
         const y=A.y+Math.sin(a)*(A.R+S*.78),s=S*(.7+.3*k);let x=A.x+Math.cos(a)*(A.R+S*.78);{const T=g.getTransform(),m=S*.7+6*dpr,x0=(m-T.e)/T.a,x1=(w-m-T.e)/T.a;x=Math.min(x1,Math.max(x0,x));} /* 화면 옆으로 잘리지 않게(세로 화면) */g.save();g.globalAlpha=k;g.fillStyle='rgba(255,246,230,.97)';g.strokeStyle='rgba(90,56,38,.9)';g.lineWidth=2.5*dpr;

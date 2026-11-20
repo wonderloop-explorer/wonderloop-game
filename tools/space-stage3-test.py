@@ -73,8 +73,9 @@ with sync_playwright() as p:
         tries += 1
         until(free, 20); pad = S['pad']; walk(pad[0] - 2.4, pad[1] - .6, 25, .5); walk(pad[0], pad[1], 25, .3)
         if not until("!!wlZone.cur.state().ride", 12): continue  # 아직 출발 전이면 다시(조종 없이 지나가 버리지 않게)
-        rides += 1; steer = not (WRONG and rides == 1); t0 = time.time()
-        if rides == 1: pg.wait_for_timeout(900); shot('07-ride-start')
+        rides += 1; steer = not (WRONG and rides == 1); t0 = time.time(); pg.evaluate('(v)=>wlZone.cur.dbgMiss(v)', not steer)  # --wrong 첫 비행: 초를 일부러 놓침(지금은 조종하지 않아도 거의 다 잡혀서)
+        if rides == 1: pg.wait_for_timeout(450); shot('07-ride-spin'); pg.wait_for_timeout(1000); shot('07-ride-start')
+        if rides == 2: pg.wait_for_timeout(450); shot('07b-retry-spin-front'); pg.wait_for_timeout(350); shot('07c-retry-spin2')
         marks = [.18, .4, .62, .8, .92, .985] if rides == 1 else []
         while time.time() - t0 < 40:
             s = st(); r = s['ride']
@@ -92,25 +93,27 @@ with sync_playwright() as p:
         if st()['cand'] < 3: until("wlZone.cur.state().carry", 6); pg.wait_for_timeout(1500); shot('09a-carry-back%d' % rides); until(free, 12)
     R['바람 타기 횟수'] = rides; R['잡은 초'] = st()['cand']
     # ⑤ 케이크에 초 꽂기 → 촛불 → 생일 노래 → 발견 카드
-    until(free, 20); walk(S['cake'][0] - 1.0, S['cake'][1] + .75, 25, .5); pg.wait_for_timeout(500); shot('0a-ddo-table'); pg.keyboard.press('e'); until("!!wlZone.cur.state().T.cake", 8); pg.wait_for_timeout(1500); shot('0b-candles-lit')
+    until(free, 20); walk(S['cake'][0] - 1.0, S['cake'][1] + .75, 25, .5); pg.wait_for_timeout(500); shot('0a-ddo-table'); pg.keyboard.press('e'); until("!!wlZone.cur.state().T.cake", 8); pg.wait_for_timeout(420); shot('0b-candles-fly'); pg.wait_for_timeout(350); shot('0b-candles-fly2'); until("!!wlZone.cur.state().T.stuck", 8); pg.wait_for_timeout(1200); shot('0b-candles-lit'); until("!!wlZone.cur.state().T.blow", 12); pg.wait_for_timeout(250); shot('0b-ddo-blows')
     until("!!wlZone.cur.state().T.candle", 20); pg.wait_for_timeout(1200); shot('0c-candle-card'); until("wlZone.cur.state().day&&" + free, 25)
     # ⑥ 해시계 마을: 거꾸리를 따라 걸으며 구경(할 일 없음)
     P = S['path']; walk(P[1][0], P[1][1] + 1.2, 20, .8); pg.wait_for_timeout(700); shot('10-town-gate')
-    for q in range(1, 11):
+    for q in range(1, 8):
         walk(P[q][0], P[q][1], 25, .8)
-        if q in (2, 5, 8): pg.wait_for_timeout(300); shot('1%d-town' % q)
-        if q in (3, 6) and WIDE:  # --wide: 마을 전경(보고용 — 카메라만 잠깐 뒤로 물러나 둘러봄, 찍고 되돌림)
-            t = P[q + 2] if q == 3 else P[q - 3]; h = hero(); cam0 = pg.evaluate("(()=>{const C=wlGame.controls.input.cam;return [C.yaw,C.pitch,C.dist]})()")
+        if st()['scene']:  # 해시계 앞에서 한 번 멈춤(거꾸리 대사)
+            pg.wait_for_timeout(1500); shot('1a-dial-stop'); until(free, 15); walk(P[q][0], P[q][1], 25, .8)
+        if q in (2, 4, 6): pg.wait_for_timeout(300); shot('1%d-town' % q)
+        if q in (3, 5) and WIDE:  # --wide: 마을 전경(보고용 — 카메라만 잠깐 뒤로 물러나 둘러봄, 찍고 되돌림)
+            t = P[q + 2] if q == 3 else P[q - 2]; h = hero(); cam0 = pg.evaluate("(()=>{const C=wlGame.controls.input.cam;return [C.yaw,C.pitch,C.dist]})()")
             pg.evaluate("([dx,dz])=>{const C=wlGame.controls.input.cam;C.yaw=Math.atan2(-dx,-dz);C.pitch=.2;C.dist=13;}", [t[0] - h[0], t[1] - h[1]]); pg.wait_for_timeout(1300); shot('1%d-town-wide' % q)
             pg.evaluate("([y,p,d])=>{const C=wlGame.controls.input.cam;C.yaw=y;C.pitch=p;C.dist=d;}", cam0); pg.wait_for_timeout(500)
-        if q == 4:
+        if q == 3 and HES:
             if S['sheep']: walk(S['sheep'][1][0] + 1.6, S['sheep'][1][1] + .6, 8, .5); pg.wait_for_timeout(700); shot('14-sheep-z')
             pg.wait_for_timeout(HES * 500 if HES else 300)
-            walk(P[4][0], P[4][1], 8, .8)
+            walk(P[3][0], P[3][1], 8, .8)
     R['마을 대사 자리'] = bool(st()['T'].get('town'))
     # ⑦ 서쪽 해돋이 광장(한가운데 큰 해시계)
     c = S['plaza']['c']; walk(c[0], c[1] + 3.4, 30, .6); until("!!wlZone.cur.state().T.sun0", 8); pg.wait_for_timeout(1500); shot('20-plaza-enter')
-    until("!!wlZone.cur.state().T.rise", 12); pg.wait_for_timeout(900); shot('21-sunrise-a'); pg.wait_for_timeout(1800); shot('22-sunrise-b'); pg.wait_for_timeout(2300); shot('23-sunrise-c')
+    pg.wait_for_timeout(2500); shot('20a-plaza-goal'); until("!!wlZone.cur.state().T.rise", 30); pg.wait_for_timeout(900); shot('21-sunrise-a'); pg.wait_for_timeout(1800); shot('22-sunrise-b'); R['해돋이 때 집 흐림(1 = 안 흐림)'] = st().get('pf'); pg.wait_for_timeout(2300); shot('23-sunrise-c')
     until("!!wlZone.cur.state().T.sun1", 10); pg.wait_for_timeout(1500); shot('24-sunrise-talk'); until(free, 20); pg.wait_for_timeout(2200); shot('25-plaza-shadows')
     pg.wait_for_timeout(HES * 1000 if HES else 300)
     for k, wb in enumerate([x for x in S['plaza']['br'] if not x['ok']] if WRONG else []):
@@ -140,9 +143,9 @@ with sync_playwright() as p:
     s = st(); R["문지기 '?' 횟수"] = s['gateN']; R["'!' 밀려남"] = s['caught']; pg.wait_for_timeout(900); shot('34-gate-pass'); until(free, 20)
     # ⑨ 구름 끝 → ⑩ 얼음 배 출발 → 토성
     walk(S['end'][0] + 1.5, S['end'][1], 40, .6); until("!!wlZone.cur.state().T.end", 10); pg.wait_for_timeout(2000); shot('40-end-talk')
-    until("wlZone.cur.state().aboard", 40); pg.wait_for_timeout(700); shot('41-boat'); until("document.getElementById('wlStrip').classList.contains('on')", 10); pg.wait_for_timeout(1300); shot('41-card2-airship'); until("!!wlZone.cur.state().T.map", 40); shot('42-map-card')
-    until("wlZone.cur.state().clear", 30); pg.wait_for_timeout(1000); shot('43-clear'); until("!!wlZone.cur.state().T.sail", 20)
-    s = st(); T = dict(s['T']); R['발견'] = s['disc']; R['완료'] = s['clear']; t0 = time.time(); sh = [(2.2, '45-boat-rise'), (5.2, '46-boat-fly1'), (8.2, '47-boat-lookdown'), (11.5, '48-space-side'), (14.2, '49-saturn-near'), (16.2, '4a-saturn-big'), (18.5, '4b-map')]
+    until("!!wlZone.cur.state().T.look", 40); shot('41-look-airship'); until("document.getElementById('wlStrip').classList.contains('on')", 10); pg.wait_for_timeout(1300); shot('41-card2-airship')
+    until("wlZone.cur.state().clear", 30); pg.wait_for_timeout(1000); shot('43-clear-standing'); until("wlZone.cur.state().aboard", 40); pg.wait_for_timeout(900); shot('44-boat-seated'); until("!!wlZone.cur.state().T.sail", 20)
+    s = st(); T = dict(s['T']); R['발견'] = s['disc']; R['완료'] = s['clear']; t0 = time.time(); sh = [(2.2, '45-boat-rise'), (5.2, '46-boat-fly1'), (8.2, '47-boat-lookdown'), (11.5, '48-space-side'), (14.2, '49-saturn-near'), (16.2, '4a-saturn-big'), (18.9, '4b-map'), (20.6, '4c-map-steps')]
     while time.time() - t0 < 60:
         if pg.evaluate("!!(wlZone.cur&&wlZone.cur.spots&&wlZone.cur.spots.dock)"): break
         el = time.time() - t0

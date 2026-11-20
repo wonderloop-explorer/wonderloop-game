@@ -17,7 +17,7 @@ function orbTex(n,base,light,dark,glow,deco){return discTex(n,(g,N)=>{const c=N/
 export const CLOUD_VEIL={blobs:['#e6d2f4','#d9c0ee','#f1e4fa','#cdb0e6','#e0c9f2'],bg:['#dcc6ef','#cfb4e6'],fade:'rgba(214,190,236,0)',tiles:[[250,240,255],[176,146,206]],dots:['252,244,255','198,170,226','226,206,242']};
 export function cloudArrival(o){const {G,root,WL}=o,U=WL.userData;lockOn(G,WL);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('기본');
   const P=WL.position.clone(),gy=o.groundY(P.x,P.z),face=WL.rotation.y;const puffs=points(root,o.mob?70:120,{map:discTex(64,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,255,255,.95)');gr.addColorStop(.6,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}),add:false,size:.55,grav:-.05,drag:1.8});
-  const st={t:0,done:false,cu:null,idle:9,landed:false,sq:1,sv:0};const D=3.1,H=4.6;
+  const st={t:0,done:false,cu:null,idle:9,landed:false,sq:1,sv:0};const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1,H=4.6,DONE=o.doneAt||4.9; /* 내려앉는 시간은 이동 테마의 해결 화음까지 남은 시간에 맞춤(곡을 되감지 않음 — 2026-11-20) */
   G.travel.note('phase','arrive');G.travel.landIn(D); /* 이동 테마 해결 화음은 내려앉는 순간(별똥별 도착과 같은 자리 — 2026-11-14 행성 이동 공통 틀) */
   {const C=G.controls.input.cam;if(C){C.yaw=face+.7;C.pitch=.3;C.dist=6.4;st.cu=C.user;}U.riding.snap=true;}
   const puff=(n,sp)=>{for(let i=0;i<n;i++){const a=Math.random()*PI*2,r=.2+Math.random()*.5,v=sp*(.4+Math.random()*.7),k=.86+Math.random()*.12;puffs.emit(P.x+Math.cos(a)*r,gy+.1+Math.random()*.3,P.z+Math.sin(a)*r,Math.cos(a)*v,.25+Math.random()*.5,Math.sin(a)*v,1.6+Math.random()*1.4,[.93*k,.86*k,1*k]);}};
@@ -26,7 +26,7 @@ export function cloudArrival(o){const {G,root,WL}=o,U=WL.userData;lockOn(G,WL);U
       if(u>.3&&!st.p0){st.p0=1;puff(o.mob?8:14,.5);}
       if(u>=1){st.landed=true;st.landT=T;st.sv=-1.6;WL.position.set(P.x,gy,P.z);U.riding.y=gy;WL.rotation.z=0;G.sound.sfx('cloud-poof',{gain:1.1});G.sound.sfx('land',{gain:.45});puff(o.mob?22:36,1.1);G.travel.mark('land');}}
     else{const k=T-st.landT;if(k>.9&&!st.r1){st.r1=1;U.action='두리번';U.at=0;}if(k>3.1&&!st.r2){st.r2=1;U.action='서기';U.at=0;G.react.react('tilt');}
-      if(k>4.9){st.done=true;lockOff(G,WL);WL.scale.set(1,1,1);G.travel.end();if(o.onDone)o.onDone();}}}
+      if(k>DONE){st.done=true;lockOff(G,WL);WL.scale.set(1,1,1);G.travel.end();if(o.onDone)o.onDone();}}}
   function late(dt){if(st.done)return;const a=160*(1-st.sq)-9*st.sv;st.sv+=a*dt;st.sq+=st.sv*dt;const q=Math.max(.6,st.sq),w=1/Math.sqrt(q);WL.scale.set(w,q,w); /* 사뿐 — 살짝 눌렸다 돌아옴 */
     camHome(G,dt,face+.7,.3,st.landed?7:6.4,st,1.6);}
   return {tick,late,state:st,dispose(){puffs.dispose();puffs.pts.removeFromParent();}};}

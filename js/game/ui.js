@@ -76,7 +76,7 @@ const css=`
 #wlStrip img{flex:none;width:58px;height:58px;border-radius:50%;background:#fff8e8;box-shadow:0 0 0 2.5px #e3ad35;object-fit:contain}#wlStrip img:not([src]){display:none}
 #wlStrip .k{margin:0;color:#b07a12;font-family:"Jua",sans-serif;font-size:.82rem}#wlStrip .k::before{content:"✦ "}
 #wlStrip .t{margin:.1rem 0 0;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.12rem;line-height:1.25}
-#wlStrip .f{margin:.15rem 0 0;font-size:.88rem;line-height:1.4;color:#6b4a3a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}#wlStrip .f:empty{display:none}
+#wlStrip .f{margin:.15rem 0 0;font-size:.88rem;line-height:1.4;color:#6b4a3a;display:-webkit-box;-webkit-line-clamp:var(--fl,2);-webkit-box-orient:vertical;overflow:hidden}#wlStrip .f:empty{display:none}
 @media (max-width:600px){#wlStrip img{width:48px;height:48px}#wlStrip .t{font-size:1.04rem}#wlStrip .f{font-size:.84rem}}
 @media (prefers-reduced-motion: reduce){#wlStrip{transition:none}#wlStrip:not(.on){transform:translate(-50%,0)}}
 /* 휴대폰 단계(body.wl-lowfx — 2026-11-10 발열): 늘 떠 있는 칩의 뒤 흐림(backdrop-filter)은 3D 화면을 매 프레임 다시 흐리게 해 GPU를 쓴다 → 끔(바탕이 66% 넘게 불투명해 차이가 거의 없음). 연출용 흐림(귀환 미니어처·우주 지도 띠)은 그대로 */
@@ -179,7 +179,7 @@ const sc=$('#wlStrip');let scDone=null,scCue=null,scEnd=0;
 /* 2026-11-10 화면 가림 규칙 3: 위쪽 띠 카드로 — 막지 않고 sec초(기본 글 길이에 따라 4.5~7초, 게임 시간) 뒤 저절로, 띠를 누르거나 Esc로도 닫힘. count는 꼬리표 옆에('숨겨진 비밀 · 2/3'). 닫힐 때 resolve(예전과 같음) */
 function secret(o){ /* 발견 카드는 대사가 끝난 뒤에(2026-11-17, 모든 세계 — 대사와 동시에 뜨지 않게): 대화창이 떠 있거나 기다리는 대사가 있으면 끝날 때까지 기다렸다가 띄움(촬영 모드는 예전처럼 바로) */
   const busy=()=>dlg.style.display==='block'||!!(uiHooks.dialogBusy&&uiHooks.dialogBusy());if(SHOT_UI||!busy())return secretNow(o);const gen=ntGen;ntPend++;return until(()=>!busy(),60).then(()=>wait(.3)).then(()=>{ntPend=Math.max(0,ntPend-1);return gen!==ntGen?-1:secretNow(o);});}
-function secretNow({kicker='숨겨진 비밀',title='',text='',icon=null,count='',sec=null,onOpen=null,vo=null,at=null}){return enqueue('secret',r=>{sc.dataset.pin=at||''; /* at:'bottom' — 띠 카드를 화면 아래쪽에(노을 장면: 위에 뜨면 해를 가렸다, 2026-11-17) */scVo=cardVoice(vo,text);scDone=r;sc.querySelector('.k').textContent=kicker+(count?' · '+count:'');sc.querySelector('.t').textContent=title;sc.querySelector('.f').textContent=text;if(onOpen)try{onOpen();}catch(e){console.error(e);}
+function secretNow({kicker='숨겨진 비밀',title='',text='',icon=null,count='',sec=null,onOpen=null,vo=null,at=null,lines=null}){return enqueue('secret',r=>{sc.dataset.pin=at||'';sc.style.setProperty('--fl',lines||2); /* lines: 본문 줄 수(기본 2 — 넘으면 말줄임) */ /* at:'bottom' — 띠 카드를 화면 아래쪽에(노을 장면: 위에 뜨면 해를 가렸다, 2026-11-17) */scVo=cardVoice(vo,text);scDone=r;sc.querySelector('.k').textContent=kicker+(count?' · '+count:'');sc.querySelector('.t').textContent=title;sc.querySelector('.f').textContent=text;if(onOpen)try{onOpen();}catch(e){console.error(e);}
   const img=sc.querySelector('img');if(icon)img.src=icon;else img.removeAttribute('src');scEnd=clock.t+(sec||Math.min(7,Math.max(4.5,2.5+(title.length+text.length)*.06)));
   scCue=cue({kind:'card',who:kicker,text:title,sub:text,dur:0});sc.classList.add('on');uiHooks.layout&&uiHooks.layout();});}
 function closeSecret(why){if(cardOn!=='secret')return;if(scVo){scVo.stop(why);scVo=null;}sc.classList.remove('on');endCue(scCue);scCue=null;const d=scDone;scDone=null;cardDone();uiHooks.layout&&uiHooks.layout();if(d)d();}

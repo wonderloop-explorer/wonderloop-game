@@ -12,8 +12,8 @@ import {lump,M4,sph} from './martians.js';
 import {makeGeokkuri,makeIceBoat} from './cloudfolk.js';
 import {makeSkyBoard,canvasTex,saturnMap} from './skyboard.js';
 import SPACE from '../../worlds/infinite-space.js';
-const ZID='space-saturn',TMP={card:'[임시] 고리 위 쉼터 이야기는 다음에 이어져요.',gg:'[임시] 쉼터는 아직 준비 중(거꾸리 한마디)'};
-const DOCKB=[3.3,0],HERO=[.4,0],GGAT=[1.3,1.7],BY=-.15;
+const ZID='space-saturn',TMP={land:'[임시] 토성은 딛고 설 땅이 없는 가스 행성이에요. 고리의 얼음 조각에 내려앉았어요.',card:'[임시] 고리 위 쉼터 이야기는 다음에 이어져요.',gg:'[임시] 쉼터는 아직 준비 중(거꾸리 한마디)'};
+const HSEAT=.36,GSEAT=.14 /* 배 바닥에 앉는 높이(금성 venus.js와 같은 값) */,DOCKB=[3.3,0],HERO=[.4,0],GGAT=[1.3,1.7],BY=-.15;
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);},lerp=(a,b,t)=>a+(b-a)*t;
 export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],R0=rng('space-saturn:ice'),RR=(a,b)=>a+R0()*(b-a),obstacles=[];
   G.profile.setup({world:SPACE.id,cards:SPACE.cards});
@@ -37,17 +37,17 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],R0=rng('
   const hop=(from,to,sec,fn)=>{const t0=G.clock.t;return G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/sec),e=u*u*(3-2*u);fn(lerp(from[0],to[0],e),lerp(from[1],to[1],e)+Math.sin(u*PI)*.8,lerp(from[2],to[2],e));return u>=1;},sec+1);};
   const card=()=>{if(st.carded)return;st.carded=true;mark('card');G.ui.notice({kicker:'토성 고리',title:'다음 이야기 준비 중',text:TMP.card,icon:SPACE.icons.map()});};
   /* 도착: 배가 내려와 닿음 → 둘이 내림 */
-  const D=3.1,FROM=[17,8.5,5];let ggMode='idle',started=false;
-  async function land(W,U){mark('land');G.travel.mark('land');G.sound.sfx('land',{gain:.5});G.sound.sfx('event-pop',{gain:.6});
+  const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1,FROM=[17,8.5,5];let ggMode='idle',started=false;
+  async function land(W,U){mark('land');G.travel.mark('land');G.ui.toast(TMP.land,5.2);G.sound.sfx('land',{gain:.5});G.sound.sfx('event-pop',{gain:.6});
     await G.core.wait(.7);ggMode='walk';G.sound.sfx('jump',{gain:.6});{const r=gg.root.position;await hop([r.x,r.y,r.z],[GGAT[0],0,GGAT[1]],.7,(x,y,z)=>gg.root.position.set(x,y,z));}ggMode='idle';gg.root.rotation.y=Math.atan2(HERO[0]-GGAT[0],HERO[1]-GGAT[1]);
     U.action='서기';U.at=0;G.sound.sfx('jump');{const p=W.position;await hop([p.x,p.y,p.z],[HERO[0],0,HERO[1]],.8,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;});}G.sound.sfx('land',{gain:.5});
-    st.arr=null;lockOff(G,W);W.scale.set(1,1,1);W.rotation.y=-PI/2;G.travel.end();G.react.react('awe',{sound:null});mark('free');await G.core.wait(1.4);st.done=true;card();}
+    st.arr=null;lockOff(G,W);W.scale.set(1,1,1);W.rotation.y=-PI/2;G.travel.end();G.react.react('awe',{sound:null});mark('free');await G.core.wait(5.4);st.done=true;card();}
   function update(dt,t){const W=U0();if(!W)return;const U=W.userData,cam=G.view.camera;st.t+=dt;mark('start');
     board.tick(dt,t,cam);{const pt=cam.aspect<1;board.place(board.sunGlow,pt?-.5:-.7,pt?.86:.8,pt?1:.8);board.place(board.sun,pt?-.5:-.7,pt?.86:.8,pt?.5:.4);board.place(oSat,pt?.2:.42,pt?.5:.42,pt?.95:.8);}
     boat.rotation.set(Math.sin(t*1.3)*.02,0,Math.sin(t*1.1)*.03);
     const a=st.arr;if(a){if(!started){started=true;lockOn(G,W);U.action='앉기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');G.travel.note('phase','arrive');G.travel.landIn(D);const C=G.controls.input.cam;if(C){C.yaw=-PI/2+.85;C.pitch=.28;C.dist=7;a.cu=C.user;}U.riding.snap=true;}
       if(a.ph==='down'){a.t+=dt;const u=Math.min(1,a.t/D),e=1-Math.pow(1-u,2.2);B.x=lerp(DOCKB[0]+FROM[0],DOCKB[0],e);B.y=lerp(FROM[1],BY,e)+Math.sin(t*1.7)*.05*(1-u);B.z=lerp(FROM[2],DOCKB[1],e);
-        boat.position.set(B.x,B.y,B.z);W.position.set(B.x+.55,B.y+.6,B.z);U.riding.y=W.position.y;W.rotation.y=-PI/2;gg.root.position.set(B.x-.75,B.y+.44,B.z);gg.root.rotation.y=PI/2;ggMode='sit';
+        boat.position.set(B.x,B.y,B.z);W.position.set(B.x+.55,B.y+HSEAT,B.z);U.riding.y=W.position.y;W.rotation.y=-PI/2;gg.root.position.set(B.x-.75,B.y+GSEAT,B.z);gg.root.rotation.y=PI/2;ggMode='sit';
         if(u>=1){a.ph='off';land(W,U);}}}
     else if(!st.done&&!started){st.done=true;}
     gg.tick(dt,t,ggMode);if(st.done&&!G.dialog.talking()){const P=W.position,ry=Math.atan2(P.x-gg.root.position.x,P.z-gg.root.position.z);gg.root.rotation.y+=Math.atan2(Math.sin(ry-gg.root.rotation.y),Math.cos(ry-gg.root.rotation.y))*Math.min(1,dt*6);}
