@@ -96,9 +96,31 @@ with sync_playwright() as p:
     until(free, 20); walk(S['cake'][0] - 1.0, S['cake'][1] + .75, 25, .5); pg.wait_for_timeout(500); shot('0a-ddo-table'); pg.keyboard.press('e'); until("!!wlZone.cur.state().T.cake", 8); pg.wait_for_timeout(420); shot('0b-candles-fly'); pg.wait_for_timeout(350); shot('0b-candles-fly2'); until("!!wlZone.cur.state().T.stuck", 8); pg.wait_for_timeout(1200); shot('0b-candles-lit'); until("!!wlZone.cur.state().T.blow", 12); pg.wait_for_timeout(250); shot('0b-ddo-blows')
     until("!!wlZone.cur.state().T.candle", 20); pg.wait_for_timeout(1200); shot('0c-candle-card'); until("wlZone.cur.state().day&&" + free, 25)
     # ⑥ 해시계 마을: 거꾸리를 따라 걸으며 구경(할 일 없음)
+    def sheep_game():  # 구름 양 재우기: 튀어나온 양 1.5m 안으로 걸어가 E('톡') — 다섯 번
+        pg.wait_for_timeout(1600); shot('15-sheep-intro'); until("wlZone.cur.state().sheep.on", 25); t0 = time.time(); seen = set(); two = False
+        while time.time() - t0 < 120:
+            s = st(); g = s['sheep']; note()
+            if g['done']: break
+            if g['up'] and not s['scene']:
+                h = hero(); x, z, _ = min(g['up'], key=lambda u: (u[0] - h[0]) ** 2 + (u[1] - h[1]) ** 2)
+                if 'pop' not in seen: seen.add('pop'); pg.wait_for_timeout(260); shot('16-sheep-pop')
+                if len(g['up']) > 1 and not two: two = True; pg.wait_for_timeout(200); shot('16b-sheep-two')
+                if g['tgt'] >= 0:
+                    if HES: pg.wait_for_timeout(350)
+                    pg.evaluate('wlGame.mission.hero().userData.stopWalk()'); k = g['n'] + 1
+                    if k in (1, 3): shot('17-sheep-near%d' % k)
+                    pg.keyboard.press('e')
+                    if k in (1, 3, 5): pg.wait_for_timeout(170); shot('17-sheep-tap%d' % k); pg.wait_for_timeout(330); shot('17-sheep-tap%d-b' % k)
+                else:
+                    d = ((h[0] - x) ** 2 + (h[1] - z) ** 2) ** .5 or 1
+                    pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", [x + (h[0] - x) / d * 1.0, z + (h[1] - z) / d * 1.0])
+            pg.wait_for_timeout(60)
+        pg.wait_for_timeout(1300); shot('18-sheep-gate-open'); until("!!wlZone.cur.state().T.sheepEnd&&" + free, 20); pg.wait_for_timeout(300); shot('19-sheep-after')
     P = S['path']; walk(P[1][0], P[1][1] + 1.2, 20, .8); pg.wait_for_timeout(700); shot('10-town-gate')
     for q in range(1, 8):
         walk(P[q][0], P[q][1], 25, .8)
+        g = st()['sheep']
+        if g['started'] and not g['done']: sheep_game(); walk(P[q][0], P[q][1], 25, .8)
         if st()['scene']:  # 해시계 앞에서 한 번 멈춤(거꾸리 대사)
             pg.wait_for_timeout(1500); shot('1a-dial-stop'); until(free, 15); walk(P[q][0], P[q][1], 25, .8)
         if q in (2, 4, 6): pg.wait_for_timeout(300); shot('1%d-town' % q)
@@ -107,7 +129,6 @@ with sync_playwright() as p:
             pg.evaluate("([dx,dz])=>{const C=wlGame.controls.input.cam;C.yaw=Math.atan2(-dx,-dz);C.pitch=.2;C.dist=13;}", [t[0] - h[0], t[1] - h[1]]); pg.wait_for_timeout(1300); shot('1%d-town-wide' % q)
             pg.evaluate("([y,p,d])=>{const C=wlGame.controls.input.cam;C.yaw=y;C.pitch=p;C.dist=d;}", cam0); pg.wait_for_timeout(500)
         if q == 3 and HES:
-            if S['sheep']: walk(S['sheep'][1][0] + 1.6, S['sheep'][1][1] + .6, 8, .5); pg.wait_for_timeout(700); shot('14-sheep-z')
             pg.wait_for_timeout(HES * 500 if HES else 300)
             walk(P[3][0], P[3][1], 8, .8)
     R['마을 대사 자리'] = bool(st()['T'].get('town'))
@@ -158,7 +179,7 @@ with sync_playwright() as p:
         end = T2.get('free') or T2.get('land')
         R['걸린 시간(초)'] = round(end - g('start'), 1)
         R['단계별(초)'] = {'① 도착·나레이션': round(g('gg') - g('start'), 1), '② 거꾸리 첫 만남': round(g('met') - g('gg'), 1), '③ 또생일 부탁': round(g('ask') - g('met'), 1), '④ 바람 타고 초 잡기(부탁 끝 → 케이크)': round(g('cake') - g('ask'), 1),
-                       '⑤ 촛불·발견 카드': round(g('candle') - g('cake'), 1), '⑥ 해시계 마을(→ 광장 도착)': round(g('sun0') - g('candle'), 1), '⑦ 해돋이 광장(→ 발견 카드 1)': round(g('card1') - g('sun0'), 1), '⑧ 뭉게 문지기(→ 문 통과)': round(g('gate') - g('card1'), 1),
+                       '⑤ 촛불·발견 카드': round(g('candle') - g('cake'), 1), '⑥ 해시계 마을(→ 광장 도착)': round(g('sun0') - g('candle'), 1), '⑥-1 그 가운데 구름 양 재우기(빈터 들어섬 → 끝 대사)': round(g('sheepEnd') - g('sheep0'), 1), '⑥-2 그 가운데 양 재우는 동안(시작 대사 뒤 → 다섯 번째)': round(g('sheep1') - g('sheepGo'), 1), '⑦ 해돋이 광장(→ 발견 카드 1)': round(g('card1') - g('sun0'), 1), '⑧ 뭉게 문지기(→ 문 통과)': round(g('gate') - g('card1'), 1),
                        '⑨ 구름 끝(→ 배 출발)': round(g('sail') - g('gate'), 1), '⑩ 얼음 배 → 토성(출발 → 내려서 조작 풀림)': round(end - g('sail'), 1)}
     except Exception as e: R['시간 계산 오류'] = str(e)
     dd = [d for d in draws if d]; R['그리기'] = {'최대 드로우콜': max(d[0] for d in dd), '평균 드로우콜': round(sum(d[0] for d in dd) / len(dd), 1), '최대 삼각형': max(d[1] for d in dd)} if dd else None
