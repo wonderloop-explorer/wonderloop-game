@@ -147,7 +147,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
   const STAR=[];for(let i=0;i<300;i++)STAR.push([Math.random(),Math.random(),.4+Math.random()*1.5,Math.random()*6,Math.random()]);
   const TWK=[];for(let i=0;i<16;i++)TWK.push([Math.random(),Math.random()*.9,3+Math.random()*4,Math.random()*6]);
   const NEB=[[.2,.25,.5,'255,150,190',.16],[.78,.3,.55,'140,170,255',.16],[.5,.8,.6,'201,166,224',.18],[.9,.78,.4,'255,190,150',.1]];
-  const NSTEP=o.steps||8,STEP0=.72,CT=.4 /* 지도 그림·글자는 바탕이 화면을 다 덮은 뒤(0.4초)부터 — 앞 장면 위에 행성 이름이 비쳐 보였다(2026-11-14) */,STEPD=.27;let bgC=null,stepN=0,stampS=false,t0=performance.now(),on=true,w=0,h=0,dpr=1;
+  const NSTEP=o.steps||8,STEP0=.72,CT=.4 /* 지도 그림·글자는 바탕이 화면을 다 덮은 뒤(0.4초)부터 — 앞 장면 위에 행성 이름이 비쳐 보였다(2026-11-14) */,STEPD=.27;let bgC=null,stepN=0,stampS=false,CURVES={},t0=performance.now(),on=true,w=0,h=0,dpr=1;
   requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{if(on)COVERING=true;},420); /* 지도가 화면을 다 덮은 동안 3D 그리기 쉼(08 — covering()) */setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
   // 자리: 지나온 행성 → 다음 행성 사이를 넓게(발자국 길), 나머지는 고르게. 가로 화면은 왼쪽 → 오른쪽 완만한 물결, 세로 화면은 아래 → 위 지그재그
   const GW=B.map((b,i)=>i===0?0:((i===iF&&i-1===iT)||(i===iT&&i-1===iF))?2.6:1),GS=[];{let a=0;GW.forEach(v=>{a+=v;GS.push(a);});}
@@ -181,12 +181,18 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
     /* 길(2026-11-20 — 예전: 행성을 차례로 잇는 점선 하나 + 곧게 휜 발자국 길이라 금성 → 토성처럼 떨어진 행성 사이에서는 발자국이 목성 그림과 겹쳤다):
        길마다 다른 행성 그림·이름과 안 겹치는 휜 곡선을 고름(curveFor). 지난번까지 간 길은 옅은 점선 + 흐린 작은 발자국, 이번 길은 또렷한 점선 위에 발자국이 차례로 */
     const FOOT=Math.min(w,h)*.215,by=id=>L[B.findIndex(b=>b.id===id)];
-    const curveFor=(A,Bq)=>{const dx=Bq.x-A.x,dy=Bq.y-A.y,dl=Math.hypot(dx,dy)||1,nx=-dy/dl,ny=dx/dl;let best=null;
-      for(const bw of [.18,-.18,.32,-.32,.46,-.46,.6,-.6]){const P=u=>[A.x+dx*u+nx*dl*bw*Math.sin(u*PI),A.y+dy*u+ny*dl*bw*Math.sin(u*PI)];let cl=1e9;
-        for(let k=1;k<18;k++){const [x,y]=P(k/18);for(const p of L){if(p===A||p===Bq)continue;cl=Math.min(cl,Math.hypot(x-p.x,y-p.y)-p.R*1.4-FOOT*.09,Math.hypot(x-p.x,y-p.y-p.R*1.7)-p.R*.75);}cl=Math.min(cl,x-w*.07,w*.93-x,y-h*.1,h*.82-y);}
-        if(cl>0)return {P,dl,nx,ny,A,Bq};if(!best||cl>best.cl)best={P,dl,nx,ny,A,Bq,cl};}return best;};
+    /* 2026-11-20 두 번째: 한쪽으로만 휘는 활 모양으로는 세로 화면(행성이 좌우로 번갈아 놓임)에서 금성 → 토성 길이 화성 그림 위를 지나갔다 →
+       활(sin πu) + S자(sin 2πu) 두 가지 휨을 섞은 후보 가운데, 다른 행성 그림·이름표와 발자국 폭만큼 떨어지면서 가장 덜 휜 길을 고름(화면 크기·길마다 한 번만 계산) */
+    const curveFor=(A,Bq)=>{const key=w+'x'+h+':'+A.b.id+'>'+Bq.b.id;if(CURVES[key])return CURVES[key];
+      const dx=Bq.x-A.x,dy=Bq.y-A.y,dl=Math.hypot(dx,dy)||1,nx=-dy/dl,ny=dx/dl,FW=FOOT*.2,fsz=Math.max(12,Math.min(w,h)*.028);let best=null;
+      for(let i=-14;i<=14;i++)for(let j=-8;j<=8;j++){const b1=i*.05,b2=j*.05,P=u=>{const o=dl*(b1*Math.sin(u*PI)+b2*Math.sin(u*PI*2));return [A.x+dx*u+nx*o,A.y+dy*u+ny*o];};let cl=1e9;
+        for(let k=1;k<28;k++){const [x,y]=P(k/28);for(const p of L){const d=Math.hypot(x-p.x,y-p.y);if(p!==A&&p!==Bq)cl=Math.min(cl,d-p.R*1.12-FW);else if(k>5&&k<23)cl=Math.min(cl,d-p.R*1.05-FW*.5); /* 떠난·닿을 행성으로 되돌아와 겹치지 않게 */
+            {const lw=fsz*(p.b.name||'').length*.55+FW,lh=fsz*.8+FW,ex=Math.abs(x-p.x)-lw,ey=Math.abs(y-(p.y+p.R*1.32+fsz*.5))-lh;cl=Math.min(cl,Math.max(ex,ey));}} /* 이름표 */
+          cl=Math.min(cl,x-w*.06,w*.94-x,y-h*.08,h*.84-y);}
+        const sc=Math.min(cl,FW*.6)-(Math.abs(b1)+Math.abs(b2)*1.5)*FW*.35;if(!best||sc>best.sc)best={P,dl,nx,ny,A,Bq,sc,cl};}
+      return CURVES[key]=best;};
     const dash=(C,al,lw)=>{g.save();g.globalAlpha=al;g.setLineDash([4*dpr,8*dpr]);g.strokeStyle='rgba(251,233,216,1)';g.lineWidth=lw*dpr;g.beginPath();const u0=(C.A.R*1.1)/C.dl,u1=1-(C.Bq.R*1.1)/C.dl;for(let k=0;k<=24;k++){const [x,y]=C.P(u0+(u1-u0)*k/24);k?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();g.restore();};
-    const foot=(C,u,left,sc,al,glow)=>{const [x,y]=C.P(u),[x2,y2]=C.P(u+.01),ang=Math.atan2(y2-y,x2-x)+PI/2,fx=x+C.nx*(left?-1:1)*sc*.09,fy=y+C.ny*(left?-1:1)*sc*.09;
+    const foot=(C,u,left,sc,al,glow)=>{const [x,y]=C.P(u),[x2,y2]=C.P(u+.01),tl=Math.hypot(x2-x,y2-y)||1,ang=Math.atan2(y2-y,x2-x)+PI/2,fx=x-(y2-y)/tl*(left?-1:1)*sc*.09,fy=y+(x2-x)/tl*(left?-1:1)*sc*.09; /* 좌우 발은 그 자리의 길 방향에 수직으로(휜 길에서도 길 위에) */
       if(glow){const gl=g.createRadialGradient(fx,fy,0,fx,fy,sc*.2);gl.addColorStop(0,`rgba(255,196,206,${.5*al})`);gl.addColorStop(1,'rgba(255,196,206,0)');g.fillStyle=gl;g.fillRect(fx-sc*.2,fy-sc*.2,sc*.4,sc*.4);}
       g.save();g.translate(fx,fy);g.rotate(ang);g.scale((left?-1:1)*sc,sc);g.translate(0,.045);solePath(g);g.globalAlpha=al;g.lineJoin='round';if(glow){g.strokeStyle='#fff3e6';g.lineWidth=.03;g.stroke();}g.fillStyle=glow?'#F2899A':'#e9b6c2';g.fill();g.restore();};
     {const k0=ss(CT,CT+.25,t);if(k0>0)for(const [a,b] of (o.past||[])){const A=by(a),Bq=by(b);if(!A||!Bq)continue;const C=curveFor(A,Bq);dash(C,.2*k0,1.6);const u0=(A.R*1.25)/C.dl,u1=1-(Bq.R*1.3)/C.dl;for(let i=0;i<5;i++)foot(C,u0+(u1-u0)*(i+.5)/5,i%2===0,FOOT*.6,.34*k0,false);}}

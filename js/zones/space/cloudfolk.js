@@ -146,7 +146,7 @@ export function dialMat(){if(DIAL)return DIAL;const c=document.createElement('ca
 export function sundialParts(x,z,gy,s=1,faces=null,hk=1,o={}){const out=[],m=M4([x,gy,z],[0,0,0],[s,s*hk,s]),P=(g,col,p,r)=>out.push([g.applyMatrix4(M4(p,r||[0,0,0])).applyMatrix4(m),col]);
   P(new THREE.CylinderGeometry(.5,.62,.5,12),'#e6d6f6',[0,.25,0]);P(new THREE.CylinderGeometry(.56,.56,.06,20),'#c9973a',[0,.52,0]);
   /* o.pyr: 세모뿔 바늘(위에서 내려다봐도 시곗바늘처럼 한 숫자를 가리키지 않음 — 광장 큰 해시계) · o.wedge: 판 위 동쪽으로 뻗는 옅은 그림자(해뜨기 전 서쪽 하늘빛) · 판 그림은 6이 동쪽(+x)에 오게 돌림 */
-  if(o.pyr)P(new THREE.ConeGeometry(.15,.52,4),'#8a5a3c',[0,.55+.26,0],[0,PI/4,0]);else P(new THREE.CylinderGeometry(.34,.34,.05,3),'#8a5a3c',[0,.78,0],[PI/2,0,PI/2]);
+  if(o.pyr)P(new THREE.ConeGeometry(.15,.52,4),'#ecd49a' /* 밝은 놋쇠빛(판과 비슷하게) — 짙은 갈색이면 위에서 볼 때 바늘이 그림자보다 먼저 눈에 띄었다 */,[0,.55+.26,0],[0,PI/4,0]);else P(new THREE.CylinderGeometry(.34,.34,.05,3),'#8a5a3c',[0,.78,0],[PI/2,0,PI/2]);
   if(o.wedge){const q=new THREE.CylinderGeometry(.3,.3,.008,3);q.scale(.42,1,1.25);P(q,'#b3883a',[.2,.588,0],[0,PI/2,0]);}
   if(faces)faces.push(new THREE.CircleGeometry(.52,24).applyMatrix4(M4([0,.556,0],[-PI/2,0,0])).applyMatrix4(M4([0,0,0],[0,PI/2,0])).applyMatrix4(m));return out;}
 /* 파티 우산(바람 타기) — 원점 = 손잡이(두 손), 대가 위로 올라 머리 위에 갓 */
