@@ -176,3 +176,11 @@
 `venus:met` · `venus:ask`(또생일 부탁) · `venus:c1`~`c3`(잡은 초) · `venus:ddo` · `venus:town` · `venus:sunrise` · `venus:plaza` · `venus:gate` · `clear:space-venus`.
 발견 `secret:<세계>:venusday`(촛불) · `venussun`(광장) · `venusair`(구름 끝).
 예전 저장에서 해돋이를 이미 봤으면 바람 타기 미션은 건너뛴다.
+
+
+## 2026-11-20 네 번째: 구름 양이 잘 보이게
+
+- 놀이 양: 크림색 몸 + 위를 올려다보는 진한 얼굴(흰 눈·분홍 볼) — `cloudfolk.js popSheepParts()`. 길가에서 조는 양은 그대로.
+- 양이 튀어나온 구멍 둘레에 노란 고리(양과 한 덩어리 — 들어가면 땅속으로 꺼짐, 그리기 추가 없음).
+- 튀어나올 때 위로 살짝 '쏙' 튀어 오름 + 효과음 `event-pyong`(뿅).
+- 놀이 길이·규칙은 그대로.

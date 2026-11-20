@@ -25,7 +25,7 @@ import {RIDE,points,departure,dustVeil} from './meteor-ride.js';
 import {cloudArrival} from './whirl-lift.js';
 import {makeSkyBoard,canvasTex,venusMap,saturnMap} from './skyboard.js';
 import {lump} from './martians.js';
-import {makeGeokkuri,makeMunge,makeDdo,makeCake,makeIceBoat,pillarParts,puff,houseParts,treeParts,mailboxParts,sheepParts,sundialParts,makeAirship,poleParts,podiumParts,tableParts,dialMat,makeUmbrella,makeCandle} from './cloudfolk.js';
+import {makeGeokkuri,makeMunge,makeDdo,makeCake,makeIceBoat,pillarParts,puff,houseParts,treeParts,mailboxParts,sheepParts,popSheepParts,sundialParts,makeAirship,poleParts,podiumParts,tableParts,dialMat,makeUmbrella,makeCandle} from './cloudfolk.js';
 import SPACE from '../../worlds/infinite-space.js';
 const WID=SPACE.id,ZID='space-venus';
 const K={met:'venus:met',ask:'venus:ask',c:['venus:c1','venus:c2','venus:c3'],town:'venus:town',sun:'venus:sunrise',plaza:'venus:plaza',gate:'venus:gate',sheep:'venus:sheep',ddo:'venus:ddo',clear:'clear:'+ZID};
@@ -198,8 +198,8 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   const puffs=points(root,MOB?90:150,{map:glowTex,add:false,size:.6,grav:-.04,drag:1.6});keep.push(puffs.pts);
   const puffAt=(x,z,n,sp=.9,col=[.95,.9,1])=>{const y=groundY(x,z);for(let i=0;i<n;i++){const a=Math.random()*PI*2,r=.2+Math.random()*.6,v=sp*(.4+Math.random()*.7),k=.88+Math.random()*.12;puffs.emit(x+Math.cos(a)*r,y+.15+Math.random()*.5,z+Math.sin(a)*r,Math.cos(a)*v,.3+Math.random()*.6,Math.sin(a)*v,1.3+Math.random()*1.2,[col[0]*k,col[1]*k,col[2]*k]);}};
   /* ── 구름 양 재우기: 양 다섯 = 한 묶음(그리기 1, 46m 밖은 안 그림) · 빈터 앞 구름 둑(다 재우면 걷히고 지움) ── */
-  const SH=HOLES.map(h=>({x:h[0],z:h[1],gy:groundY(h[0],h[1]),ry:Math.atan2(-GDIR[0],-GDIR[1]) /* 얼굴이 빈터 카메라(들어온 쪽) 쪽 */,y:REST,ph:'rest',t:0,pop:0,sq:0,slept:false})),SG={started:false,on:false,done:!!F[K.sheep],n:0,gap:0,last:-1,tgt:-1,open:0,opening:false};
-  const sheepM=(()=>{const src=lump(sheepParts(0,0,0,0,0),!MOB,.6),m=new THREE.InstancedMesh(src.geometry,src.material,5);m.name='venus-sheep';m.frustumCulled=false;m.castShadow=!MOB;m.userData.noMerge=true;add(m);markChar(m); /* 멀리서 내려다보는 카메라에서도 안개에 묻히지 않게 */return m;})();
+  const SH=HOLES.map(h=>({x:h[0],z:h[1],gy:groundY(h[0],h[1]),ry:Math.atan2(-GDIR[0],-GDIR[1]) /* 얼굴이 빈터 카메라(들어온 쪽) 쪽 */,y:REST,ph:'rest',t:0,pop:0,sq:0,hop:9,slept:false})),SG={started:false,on:false,done:!!F[K.sheep],n:0,gap:0,last:-1,tgt:-1,open:0,opening:false};
+  const sheepM=(()=>{const src=lump(popSheepParts(),!MOB,.6),m=new THREE.InstancedMesh(src.geometry,src.material,5);m.name='venus-sheep';m.frustumCulled=false;m.castShadow=!MOB;m.userData.noMerge=true;add(m);markChar(m); /* 멀리서 내려다보는 카메라에서도 안개에 묻히지 않게 */return m;})();
   const _sm=new THREE.Matrix4(),_sq=new THREE.Quaternion(),_sv=new THREE.Vector3(),_ss=new THREE.Vector3(),_sy=new THREE.Vector3(0,1,0);
   const barObs=[];let barM=null;if(!SG.done){const L=[],nx=-GDIR[1],nz=GDIR[0];for(let k=-2;k<=2;k++){const ox=nx*k*1.45+GDIR[0]*Math.sin(k*2.1)*.3,oz=nz*k*1.45+GDIR[1]*Math.sin(k*2.1)*.3,r=1.12-Math.abs(k)*.08;L.push([puff(r,ox,r*.62,oz,[1,.9,1]),['#f1e6fb','#e6d6f6','#fbf6ff'][(k+2)%3]],[puff(r*.6,ox+nx*.5,r*1.25,oz+nz*.5),'#fbf6ff']);const o={c:[BAR[0]+ox,BAR[1]+oz,r*.92]};obstacles.push(o);barObs.push(o);}
     barM=lump(L,false,.6);barM.name='venus-sheep-gate';barM.position.set(BAR[0],groundY(...BAR),BAR[1]);barM.frustumCulled=false;barM.userData.noMerge=true;add(barM);}
@@ -221,7 +221,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   const stage=()=>!st.arrDone?'arrive':!F[K.met]?'meet':(!F[K.sun]&&!F[K.ask])?'ask':(!F[K.sun]&&!F[DISC.day])?'wind':!F[K.sun]?'town':!F[K.plaza]?'plaza':!F[K.gate]?'gate':!F[K.clear]?'end':'done';
   /* 구름 양 재우기(두더지 잡기 방식 — 실패 없음): 한 마리씩 약 2초 떠 있다 들어가고, 재울수록 빨라지며 셋째부터 가끔 두 마리. 1.5m 안에서 '톡'(E) → '음냐…' 쏙 들어가 잠듦. 다섯 번이면 구름 둑이 걷힘 */
   function sheepSpawn(){const HW=U0(),HP=HW&&HW.position,k=SG.n/4,free=SH.map((s,i)=>i).filter(i=>SH[i].ph==='rest'&&SH[i].y<REST+.08&&i!==SG.last&&(!HP||Math.hypot(SH[i].x-HP.x,SH[i].z-HP.z)>.85));let cnt=SG.n>=2&&Math.random()<.4?2:1;
-    while(cnt-->0&&free.length){const i=free.splice(Math.floor(Math.random()*free.length),1)[0],s=SH[i];s.ph='up';s.t=lerp(2,1.25,k);s.pop=1;SG.last=i;baa[i].show(true);zz[i].show(false);G.sound.sfx('event-pop',{gain:.5});puffAt(s.x,s.z,MOB?3:5,.5);}mark('sheepPop');}
+    while(cnt-->0&&free.length){const i=free.splice(Math.floor(Math.random()*free.length),1)[0],s=SH[i];s.ph='up';s.t=lerp(2,1.25,k);s.pop=1;s.hop=0;SG.last=i;baa[i].show(true);zz[i].show(false);G.sound.sfx('event-pyong',{gain:.7});puffAt(s.x,s.z,MOB?3:5,.5);}mark('sheepPop');}
   function sheepTap(){const i=SG.tgt,s=SH[i];if(i<0||!s||s.ph!=='up'||SG.done)return;s.ph='rest';s.slept=true;s.sq=1;baa[i].show(false);zz[i].show(true);SG.n++;SG.gap=lerp(1.3,.7,SG.n/4);mark('sheepTap'+SG.n);
     G.sound.sfx('event-tok',{gain:.8});G.sound.sfx('cloud-poof',{gain:.45});puffAt(s.x,s.z,MOB?5:8,.6);G.float.bubble({at:[s.x,s.gy,s.z],y:1.05,text:'음냐…',sec:1.3,far:34});quest(SG.n>=5?'해돋이를 보러 광장으로':`구름 양 재우기 ${SG.n}/5`);
     if(SG.n>=5){const W=U0();SG.done=true;G.state.setFlag(K.sheep,true);mark('sheep1');SH.forEach((q,j)=>{if(q.ph==='up'){q.ph='rest';baa[j].show(false);}zz[j].show(true);});
@@ -231,8 +231,8 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     if(barM&&SG.opening){SG.open+=dt/.8;const k=Math.max(.001,1-SG.open);barM.scale.set(k,k,k);if(SG.open>=1){root.remove(barM);barM.geometry.dispose();barM=null;}}
     if(SG.on&&!SG.done&&!st.scene&&!G.dialog.talking()){let any=false;SH.forEach((s,i)=>{if(s.ph!=='up')return;any=true;s.t-=dt;if(s.t<=0){s.ph='rest';baa[i].show(false);if(s.slept)zz[i].show(true);SG.gap=lerp(.9,.5,SG.n/4);}});if(!any){SG.gap-=dt;if(SG.gap<=0)sheepSpawn();}}
     SG.tgt=-1;if(SG.on&&!SG.done){let bd=1.5;SH.forEach((s,i)=>{const d=Math.hypot(s.x-P.x,s.z-P.z);if(s.ph==='up'&&d<bd){bd=d;SG.tgt=i;}});if(SG.tgt>=0){const s=SH[SG.tgt];tapRoot.position.set(s.x,s.gy,s.z);tapIt.at=[P.x,P.z];tapIt.face=[s.x,s.z];}}
-    if(!near)return;SH.forEach((s,i)=>{const up=s.ph==='up',tg=up?.22:REST;s.y+=(tg-s.y)*Math.min(1,dt*(up?16:11));s.pop*=Math.exp(-dt*6);s.sq*=Math.exp(-dt*7);
-      const w=up?1:0,g=1+.3*ss(REST+.1,.1,s.y),sy=g*(1+.2*s.pop*Math.cos(s.pop*7)-.3*s.sq),sx=g*(1-.08*s.pop+.16*s.sq); /* 튀어나오면 1.3배(위에서 봐도 눈에 띄게) */_sq.setFromAxisAngle(_sy,s.ry+w*Math.sin(t*6+i)*.22);_sm.compose(_sv.set(s.x,s.gy+s.y+w*Math.abs(Math.sin(t*7+i))*.05,s.z),_sq,_ss.set(sx,sy,sx));sheepM.setMatrixAt(i,_sm);});sheepM.instanceMatrix.needsUpdate=true;}
+    if(!near)return;SH.forEach((s,i)=>{const up=s.ph==='up',tg=up?.22:REST;s.y+=(tg-s.y)*Math.min(1,dt*(up?16:11));s.pop*=Math.exp(-dt*6);s.sq*=Math.exp(-dt*7);s.hop+=dt;
+      const hu=up?Math.min(1,Math.max(0,(s.hop-.05)/.34)):1,hp=Math.sin(hu*PI) /* '쏙': 올라오자마자 위로 살짝 튀어 올랐다 내려앉음(몸이 늘어났다 돌아옴) */,w=up?1:0,g=1+.3*ss(REST+.1,.1,s.y),sy=g*(1+.2*s.pop*Math.cos(s.pop*7)-.3*s.sq+.22*hp),sx=g*(1-.08*s.pop+.16*s.sq); /* 튀어나오면 1.3배(위에서 봐도 눈에 띄게) */_sq.setFromAxisAngle(_sy,s.ry+w*Math.sin(t*6+i)*.22);_sm.compose(_sv.set(s.x,s.gy+s.y+w*(Math.abs(Math.sin(t*7+i))*.05+hp*.2),s.z),_sq,_ss.set(sx,sy,sx));sheepM.setMatrixAt(i,_sm);});sheepM.instanceMatrix.needsUpdate=true;}
   const tapRoot=new THREE.Object3D();tapRoot.position.set(GC[0],0,GC[1]);add(tapRoot);
   const tapIt=G.interact.add({root:tapRoot,at:[GC[0],GC[1]],label:'톡',action:'뿌리기',dur:.28,near:1.6,once:false,when:()=>SG.on&&!SG.done&&!st.scene&&SG.tgt>=0,onPress:()=>sheepTap()});
   function quest(q){if(q!==st.lastQ){st.lastQ=q;G.ui.setQuest(q);G.goal.set(null);}}
