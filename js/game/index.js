@@ -7,7 +7,7 @@ import {clearItemGet,initItemGet,tickItemGet} from './itemget.js';
 import {clearStage,initStage,setStageZone,tickStage} from './stage.js';
 import {clearStealth,initStealth,setStealthZone,tickStealth} from './stealth.js';
 import {clearFinale,initFinale,tickFinale} from './finale.js';
-import {clock,cues,tickCore} from './core.js';
+import {clock,cues,tickCore,wait as coreWait} from './core.js';
 import {bed,stopAll,tickBed,tickNarration} from './sound.js';
 import {clearDialog,clickNPC,initDialog,setDialogZone,tickDialog,talkNPC} from './dialog.js';
 import {clearEvents,initEvents,tickEvents} from './events.js';
@@ -19,7 +19,7 @@ import {clearCourse,initCourse,tickCourse} from './course.js';
 import {clearRide,initRide,tickRide} from './ride.js';
 import {clearCompanions,initCompanions,tickCompanions} from './companion.js';
 import {clearControls,initControls} from './controls.js';
-import {clearProfile,initProfile} from './profile.js';
+import {clearProfile,initProfile,meet as profileMeet,seen as profileSeen} from './profile.js';
 import {initFront} from './front.js';
 import {clearGoal,initGoal,tickGoal} from './goal.js';
 import {clearMission,initMission,tickMission} from './mission.js';
@@ -78,6 +78,14 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
     if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
     o.at[0]=mx;o.at[1]=my;o.at[2]=mz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
 view.pairCam=pairCam;
+/* 처음 만나는 순간(2026-11-21 — 시리즈 규칙 '확대 → 친구 카드 → 대화'): 카드는 그 주민을 처음 만나는 순간에 뜬다(대화 중간·미션이 끝난 뒤가 아니라).
+   view.meetCard(id, root, 머리 높이): 아직 안 만난 주민이면 카메라가 그 주민을 가까이(원더룹 쪽에서 0.9라디안 비켜 선 앞옆 — 얼굴 3/4) 0.9초 → 친구 카드 → 닫으면 앞서 잡혀 있던 카메라(대화 카메라)로. 이미 만났으면 바로 false */
+view.meetCam=(root,headY=1.2)=>{const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const o={at:[0,0,0],from:[0,0,0]};let dir=null;
+  return ()=>{root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14],P=W.position;
+    if(!dir){let dx=P.x-nx,dz=P.z-nz;const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;const s=((cam.position.x-nx)*-dz+(cam.position.z-nz)*dx)<0?-1:1,a=.9*s,c=Math.cos(a),sn=Math.sin(a);dir=[dx*c-dz*sn,dx*sn+dz*c];}
+    const k=cam.aspect<1.25?Math.min(2,1.25/cam.aspect):1,D=(2.4+headY*2.5)*k;o.at[0]=nx;o.at[1]=ny+headY*.62;o.at[2]=nz;o.from[0]=nx+dir[0]*D;o.from[1]=ny+headY*.8+D*.1;o.from[2]=nz+dir[1]*D;return o;};};
+view.meetCard=async(id,root,headY=1.2,sec=.9)=>{if(profileSeen(id))return false;const prev=REQ&&REQ.fn?REQ.fn:null,z=SHOT_Q?null:view.meetCam(root,headY);if(z){view.hold(z);await coreWait(sec);}
+  const r=await profileMeet(id,root);if(z&&REQ&&REQ.fn===z)view.hold(prev);return r;};
 const PAIR={root:null,side:1,phi:0,y:1.4,t:-9},pairNow=()=>clock.t-PAIR.t<.25&&PAIR.root?PAIR:null;
 faceHook.pair=pairNow;
 pieceHook.hero=()=>{if(!HERO)return null;const P=HERO.position;return [[P.x,P.y,P.z,1.55]];};

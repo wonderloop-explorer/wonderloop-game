@@ -45,7 +45,7 @@ function build(){if(G||!ctx)return;G=new THREE.Group();G.name='wl-goal';
 function set(o){build();cur=o||null;if(!G)return;G.visible=!!cur;if(!cur){setArrow(null);return;}
   if(cur.label!==tagKey){tagKey=cur.label||'';if(tag.material.map)tag.material.map.dispose();tag.material.map=drawTag(tagKey);tag.material.needsUpdate=true;tag.visible=!!tagKey;
     if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(cur&&cur.label===tagKey&&tag.material.map){tag.material.map.dispose();tag.material.map=drawTag(tagKey);}});}
-  const ant=cur.style==='ant';beam.visible=dots.visible=!ant;beamA.visible=dotsA.visible=ant;
+  const ant=cur.style==='ant';beam.visible=dots.visible=!ant;beamA.visible=dotsA.visible=ant;if(cur.beam===false)beam.visible=beamA.visible=false; /* beam:false — 빛기둥 없이 이름표·동그라미 길만(금성, 2026-11-21) */
   beam.material.color.set(cur.color||'#ffffff');}
 const clearGoal=()=>set(null);
 const where=()=>{const a=typeof cur.at==='function'?cur.at():cur.at;if(!a)return null;return a.length===3?{x:a[0],y:a[1],z:a[2]}:{x:a[0],y:null,z:a[1]};};

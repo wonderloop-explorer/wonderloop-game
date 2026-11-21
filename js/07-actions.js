@@ -92,6 +92,8 @@ function actionPose(A,t){
     다리는 매달려 대롱대롱(천천히 앞뒤로). 꼬리 끝은 구역이 두 손 가운데에 맞춘다(zones/space/meteor-ride.js) */
  if(A==='꼬리 잡기'){const sw=Math.sin(t*2.4);return{ax0:-1.5,ax1:-1.5,az0:.14,az1:-.14,ex0:-.15,ex1:-.15,ez0:.55,ez1:-.55,hx:-.1,bx:-.04,lx0:.14+sw*.16,lx1:-.06-sw*.16,kx0:.3+Math.max(0,sw)*.2,kx1:.3+Math.max(0,-sw)*.2,wy:0,_kr:14};} // wy 0: 매달린 동안 높이는 riding.y가 정함(기본 자세 wy는 공중 높이를 따라감). 팔 각도: 손이 가슴 앞 턱 아래 25cm 앞·두 손 사이 13cm(시험 도구로 실제 뼈 자리를 재서 고름 — 약 2등신이라 손을 머리 위로 올리면 꼬리가 얼굴을 지나갔다)
  /* 회오리 타기(무한 우주 화성 → 금성, 2026-11-13): 두 팔을 옆으로 활짝 벌리고 고개를 들어 위를 봄, 손끝이 살랑, 다리는 대롱대롱(회전목마 타듯 — 도는 건 구역이 몸을 돌림) */
+ /* 우산 잡기(게임 로직 전용 — 금성 바람 타기, 2026-11-21): 가슴 앞에서 두 손으로 우산의 가로 손잡이를 쥠(오른손은 가운데, 왼손은 왼쪽 옆 — 실제 손 자리를 재서 고른 값). 우산대는 왼손에서 얼굴 옆으로 탈을 비켜 휘어 올라간다(zones/space/cloudfolk.js makeUmbrella) */
+ if(A==='우산 잡기'){const sw=Math.sin(t*2.4);return{ax0:-1.5,ax1:-1.8,az0:.85,az1:.9,ex0:-.2,ex1:0,ez0:.45,ez1:-.1,hx:-.1,bx:-.04,lx0:.14+sw*.16,lx1:-.06-sw*.16,kx0:.3+Math.max(0,sw)*.2,kx1:.3+Math.max(0,-sw)*.2,wy:0,_kr:14};}
  if(A==='팔 벌리기'){const sw=Math.sin(t*2.2),w=Math.sin(t*5.5);return{ax0:-.25+w*.08,ax1:-.25-w*.08,az0:-1.25-w*.1,az1:1.25+w*.1,ez0:-.25,ez1:.25,hx:-.18,bx:-.05,lx0:.12+sw*.14,lx1:-.04-sw*.14,kx0:.28+Math.max(0,sw)*.18,kx1:.28+Math.max(0,-sw)*.18,wy:0,_kr:10};}
  /* 우주에 둥실(같은 연출): 팔다리를 천천히 젓기 — 헤엄치듯 번갈아 */
  if(A==='둥실'){const a=Math.sin(t*1.7),b=Math.sin(t*1.7+1.6);return{ax0:-.5+a*.45,ax1:-.5-a*.45,az0:-.85-b*.15,az1:.85+b*.15,ez0:-.3,ez1:.3,hx:-.06,bx:.04,lx0:.2+b*.3,lx1:.2-b*.3,kx0:.35+Math.max(0,a)*.3,kx1:.35+Math.max(0,-a)*.3,wy:0,_kr:6};}
@@ -366,7 +368,7 @@ function updateWL(dt,t){
    /* (2026-11-04~05의 '발을 디디는 걸음' gait·legIK는 2026-11-05 사용자 요청으로 빼고 개미굴 원본 걷기로 되돌림 — 위 '걷기·달리기') */
    const hold=A==='나침반 보기'&&!moving;U.holdW=Math.max(0,Math.min(1,(U.holdW||0)+(hold?1:-1)*dt*5));
    if(U.cprop){U.cprop.visible=U.holdW>.5;U.cprop.userData.nd.rotation.z=Math.sin(at*1.7)*.3+Math.sin(at*23)*.06;}
-   if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||((A==='떡메 찧기'||A==='떡메 들기'||A==='꼬리 잡기')&&!moving)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
+   if(U.thumbs)U.thumbs.forEach((th,i)=>th.visible=U.holdW>.5||(A==='매듭 풀기'&&!moving&&at>.35)||(A==='돌리기'&&!moving&&at>.3)||((A==='떡메 찧기'||A==='떡메 들기'||A==='꼬리 잡기'||A==='우산 잡기')&&!moving)||(i===0&&(!!U.heldObj||!!(U.glideProp&&U.glideProp.visible)))); // 쥘 때만 엄지(오른손은 물건을 들고 있는 동안 — 활공 물건도)
    /* 들고 다니는 물건(2026-11-04 — 버섯 랜턴): setHeld 물건에 userData.carry={ax,az,ex}가 있으면 서 있거나 걸을 때 오른팔을 그 각도로(앞으로 내밀어 듦, 걸으면 살짝 흔들림),
       userData.hang이면 물건이 팔 각도와 상관없이 늘 똑바로(손잡이에 매달린 채) — 다른 동작 중에는 그 동작 팔 그대로 */
    {const H=U.heldObj;if(U.showT>0)U.showT-=dt;const c=H&&(U.showT>0&&H.userData.show||H.userData.carry); // showT: 얻는 순간 번쩍 들어 보이기(game/mission — 물건 userData.show 자세)

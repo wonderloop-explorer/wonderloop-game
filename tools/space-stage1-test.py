@@ -88,6 +88,8 @@ with sync_playwright() as p:
     R['목걸이'] = hero('!!U.breathBubble')
     said = []; tip = False
     for _ in range(600):  # 이어지는 대화: 대사를 모으다가 '점프 버튼' 안내가 뜨면 뜀
+        if pg.evaluate("wlGame.ui.cardShown()==='profile'"):  # 2026-11-21: 친구 카드는 처음 만나는 순간(첫 대사 앞)에 뜬다 — 대사가 하나도 나오기 전이어야 함
+            R['친구 카드가 첫 대사 앞에'] = not said; pg.wait_for_timeout(1000); shot('friend-card-first'); pg.evaluate("document.querySelector('#wlProf button').click()"); pg.wait_for_timeout(400); continue
         tx = pg.evaluate("wlGame.ui.dialogShown()?document.querySelector('#wlDlg .line').textContent:''")
         if tx and (not said or said[-1] != tx):
             said.append(tx)

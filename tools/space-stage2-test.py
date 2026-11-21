@@ -52,6 +52,8 @@ with sync_playwright() as p:
     for _ in range(1500):  # 2026-11-17: 땅에 처음 닿은 순간 → 삐삐 첫 대사까지 걸린 시간도 잼(도착 나레이션이 끝나고 2초 뒤 달려옴 — 약 6~7초)
         on = pg.evaluate("!!(wlZone.cur&&wlZone.cur.name==='붉은 모래 언덕'&&wlZone.cur.arrival&&wlZone.cur.arrival())")
         if on and t_touch is None and pg.evaluate("wlZone.cur.arrival().state.landT!=null"): t_touch = time.time(); mark('화성에 닿음')
+        if on and pg.evaluate("wlGame.ui.cardShown()==='profile'"):  # 2026-11-21: 친구 카드는 처음 만나는 순간(첫 대사 앞)
+            R['삐삐 카드가 첫 대사 앞에'] = t_pipi is None; mark('삐삐 카드'); pg.wait_for_timeout(1000); shot('pipi-card-first'); pg.evaluate("document.querySelector('#wlProf button').click()"); pg.wait_for_timeout(300); continue
         if on and t_touch and t_pipi is None and pg.evaluate("wlGame.ui.dialogShown()"): t_pipi = time.time(); mark('삐삐 첫 대사'); break
         if on and t_touch and time.time() - t_touch > 25: break
         pg.wait_for_timeout(100)
@@ -230,10 +232,10 @@ with sync_playwright() as p:
             if 'venus' not in T: mark('venus'); pg.wait_for_timeout(1500); shot('venus-descend')
             if pg.evaluate('wlZone.cur.state().arrDone'): mark('금성 조작 풀림'); break
         pg.wait_for_timeout(200)
-    pg.wait_for_timeout(1000); shot('venus-free'); R['금성 착지'] = pg.evaluate('wlZone.cur.name') == '금성 구름'
+    pg.wait_for_timeout(1000); shot('venus-free'); R['금성 착지'] = pg.evaluate('wlZone.cur.name') in ('금성 구름', '구름 행성')
     L = pg.evaluate('wlGame.travel.log?wlGame.travel.log():{}') or {}; d = lambda x, y: round(L[y] - L[x], 2) if L.get(x) is not None and L.get(y) is not None else None
     R['금성 이동 단계 길이(초)'] = {'다가와 감쌈': d('touch', 'lift'), '들림': d('lift', 'rise'), '감아올림': d('rise', 'space'), '우주(지구·달)': d('space', 'map'), '우주 지도': d('map', 'orb'), '금성이 커져 구름에 덮임': d('orb', 'cloud'), '닿아서 구름까지': d('touch', 'cloud'), '지구가 화면에 있던 시간': L.get('earthSec'), '해결 화음 − 구름 진입': d('cloud', 'resolve')}
-    R['조작 풀림'] = pg.evaluate("!wlGame.mission.hero().userData.riding&&!wlGame.mission.hero().userData.sceneLock&&!wlGame.core.blocking()")
+    R['조작 풀림'] = pg.evaluate("!!wlZone.cur.state().arrDone&&!wlGame.mission.hero().userData.riding")  # 2026-11-21: 내려앉고 2초 뒤 거꾸리 장면이 시작돼 곧 다시 잠김 — 도착 연출이 끝났는지만 봄
     P0 = hero('[P.x,P.z]'); pg.keyboard.down('w'); pg.wait_for_timeout(900); pg.keyboard.up('w'); P1 = hero('[P.x,P.z]')
     R['금성에서 걸음(m)'] = round(((P1[0]-P0[0])**2 + (P1[1]-P0[1])**2) ** .5, 2)
     if os.environ.get('WL_VOUT'): pg.wait_for_timeout(7000)  # 목소리 시험: 금성 도착 안내(나레이션 + 안내 문구)가 끝날 때까지 기다림

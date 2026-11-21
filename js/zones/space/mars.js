@@ -295,12 +295,12 @@ const faceWL=(W,m)=>{W.rotation.y=Math.atan2(m.root.position.x-W.position.x,m.ro
 function holdCas(W,on){const U=W.userData;if(on){U.setHeld(cas.g);}else{cas.rec(false);cas.run(false);if(U.heldObj===cas.g)U.setHeld(null);}}
 let runIv=null;function tapeRun(on){clearInterval(runIv);runIv=null;cas.run(on);if(on){G.sound.sfx('cassette-run');runIv=setInterval(()=>G.sound.sfx('cassette-run'),1150);}}
 /* ① 착각 — 삐삐가 다가와 말을 검 */
-async function meet(W,U){pipi.mode='idle';faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);
+async function meet(W,U){pipi.mode='idle';faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);await G.view.meetCard('pipi',pipi.root,1.12); /* 처음 만나는 순간: 확대 → 친구 카드 → 대화(2026-11-21) */
   pipi.mode='talk';mumble(false,1.6);await say('삐삐','어? 너도 우리랑 똑같이 생겼네! 새로 이사 왔어?',3.2);
   pipi.mode='idle';G.react.react('tilt');await wait(1.1);
   pipi.mode='talk';mumble(false,1.8);await say('삐삐','…탈이라고? 그래도 꼭 닮았는걸! 동그란 머리에, 반짝반짝 까만 눈!',3.4);
   mumble(false,2.2);await say('삐삐','나는 삐삐야. 협곡 건너 높은 바위에 사는 둥둥이랑 제일 친해. 내 언덕에 가자, 거기서 둥둥이가 보여!',4.2);
-  pipi.mode='idle';G.state.setFlag(K.met,true);await G.profile.meet('pipi',pipi.root);
+  pipi.mode='idle';G.state.setFlag(K.met,true);
   st.pipiWalk={to:PIPI_SPOT};}
 /* ② 사건 — 협곡 건너 부르기(높은 소리가 먼저, 낮은 대답은 1.6초 늦게 겹쳐 옴) */
 async function call(W,U){const cam=G.view.camera;faceTo(pipi,ROCKD.c[0],ROCKD.c[1]);W.rotation.y=Math.atan2(ROCKD.c[0]-W.position.x,ROCKD.c[1]-W.position.z);
@@ -329,14 +329,14 @@ async function recordA(W,U){faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi
   await say('삐삐','녹음됐어? 협곡 가를 도는 먼지 회오리를 타면 건너갈 수 있어. 둥둥이한테 꼭 들려줘!',4.2);pipi.mode='idle';} /* 먼지 회오리 지식 안내 문구(S2-037)는 뺌(2026-11-17 — 둥둥 말풍선에 가려졌고, 삐삐가 알려 줌) */
 /* ⑤ 둥둥에게 다가가면 끊김 없이 이어지는 대화(2026-11-17): S2-015 → 카세트로 삐삐의 말(S2-010) → S2-016 → S2-040 → S2-041 → 친구 카드
    → ⑥ 원더룹과 둥둥이 함께 회오리에 실려 삐삐 언덕으로(조작 없이) → S2-039 → S2-022 → ⑦ 노을. 둥둥은 쉼표 없이 또박또박 말함(대사에서 '…'를 뺌) */
-async function deliverA(W,U){faceTo(dung,W.position.x,W.position.z);faceWL(W,dung);
+async function deliverA(W,U){faceTo(dung,W.position.x,W.position.z);faceWL(W,dung);await G.view.meetCard('dungdung',dung.root,2.02); /* 처음 만나는 순간: 확대 → 친구 카드 → 대화(2026-11-21) */
   dung.mode='talk';mumble(true,2.2);await say('둥둥','작은 친구네? 너도 우리랑 닮았구나!',3);dung.mode='idle';
   holdCas(W,true);await wait(.4);G.sound.sfx('cassette-rewind');cas.run(true);await wait(.95);cas.run(false);G.sound.sfx('cassette-click');tapeRun(true);
   mumble(false,3.4,{tape:true});await say('삐삐 (카세트)',LINE_A,4.6,{to:dung.root}); /* 카세트 소리를 둥둥에게 들려줌 — 마주 보는 상대는 둥둥 */tapeRun(false);G.sound.sfx('cassette-click');await wait(.3);holdCas(W,false);
   dung.mode='talk';mumble(true,2.6);await say('둥둥','삐삐 목소리가 이렇게 또렷하게 들리는 건 처음이야!',3.2);
   mumble(true,3.6);await say('둥둥','근데 나는 내 바위에서 계속 기다렸는데! 우리, 서로 다른 언덕에서 기다린 거였어?',5);
   mumble(true,2.2);await say('둥둥','오늘은 같이 보자! 삐삐 언덕으로 가자!',2.7);dung.mode='idle';
-  G.state.setFlag(K.recB,true);await G.profile.meet('dungdung',dung.root);
+  G.state.setFlag(K.recB,true);
   await crossTogether(W,U);
   await hillMeet(W,U);G.state.setFlag(K.told,true);await finale(W,U);}
 /* 삐삐 언덕에 내려서: 삐삐가 둥둥을 반김(듣는 사람 = 둥둥) → 오늘은 한 언덕에서 같이 보자 */

@@ -176,7 +176,10 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
     for(const [sx,sy,sr,sp] of TWK){const k=Math.max(0,Math.sin(t*1.7+sp)),r=sr*dpr*(1+2.2*k);g.globalAlpha=.35+.65*k;g.fillStyle='#fff4c2';g.beginPath();for(let i=0;i<8;i++){const a=i*PI/4,q=i%2?r*.22:r;g.lineTo(sx*w+Math.cos(a)*q,sy*h+Math.sin(a)*q);}g.closePath();g.fill();}g.globalAlpha=1;
     const L=lay();
     // 미니어처 카메라: 한눈에 보다가(0~0.4초) 발자국 길 쪽으로 살짝 다가감
-    {let cx=w/2,cy=h/2;if(iF>=0&&iT>=0){cx=(L[iF].x+L[iT].x)/2;cy=(L[iF].y+L[iT].y)/2;}const k=ss(.35,2.4,t),z=1+(h>w?.12:.24)*k,fx=w/2+(cx-w/2)*k*.9,fy=h/2+(cy-h/2)*k*.9;
+    {let cx=w/2,cy=h/2;if(iF>=0&&iT>=0){cx=(L[iF].x+L[iT].x)/2;cy=(L[iF].y+L[iT].y)/2;}const k=ss(.35,2.4,t);let z=1+(h>w?.12:.24)*k,fx=w/2+(cx-w/2)*k*.9,fy=h/2+(cy-h/2)*k*.9;
+     /* 떠나온 행성과 도착하는 행성(고리·이름표까지)이 둘 다 화면 안에 들어오게 다가가는 정도·보는 자리를 맞춤(2026-11-21 — 오른쪽 끝 토성의 고리가 잘렸다) */
+     if(iT>=0){const ext=p=>{const hw=p.R*(p.b.ring?2.05:1.3);return [p.x-hw,p.x+hw,p.y-p.R*1.3,p.y+p.R*1.95];},E=[L[iT]];if(iF>=0)E.push(L[iF]);const X=E.map(ext),lo=Math.min(...X.map(e=>e[0])),hi=Math.max(...X.map(e=>e[1])),to=Math.min(...X.map(e=>e[2])),bo=Math.max(...X.map(e=>e[3])),m=Math.min(w,h)*.03;
+       z=Math.min(z,(w-2*m)/(hi-lo),(h-2*m)/(bo-to));fx=Math.min(lo+(w/2-m)/z,Math.max(hi-(w/2-m)/z,fx));fy=Math.min(to+(h/2-m)/z,Math.max(bo-(h/2-m)/z,fy));}
      g.setTransform(z,0,0,z,w/2-fx*z,h/2-fy*z);}
     /* 길(2026-11-20 — 예전: 행성을 차례로 잇는 점선 하나 + 곧게 휜 발자국 길이라 금성 → 토성처럼 떨어진 행성 사이에서는 발자국이 목성 그림과 겹쳤다):
        길마다 다른 행성 그림·이름과 안 겹치는 휜 곡선을 고름(curveFor). 지난번까지 간 길은 옅은 점선 + 흐린 작은 발자국, 이번 길은 또렷한 점선 위에 발자국이 차례로 */
@@ -195,7 +198,7 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
     const foot=(C,u,left,sc,al,glow)=>{const [x,y]=C.P(u),[x2,y2]=C.P(u+.01),tl=Math.hypot(x2-x,y2-y)||1,ang=Math.atan2(y2-y,x2-x)+PI/2,fx=x-(y2-y)/tl*(left?-1:1)*sc*.09,fy=y+(x2-x)/tl*(left?-1:1)*sc*.09; /* 좌우 발은 그 자리의 길 방향에 수직으로(휜 길에서도 길 위에) */
       if(glow){const gl=g.createRadialGradient(fx,fy,0,fx,fy,sc*.2);gl.addColorStop(0,`rgba(255,196,206,${.5*al})`);gl.addColorStop(1,'rgba(255,196,206,0)');g.fillStyle=gl;g.fillRect(fx-sc*.2,fy-sc*.2,sc*.4,sc*.4);}
       g.save();g.translate(fx,fy);g.rotate(ang);g.scale((left?-1:1)*sc,sc);g.translate(0,.045);solePath(g);g.globalAlpha=al;g.lineJoin='round';if(glow){g.strokeStyle='#fff3e6';g.lineWidth=.03;g.stroke();}g.fillStyle=glow?'#F2899A':'#e9b6c2';g.fill();g.restore();};
-    {const k0=ss(CT,CT+.25,t);if(k0>0)for(const [a,b] of (o.past||[])){const A=by(a),Bq=by(b);if(!A||!Bq)continue;const C=curveFor(A,Bq);dash(C,.2*k0,1.6);const u0=(A.R*1.25)/C.dl,u1=1-(Bq.R*1.3)/C.dl;for(let i=0;i<5;i++)foot(C,u0+(u1-u0)*(i+.5)/5,i%2===0,FOOT*.6,.34*k0,false);}}
+    /* 지난 길(옅은 점선·흐린 발자국)은 그리지 않는다(2026-11-21 — 헷갈렸다): 다녀온 행성 안 발자국 도장만 남기고, 지금 가는 길만 */
     // 발자국: 지나온 행성 가장자리 → 다음 행성 가장자리, 이번 길의 점선 위에 한 칸씩
     if(iF>=0&&iT>=0){const A=L[iF],Bq=L[iT],C=curveFor(A,Bq),dl=C.dl,P=C.P,nx=C.nx,ny=C.ny;dash(C,.6*ss(CT,CT+.25,t),2.2);
       const u0=(A.R*1.2)/dl,u1=1-(Bq.R*1.25)/dl;

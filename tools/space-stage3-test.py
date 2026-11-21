@@ -87,35 +87,42 @@ with sync_playwright() as p:
             else:
                 for k in KEYS: key(k, False)
             if marks and r['u'] >= marks[0]: shot('08a-ride-u%02d' % round(marks.pop(0) * 100))
+            if 'umb%d' % rides not in shots and r['u'] > .3 and not PHONE:  # 우산 쥔 모습: 카메라를 잠깐 앞·옆으로
+                shots.add('umb%d' % rides)
+                for nm, yw in (('front', 3.1416), ('front34', 2.4), ('side', 1.5708)):
+                    pg.evaluate('([y,d])=>wlZone.cur.dbgCam(y,d)', [yw, 4.2]); pg.wait_for_timeout(420); shot('08u-umbrella-%s-%d' % (nm, rides)); R['우산(손-머리 축 거리·기울기·손 높이)'] = st().get('umb')
+                pg.evaluate('wlZone.cur.dbgCam(0,0)')
             note(); pg.wait_for_timeout(60)
         for k in KEYS: key(k, False)
-        pg.wait_for_timeout(700); shot('09-ride-end%d' % rides)
+        pg.wait_for_timeout(260); shot('09-ride-turn%d' % rides); until("!wlZone.cur.state().ride", 5); pg.wait_for_timeout(450); shot('09-ride-end%d' % rides); pg.wait_for_timeout(450); shot('09-ride-end%d-b' % rides)
         if st()['cand'] < 3: until("wlZone.cur.state().carry", 6); pg.wait_for_timeout(1500); shot('09a-carry-back%d' % rides); until(free, 12)
     R['바람 타기 횟수'] = rides; R['잡은 초'] = st()['cand']
     # ⑤ 케이크에 초 꽂기 → 촛불 → 생일 노래 → 발견 카드
     until(free, 20); walk(S['cake'][0] - 1.0, S['cake'][1] + .75, 25, .5); pg.wait_for_timeout(500); shot('0a-ddo-table'); pg.keyboard.press('e'); until("!!wlZone.cur.state().T.cake", 8); pg.wait_for_timeout(420); shot('0b-candles-fly'); pg.wait_for_timeout(350); shot('0b-candles-fly2'); until("!!wlZone.cur.state().T.stuck", 8); pg.wait_for_timeout(1200); shot('0b-candles-lit'); until("!!wlZone.cur.state().T.blow", 12); pg.wait_for_timeout(250); shot('0b-ddo-blows')
     until("!!wlZone.cur.state().T.candle", 20); pg.wait_for_timeout(1200); shot('0c-candle-card'); until("wlZone.cur.state().day&&" + free, 25)
     # ⑥ 해시계 마을: 거꾸리를 따라 걸으며 구경(할 일 없음)
-    def sheep_game():  # 구름 양 재우기: 튀어나온 양 1.5m 안으로 걸어가 E('톡') — 다섯 번
-        pg.wait_for_timeout(1600); shot('15-sheep-intro'); until("wlZone.cur.state().sheep.on", 25); t0 = time.time(); seen = set(); two = False
-        while time.time() - t0 < 120:
+    def sheep_game():  # 구름 양 몰기: 아직 밖에 있는 양의 뒤(울타리 문 반대쪽)로 걸어가 문 쪽으로 몰기 — 다섯 마리
+        pg.wait_for_timeout(1600); shot('15-sheep-intro'); until("wlZone.cur.state().sheep.on", 25); t0 = time.time(); seen = set(); gp = S['glade']['gate']; pen = S['glade']['pen']; cur = None
+        while time.time() - t0 < 150:
             s = st(); g = s['sheep']; note()
             if g['done']: break
-            if g['up'] and not s['scene']:
-                h = hero(); x, z, _ = min(g['up'], key=lambda u: (u[0] - h[0]) ** 2 + (u[1] - h[1]) ** 2)
-                if 'pop' not in seen: seen.add('pop'); pg.wait_for_timeout(260); shot('16-sheep-pop')
-                if len(g['up']) > 1 and not two: two = True; pg.wait_for_timeout(200); shot('16b-sheep-two')
-                if g['tgt'] >= 0:
-                    if HES: pg.wait_for_timeout(350)
-                    pg.evaluate('wlGame.mission.hero().userData.stopWalk()'); k = g['n'] + 1
-                    if k in (1, 3): shot('17-sheep-near%d' % k)
-                    pg.keyboard.press('e')
-                    if k in (1, 3, 5): pg.wait_for_timeout(170); shot('17-sheep-tap%d' % k); pg.wait_for_timeout(330); shot('17-sheep-tap%d-b' % k)
-                else:
-                    d = ((h[0] - x) ** 2 + (h[1] - z) ** 2) ** .5 or 1
-                    pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", [x + (h[0] - x) / d * 1.0, z + (h[1] - z) / d * 1.0])
-            pg.wait_for_timeout(60)
-        pg.wait_for_timeout(1300); shot('18-sheep-gate-open'); until("!!wlZone.cur.state().T.sheepEnd&&" + free, 20); pg.wait_for_timeout(300); shot('19-sheep-after')
+            if s['scene']: pg.wait_for_timeout(100); continue
+            out = [q for q in g['list'] if not q[2]]
+            if not out: pg.wait_for_timeout(100); continue
+            h = hero()
+            if cur is None or cur >= len(g['list']) or g['list'][cur][2]: cur = min(range(len(g['list'])), key=lambda i: 1e9 if g['list'][i][2] else (g['list'][i][0] - gp[0]) ** 2 + (g['list'][i][1] - gp[1]) ** 2)  # 문에서 가까운 양부터 한 마리씩
+            x, z, _ = g['list'][cur]; dx = x - gp[0]; dz = z - gp[1]; d = (dx * dx + dz * dz) ** .5 or 1
+            if d < 2.2: dx = x - pen[0]; dz = z - pen[1]; d = (dx * dx + dz * dz) ** .5 or 1  # 문 앞: 우리 가운데 반대쪽에서 밀기
+            tx = x + dx / d * 1.5; tz = z + dz / d * 1.5
+            pg.evaluate("([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)", [tx, tz])
+            el = time.time() - t0
+            if 'a' not in seen and el > 1.2: seen.add('a'); shot('16-herd-start')
+            if 'b' not in seen and ((h[0] - x) ** 2 + (h[1] - z) ** 2) ** .5 < 2.6 and el > 2: seen.add('b'); shot('16-herd-push')
+            if 'c' not in seen and g['n'] >= 1: seen.add('c'); pg.wait_for_timeout(250); shot('17-herd-in1'); pg.wait_for_timeout(300); shot('17-herd-in1-b')
+            if 'd' not in seen and g['n'] >= 3: seen.add('d'); pg.wait_for_timeout(200); shot('17-herd-in3')
+            pg.wait_for_timeout(HES * 20 + 60)
+        R['양 몰기(초 — 시작 대사 뒤 → 다섯 마리)'] = round(time.time() - t0, 1)
+        pg.wait_for_timeout(700); shot('18-herd-done'); until("!!wlZone.cur.state().T.sheepEnd&&" + free, 20); pg.wait_for_timeout(300); shot('19-sheep-after')
     P = S['path']; walk(P[1][0], P[1][1] + 1.2, 20, .8); pg.wait_for_timeout(700); shot('10-town-gate')
     for q in range(1, 8):
         walk(P[q][0], P[q][1], 25, .8)
@@ -144,7 +151,10 @@ with sync_playwright() as p:
     until("document.getElementById('wlStrip').classList.contains('on')", 30); pg.wait_for_timeout(1300); shot('28-fog-lift-card1'); until("!!wlZone.cur.state().T.card1", 30); until(free, 20)
     R['틀린 횟수'] = st()['wrong']; R['도움말(S3-005)'] = bool(st()['T'].get('hint'))
     # ⑧ 뭉게 문지기: 코 골 때(오르골 반주)만 걷고, 미리 알림(코골이가 멈추고 들썩 + '?')이 오면 멈춤
-    gs, gate = S['gs'], S['gate']; walk(gs[0] + .2, gs[1], 40, .5); until("wlZone.cur.state().gateSaid", 10); pg.wait_for_timeout(1500); shot('30-gate-shh'); until(free, 15)
+    gs, gate = S['gs'], S['gate']; walk(gs[0] + .2, gs[1], 40, .5); until("wlZone.cur.state().gateSaid", 10); pg.wait_for_timeout(1100); shot('30-munge-zoom')
+    t9 = time.time()
+    while time.time() - t9 < 6 and card() != 'profile': pg.wait_for_timeout(100)
+    pg.wait_for_timeout(900); shot('30a-munge-card'); until("(document.getElementById('wlDlg').style.display==='block')", 12); pg.wait_for_timeout(1400); shot('30b-gate-why'); until("!!wlZone.cur.state().T.gateGo&&" + free, 30); pg.wait_for_timeout(1200); shot('30c-gate-topdown')
     t0 = time.time(); shots = set(); clumsy = CLUMSY
     while time.time() - t0 < 90:
         s = st(); h = hero(); note()

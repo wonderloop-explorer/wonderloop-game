@@ -124,7 +124,7 @@ export function makeScarf(WL){const U=WL.userData,M=U.antMats&&U.antMats.scarf;l
   return {tick,dispose,found:!!knot};}
 /* ── 공통: 손·UI·카메라 ── */
 const _hr=new THREE.Vector3(),_hl=new THREE.Vector3();
-function handsMid(WL,out){const R=WL.getObjectByName('forearm.R'),L=WL.getObjectByName('forearm.L');WL.updateMatrixWorld(true);R.localToWorld(_hr.set(0,-.19,.03));L.localToWorld(_hl.set(0,-.19,.03));return out.copy(_hr).add(_hl).multiplyScalar(.5);}
+export function handsMid(WL,out){const R=WL.getObjectByName('forearm.R'),L=WL.getObjectByName('forearm.L');WL.updateMatrixWorld(true);R.localToWorld(_hr.set(0,-.19,.03));L.localToWorld(_hl.set(0,-.19,.03));return out.copy(_hr).add(_hl).multiplyScalar(.5);}
 function camChip(G){const root=document.querySelector('.wlg')||document.body;let b=document.getElementById('wlRideCam');if(b)return b;
   b=document.createElement('button');b.type='button';b.id='wlRideCam';b.className='wl-chip';b.setAttribute('aria-label','사진 찍기 모드');
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px"><path d="M8.5 5.5 9.8 3.8h4.4l1.3 1.7H19a2.5 2.5 0 0 1 2.5 2.5v9A2.5 2.5 0 0 1 19 19.5H5A2.5 2.5 0 0 1 2.5 17V8A2.5 2.5 0 0 1 5 5.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12.4" r="3.7" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>사진</span>';

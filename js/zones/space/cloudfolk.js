@@ -150,10 +150,14 @@ export function sundialParts(x,z,gy,s=1,faces=null,hk=1,o={}){const out=[],m=M4(
   if(o.wedge){const q=new THREE.CylinderGeometry(.3,.3,.008,3);q.scale(.42,1,1.25);P(q,'#b3883a',[.2,.588,0],[0,PI/2,0]);}
   if(faces)faces.push(new THREE.CircleGeometry(.52,24).applyMatrix4(M4([0,.556,0],[-PI/2,0,0])).applyMatrix4(M4([0,0,0],[0,PI/2,0])).applyMatrix4(m));return out;}
 /* 파티 우산(바람 타기) — 원점 = 손잡이(두 손), 대가 위로 올라 머리 위에 갓 */
-export function makeUmbrella(){const g=new THREE.Group();g.name='venus-umbrella';const L=[],C=['#f59ab5','#fff3d6','#8fd6c2','#fff3d6'];
-  for(let i=0;i<8;i++){const a0=i/8*PI*2,a1=(i+1)/8*PI*2,R=1.05,ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.Float32BufferAttribute([0,1.72,0,Math.sin(a1)*R,1.32,Math.cos(a1)*R,Math.sin(a0)*R,1.32,Math.cos(a0)*R,0,1.72,0,Math.sin(a0)*R,1.32,Math.cos(a0)*R,Math.sin(a1)*R,1.32,Math.cos(a1)*R],3));ge.setAttribute('uv',new THREE.Float32BufferAttribute(new Array(12).fill(.5),2));ge.computeVertexNormals();L.push([ge,C[i%4]]);
-    L.push([sph(.07,6,5).applyMatrix4(M4([Math.sin(a0)*R,1.3,Math.cos(a0)*R])),'#ffd27a']);}
-  L.push([new THREE.CylinderGeometry(.022,.022,1.75,6).applyMatrix4(M4([0,.86,0])),'#b58d6c']);L.push([new THREE.TorusGeometry(.07,.022,5,10,PI).applyMatrix4(M4([.07,0,0],[0,0,PI])),'#e8556a']);L.push([sph(.05,6,5).applyMatrix4(M4([0,1.76,0])),'#e8556a']);
+export function makeUmbrella(){const g=new THREE.Group();g.name='venus-umbrella';const L=[],C=['#f59ab5','#fff3d6','#8fd6c2','#fff3d6'],UP=.55;
+  /* 2026-11-21: 원점 = 원더룹 발밑(타는 동안 원더룹 자리·방향 그대로 따라감). 곧은 우산대는 약 2등신 원더룹의 큰 탈·얼굴을 뚫고 지나갔다 →
+     지팡이처럼 휜 우산대: 가슴 앞에서 두 손으로 쥐는 가로 손잡이(오른손 [.06,.61,.16] · 왼손 [.43,.63,.18] — 07 '우산 잡기' 자세의 손 자리) → 왼쪽 얼굴 옆으로 탈을 비켜 돌아 올라가 → 머리 위 우산 꼭지 */
+  for(let i=0;i<8;i++){const a0=i/8*PI*2,a1=(i+1)/8*PI*2,R=1.05,ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.Float32BufferAttribute([0,1.72+UP,0,Math.sin(a1)*R,1.32+UP,Math.cos(a1)*R,Math.sin(a0)*R,1.32+UP,Math.cos(a0)*R,0,1.72+UP,0,Math.sin(a0)*R,1.32+UP,Math.cos(a0)*R,Math.sin(a1)*R,1.32+UP,Math.cos(a1)*R],3));ge.setAttribute('uv',new THREE.Float32BufferAttribute(new Array(12).fill(.5),2));ge.computeVertexNormals();L.push([ge,C[i%4]]);
+    L.push([sph(.07,6,5).applyMatrix4(M4([Math.sin(a0)*R,1.3+UP,Math.cos(a0)*R])),'#ffd27a']);}
+  const cv=new THREE.CatmullRomCurve3([[-.06,.6,.15],[.06,.61,.16],[.43,.63,.18],[.69,.8,.14],[.78,1.18,.05],[.64,1.66,0],[.34,2.02,0],[0,1.7+UP,0]].map(p=>new THREE.Vector3(...p)),false,'catmullrom',.5);
+  {const tg=new THREE.TubeGeometry(cv,30,.024,6,false).toNonIndexed();tg.computeVertexNormals();L.push([tg,'#b58d6c']);}
+  L.push([sph(.045,6,5).applyMatrix4(M4([-.07,.6,.15])),'#e8556a']);L.push([sph(.05,6,5).applyMatrix4(M4([0,1.76+UP,0])),'#e8556a']);
   const me=lump(L,false,2);me.frustumCulled=false;g.add(me);return g;}
 /* 날아간 생일 초 하나(크게 — 멀리서도 보이게): 줄무늬 초 + 불꽃 */
 export function makeCandle(col='#8cc8ec'){const g=new THREE.Group(),L=[];L.push([new THREE.CylinderGeometry(.07,.07,.5,8).applyMatrix4(M4([0,0,0])),col]);for(let i=0;i<3;i++)L.push([new THREE.TorusGeometry(.072,.014,4,10).applyMatrix4(M4([0,-.16+i*.16,0],[PI/2,0,0])),'#ffffff']);
@@ -163,14 +167,19 @@ export function sheepParts(x,z,gy,ry,seed=0){const out=[],m=W4(x,gy,z,ry),P=(g,c
   P(sph(.4,10,8),A,[0,.3,0],[0,0,0],[1.3,.8,1]);[[-.3,.42,.1,.2],[.28,.44,-.08,.21],[0,.5,-.1,.22],[-.1,.36,.28,.17],[.2,.32,.26,.16],[-.42,.24,-.1,.17],[.44,.22,.05,.16]].forEach(([a,b,c,r],i)=>P(sph(r,7,5),i%2?B:A,[a,b,c]));
   P(sph(.17,9,7),F,[0,.17,.46],[0,0,0],[1,.86,1.1]);P(sph(.1,7,5),A,[0,.31,.4]);for(const s of [-1,1]){P(sph(.06,6,4),F,[s*.17,.2,.4],[0,0,s*.5],[1.5,.5,.8]);P(sph(.02,5,4),'#f6ead8',[s*.07,.2,.615],[0,0,0],[1.6,.5,.6]);}
   return out;}
-/* 놀이용 구름 양(구름 양 재우기 — 흰 구름 바닥 위에서 위에서 내려다봐도 보이게): 크림 몸 + 위를 올려다보는 진한 얼굴(흰 눈·분홍 볼) + 구멍 테두리 노란 고리.
-   고리는 양과 한 덩어리라 양이 올라오면 구멍 둘레에 켜지고 들어가면 땅속으로 꺼진다(그리기 0 추가) */
-export function popSheepParts(){const out=[],P=(g,col,p,r,s)=>out.push([g.applyMatrix4(M4(p,r||[0,0,0],s||[1,1,1])),col]),A='#ffeec2',B='#f7dca0',F='#3a2850';
-  P(sph(.4,10,8),A,[0,.3,0],[0,0,0],[1.3,.8,1]);[[-.3,.42,.1,.2],[.28,.44,-.08,.21],[0,.5,-.16,.22],[-.42,.24,-.1,.17],[.44,.22,.05,.16],[-.2,.3,.3,.15],[.22,.3,.3,.15]].forEach(([a,b,c,r],i)=>P(sph(r,7,5),i%2?B:A,[a,b,c]));
+/* 놀이용 구름 양(구름 양 몰기 — 2026-11-21, 흰 구름 바닥 위에서 위에서 내려다봐도 보이게): 크림 몸 + 위를 올려다보는 진한 얼굴(흰 눈·분홍 볼) + 짧은 다리 넷. 원점 = 발밑, 앞 = +z */
+export function herdSheepParts(){const out=[],LY=.13,P=(g,col,p,r,s)=>out.push([g.applyMatrix4(M4([p[0],p[1]+LY,p[2]],r||[0,0,0],s||[1,1,1])),col]),A='#ffeec2',B='#f7dca0',F='#3a2850';
+  P(sph(.4,10,8),A,[0,.3,0],[0,0,0],[1.3,.8,1]);[[-.3,.42,.1,.2],[.28,.44,-.08,.21],[0,.5,-.16,.22],[-.42,.24,-.1,.17],[.44,.22,.05,.16],[-.2,.3,.3,.15],[.22,.3,.3,.15],[0,.34,-.36,.16]].forEach(([a,b,c,r],i)=>P(sph(r,7,5),i%2?B:A,[a,b,c]));
   P(sph(.24,10,8),F,[0,.47,.3],[-.75,0,0],[1.05,.8,1]);P(sph(.11,7,5),A,[0,.66,.12]);
-  for(const s of [-1,1]){P(sph(.075,6,4),F,[s*.27,.5,.2],[0,0,s*.6],[1.6,.5,.9]);P(sph(.052,7,5),'#ffffff',[s*.09,.635,.4],[-.75,0,0],[1,1,.5]);P(sph(.024,5,4),'#1d1230',[s*.09,.655,.425]);P(sph(.05,6,4),'#ff8fa8',[s*.165,.56,.47],[-.75,0,0],[1.1,.8,.4]);}
+  for(const s of [-1,1]){P(sph(.075,6,4),F,[s*.27,.5,.2],[0,0,s*.6],[1.6,.5,.9]);P(sph(.052,7,5),'#ffffff',[s*.09,.635,.4],[-.75,0,0],[1,1,.5]);P(sph(.024,5,4),'#1d1230',[s*.09,.655,.425]);P(sph(.05,6,4),'#ff8fa8',[s*.165,.56,.47],[-.75,0,0],[1.1,.8,.4]);
+    for(const f of [-1,1])P(new THREE.CylinderGeometry(.055,.05,.24,6),F,[s*.24,-.02,f*.2]);}
   P(sph(.035,5,4),'#ffb7c4',[0,.585,.5],[-.75,0,0],[1.3,.7,.5]);
-  P(new THREE.TorusGeometry(.6,.045,5,22),'#ffd02e',[0,.03,0],[PI/2,0,0]);for(let k=0;k<8;k++){const a=k/8*PI*2;P(sph(.07,5,4),k%2?'#fff6b0':'#ffe25a',[Math.cos(a)*.6,.05,Math.sin(a)*.6],[0,0,0],[1,.7,1]);}
+  return out;}
+/* 구름 양 울타리(둥근 펜스 — 문 쪽 gate±half 라디안은 넓게 비움): 말뚝 + 가로대 두 줄 + 문 양옆 큰 말뚝(구름 방울). lump 목록 [geo, 색] · 땅 높이는 gyAt(x,z) */
+export function fenceParts(cx,cz,R,gate,half,gyAt){const out=[],N=22,WD='#c79a72',WD2='#b1835c',pts=[];
+  for(let i=0;i<=N;i++){const a=gate+half+(PI*2-half*2)*i/N,x=cx+Math.cos(a)*R,z=cz+Math.sin(a)*R,gy=gyAt(x,z),end=i===0||i===N,h=end?1.05:.78;pts.push([x,gy,z]);
+    out.push([new THREE.CylinderGeometry(end?.085:.06,end?.095:.07,h,6).applyMatrix4(M4([x,gy+h/2-.05,z])),i%2?WD:WD2]);out.push([sph(end?.15:.075,6,5).applyMatrix4(M4([x,gy+h-.03,z])),end?'#fff3d6':'#f6e7d2']);}
+  for(let i=0;i<N;i++){const a=pts[i],b=pts[i+1],dx=b[0]-a[0],dz=b[2]-a[2],L=Math.hypot(dx,dz),ry=Math.atan2(-dz,dx);for(const y of [.3,.58])out.push([new THREE.BoxGeometry(L,.07,.045).applyMatrix4(M4([(a[0]+b[0])/2,(a[1]+b[1])/2+y,(a[2]+b[2])/2],[0,ry,0])),y>.4?WD:WD2]);}
   return out;}
 /* 낡은 비행선(풍선형): 기운 자국이 있는 풍선 + 줄에 매달린 곤돌라 + 꼬리 날개 — 구름 바다 너머에 천천히 떠다님(그리기 1) */
 export function makeAirship(){const g=new THREE.Group();g.name='venus-airship';const L=[],P=(geo,col,p,r,s)=>L.push([geo.applyMatrix4(M4(p||[0,0,0],r||[0,0,0],s||[1,1,1])),col]);

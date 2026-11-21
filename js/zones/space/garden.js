@@ -651,7 +651,7 @@ const COLD_MSG='햇빛이 안 드는 그늘 분화구는 영하 160도 — 서�
 const JUMP_TIP=coarse?'점프 버튼을 눌러요':'점프 버튼(Space)을 눌러요';
 async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopWalk();U.sceneLock=true;quest('',null);let pc=null;
   const cam=on=>{if(on){pc=G.view.pairCam(bobo.root,1.62);if(pc)G.view.hold(pc);}else{if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);pc=null;}};
-  try{await boboCome(W);faceEach(W);cam(true);
+  try{await boboCome(W);faceEach(W);await G.view.meetCard('bobo',bobo.root,1.62); /* 처음 만나는 순간: 확대 → 친구 카드 → 대화(2026-11-21 — 예전엔 첫 만남 대화가 다 끝난 뒤에 떴다) */cam(true);
     await say('보름 할아버지','어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.',4.4);
     await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2);
     await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라가 보렴.',6.4);
@@ -663,7 +663,7 @@ async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopW
     await G.core.until(()=>{const V=U.vert;if(V&&V.air&&V.vy>0)jumped=true;return jumped;},600);await jl;
     await G.core.until(()=>!(U.vert&&U.vert.air),4);if(U.stopWalk)U.stopWalk();U.sceneLock=true;faceEach(W);cam(true);
     await say('보름 할아버지','내 발자국을 따라가 보렴. 다 그대로 남아 있을 게야.',3.6);
-    cam(false);G.state.setFlag(K.demo,true);U.sceneLock=false;await G.profile.meet('bobo',bobo.root);
+    cam(false);G.state.setFlag(K.demo,true);U.sceneLock=false;
   }catch(e){console.error(e);}finally{cam(false);U.sceneLock=false;st.scene=false;st.lastQ=null;st.introT=G.clock.t;boboHome();}}
 let fpLast=null;
 const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
