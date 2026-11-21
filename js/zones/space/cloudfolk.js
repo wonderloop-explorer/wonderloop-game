@@ -184,7 +184,7 @@ export function fenceParts(cx,cz,R,gate,half,gyAt){const out=[],N=22,WD='#c79a72
 /* 낡은 비행선(풍선형): 기운 자국이 있는 풍선 + 줄에 매달린 곤돌라 + 꼬리 날개 — 구름 바다 너머에 천천히 떠다님(그리기 1) */
 /* 금성 비행선(2026-11-21 다시 — 예전: 통통한 공 + 녹색·분홍 덧댄 조각 무늬). 금성 구름 위 비행선 탐사 연구(NASA HAVOC 구상)의 생김새를 참고:
    매끈하고 길쭉한 유선형 몸통(앞은 둥글고 뒤로 갈수록 가늘게 — 크림·은빛, 가는 이음선 몇 줄) · 등 위에 길게 붙은 남색 태양전지판 띠(구름 위는 햇빛이 강해 태양광으로 난다)
-   · 십자 꼬리날개 넷(끝만 포인트 색) · 아래 작은 곤돌라(창문) + 양옆 프로펠러 둘(천천히 돎) · 장식은 옆구리 띠 한 줄뿐.
+   · 십자 꼬리날개 넷(끝만 포인트 색) · 아래 작은 곤돌라(창문) + 곤돌라 양옆 수평 팔 끝의 프로펠러 둘(둥근 테 안에서 천천히 돎) · 장식은 옆구리 띠 한 줄뿐.
    한 덩어리(그리기 1 그대로) — 프로펠러 날개는 맨 끝 꼭짓점들만 CPU로 돌림(userData.spin(t), 꼭짓점 약 170개). 앞 = +x */
 export function makeAirship(){const g=new THREE.Group();g.name='venus-airship';const L=[],P=(geo,col,p,r,s)=>L.push([geo.applyMatrix4(M4(p||[0,0,0],r||[0,0,0],s||[1,1,1])),col]);
   const X0=-3.4,LEN=6.4,RM=1.15,hr=u=>{if(u>.6){const a=(u-.6)/.4;return RM*Math.sqrt(Math.max(0,1-a*a));}const a=(.6-u)/.6;return RM*(1-.88*Math.pow(a,1.7));},xs=u=>X0+LEN*u,
@@ -205,14 +205,20 @@ export function makeAirship(){const g=new THREE.Group();g.name='venus-airship';c
   const GY=-1.43,GX=.35;P(new THREE.CapsuleGeometry(.34,1.15,4,10),GON,[GX,GY,0],[0,0,PI/2]);P(new THREE.BoxGeometry(1.2,.06,.5),SEAM,[GX,GY-.3,0]);
   for(const x of [-.35,.3])P(new THREE.CylinderGeometry(.05,.05,.3,5),SEAM,[GX+x,GY+.36,0]);
   for(const sg of [1,-1])for(let i=0;i<4;i++)P(new THREE.BoxGeometry(.17,.14,.03),'#ffdf9a',[GX-.5+i*.33,GY+.05,sg*.335]);
-  /* 프로펠러 받침 팔 + 엔진 통(양옆) — 날개는 아래에서 따로(맨 끝, 돌릴 것) */
-  const PZ=.98,PX=GX-.1,PY=GY+.02;for(const sg of [1,-1]){P(new THREE.BoxGeometry(.12,.06,PZ-.3),SEAM,[PX,PY,sg*(PZ+.3)/2]);P(new THREE.CapsuleGeometry(.1,.3,3,8),'#bdb6a6',[PX,PY,sg*PZ],[0,0,PI/2]);}
+  /* 프로펠러 둘(2026-11-21 다시 — 예전: 정면을 보는 긴 날개가 옆에서 보면 곤돌라 아래로 매달린 막대 하나처럼 보였다): 곤돌라 양옆으로 수평 팔을 내고 그 끝에 둥근 테(덕트) 안의 짧은 날개 넷.
+     회전축을 앞에서 바깥으로 약 70° 틀어(TOE — 거의 옆을 봄. 35°는 구름 끝 카메라에서 테가 딱 옆으로 서서 선 하나로 보였다) 옆에서 봐도 둥근 테와 도는 날개가 보인다. 날개는 곤돌라 높이 안(아래로 안 내려옴). 날개·가운데 꼭지는 맨 끝에 넣어 꼭짓점만 돌림 */
+  const PZ=1.05,PX=GX-.05,PY=GY+.08,TOE=1.25,BR=.33;for(const sg of [1,-1]){const ry=-sg*TOE,c=[PX,PY,sg*PZ];
+    P(new THREE.BoxGeometry(.14,.07,PZ-.3),SEAM,[PX-.06,PY,sg*(PZ+.3)/2]);
+    L.push([new THREE.CapsuleGeometry(.09,.22,3,8).applyMatrix4(M4([-.16,0,0],[0,0,PI/2])).applyMatrix4(M4(c,[0,ry,0])),'#bdb6a6']);
+    L.push([new THREE.TorusGeometry(BR+.05,.035,5,16).applyMatrix4(M4([0,0,0],[0,PI/2,0])).applyMatrix4(M4(c,[0,ry,0])),HULL]);}
   let nFix=0;for(const [ge] of L)nFix+=ge.index?ge.index.count:ge.attributes.position.count;
-  const props=[];for(const sg of [1,-1]){const c=[PX+.3,PY,sg*PZ];let n0=0;const add=(ge,col)=>{n0+=ge.index?ge.index.count:ge.attributes.position.count;L.push([ge,col]);};
-    add(new THREE.ConeGeometry(.07,.14,6).applyMatrix4(M4([c[0]+.05,c[1],c[2]],[0,0,-PI/2])),PT);
-    for(let b=0;b<3;b++)add(new THREE.BoxGeometry(.03,.52,.1).applyMatrix4(M4([0,.27,0],[0,.35,0])).applyMatrix4(M4(c,[b*PI*2/3,0,0])),'#5d627a');
-    props.push({c,n:n0,sg});}
+  const props=[];for(const sg of [1,-1]){const c=[PX,PY,sg*PZ],ry=-sg*TOE;let n0=0;const add=(ge,col)=>{ge.applyMatrix4(M4(c,[0,ry,0]));n0+=ge.index?ge.index.count:ge.attributes.position.count;L.push([ge,col]);};
+    add(new THREE.ConeGeometry(.07,.14,6).applyMatrix4(M4([.06,0,0],[0,0,-PI/2])),PT);
+    for(let b=0;b<4;b++)add(new THREE.BoxGeometry(.03,BR,.11).applyMatrix4(M4([0,BR/2,0],[0,.4,0])).applyMatrix4(M4([0,0,0],[b*PI/2,0,0])),'#5d627a');
+    props.push({c,n:n0,sg,ax:[Math.cos(TOE),0,sg*Math.sin(TOE)]});}
   const me=lump(L,false,1.2);me.frustumCulled=false;g.add(me);
   {const pa=me.geometry.attributes.position,na=me.geometry.attributes.normal;let o=nFix;for(const q of props){q.o=o;q.p=pa.array.slice(o*3,(o+q.n)*3);q.nn=na.array.slice(o*3,(o+q.n)*3);o+=q.n;}
-    g.userData.spin=t=>{for(const q of props){const a=t*2.4*q.sg,cs=Math.cos(a),sn=Math.sin(a);for(let i=0;i<q.n;i++){const k=i*3,y=q.p[k+1]-q.c[1],z=q.p[k+2]-q.c[2],ny=q.nn[k+1],nz=q.nn[k+2],w=(q.o+i)*3;pa.array[w+1]=q.c[1]+y*cs-z*sn;pa.array[w+2]=q.c[2]+y*sn+z*cs;na.array[w+1]=ny*cs-nz*sn;na.array[w+2]=ny*sn+nz*cs;}}pa.needsUpdate=true;na.needsUpdate=true;};}
+    /* 축 ax 둘레로 돌림(로드리게스): v' = v·cos + (ax×v)·sin + ax(ax·v)(1−cos) */
+    const rot=(x,y,z,ax,cs,sn,out,w)=>{const d=(ax[0]*x+ax[1]*y+ax[2]*z)*(1-cs);out[w]=x*cs+(ax[1]*z-ax[2]*y)*sn+ax[0]*d;out[w+1]=y*cs+(ax[2]*x-ax[0]*z)*sn+ax[1]*d;out[w+2]=z*cs+(ax[0]*y-ax[1]*x)*sn+ax[2]*d;};
+    g.userData.spin=t=>{for(const q of props){const a=t*2.4*q.sg,cs=Math.cos(a),sn=Math.sin(a),c=q.c;for(let i=0;i<q.n;i++){const k=i*3,w=(q.o+i)*3;rot(q.p[k]-c[0],q.p[k+1]-c[1],q.p[k+2]-c[2],q.ax,cs,sn,pa.array,w);pa.array[w]+=c[0];pa.array[w+1]+=c[1];pa.array[w+2]+=c[2];rot(q.nn[k],q.nn[k+1],q.nn[k+2],q.ax,cs,sn,na.array,w);}}pa.needsUpdate=true;na.needsUpdate=true;};}
   return g;}

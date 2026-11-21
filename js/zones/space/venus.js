@@ -123,7 +123,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   /* 구름 양 울타리(마을 덩어리에 함께 — 그리기 0 추가): 원더룹은 말뚝을 못 지나감(문으로만 드나듦) */
   V.push(...fenceParts(PC[0],PC[1],PR,GATEA,GHALF,groundY));for(let i=0;i<=22;i++){const a=GATEA+GHALF+(PI*2-GHALF*2)*i/22;obstacles.push({c:[PC[0]+Math.cos(a)*PR,PC[1]+Math.sin(a)*PR,.3]});}
   let stopDial=null; /* 둘째 해시계(마을 입구 대사가 끝날 즈음) = 거꾸리가 한 번 멈춰 그림자를 보여 주는 자리 */
-  [[19.5,1],[33,-1],[47,1],[59,-1]].forEach(([s,sd],i)=>{const p=along(s,sd,2.8,.6,2);if(!p)return;if(i===1)stopDial=p;V.push(...sundialParts(p[0],p[1],groundY(...p),1,faces,1,{wedge:true}));obstacles.push({c:[p[0],p[1],.6]});bl.push([p[0],p[1],.7]);});
+  [[19.5,1],[33,-1],[47,1],[59,-1]].forEach(([s,sd],i)=>{const p=along(s,sd,2.8,.6,2);if(!p)return;if(!stopDial&&s>GL_S+RES)stopDial=p; /* 빈터를 지난 뒤 첫 해시계(2026-11-21 — 예전 '둘째 해시계'(33m) 자리는 양 몰기 빈터·구름 둑과 겹쳐 세워지지 않았고, 그래서 이 대사가 한 번도 안 나왔다) */V.push(...sundialParts(p[0],p[1],groundY(...p),1,faces,1,{wedge:true}));obstacles.push({c:[p[0],p[1],.6]});bl.push([p[0],p[1],.7]);});
   [[13,1],[24,-1],[30,1],[38,-1],[45,-1],[51,1],[57,1],[63,-1]].forEach(([s,sd],i)=>{const p=along(s,sd,2.4,.25,1.9);if(!p)return;const gy=groundY(...p),pin=i%3===1,h=pin?2.1:2.8;V.push(...poleParts(p[0],p[1],gy,h));(pin?pinsAt:flagsAt).push([p[0],gy+h-(pin?0:.1),p[1],FC[i%4]]);});
   {let k=0;for(let s=12.5;s<S_PIN-2;s+=5.4,k++){const p=along(s,k%2?1:-1,5.2,1.2,3.6);if(!p)continue;V.push(...treeParts(p[0],p[1],groundY(...p),k,.9+.25*((k*7)%5)/4));obstacles.push({c:[p[0],p[1],1.2]});bl.push([p[0],p[1],.95]);}}
   /* 광장: 출구 넷(들어오는 북쪽 포함) 양옆 구름 기둥 여덟(긴 그림자가 동쪽으로) + 사이사이 우산 나무 넷 + 해시계 */
@@ -266,7 +266,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   /* ── ① 도착 뒤 나레이션 → 3초 조용히 → ② 거꾸리 등장 ── */
   async function intro(W,U){if(st.intro)return;st.intro=1;
     /* 2026-11-21: 내려앉고 2초 뒤 거꾸리가 안개 속에서 걸어 나옴(원더룹 혼자 서 있는 시간 15~20초 → 약 5~6초). 나레이션(S3-001)은 기다리지 않고 그동안 함께 흐름 — 거꾸리 대사는 목소리가 끝난 뒤에(say가 기다림) */
-    (async()=>{await G.core.until(()=>!document.getElementById('wlToast')?.classList.contains('on')&&!G.sound.voiceBusy(),6);mark('nar');const rd=Math.max(2.4,T.n1.length/8.5);if(!F[K.met])G.ui.toast(T.n1,rd+1.6,T.n1);})();
+    (async()=>{await G.core.until(()=>!document.getElementById('wlToast')?.classList.contains('on')&&!G.sound.voiceBusy(),14);await G.core.wait(.4);mark('nar'); /* 도착 안내 나레이션(TR-004 약 6.1초)이 끝난 뒤에 — 예전 6초 상한은 끝을 0.1초 자르고 틈 없이 다음 줄이 나왔다 */const rd=Math.max(2.4,T.n1.length/8.5);if(!F[K.met])G.ui.toast(T.n1,rd+1.6,T.n1);})();
     await wait(2);await G.core.until(()=>!G.core.blocking()&&!st.carry&&!(U.vert&&U.vert.air),20);mark('gg');
     await scene(async()=>{const P=W.position,far=P.x>20?[P.x-12,P.z-.6]:pointAt(proj(P.x,P.z).s+12),dx=far[0]-P.x,dz=far[1]-P.z,d=Math.hypot(dx,dz)||1,to=[P.x+dx/d*1.9,P.z+dz/d*1.9];
       ggPlace(far[0],far[1]);gg.root.visible=true;st.ggOn=true;gg.root.rotation.y=Math.atan2(dx,dz); /* 등이 원더룹 쪽(뒷걸음으로 다가옴) */
@@ -554,7 +554,11 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     /* 구름 양 몰기: 빈터에 들어서면 시작 · 다 몰기 전에 구름 둑을 돌아 지나가면 구름이 빈터로 되돌림 */
     if(sg==='town'&&!SG.done&&!SG.started&&!air&&q.s>GL_S-RES+2.2&&q.d<5){sheepStart(W);return;}
     if(sg==='town'&&!SG.done&&!air&&q.s>BAR_S+2.2&&q.d<6){carryBack(W,[GC[0]-GDIR[0]*.9,GC[1]-GDIR[1]*.9]);return;}
-    if(sg==='town'&&!st.dialSaid&&stopDial&&q.s>sOf(stopDial)-1.4&&q.d<4&&!air){st.dialSaid=true;mark('dial');scene(async()=>{const sx=stopDial[0],sz=stopDial[1];faceTo(gg.root,sx,sz);st.ggMode='point';W.rotation.y=Math.atan2(sx-P.x,sz-P.z);await say('거꾸리',T2.dial,3.2,{look:{at:[sx,sz],name:'해시계'}});st.ggMode='idle';},null);return;}
+    if(sg==='town'&&!st.dialSaid&&SG.done&&!st.scene&&stopDial&&q.s>sOf(stopDial)-1.4&&q.d<4&&!air){ /* 양을 다 몬 뒤·다른 장면이 끝난 뒤에만(2026-11-21 — 양을 몰다 이 자리를 지나면 장면이 겹쳐 대사 없이 지나간 것으로 표시됐다) */st.dialSaid=true;mark('dial');scene(async()=>{const sx=stopDial[0],sz=stopDial[1];faceTo(gg.root,sx,sz);st.ggMode='point';W.rotation.y=Math.atan2(sx-P.x,sz-P.z);
+        /* 해시계를 보는 구도: 원더룹 등 뒤 위에서 해시계 판(그림자)이 보이게 내려다봄 — 세로 화면은 더 물러남. 만지면 플레이어 것 */
+        const dx=P.x-sx,dz=P.z-sz,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,k=pk()>1.3?1.5:1,cam=()=>({at:[sx+dx*.45,.8,sz+dz*.45],from:[P.x+ux*5.8*k-uz*3.1*k,3.9*k,P.z+uz*5.8*k+ux*3.1*k]});G.view.hold(cam); /* 옆으로 비켜서: 원더룹 뒤 옆얼굴·해시계·그 옆에 온 거꾸리가 한 화면에 */
+        {const to=[sx+uz*1.35+ux*.3,sz-ux*1.35+uz*.3];st.ggTo=to;st.ggMode='walk';await G.core.until(()=>Math.hypot(gg.root.position.x-to[0],gg.root.position.z-to[1])<.15,1.8);st.ggTo=null;}st.ggMode='point';faceTo(gg.root,sx,sz);
+        await say('거꾸리',T2.dial,3.2,{look:{at:[sx,sz],name:'해시계'}});st.ggMode='idle';if(G.view.req&&G.view.req.fn===cam)G.view.hold(null);},null);return;}
     if(sg==='town'&&dp<5.8&&!air){sunrise(W,U);return;}
     /* 광장 출구: 서쪽 = 맞는 길, 동쪽·남쪽 = 구름이 되돌림 */
     if(F[K.sun]&&!air){const b=exitHere(P);if(b){if(b.ok){if(!F[K.plaza]){plazaRight(W,U);return;}}else{plazaWrong(W,U,b,!F[K.plaza]);return;}}}

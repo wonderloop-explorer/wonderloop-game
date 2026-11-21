@@ -80,8 +80,15 @@ def sheep(pg):
     walk(g['gg'][0] + dx / L * 3 + 1.2, g['gg'][1] + dz / L * 3, 6, .5); pg.wait_for_timeout(1500)
     walk(g['c'][0], g['c'][1], 20, 1.0); until('wlZone.cur.state().T.sheep0', 10); pg.wait_for_timeout(2200); shot('1a-sheep-talk')
     until('wlZone.cur.state().T.sheepGo', 30); pg.wait_for_timeout(2200); shot('1b-sheep-top')
+def dial(pg):
+    st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); P = S['path']; d = S['dial']; print('dial', d, 'path', P[2:6])
+    pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.set(x,0,z);}", [P[4][0], P[4][1]]); pg.wait_for_timeout(800)
+    for q in (5, 6):
+        walk(P[q][0], P[q][1], 25, .8); print(q, sorted(st()['T'].keys()), pg.evaluate("(document.getElementById('wlDlg')||{}).innerText"))
+        if st().get('scene'): pg.wait_for_timeout(1500); shot('1a-dial-stop'); until('!wlZone.cur.state().scene', 15)
 with sync_playwright() as p:
-    if '--sheep' in A: run(p, ALL[:8], sheep)
+    if '--dial' in A: run(p, ALL[:9], dial)
+    elif '--sheep' in A: run(p, ALL[:8], sheep)
     elif '--plaza' in A:
         run(p, ALL[:6], cake); run(p, ALL[:10], plaza)
     else: run(p, ALL, end)
