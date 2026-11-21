@@ -203,7 +203,9 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
     if(iF>=0&&iT>=0){const A=L[iF],Bq=L[iT],C=curveFor(A,Bq),dl=C.dl,P=C.P,nx=C.nx,ny=C.ny;dash(C,.6*ss(CT,CT+.25,t),2.2);
       const u0=(A.R*1.2)/dl,u1=1-(Bq.R*1.25)/dl;
       const want=Math.min(NSTEP,Math.max(0,Math.floor((t-STEP0)/STEPD)+1));while(stepN<want){sfx('travel-step',{step:stepN,gain:1.3,cue:stepN===0});stepN++;}
-      for(let i=0;i<stepN;i++){const pop=ss(0,.18,t-(STEP0+i*STEPD));foot(C,u0+(u1-u0)*(i+.5)/NSTEP,i%2===0,FOOT*(pop<1?.6+.55*pop-.15*pop*pop:1),Math.min(1,pop*1.4),true);}}
+      /* 발 크기(2026-11-21): 기본을 조금 작게(×.84) + 길이 짧으면(화성 → 금성) 칸 사이 거리에 맞춰 더 작게 — 발 길이(크기 × .29)가 칸 사이의 1.25배를 넘지 않게: 서로 붙어 겹쳤다 */
+      const [fa,fb]=[P(u0),P(u1)],gap=Math.hypot(fb[0]-fa[0],fb[1]-fa[1])*(1+.25*Math.abs(C.k||0))/NSTEP,FS=Math.min(FOOT*.84,gap*1.25/.29);
+      for(let i=0;i<stepN;i++){const pop=ss(0,.18,t-(STEP0+i*STEPD));foot(C,u0+(u1-u0)*(i+.5)/NSTEP,i%2===0,FS*(pop<1?.6+.55*pop-.15*pop*pop:1),Math.min(1,pop*1.4),true);}}
     L.forEach((p,i)=>planet(p,ss(CT+.02*i,CT+.25+.02*i,t),i===iT&&stepN>=NSTEP?t:0));
     /* 다녀온 행성에는 발자국 도장(지나온 행성은 지도가 뜨자마자 톡 찍힘 — 스테이지마다 띄우던 '지도 카드'를 대신, 2026-11-20) */
     for(const id of (o.seen||[])){const p=by(id);if(!p)continue;const cur=id===o.from,k=cur?ss(CT+.3,CT+.5,t):ss(CT,CT+.25,t);if(k<=0)continue;if(cur&&!stampS){stampS=true;sfx('travel-step',{step:7,gain:1.2});}

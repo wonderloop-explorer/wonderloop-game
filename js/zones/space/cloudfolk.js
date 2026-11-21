@@ -150,15 +150,15 @@ export function sundialParts(x,z,gy,s=1,faces=null,hk=1,o={}){const out=[],m=M4(
   if(o.wedge){const q=new THREE.CylinderGeometry(.3,.3,.008,3);q.scale(.42,1,1.25);P(q,'#b3883a',[.2,.588,0],[0,PI/2,0]);}
   if(faces)faces.push(new THREE.CircleGeometry(.52,24).applyMatrix4(M4([0,.556,0],[-PI/2,0,0])).applyMatrix4(M4([0,0,0],[0,PI/2,0])).applyMatrix4(m));return out;}
 /* 파티 우산(바람 타기) — 원점 = 손잡이(두 손), 대가 위로 올라 머리 위에 갓 */
-export function makeUmbrella(){const g=new THREE.Group();g.name='venus-umbrella';const L=[],C=['#f59ab5','#fff3d6','#8fd6c2','#fff3d6'],UP=.55;
-  /* 2026-11-21: 원점 = 원더룹 발밑(타는 동안 원더룹 자리·방향 그대로 따라감). 곧은 우산대는 약 2등신 원더룹의 큰 탈·얼굴을 뚫고 지나갔다 →
-     지팡이처럼 휜 우산대: 가슴 앞에서 두 손으로 쥐는 가로 손잡이(오른손 [.06,.61,.16] · 왼손 [.43,.63,.18] — 07 '우산 잡기' 자세의 손 자리) → 왼쪽 얼굴 옆으로 탈을 비켜 돌아 올라가 → 머리 위 우산 꼭지 */
-  for(let i=0;i<8;i++){const a0=i/8*PI*2,a1=(i+1)/8*PI*2,R=1.05,ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.Float32BufferAttribute([0,1.72+UP,0,Math.sin(a1)*R,1.32+UP,Math.cos(a1)*R,Math.sin(a0)*R,1.32+UP,Math.cos(a0)*R,0,1.72+UP,0,Math.sin(a0)*R,1.32+UP,Math.cos(a0)*R,Math.sin(a1)*R,1.32+UP,Math.cos(a1)*R],3));ge.setAttribute('uv',new THREE.Float32BufferAttribute(new Array(12).fill(.5),2));ge.computeVertexNormals();L.push([ge,C[i%4]]);
-    L.push([sph(.07,6,5).applyMatrix4(M4([Math.sin(a0)*R,1.3+UP,Math.cos(a0)*R])),'#ffd27a']);}
-  const cv=new THREE.CatmullRomCurve3([[-.06,.6,.15],[.06,.61,.16],[.43,.63,.18],[.69,.8,.14],[.78,1.18,.05],[.64,1.66,0],[.34,2.02,0],[0,1.7+UP,0]].map(p=>new THREE.Vector3(...p)),false,'catmullrom',.5);
-  {const tg=new THREE.TubeGeometry(cv,30,.024,6,false).toNonIndexed();tg.computeVertexNormals();L.push([tg,'#b58d6c']);}
-  L.push([sph(.045,6,5).applyMatrix4(M4([-.07,.6,.15])),'#e8556a']);L.push([sph(.05,6,5).applyMatrix4(M4([0,1.76+UP,0])),'#e8556a']);
-  const me=lump(L,false,2);me.frustumCulled=false;g.add(me);return g;}
+export const UMB_HAND=[-.5,.64,.02]; /* 07 '우산 잡기' 자세의 오른손 자리(원더룹 기준 — 재서 맞춘 값) */
+export function makeUmbrella(){const g=new THREE.Group();g.name='venus-umbrella';const L=[],C=['#f59ab5','#fff3d6','#8fd6c2','#fff3d6'],HX=UMB_HAND[0],HY=UMB_HAND[1],HZ=UMB_HAND[2],RIM=1.63,TOP=2.08,R=1.16;
+  /* 2026-11-21 두 번째: 원점 = 원더룹 발밑(타는 동안 원더룹 자리·방향 그대로 따라감). 곧은 우산대 — 옆 위로 쭉 뻗은 오른손(07 '우산 잡기' 손 자리 UMB_HAND)에서 탈 옆으로 똑바로 올라가 머리 위 우산 꼭지로.
+     얼굴 앞을 지나지 않는다(예전: 가슴 앞에서 두 손으로 쥐는 휜 우산대 — 안 예뻤다). 우산 가운데는 손 위(머리에서 옆으로 약 0.5m) — 지붕이 넓어 머리를 다 덮음 */
+  for(let i=0;i<8;i++){const a0=i/8*PI*2,a1=(i+1)/8*PI*2,ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.Float32BufferAttribute([HX,TOP,HZ,HX+Math.sin(a1)*R,RIM,HZ+Math.cos(a1)*R,HX+Math.sin(a0)*R,RIM,HZ+Math.cos(a0)*R,HX,TOP,HZ,HX+Math.sin(a0)*R,RIM,HZ+Math.cos(a0)*R,HX+Math.sin(a1)*R,RIM,HZ+Math.cos(a1)*R],3));ge.setAttribute('uv',new THREE.Float32BufferAttribute(new Array(12).fill(.5),2));ge.computeVertexNormals();L.push([ge,C[i%4]]);
+    L.push([sph(.07,6,5).applyMatrix4(M4([HX+Math.sin(a0)*R,RIM-.02,HZ+Math.cos(a0)*R])),'#ffd27a']);}
+  L.push([new THREE.CylinderGeometry(.024,.024,TOP-(HY-.1),6).applyMatrix4(M4([HX,(TOP+HY-.1)/2,HZ])),'#b58d6c']);
+  L.push([sph(.05,6,5).applyMatrix4(M4([HX,HY-.11,HZ])),'#e8556a']);L.push([sph(.05,6,5).applyMatrix4(M4([HX,TOP+.04,HZ])),'#e8556a']);
+  const me=lump(L.map(([q,c])=>[q.index?q.toNonIndexed():q,c]),false,2);me.frustumCulled=false;g.add(me);return g;}
 /* 날아간 생일 초 하나(크게 — 멀리서도 보이게): 줄무늬 초 + 불꽃 */
 export function makeCandle(col='#8cc8ec'){const g=new THREE.Group(),L=[];L.push([new THREE.CylinderGeometry(.07,.07,.5,8).applyMatrix4(M4([0,0,0])),col]);for(let i=0;i<3;i++)L.push([new THREE.TorusGeometry(.072,.014,4,10).applyMatrix4(M4([0,-.16+i*.16,0],[PI/2,0,0])),'#ffffff']);
   L.push([sph(.07,8,6).applyMatrix4(M4([0,.36,0],[0,0,0],[1,1.7,1])),'#ffd27a']);const me=lump(L,false,2);me.frustumCulled=false;g.add(me);return g;}

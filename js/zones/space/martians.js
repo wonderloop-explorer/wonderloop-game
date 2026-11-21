@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {sbMat} from '../../game/storybook.js';
 import {bentY} from '../../game/bend.js';
+import {radialTex} from '../../game/glowtex.js';
 const LOWFX=(()=>{try{const q=new URLSearchParams(location.search),t=q.get('quality');return t?t==='mobile':(!q.has('shot')&&matchMedia('(pointer:coarse)').matches);}catch(e){return false;}})();
 const PI=Math.PI;
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
@@ -134,8 +135,7 @@ export function makeCassette(){const g=new THREE.Group();g.name='cassette';const
   return {g,rec(on){st.rec=on;lamp.material.color.set(on?'#ff3b30':'#5a2222');},run(on){st.run=on;},
     tick(dt){st.t+=dt;if(st.run)reels.forEach((r,i)=>{r.rotation.y+=dt*(i?7:6);});glow.material.opacity=st.rec?.55+.35*Math.sin(st.t*7):0;},
     dispose(){g.traverse(o=>{if(o.isMesh||o.isSprite){o.geometry&&o.geometry.dispose();o.material.dispose();}});}};}
-let DOT=null;function dotTex(){if(DOT)return DOT;const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
-  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,255,255,.6)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);DOT=new THREE.CanvasTexture(c);DOT.colorSpace=THREE.SRGBColorSpace;return DOT;}
+let DOT=null;function dotTex(){return DOT||(DOT=radialTex(64,[[0,255,255,255,1],[.35,255,255,255,.6],[1,255,255,255,0]]));} // 화소마다 계산(game/glowtex)
 export {dotTex};
 /* ── 파란 노을 유리 조각 ── 원점 = 밑 */
 export function makeGlass(){const g=new THREE.Group();g.name='bluesunset-glass';

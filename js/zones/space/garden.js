@@ -35,8 +35,9 @@ import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {bentPos} from '../../game/bend.js';
 import {popShown} from '../../game/popup.js';
+import {radialTex} from '../../game/glowtex.js';
 import SPACE from '../../worlds/infinite-space.js';
-import {canvasTex,srand,wob,hatch,shade,jupiterMap,marsMap,saturnMap,sunArt,sunGlowArt,paperArt,sparkArt,nebulaArt,milkyArt,makeOrb} from './skyboard.js';
+import {canvasTex,srand,wob,hatch,shade,jupiterMap,marsMap,saturnMap,sunArt,sunGlowTex,paperArt,sparkArt,nebulaArt,milkyArt,makeOrb} from './skyboard.js';
 import {RIDE,departure,dustVeil} from './meteor-ride.js'; // 출구 → 별똥별 꼬리 타고 화성으로(2026-11-09)
 /* 행성 크기(2026-11-08 — 17m → 24m): 걷기 속도는 그대로 두고 행성을 키워 땅이 도는 속도를 약 30% 늦춤(땅 회전만 따로 늦추면 발이 미끄러져 보여서). 한 바퀴 2πR/3.78 ≈ 40초.
    ?debug 톱니 메뉴 '행성 반지름' 막대(localStorage 'wl-space-R', 12~40 — 바꾸면 다시 연다) 또는 ?planetR=로 맞춰 볼 수 있다.
@@ -280,7 +281,7 @@ G.occlude.pieces({meshes:[props],boxes:PBOX});
 /* 빛나는 덩어리: 툰 + 흰 발광(파스텔이 스스로 빛나 보임) */
 {const m=sbMat('#ffffff',{emissive:'#ffffff',ei:.5});m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(glow),m);root.add(me);keep.push(me);}
 /* ── 빛 웅덩이(땅에 붙은 은은한 빛, 더하기 섞기 — 그리기 1번): 그늘 분화구 푸른 빛·마을 줄 조명 아래 따뜻한 빛·출구 노란 빛·망원경 단 */
-const dotTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.7)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
+const dotTex=radialTex(64,[[0,255,255,255,1],[.3,255,255,255,.7],[1,255,255,255,0]]); // 화소마다 계산(game/glowtex)
 {const pools=[[SHADE.c[0],SHADE.c[1],5.6,'#3e6aa8',.85],[CAVE[0],CAVE[1],2.4,'#5d8ed0',.9],[ (HUT[0]+POLE[0])/2,(HUT[1]+POLE[1])/2+.4,4.8,'#8a5a1e',.9],[EXIT[0],EXIT[1],2.8,'#8a7420',.9],[SCOPE[0]+.2,SCOPE[1]+.9,1.6,'#7a4e18',.7]];
   const gs=pools.map(([x,z,r,c,k])=>{const g=new THREE.PlaneGeometry(2*r,2*r,24,24);g.rotateX(-PI/2);const p=g.attributes.position,cc=new Float32Array(p.count*3),C=col(c).multiplyScalar(k);
     for(let i=0;i<p.count;i++){const X=p.getX(i)+x,Z=p.getZ(i)+z,hk=ss(1.6,2.3,dist(X,Z,HUT));p.setXYZ(i,X,groundY(X,Z)+.04,Z);cc[i*3]=C.r*hk;cc[i*3+1]=C.g*hk;cc[i*3+2]=C.b*hk;} /* 집 벽 둘레는 비움(hk) — 땅 위 4cm 더하기 판이 벽 밑동을 밝게 칠해 띠가 튀어나와 보였다 */g.setAttribute('color',new THREE.BufferAttribute(cc,3));return g;});
@@ -526,7 +527,7 @@ const anchor=new THREE.Group();anchor.name='space-sky-anchor';root.add(anchor); 
 const D=90,aq=new THREE.Quaternion();let aqOn=false;
 const bill=(tex,{op=1,add=false,order=-1,w=1,h=1}={})=>{const m=new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,depthTest:true,fog:false,opacity:op,blending:add?THREE.AdditiveBlending:THREE.NormalBlending});m.userData.noBend=true;
   const me=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);me.renderOrder=order;me.frustumCulled=false;me.userData.noMerge=true;anchor.add(me);return me;};
-const sunG=bill(canvasTex(128,sunGlowArt),{add:true,order:-4.5,op:.85}); // 해 빛무리(더하기 섞기 — 보라 하늘 위로 은은하게 번짐)
+const sunG=bill(sunGlowTex(),{add:true,order:-4.5,op:.85}); // 해 빛무리(더하기 섞기 — 보라 하늘 위로 은은하게 번짐)
 const sunM=bill(canvasTex(256,sunArt),{order:-4}); // 크림빛 해(손그림 — 고르지 않은 가장자리·색연필 빗금) + 살구빛 빛무리
 /* 목성·토성 = 로우폴리 구(2026-11-08 — 원판 그림은 진한 테두리 선 때문에 오려 붙인 스티커처럼 튀었다. 이 세계엔 선이 있는 물체가 없다):
    낮은 면 수의 구(면이 살짝 보이게 — 매끈한 법선과 면 법선을 섞음) + 줄무늬 그림(equirect) × 크레용 결(땅 위 물체와 같은 결),

@@ -114,7 +114,7 @@ export default {
     {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',open:'화산 꼭대기에 올라가면 알게 돼요', /* open: 숨겨진 비밀이 아니라 꼭 지나가는 발견(2026-11-13 — 깃발을 꽂아야 금성으로 떠남) */text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}},
     {flag:'secret:infinite-space:venussun',name:'해가 서쪽에서 떠요',where:'STAGE 3 구름 행성',open:'해돋이 광장에서 해 쪽으로 나가면 알게 돼요',text:'금성은 다른 행성과 거꾸로 돌아서, 해가 서쪽에서 뜨고 동쪽으로 져요.'},
     {flag:'secret:infinite-space:venusair',name:'구름 위는 지구와 비슷해요',where:'STAGE 3 구름 행성',open:'구름 끝에서 알게 돼요',text:'금성 땅은 아주 뜨겁지만, 구름 위 높은 곳은 기압과 온도가 지구와 비슷해요.'},
-    {flag:'secret:infinite-space:venusday',name:'하루가 1년보다 길어요',where:'STAGE 3 구름 행성',open:'또생일의 생일 초를 찾아 주면 알게 돼요',text:'금성은 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요.'}],
+    {flag:'secret:infinite-space:venusday',name:'한 바퀴보다 1년이 먼저 끝나요',where:'STAGE 3 구름 행성',open:'또생일의 생일 초를 찾아 주면 알게 돼요',text:'금성이 제자리에서 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요. 한 바퀴 도는 것보다 1년이 먼저 끝나요.'}],
   map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'구름 행성',zone:'space-venus'},{name:'쉼터',zone:null,rest:true},{name:'붉은 폭풍',zone:null}], /* rest: 번호 없는 쉼터(토성) — 아직 없는 곳은 zone null */
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   /* 목소리(2026-11-15 — docs/voice/README.md): 대본 목록 docs/voice/script.csv의 번호 SPC-…, 파일 assets/voice/space/<번호>.mp3. stages = 구역마다 미리 읽을 스테이지 */

@@ -29,6 +29,7 @@ import {PI,QUALITY,rng,blobMany,softMat,blobTex} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {setZoneBend} from '../../game/bend.js';
+import {radialTex} from '../../game/glowtex.js';
 import {RIDE,arrival,departure,redDust,points,lockOn,lockOff,dustVeil,camHome,makeScarf} from './meteor-ride.js';
 import {CLOUD_VEIL} from './whirl-lift.js';
 import {makeSkyBoard,makeOrb,canvasTex,jupiterMap,saturnMap,marsMap,venusMap} from './skyboard.js';
@@ -204,8 +205,8 @@ const skyG=new THREE.Group();skyG.name='mars-sky';root.add(skyG);
 const tex=(n,draw)=>{const c=document.createElement('canvas');c.width=c.height=n;draw(c.getContext('2d'),n);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;};
 const disc=(texd,size,dir,add)=>{const m=new THREE.SpriteMaterial({map:texd,transparent:true,depthWrite:false,fog:false,blending:add?THREE.AdditiveBlending:THREE.NormalBlending});m.userData.noBend=true;
   const sp=new THREE.Sprite(m);sp.scale.setScalar(size);sp.position.copy(new THREE.Vector3(...dir).normalize().multiplyScalar(90));sp.renderOrder=-5;skyG.add(sp);return sp;};
-const sunSp=disc(tex(128,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,252,240,1)');gr.addColorStop(.16,'rgba(255,246,228,.95)');gr.addColorStop(.3,'rgba(250,226,206,.32)');gr.addColorStop(1,'rgba(240,200,180,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}),9,[5,3.4,4.2],true);
-const blueSp=disc(tex(128,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(214,236,255,1)');gr.addColorStop(.12,'rgba(160,204,242,.95)');gr.addColorStop(.34,'rgba(127,182,232,.55)');gr.addColorStop(.62,'rgba(127,182,232,.16)');gr.addColorStop(1,'rgba(127,182,232,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}),46,[5,3.4,4.2],false);
+const sunSp=disc(radialTex(128,[[0,255,252,240,1],[.16,255,246,228,.95],[.3,250,226,206,.32],[1,240,200,180,0]]),9,[5,3.4,4.2],true); // 빛 그림은 화소마다 계산(game/glowtex)
+const blueSp=disc(radialTex(128,[[0,214,236,255,1],[.12,160,204,242,.95],[.34,127,182,232,.55],[.62,127,182,232,.16],[1,127,182,232,0]]),46,[5,3.4,4.2],false);
 blueSp.material.opacity=0;blueSp.renderOrder=-6;
 const moonTex=(seed)=>tex(96,(g,n)=>{const c=n/2;let s=seed;const r=()=>((s=(s*16807)%2147483647)/2147483647);g.beginPath();for(let i=0;i<=40;i++){const a=i/40*PI*2,k=1+.13*Math.sin(a*2+seed)+.07*Math.sin(a*5+seed*2);g.lineTo(c+Math.cos(a)*c*.78*k*(1+.25*Math.cos(a)),c+Math.sin(a)*c*.62*k);}g.closePath();
   g.fillStyle='#cdbcb4';g.fill();g.save();g.clip();const sh=g.createLinearGradient(0,0,n,n);sh.addColorStop(0,'rgba(255,248,240,.45)');sh.addColorStop(1,'rgba(120,90,90,.35)');g.fillStyle=sh;g.fillRect(0,0,n,n);

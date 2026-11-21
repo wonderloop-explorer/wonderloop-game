@@ -10,7 +10,8 @@
 import csv, json, os, re, subprocess, sys, hashlib
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')); os.chdir(ROOT)
 WORLDS = {'SPC': 'space'}
-SRC = ['js/zones/space/garden.js', 'js/zones/space/mars.js', 'js/zones/space/venus.js', 'js/worlds/infinite-space.js', 'js/game/react.js']
+SKIP = ('사용 안 함', '임시')  # 상태가 이렇게 시작하는 줄: 색인·확인에서 뺌(2026-11-21 — STAGE 3 대사 확정 전 정리)
+SRC = ['js/zones/space/garden.js', 'js/zones/space/mars.js', 'js/zones/space/venus.js', 'js/zones/space/saturn.js', 'js/worlds/infinite-space.js', 'js/game/react.js']
 TEMP_VOICE = {'나레이터': (175, 1.0), '보름 할아버지': (150, .8), '삐삐': (215, 1.25), '둥둥': (115, .72), '원더룹': (190, 1.12)}  # 임시 목소리(맥 say 유나 하나 — 다른 한국어 목소리는 안 깔린 맥이 많다): (빠르기, 높낮이 배율) — 사람마다 다르게 들리게만
 def rows():
     with open('docs/voice/script.csv', encoding='utf-8-sig', newline='') as f: return list(csv.DictReader(f))
@@ -20,7 +21,7 @@ def index(R, root='assets/voice'):
     out = {}
     for r in R:
         w = WORLDS.get(r['번호'].split('-')[0]);
-        if not w: continue
+        if not w or r['상태'].startswith(SKIP): continue  # '사용 안 함'(예전 흐름의 줄)·'임시'(대사 확정 전)는 색인에 넣지 않음 — 게임은 글자만
         d = os.path.join(root, w); os.makedirs(d, exist_ok=True)
         st = r['번호'].split('-')[1]
         out.setdefault(w, []).append({'id': r['번호'], 'st': st, 'who': r['말하는 사람'], 'text': r.get('나레이션 글') or r['대사'],  # 게임이 줄을 찾는 글 = 나레이션 글(있으면) 아니면 대사
@@ -49,7 +50,7 @@ def count(R, k):
 def check(R):
     src = '\n'.join(open(p, encoding='utf-8').read() for p in SRC if os.path.isfile(p)); bad = []
     for r in R:
-        if r['번호'].split('-')[1] == 'FX': continue
+        if r['번호'].split('-')[1] == 'FX' or r['상태'].startswith(SKIP): continue
         for t in [r['대사'], r.get('나레이션 글') or '']:
             if t and t not in src and t.replace("'", "\\'") not in src: bad.append(r['번호']); break
     ids = [r['번호'] for r in R]; dup = sorted({i for i in ids if ids.count(i) > 1})

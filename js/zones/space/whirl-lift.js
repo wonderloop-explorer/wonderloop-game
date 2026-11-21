@@ -5,6 +5,7 @@
    ── cloudArrival({G,root,WL,groundY,mob}): 금성 구름 속으로 쏙 — 화성 착지와 달리 구름이 걷히지 않는다. 연보라 안개 속을 천천히 내려와 푹신한 구름 땅에 사뿐
       (cloud-poof + 구름 알갱이) → 두리번 → 갸웃 → 조작·화면 UI 원래대로. 이동 테마 해결 화음은 구름에 들어서는 순간(화성 쪽에서 landIn) — 여기서는 음악 없이 바람 소리만 */
 import * as THREE from 'three';
+import {radialTex} from '../../game/glowtex.js';
 import {points,lockOn,lockOff,camHome} from './meteor-ride.js';
 const PI=Math.PI,ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 function discTex(n,draw){const c=document.createElement('canvas');c.width=c.height=n;draw(c.getContext('2d'),n);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
@@ -16,7 +17,7 @@ function orbTex(n,base,light,dark,glow,deco){return discTex(n,(g,N)=>{const c=N/
 /* 금성 구름 덮개 색(meteor-ride dustVeil 옵션) */
 export const CLOUD_VEIL={blobs:['#e6d2f4','#d9c0ee','#f1e4fa','#cdb0e6','#e0c9f2'],bg:['#dcc6ef','#cfb4e6'],fade:'rgba(214,190,236,0)',tiles:[[250,240,255],[176,146,206]],dots:['252,244,255','198,170,226','226,206,242']};
 export function cloudArrival(o){const {G,root,WL}=o,U=WL.userData;lockOn(G,WL);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('기본');
-  const P=WL.position.clone(),gy=o.groundY(P.x,P.z),face=WL.rotation.y;const puffs=points(root,o.mob?70:120,{map:discTex(64,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,255,255,.95)');gr.addColorStop(.6,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}),add:false,size:.55,grav:-.05,drag:1.8});
+  const P=WL.position.clone(),gy=o.groundY(P.x,P.z),face=WL.rotation.y;const puffs=points(root,o.mob?70:120,{map:radialTex(64,[[0,255,255,255,.95],[.6,255,255,255,.35],[1,255,255,255,0]]),add:false,size:.55,grav:-.05,drag:1.8});
   const st={t:0,done:false,cu:null,idle:9,landed:false,sq:1,sv:0};const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1,H=4.6,DONE=o.doneAt||4.9; /* 내려앉는 시간은 이동 테마의 해결 화음까지 남은 시간에 맞춤(곡을 되감지 않음 — 2026-11-20) */
   G.travel.note('phase','arrive');G.travel.landIn(D); /* 이동 테마 해결 화음은 내려앉는 순간(별똥별 도착과 같은 자리 — 2026-11-14 행성 이동 공통 틀) */
   {const C=G.controls.input.cam;if(C){C.yaw=face+.7;C.pitch=.3;C.dist=6.4;st.cu=C.user;}U.riding.snap=true;}

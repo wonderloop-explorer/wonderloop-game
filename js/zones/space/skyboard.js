@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import {rng} from '../../01-textures.js';
 import {sbMat} from '../../game/storybook.js';
+import {radialTex,gradTex} from '../../game/glowtex.js';
 const PI=Math.PI;
 export function canvasTex(n,draw,h=n){const c=document.createElement('canvas');c.width=n;c.height=h;draw(c.getContext('2d'),n,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
 /* ── 하늘 행성 손그림(2026-11-07 — 매끈한 스티커처럼 보여 로우폴리 색연필 세계와 따로 놀았다): 살짝 고르지 않은 가장자리(wob), 색연필 빗금 결(hatch),
@@ -50,6 +51,8 @@ export function sunArt(g,n){const cx=n/2,cy=n/2,r=n*.19; // 원만(빛무리는 
   {const e=g.createRadialGradient(cx,cy,r*.72,cx,cy,r*1.04);e.addColorStop(0,'rgba(255,214,140,0)');e.addColorStop(.8,'rgba(255,200,120,.35)');e.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=e;g.beginPath();g.arc(cx,cy,r*1.04,0,PI*2);g.fill();}}
 /* 해 빛무리: 은은하게 번지는 살구빛(가운데 크림 → 바깥으로 사라짐) */
 export function sunGlowArt(g,n){const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,240,200,.85)');gr.addColorStop(.18,'rgba(255,226,170,.6)');gr.addColorStop(.42,'rgba(255,200,130,.24)');gr.addColorStop(.7,'rgba(255,180,120,.08)');gr.addColorStop(1,'rgba(255,170,120,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);}
+/* 해 빛무리 텍스처(화소마다 계산 — game/glowtex. 위 sunGlowArt 캔버스 그림은 아이폰에서 색 점이 생겨 쓰지 않는다) */
+export const sunGlowTex=()=>radialTex(128,[[0,255,240,200,.85],[.18,255,226,170,.6],[.42,255,200,130,.24],[.7,255,180,120,.08],[1,255,170,120,0]]);
 /* 종이 결(하늘 바탕, 256 반복): 밝은 섬유 짧은 선 + 어두운 티끌 — 판 불투명도로 아주 옅게 */
 export function paperArt(g,n){const R=srand(41);g.clearRect(0,0,n,n);g.lineCap='round';
   for(let i=0;i<420;i++){const x=R()*n,y=R()*n,L=2+R()*5,a=R()*PI;g.globalAlpha=.04+R()*.07;g.strokeStyle=R()<.75?'#fff4e6':'#d9c8ff';g.lineWidth=.8+R()*1.4;
@@ -105,14 +108,14 @@ export function makeOrb(parent,{map,rep=[5,3],ring=false,seg=[20,14]}){const g=n
         'gl_FragColor=vec4(c,min(1.,a*1.15));\n#include <colorspace_fragment>\n}'}));
     rg.material.userData.noBend=true;rg.frustumCulled=false;rg.renderOrder=-5;rg.userData.noMerge=true;g.add(rg);}
   return {g,body,halo,ring:rg,U};}
-const haloTex=canvasTex(128,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(190,170,255,0)');gr.addColorStop(.72,'rgba(190,170,255,0)');gr.addColorStop(.78,'rgba(196,178,255,.3)');gr.addColorStop(.9,'rgba(180,160,250,.12)');gr.addColorStop(1,'rgba(170,150,240,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
+const haloTex=radialTex(128,[[0,190,170,255,0],[.72,190,170,255,0],[.78,196,178,255,.3],[.9,180,160,250,.12],[1,170,150,240,0]]);
 /* ── 하늘 그림판 ── */
 export function makeSkyBoard(root,{mob=false,seed='space-travel'}={}){const anchor=new THREE.Group();anchor.name='space-sky-board';root.add(anchor);const D=90,aq=new THREE.Quaternion(),aq2=new THREE.Quaternion();let aqOn=false,A=1;
   /* 행성·해는 따로 빨리 따라오는 판(near — 초당 6: 이동 카메라가 뒤·옆·앞으로 크게 돌아도 정한 화면 자리 가까이에), 별·성운·은하수는 늦게(초당 1.4 — 카메라가 돌면 별이 흘러 원근감) */
   const near=new THREE.Group();near.name='space-sky-near';anchor.add(near);
   const fades=[];const bill=(tex,{op=1,add=false,order=-1,w=1,h=1}={})=>{const m=new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,depthTest:true,fog:false,opacity:op,blending:add?THREE.AdditiveBlending:THREE.NormalBlending});m.userData.noBend=true;m.userData.op0=op;
     const me=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);me.renderOrder=order;me.frustumCulled=false;me.userData.noMerge=true;anchor.add(me);fades.push(m);return me;};
-  const sunG=bill(canvasTex(128,sunGlowArt),{add:true,order:-4.5,op:.85}),sunM=bill(canvasTex(256,sunArt),{order:-4});near.add(sunG,sunM);
+  const sunG=bill(sunGlowTex(),{add:true,order:-4.5,op:.85}),sunM=bill(canvasTex(256,sunArt),{order:-4});near.add(sunG,sunM);
   const neb=bill(canvasTex(512,nebulaArt),{add:true,order:-7,op:.62}),milkyB=bill(canvasTex(512,milkyArt),{add:true,order:-7,op:.75,w:4,h:1});
   const grain=(()=>{const t=canvasTex(256,paperArt);t.wrapS=t.wrapT=THREE.RepeatWrapping;return bill(t,{order:-9,op:mob?.32:.28});})();
   const N=mob?3400:6400,starU={uT:{value:0},uPR:{value:Math.min(window.devicePixelRatio||1,mob?1.25:2)},uA:{value:1}};

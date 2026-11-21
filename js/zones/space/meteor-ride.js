@@ -15,14 +15,15 @@
    사진 모드는 그대로 쓸 수 있다(C 키 · 연출 동안 오른쪽 위 '사진' 단추 — 메뉴가 숨으므로 따로). */
 import * as THREE from 'three';
 import {sbMat} from '../../game/storybook.js';
+import {radialTex} from '../../game/glowtex.js';
 /* 회색 정원 → 화성으로 넘길 때 남기는 표시(구역을 바꿔도 모듈은 그대로) */
 export const RIDE={pending:null,hid:false};
 const PI=Math.PI,ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 function canvasTex(n,draw){const c=document.createElement('canvas');c.width=c.height=n;draw(c.getContext('2d'),n);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
-const glowTex=()=>canvasTex(128,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,248,214,1)');gr.addColorStop(.25,'rgba(255,226,150,.55)');gr.addColorStop(.6,'rgba(255,190,150,.14)');gr.addColorStop(1,'rgba(255,170,150,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
+const glowTex=()=>radialTex(128,[[0,255,248,214,1],[.25,255,226,150,.55],[.6,255,190,150,.14],[1,255,170,150,0]]); // 화소마다 계산(game/glowtex)
 const sparkTex=()=>canvasTex(64,(g,n)=>{const c=n/2;g.translate(c,c);const gr=g.createRadialGradient(0,0,0,0,0,c);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.2,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');
   g.fillStyle=gr;g.beginPath();for(let i=0;i<8;i++){const a=i/8*PI*2,r=i%2?c*.18:c*.98;g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}g.closePath();g.fill();});
-const dustTex=()=>canvasTex(64,(g,n)=>{const c=n/2,gr=g.createRadialGradient(c,c,0,c,c,c);gr.addColorStop(0,'rgba(255,255,255,.9)');gr.addColorStop(.55,'rgba(255,255,255,.4)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);});
+const dustTex=()=>radialTex(64,[[0,255,255,255,.9],[.55,255,255,255,.4],[1,255,255,255,0]]);
 const SEG=30,RAD=7;
 /* ── 별똥별 모양 ── */
 export function makeMeteor(root,{mob=false}={}){
@@ -155,12 +156,13 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
   const hover=new THREE.Vector3(P.x+fx*1.9,P.y+2.45,P.z+fz*1.9),hi=new THREE.Vector3(P.x+fx*7-fz*4,P.y+17,P.z+fz*7+fx*4);
   const head=new THREE.Vector3().copy(hi),endP=new THREE.Vector3(),ctrl=new THREE.Vector3(),mid=new THREE.Vector3(),hangV=new THREE.Vector3(),lastH=new THREE.Vector3(),vel=new THREE.Vector3(0,1,0);
   const wp=P.clone(); // 원더룹 자리(이 연출이 정함 — 07은 riding.y에 자세 높이 wy를 더해 그리므로 WL.position에서 다시 읽으면 쌓인다)
-  const st={endP:null,t:0,phase:'come',grab:0,liftY:P.y,cu:null,idle:9,wave:false,face:yaw0,end:false};lockOn(G,WL);
+  const FO=o.faceOff||0; /* 몸 방향 − 가는 방향(얼음 배: PI = 뒤를 보고 탐). st.face = 가는 방향, 카메라 키의 '원더룹 기준 방향'은 몸(얼굴) 기준 */
+  const st={endP:null,t:0,phase:'come',grab:0,liftY:P.y,cu:null,idle:9,wave:false,face:yaw0-FO,end:false};lockOn(G,WL);
   if(!CR)G.sound.sfx('event-sparkle',{gain:1.15});G.travel.note('phase','come');let t0=null;
   function tick(dt,t){if(st.end)return;st.t+=dt;const T=st.t,U=WL.userData;
     if(T<2.4){const u=ss(0,2.2,T),a=hi.clone().lerp(hover,u);a.y+=Math.sin(u*PI)*1.2;a.x+=-fz*Math.sin(u*PI)*1.5;a.z+=fx*Math.sin(u*PI)*1.5;head.copy(a);if(T>2.2){const w=(T-2.2)*3;head.x+=Math.cos(w)*.25;head.z+=Math.sin(w)*.25;}}
     else if(T<3.3){const w=(T-2.2)*3;head.copy(hover);head.x+=Math.cos(w)*.25*(1-ss(2.4,3.2,T));head.z+=Math.sin(w)*.25*(1-ss(2.4,3.2,T));head.y+=Math.sin(T*3)*.06;
-      if(st.phase==='come'){st.phase='grab';G.travel.note('phase','grab');G.travel.begin({id:'meteor',expect:(3.75-T)+FLY+(o.after||0)}); /* 꼬리를 잡는 순간 이동 공통 틀(game/travel) 시작: 배경음 줄이고 이동 테마 — expect = 착지까지 남은 초 */U.action=CR?CR.pose.grab:'꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');if(!CR)WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y;}}
+      if(st.phase==='come'){st.phase='grab';G.travel.note('phase','grab');G.travel.begin({id:'meteor',expect:(3.75-T)+FLY+(o.after||0)}); /* 꼬리를 잡는 순간 이동 공통 틀(game/travel) 시작: 배경음 줄이고 이동 테마 — expect = 착지까지 남은 초 */U.action=CR?CR.pose.grab:'꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');if(!CR)WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y-FO;}}
     else if(T<3.75){if(st.phase!=='pull'){st.phase='pull';G.travel.note('phase','pull');G.sound.sfx('event-whoosh',{gain:.85});}head.copy(hover);head.y+=ss(3.3,3.75,T)*.55;}
     else{if(st.phase!=='fly'){st.phase='fly';G.travel.note('phase','fly');st.liftT=T;G.travel.depart();if(!(CR&&CR.plain))S.v+=2.2;lastH.copy(head);}
       const u=Math.min(1,(T-3.75)/FLY),p=o.path(u);head.set(p.x,p.y,p.z);
@@ -183,7 +185,7 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
   const _v=new THREE.Vector3();
   /* 07 뒤(구역 lateUpdate): 원더룹 자세·늘어남 → 손 자리 → 꼬리 끝 */
   function late(dt,t){const T=st.t;
-    if(st.phase==='fly'){const pl=CR&&CR.plain?.25:1;WL.rotation.y=st.face;WL.rotation.z=Math.sin(T*1.7)*.07*pl;WL.rotation.x=Math.sin(T*1.1)*.05*pl;}
+    if(st.phase==='fly'){const pl=CR&&CR.plain?.25:1;WL.rotation.y=st.face+FO;WL.rotation.z=Math.sin(T*1.7)*.07*pl;WL.rotation.x=Math.sin(T*1.1)*.05*pl;}
     applySquish(WL,S.x);
     if(CR){CR.late&&CR.late(dt,t,st);SC.tick(t,st.phase==='fly'&&!CR.plain,1);}else{handsMid(WL,mid);
     /* 꼬리: 손(가슴 앞)에서 앞으로 나가 위로 — 약 2등신이라 손을 머리 위로 못 올려, 꼬리가 위에서 곧게 내려오면 얼굴·탈을 지나간다.
@@ -196,8 +198,8 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
        내려와 잡을 때까지 옆 앞 → 끌려 올라간 직후 앞옆 낮게(얼굴·꼬리 잡은 손·멀어지는 달) → 마을 내려다보기(짧게) → 옆모습(목성·토성이 뒤로 스쳐 감)
        → 어깨 너머로 다가오는 화성 → 마지막 얼굴 정면(반짝 신남). 키: [비행 진행 u, 원더룹 기준 방향, 위아래, 거리] */
     {const u=st.phase==='fly'?Math.min(1,(T-st.liftT)/FLY):-1,K=o.camk||CAMK,LE=o.lookEnd||[.31,.38];let a,p,d;
-     if(u<0){a=1.15;p=.22;d=6.5;}else{let i=0;while(i<K.length-2&&u>K[i+1][0])i++;const A=K[i],B=K[i+1],w=ss(A[0],B[0],u);let dy=B[1]-A[1];dy=Math.atan2(Math.sin(dy),Math.cos(dy));a=A[1]+dy*w;p=A[2]+(B[2]-A[2])*w;d=A[3]+(B[3]-A[3])*w;}
-     let ya=st.face+a;
+     if(u<0){a=o.camk?K[0][1]:1.15;p=.22;d=6.5;} /* 카메라 키를 따로 준 이동은 뜨기 전에도 첫 키 방향(얼음 배: 거꾸리가 보이는 쪽) */else{let i=0;while(i<K.length-2&&u>K[i+1][0])i++;const A=K[i],B=K[i+1],x=Math.min(1,Math.max(0,(u-A[0])/Math.max(1e-6,B[0]-A[0]))),w=B[4]==='in'?x*x:B[4]==='out'?1-(1-x)*(1-x):ss(A[0],B[0],u); /* 키 다섯째 값 'in'·'out': 그 구간을 점점 빠르게·점점 느리게(두 구간을 이어 멈추지 않고 한 번에 돌 때) */let dy=B[1]-A[1];dy=Math.atan2(Math.sin(dy),Math.cos(dy));a=A[1]+dy*w;p=A[2]+(B[2]-A[2])*w;d=A[3]+(B[3]-A[3])*w;}
+     let ya=st.face+FO+a;
      /* 출발지 볼거리(o.lookAt [x,z] — 손 흔드는 친구들): 내려다보는 장면(u .08~.36) 동안 카메라가 원더룹 너머 그쪽을 보도록(친구들이 화면 가운데에 약 2초) */
      if(o.lookAt&&u>=.06&&u<LE[1]){const w=ss(.06,.13,u)*(1-ss(LE[0],LE[1],u)),yl=Math.atan2(WL.position.x-o.lookAt[0],WL.position.z-o.lookAt[1])+(o.lookOff||0);let dy=yl-ya;dy=Math.atan2(Math.sin(dy),Math.cos(dy));ya+=dy*w;}
      {const c=G.view.camera,wide=c&&c.aspect>1.25;if(wide)d*=1.25;if(WL.userData.riding)WL.userData.riding.lookY=wide?.8:null;} /* 보는 점은 몸 가운데(가로 화면 — 따라가기의 '보는 점 올림'이면 발이 아래로 잘림) */ /* 가로 화면(컴퓨터)은 조금 멀리 — 가까운 장면에서 발·탈이 화면 밖으로 잘렸다(2026-11-14 — 별똥별도 같았다) */

@@ -9,6 +9,7 @@
    별: 밤으로 갈수록 나타난다. 첫별(firstStar, 하늘 한 점)이 먼저 뜨고(t 1.55~1.8) 나머지가 뒤따른다(1.75~2). SK.firstStar 로 자리를 옮길 수 있다.
    비용: 하늘 둥근 지붕 1회 + 별 1회 그리기. 안개는 08이 처음부터 늘 켜 두고(멀리 밀어 둠) 값만 바꾼다 — 안개를 켜고 끄면 셰이더를 모두 다시 만들어 휴대폰이 멈춘다. */
 import * as THREE from 'three';
+import {radialTex} from './glowtex.js';
 const DEFAULT_KEYS=[
   {top:'#9cc8e8',horizon:'#f4ead2',hemi:'#fff3dc',ground:'#d2ab88',hemiI:.62,sun:'#ffe0b0',sunI:.72,sunDir:[5,-11,6],fill:.22,fog:'#f1e6cf',fogNear:28,fogFar:90,stars:0},
   {top:'#7f8fc4',horizon:'#f6b98a',hemi:'#f7c9a6',ground:'#a7787a',hemiI:.42,sun:'#ff9f6a',sunI:.5,sunDir:[11,-4,3],fill:.16,fog:'#e9b494',fogNear:22,fogFar:80,stars:0},
@@ -51,8 +52,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
   let r=seed;const R=()=>(r=(r*16807)%2147483647)/2147483647;
   const P=new Float32Array(nStars*3);for(let i=0;i<nStars;i++){const a=R()*Math.PI*2,y=.12+.88*Math.sqrt(R()),c=Math.sqrt(1-y*y);P.set([Math.cos(a)*c*radius*.9,y*radius*.9,Math.sin(a)*c*radius*.9],i*3);}
   const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(P,3));
-  const dot=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d'),gr=g.createRadialGradient(16,16,0,16,16,16);
-    gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,250,230,.8)');gr.addColorStop(1,'rgba(255,250,230,0)');g.fillStyle=gr;g.fillRect(0,0,32,32);const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;return tx;})();
+  const dot=radialTex(32,[[0,255,255,255,1],[.35,255,250,230,.8],[1,255,250,230,0]]); // 화소마다 계산(game/glowtex — 캔버스 그러데이션은 아이폰에서 색 점)
   const smat=new THREE.PointsMaterial({map:dot,size:starSize,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,fog:false,color:0xfff6dc});
   smat.userData.noBend=true; // 하늘·별은 둥근 땅에서 휘지 않는다(game/bend — 카메라를 따라다니는 먼 하늘)
   const stars=new THREE.Points(sg,smat);stars.renderOrder=-9;stars.frustumCulled=false;
