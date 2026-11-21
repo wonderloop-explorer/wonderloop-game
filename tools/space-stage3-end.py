@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """STAGE 3 끝부분만 빠르게 확인(2026-11-21) — 문지기까지 끝난 것으로 저장을 맞춰 열고: 구름 끝(비행선·발견 카드 → 대사 → 얼음 배) → 비행 → 우주 지도 → 토성 도착.
    촬영 서버(8000)가 떠 있을 때 저장소 루트에서: python3 tools/space-stage3-end.py [--pc] [--out docs/compare/space-stage3-end] [--plaza]
-   --plaza: 광장 서쪽 출구 발견 카드와 초 꽂기 구도도(해돋이까지 끝난 저장 / 초 셋을 잡은 저장으로 따로 열어서). 결과: 촬영 + 뒷모습 시간(초). 소리 끔, 끝나면 닫음."""
+   --sheep: 양 몰기 설명 대화 구도와 놀이 시작 구도만. --plaza: 광장 서쪽 출구 발견 카드와 초 꽂기 구도도(해돋이까지 끝난 저장 / 초 셋을 잡은 저장으로 따로 열어서). 결과: 촬영 + 뒷모습 시간(초). 소리 끔, 끝나면 닫음."""
 import os, sys, time, json
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')); A = sys.argv[1:]; PC = '--pc' in A
@@ -40,6 +40,9 @@ def helpers(pg):
 def end(pg):
     st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); R = {}
     walk(S['end'][0] + 1.5, S['end'][1], 60, .6); until('wlZone.cur.state().T.end', 20)
+    if '--ship' in A:  # 비행선 확대만: 구름 끝에 닿은 뒤 0.8초마다 여덟 장
+        for i in range(8): pg.wait_for_timeout(800); shot('41-ship-%d' % i)
+        return
     until('wlZone.cur.state().T.look', 40); shot('41-look-airship'); until("document.getElementById('wlStrip').classList.contains('on')", 10); pg.wait_for_timeout(1300); shot('41-card2-airship')
     until('wlZone.cur.state().T.card2', 30); pg.wait_for_timeout(1500); shot('42-end-talk'); until('wlZone.cur.state().clear', 40); pg.wait_for_timeout(900); shot('43-clear')
     until('wlZone.cur.state().aboard', 40); pg.wait_for_timeout(900); shot('44-boat-aboard'); until('wlZone.cur.state().T.sail', 20)
@@ -70,8 +73,16 @@ def cake(pg):
     if PC: pg.keyboard.press('e')
     else: pg.evaluate("document.getElementById('wlAct')&&document.getElementById('wlAct').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))"); pg.keyboard.press('e')
     until('wlZone.cur.state().T.stuck', 12); pg.wait_for_timeout(1300); shot('0b-three'); until('wlZone.cur.state().T.candle', 20); pg.wait_for_timeout(1300); shot('0c-candle-card')
+def sheep(pg):
+    st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); g = S['glade']
+    dx, dz = g['gg'][0] - g['c'][0], g['gg'][1] - g['c'][1]; L = (dx * dx + dz * dz) ** .5  # 빈터 바깥(들어오는 길 쪽)에서 걸어 들어감 — 실제 플레이처럼 카메라가 등 뒤에
+    pg.evaluate("([x,z,a])=>{const W=wlGame.mission.hero();W.position.set(x,0,z);W.rotation.y=a;}", [g['gg'][0] + dx / L * 6 + 1.2, g['gg'][1] + dz / L * 6, 0]); pg.wait_for_timeout(600)
+    walk(g['gg'][0] + dx / L * 3 + 1.2, g['gg'][1] + dz / L * 3, 6, .5); pg.wait_for_timeout(1500)
+    walk(g['c'][0], g['c'][1], 20, 1.0); until('wlZone.cur.state().T.sheep0', 10); pg.wait_for_timeout(2200); shot('1a-sheep-talk')
+    until('wlZone.cur.state().T.sheepGo', 30); pg.wait_for_timeout(2200); shot('1b-sheep-top')
 with sync_playwright() as p:
-    if '--plaza' in A:
+    if '--sheep' in A: run(p, ALL[:8], sheep)
+    elif '--plaza' in A:
         run(p, ALL[:6], cake); run(p, ALL[:10], plaza)
     else: run(p, ALL, end)
 print('ok', OUT)

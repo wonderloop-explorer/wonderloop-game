@@ -1,10 +1,10 @@
 /* 무한 우주 STAGE 3 구름 행성(금성) 본편 (2026-11-19 — 미션 하나 더(바람 타고 생일 초 잡기)·'거꾸로' 소품 삭제 → 해시계 마을·끝은 얼음 배로 토성). 성격은 '살피기'. 자동 플레이 약 4분 4초(휴대폰·PC 같음).
-   흐름·대사 자리 목록은 docs/space-stage3-flow.md(대본 만들 때 볼 것). '[임시] …' 글은 대사 자리 표시 — docs/voice/script.csv에는 아직 없다.
+   흐름·대사 자리 목록은 docs/space-stage3-flow.md(대본 만들 때 볼 것). 대사는 2026-11-21 확정(T·T2 — script.csv와 글자가 같아야 목소리를 찾는다).
    사실 기준: 금성이 반대로 돌아서 달라지는 건 해의 길(서쪽에서 뜸)·그림자가 움직이는 방향·해시계 눈금 방향뿐 — 위아래가 뒤집히지 않는다(집·나무·연기는 평범하게). 구름 꼭대기 바람은 서쪽으로 아주 빠르다 → 깃발·구름 줄기는 모두 서쪽으로.
    땅: 구름 바다(SEA) 위에 뜬 구름 섬 + 둘레 구름 섬·먼 구름 탑. 해는 서쪽(-x): 해돋이 전에는 서쪽 지평선의 금빛 띠만, 광장에서 떠오름.
    자리(2026-11-19 두 번째 — 바람은 서쪽으로 부니 바람길도 서쪽으로만): 시작 START·처음 만나는 또생일 둔덕 DDO0·바람길 발판 PAD는 동쪽(x 34~44), 파티장(단상 SEC·식탁 CAKE·내리는 자리 LAND)은 마을 입구 옆(x 1~6). 또생일은 부탁한 뒤 먼저 날아가 단상에서 기다림.
    길(PATH): [0,0](파티장 옆) → 마을 입구 [0,-10] → 굽은 마을 길 약 90m → 광장 PLZ → 문 구역 GS → 구름 문 GATE → 구름 끝 END.
-   ① 도착 → ② 거꾸리(S3-002 + 임시) → ③ 또생일 부탁(다가가면 저절로: S3-015 + 임시 → 친구 카드)
+   ① 도착 → ② 거꾸리(S3-002·020) → ③ 또생일 부탁(다가가면 저절로: S3-015·021·022)
    ④ 바람 타기: 발판에 올라서면 파티 우산 + 정해진 바람길 WIND(WSEC초, x가 줄어들기만 함) — 조이스틱·WASD·방향키로 좌우·위아래 조금씩, 공중의 초 CAND 셋에 닿으면 잡힘(저장), 파티장에 내림. 놓치면 '다시 타 볼까?' → 구름이 동쪽 발판 옆으로
    ⑤ 식탁에서 '초 꽂기' → S3-016 → 촛불 불기 → 생일 노래 → 발견 카드(S3-017)
    ⑥ 해시계 마을(걸으며 구경): 구름 집 넷(등불 셋)·작은 해시계 넷(반시계 눈금)·깃발·바람개비·우산 나무·조는 구름 양 셋, 길 한가운데 빈터의 '구름 양 재우기'(2026-11-20 — 구멍 다섯에서 튀어나오는 양을 톡 쳐서 다섯 번 재우면 구름 둑이 걷힘), 서쪽으로 흐르는 구름 줄기
@@ -32,13 +32,14 @@ const WID=SPACE.id,ZID='space-venus';
 const K={met:'venus:met',ask:'venus:ask',c:['venus:c1','venus:c2','venus:c3'],town:'venus:town',sun:'venus:sunrise',plaza:'venus:plaza',gate:'venus:gate',sheep:'venus:sheep',ddo:'venus:ddo',clear:'clear:'+ZID};
 const DISC={sun:'secret:'+WID+':venussun',air:'secret:'+WID+':venusair',day:'secret:'+WID+':venusday'},DISC_TOTAL=3;
 /* 대사(docs/voice/script.csv SPC-S3-… 와 글자가 같아야 목소리를 찾는다) */
-const T={n1:'구름이 너무 두꺼워서 한 치 앞도 안 보여요. 어디로 가야 할까요?',g2:"녕안! 아, 여기 말로 '안녕'이야. 나는 거꾸리, 뭐든 거꾸로 하지!",g3:'여기선 해가 서쪽에서 떠. 그래서 그림자도 반대로 읽어야 해.',g4:'그림자 반대쪽이 앞이야! 갈림길에서 그림자를 잘 보고 따라와.',
-  g5:'그림자가 가리키는 쪽 말고, 그 반대쪽!',g6:'봐, 구름이 걷히잖아! 서쪽에서 뜬 해가 길을 비춰 줘.',n7:'금성은 다른 행성과 거꾸로 돌아서, 해가 서쪽에서 뜨고 동쪽으로 져요.',g8:'쉿, 뭉게 문지기가 자고 있어. 코를 골 때만 살금살금 걸어.',
-  m9:'음? 누구야?',m10:'어이쿠, 누가 깨웠어?',m11:'드르렁, 더 자야지.',g12:'다 왔다! 여기가 구름 끝이야. 토성 고리에서 날아온 얼음 조각으로 배를 띄워 줄게.',g13:'나도 같이 갈래! 거꾸로 타면 더 재밌거든.',
-  n14:'금성 땅은 아주 뜨겁지만, 구름 위 높은 곳은 기압과 온도가 지구와 비슷해요.',d15:'오늘 생일이야! 하루가 다 가기 전에 1년이 지나 버렸거든!',d16:'케이크 한 조각 먹고 가! 초는 네가 불어도 돼.',
+const T={n0:'구름 행성 금성에 도착했어요! 금성은 온통 두꺼운 구름에 덮여 있어요.',n1:'구름이 너무 두꺼워서 한 치 앞도 안 보여요. 어디로 가야 할까요?',g2:"녕안! 거꾸로 한 '안녕'이야. 나는 거꾸리, 거꾸로 하는 장난을 좋아해!",g3:'여기선 해가 서쪽에서 떠. 그래서 그림자도 반대로 읽어야 해.',g4:'그림자 반대쪽이 앞이야! 갈림길에서 그림자를 잘 보고 따라와.',
+  g5:'그림자가 가리키는 쪽 말고, 그 반대쪽!',g6:'봐, 구름이 걷히잖아! 서쪽에서 뜬 해가 길을 비춰 줘.',n7:'금성은 다른 행성과 거꾸로 돌아서, 해가 서쪽에서 뜨고 동쪽으로 져요.',g8:'쉿, 자고 있어. 코를 골 때만 살금살금 걸어.',
+  m9:'음? 누구야?',m10:'어이쿠, 누가 깨웠어?',m11:'드르렁, 더 자야지.',g12:'다 왔다! 여기가 구름 끝이야. 토성 고리에서 날아온 얼음 조각으로 배를 띄워 줄게.',g13:'나도 같이 갈래! 나는 거꾸로 탈 거야.',
+  n14:'금성 땅은 아주 뜨겁지만, 구름 위 높은 곳은 기압과 온도가 지구와 비슷해요. 그래서 과학자들은 금성 구름 위에 비행선을 띄우는 탐사를 연구하기도 했어요.',d15:'오늘 내 생일이야! 금성이 한 바퀴 다 돌기도 전에 1년이 또 지나 버렸거든!',d16:'케이크 한 조각 먹고 가! 초는 네가 불어도 돼.',
   n17:'금성이 제자리에서 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요. 한 바퀴 도는 것보다 1년이 먼저 끝나요.',n18:'보름 할아버지의 지도에 구름 행성이 그려졌어요.',g19:'그림자 반대쪽이 앞이야!'};
-/* 대사 자리(임시 글 — 마지막에 한꺼번에 다듬음. script.csv에 아직 없음 → 글자만) */
-const TMP={thanks:'[임시] 고마워! 내 생일 중에 가장 특별한 날이야!',dial:'[임시] 그림자 봐, 곧 해 뜰 시간이야!',goal:'[임시] 토성 얼음 배가 오는 구름 끝은 해 뜨는 쪽이야. 안개 때문에 어느 쪽인지 모르겠지? 해가 뜨면 알 수 있어!',go:'[임시] 따라와, 마을을 지나가자',ask:'[임시] 바람에 초가 날아갔어! 이 우산 타고 잡아 와',wait:'[임시] 초를 찾아 줘(다시 말 걸기)',retry:'[임시] 다시 타 볼까?',first:'[임시] 또생일의 초부터 찾아 주자',town:'[임시] 오늘 드디어 해가 떠! 금성에선 해가 한 번 뜨려면 아주 오래 걸려. 광장에서 같이 보자!',rise:'[임시] 해가 뜬다, 어느 쪽인지 봐',west:'[임시] 봤지? 금성에선 해가 서쪽에서 떠! 그리고 해돋이는 아주 가끔이야 — 지구 날짜로 약 117일에 한 번뿐이거든.',hint:'[임시] 그쪽이 아니야, 해가 뜬 쪽으로 가자!',again2:'[임시] 금성 해돋이는 117일에 한 번이야. 오늘 봐서 운이 좋았어!',gate:'[임시] 저기 뭉게 문지기야. 구름 끝 비행선 선착장으로 가는 문을 지켜. 금성은 낮이 지구 날짜로 두 달 가까이 이어져서 늘 졸려.',again:'[임시] 다시 말 걸기(해돋이 전)',sat:'[임시] 다음은 토성 고리 — 쉼터 이야기 예고',sheep:'[임시] 큰일이야, 구름 양들이 울타리에서 빠져나갔어! 양 뒤로 다가가서 울타리 안으로 몰아 줘!',quiet:'[임시] 다 들어갔다! 고마워, 이제 서두르자!',lead:'[임시] 해 뜨는 쪽으로 더 가까이 가 볼까? 구름 끝이 그쪽이야!',end1:'[임시] 다 왔다! 여기가 구름 끝이야. 토성에서 마중 나온 얼음 배가 곧 올 거야.'};
+/* 새 흐름의 대사(2026-11-21 확정 — docs/voice/script.csv SPC-S3-020~040과 글자가 같아야 목소리를 찾는다. first·retry는 글자만인 안내 문구) */
+const T2={thanks:'고마워! 내 생일 중에 가장 특별한 날이야!',dial:'그림자 봐, 곧 해 뜰 시간이야!',goal:'구름 끝은 해 뜨는 쪽에 있어. 안개 때문에 어느 쪽인지 모르겠지? 해가 뜨면 알 수 있어!',go:'따라와, 마을로 가자!',ask:'바람에 초가 날아갔어! 이 우산 타고 잡아 와!',wait:'초 세 개, 꼭 찾아 줘!',retry:'다시 타 볼까요?',first:'먼저 또생일의 초를 찾아 줘요.',town:'오늘 드디어 해가 떠! 금성에선 해가 한 번 뜨려면 아주 오래 걸려. 광장에서 같이 보자!',rise:'해가 뜬다! 어느 쪽에서 뜨는지 봐!',west:'봤지? 금성에선 해가 서쪽에서 떠! 해돋이는 지구 날짜로 약 117일에 한 번뿐이야.',hint:'그쪽이 아니야, 해가 뜬 쪽으로 가자!',again2:'금성 해돋이는 117일에 한 번이야. 오늘 봐서 운이 좋았어!',gate:'저기 뭉게 문지기야. 구름 끝 비행선 선착장 문을 지켜. 금성은 낮이 지구 날짜로 두 달 가까이 이어져서 늘 졸려.',again:'광장으로 가자! 해돋이를 놓치면 117일을 기다려야 해.',sheep:'큰일이야, 구름 양들이 울타리에서 빠져나갔어! 양 뒤로 다가가서 울타리 안으로 몰아 줘!',herd:'양 뒤로 다가가서 울타리로 몰아요',quiet:'다 들어갔다! 고마워. 이제 해돋이 보러 서두르자!',lead:'해 뜨는 쪽으로 더 가까이 가 볼까? 구름 끝이 그쪽이야!',end1:'다 왔다! 여기가 구름 끝이야. 토성에서 마중 나온 얼음 배가 곧 올 거야.',party:'파티장에서 만나!'};
+const SONG_R=17; /* 생일 노래가 들리는 거리: 또생일(파티장) 5m 안은 다 들리고 멀어질수록 줄어 17m에서 꺼짐(2026-11-21 — 예전: 26m 안이면 0.35 아래로 안 줄어 양 몰기 빈터에서도 계속 들렸다). 놀이(바람 타기·양 몰기) 중에는 놀이 배경음만 */
 const BX=[-90,50,-36,14]; // 걷는 범위
 function groundY(x,z){return .22*Math.sin(x*.21+Math.sin(z*.13)*1.4)*Math.cos(z*.19)+.14*Math.sin((x+z)*.37)+.1*Math.sin(x*.61-z*.47);}
 const PATH=[[0,0],[0,-10],[-4,-17],[-12,-20],[-19,-13],[-25,-6],[-33,-4],[-40,-7],[-42,-12],[-42,-20],[-56,-20],[-72,-20],[-87,-20]]; /* 2026-11-20: 마을 길 약 90m → 약 58m(광장 동쪽은 비워 둠 — 해돋이 카메라 자리, 걷는 시간 절반 — 해돋이를 보러 서두르는 길) */
@@ -46,7 +47,7 @@ const PATH=[[0,0],[0,-10],[-4,-17],[-12,-20],[-19,-13],[-25,-6],[-33,-4],[-40,-7
 const PLZ={c:[-42,-20],R:7,inc:[0,-1],wait:[2.7,4.4],br:[{d:[-1,0],ok:true,n:'서쪽'},{d:[1,0],n:'동쪽'},{d:[0,-1],n:'남쪽'}]};
 const GS=[-56,-20],GATE=[-72,-20],END=[-87,-20],SEC=[4.4,-6.4],CAKE=[5.9,-5.4],PAD=[44,-2],LAND=[1.2,-6.3],START=[34,0],DDO0=[40.3,-5.2],GG0=[37.6,-3.4],GGP=[-1.4,-4.8],MUNGE=[-70.3,-22.5],SPUR=[[0,-6],[5,-5.6]],EASTP=[[44,-2],[34,0],[17,-1.5],[0,0]],SEA=-1.1,DOCK=[-92.7,-20];
 /* 바람길(생일 초 잡기 — 2026-11-19): 또생일 옆 발판 PAD → 서쪽으로 부는 바람을 타고 북쪽 구름 바다 위 구름 섬 사이를 크게 돌아 → 길 옆 LAND. [x, 땅 위 높이, z] · 초 [길 진행 u, 옆(오른쪽 +), 위] */
-const WIND=[[44,.4,-2],[40,4.6,7],[33,6,18],[24,6,26],[15,6,25],[9,5.6,16],[5,4,5],[3,1.6,-4],[1.2,.1,-6.3]],WSEC=18,TMP_PARTY='[임시] 파티장에서 만나!',CAND=[[.27,0,0],[.52,-2.5,.6],[.76,2.3,.9]] /* [바람길 진행, 옆, 위] — 첫째는 길 가운데(조종 없이 잡힘), 둘째·셋째는 옆·위로 비켜 있어 조금 움직여야 잡힘(2026-11-20: 셋 다 가운데 + 넓은 범위 + 센 자석이라 조종 없이 다 잡혔다) */,CATCH=1.95 /* 잡히는 범위(처음 1.3의 1.5배) */,CCOL=['#8cc8ec','#9bd46b','#ffd27a'];
+const WIND=[[44,.4,-2],[40,4.6,7],[33,6,18],[24,6,26],[15,6,25],[9,5.6,16],[5,4,5],[3,1.6,-4],[1.2,.1,-6.3]],WSEC=18,CAND=[[.27,0,0],[.52,-2.5,.6],[.76,2.3,.9]] /* [바람길 진행, 옆, 위] — 첫째는 길 가운데(조종 없이 잡힘), 둘째·셋째는 옆·위로 비켜 있어 조금 움직여야 잡힘(2026-11-20: 셋 다 가운데 + 넓은 범위 + 센 자석이라 조종 없이 다 잡혔다) */,CATCH=1.95 /* 잡히는 범위(처음 1.3의 1.5배) */,CCOL=['#8cc8ec','#9bd46b','#ffd27a'];
 const ICE_VEIL={blobs:['#eef6ff','#dbeafc','#f6f1e2','#cfe0f6','#e9f0fb'],bg:['#dfeaf8','#cfdcf0'],fade:'rgba(220,232,248,0)',tiles:[[250,252,255],[170,190,220]],dots:['255,255,255','200,216,240','236,226,200']};
 const SHD=[1,0]; // 그림자가 뻗는 쪽(동쪽 — 해 반대)
 const SHIP=[DOCK[0]-.612*58,1.5,DOCK[1]-.791*58]; // 낡은 비행선(구름 끝에서 배를 비추는 카메라가 보는 쪽 구름 바다 위)
@@ -223,10 +224,10 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   /* 구름 양 몰기(양치기 개처럼 뒤에서 — 실패 없음): 원더룹이 FLEE(3.5m) 안으로 다가가면 반대쪽으로 종종 도망가되 울타리 문 쪽으로 반쯤 끌림(뒤에서 다가가면 문으로 감, 문 쪽에서 막아서면 멈칫).
      울타리는 문으로만 드나들고, 문턱을 넘으면 '음매' + 폴짝폴짝 뒤 우리 안 자기 자리에서 논다. 다섯 마리가 다 들어가면 구름 둑이 걷힘 */
   const wrapA=a=>Math.atan2(Math.sin(a),Math.cos(a));
-  function herdIn(s,i){s.in=true;s.hop=1.5;SG.n++;mark('sheepIn'+SG.n);G.sound.sfx('event-baa',{gain:.9});G.sound.sfx('travel-step',{step:3+SG.n,gain:.9});puffAt(s.x,s.z,MOB?4:7,.6,[1,.95,.7]);G.float.bubble({at:[s.x,groundY(s.x,s.z),s.z],y:1.25,text:'음매!',sec:1.3,far:60});quest(SG.n>=5?'해돋이를 보러 광장으로':`양을 펜스로 몰아요 ${SG.n}/5`);
+  function herdIn(s,i){s.in=true;s.hop=1.5;SG.n++;mark('sheepIn'+SG.n);G.sound.sfx('event-baa',{gain:.9});G.sound.sfx('travel-step',{step:3+SG.n,gain:.9});puffAt(s.x,s.z,MOB?4:7,.6,[1,.95,.7]);G.float.bubble({at:[s.x,groundY(s.x,s.z),s.z],y:1.25,text:'음매!',sec:1.3,far:60});quest(SG.n>=5?'해돋이를 보러 광장으로':`양을 울타리로 몰아요 ${SG.n}/5`);
     if(SG.n>=5){const W=U0();SG.done=true;G.state.setFlag(K.sheep,true);mark('sheep1');G.sound.bed(null,{fade:1.2});
-      scene(async()=>{G.react.react('hop',{sound:'mission-clear'});await wait(.9);G.sound.sfx('event-open');G.sound.sfx('cloud-poof',{gain:.8});SG.opening=true;barObs.forEach(o=>{const k=obstacles.indexOf(o);if(k>=0)obstacles.splice(k,1);});puffAt(BAR[0],BAR[1],MOB?14:22,1.3);await wait(.7);st.ggMode='talk';if(W)faceTo(gg.root,W.position.x,W.position.z);await say('거꾸리',TMP.quiet,3);st.ggMode='idle';mark('sheepEnd');},null);}}
-  function sheepStart(W){SG.started=true;mark('sheep0');scene(async()=>{st.ggMode='talk';faceTo(gg.root,W.position.x,W.position.z);await say('거꾸리',TMP.sheep,5);st.ggMode='idle';SG.on=true;SG.t0=G.clock.t;G.sound.bed('venus-play',{fade:.5});G.ui.toast('양 뒤로 다가가서 펜스로 몰아요',4.5);mark('sheepGo');},null);}
+      scene(async()=>{G.react.react('hop',{sound:'mission-clear'});await wait(.9);G.sound.sfx('event-open');G.sound.sfx('cloud-poof',{gain:.8});SG.opening=true;barObs.forEach(o=>{const k=obstacles.indexOf(o);if(k>=0)obstacles.splice(k,1);});puffAt(BAR[0],BAR[1],MOB?14:22,1.3);await wait(.7);st.ggMode='talk';if(W)faceTo(gg.root,W.position.x,W.position.z);await say('거꾸리',T2.quiet,3);st.ggMode='idle';mark('sheepEnd');},null);}}
+  function sheepStart(W){SG.started=true;mark('sheep0');scene(async()=>{st.ggMode='talk';faceTo(gg.root,W.position.x,W.position.z);await say('거꾸리',T2.sheep,5);st.ggMode='idle'; /* 설명하는 동안은 대화 카메라(scene의 who — 둘이 얼굴을 보며), 위에서 내려다보는 구도는 놀이가 시작될 때(SG.on — zoneCam 'glade') */SG.on=true;SG.t0=G.clock.t;G.sound.bed('venus-play',{fade:.5});G.ui.toast(T2.herd,4.5);mark('sheepGo');},gg);}
   function sheepTick(dt,t,P){const near=Math.hypot(P.x-GC[0],P.z-GC[1])<50;sheepM.visible=near;
     if(barM&&SG.opening){SG.open+=dt/.8;const k=Math.max(.001,1-SG.open);barM.scale.set(k,k,k);if(SG.open>=1){root.remove(barM);barM.geometry.dispose();barM=null;}}
     if(!near)return;const act=SG.on&&!SG.done&&!st.scene&&!G.dialog.talking();
@@ -236,6 +237,8 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
         if(d<FLEE){const gx=GP[0]-s.x,gz=GP[1]-s.z,gl=Math.hypot(gx,gz)||1,close=gl<1.7; /* 문 앞에 오면 우리 안으로 쏙 */
           let ux=close?PC[0]-s.x:dx/d*.5+gx/gl*.5,uz=close?PC[1]-s.z:dz/d*.5+gz/gl*.5;const ul=Math.hypot(ux,uz);if(ul>.12){const sp=1.2+1.9*(1-d/FLEE);vx=ux/ul*sp;vz=uz/ul*sp;}}
         for(const o of HD)if(o!==s&&!o.in){const ex=s.x-o.x,ez=s.z-o.z,e=Math.hypot(ex,ez)||1;if(e<1.1){vx+=ex/e*(1.1-e)*2;vz+=ez/e*(1.1-e)*2;}}}
+      else if(SG.started&&!SG.on){ /* 설명 대화 동안: 원더룹·거꾸리·대화 카메라 사이에 서 있던 양은 옆으로 비켜남(카메라 바로 앞에 선 양이 화면을 덮었다 — 2026-11-21) */
+        const c=G.view.camera.position,g2=gg.root.position;for(const [qx,qz,R] of [[P.x,P.z,3],[g2.x,g2.z,3],[c.x,c.z,3.4],[(c.x+P.x)/2,(c.z+P.z)/2,3],[(c.x+g2.x)/2,(c.z+g2.z)/2,3]]){const ex=s.x-qx,ez=s.z-qz,e=Math.hypot(ex,ez)||1;if(e<R){vx+=ex/e*3.2*(1.15-e/R);vz+=ez/e*3.2*(1.15-e/R);}}}
       const kk=Math.min(1,dt*7);s.vx+=(vx-s.vx)*kk;s.vz+=(vz-s.vz)*kk;let nx=s.x+s.vx*dt,nz=s.z+s.vz*dt;
       /* 울타리: 문(±GHALF) 말고는 못 지나감 — 밖의 양은 밖에, 안의 양은 안에 */
       {const r1=Math.hypot(nx-PC[0],nz-PC[1])||1,inG=Math.abs(wrapA(Math.atan2(nz-PC[1],nx-PC[0])-GATEA))<GHALF-.14,was=Math.hypot(s.x-PC[0],s.z-PC[1])<PR;
@@ -275,13 +278,13 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
       st.ggMode='idle';U.action='서기';U.at=0;G.react.react('startle',{sound:null});G.sound.sfx('event-pop',{gain:.6});
       {const t1=G.clock.t,r0=gg.root.rotation.y;await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t1)/.45);gg.root.rotation.y=r0+PI*u*u*(3-2*u);return u>=1;},1);} /* 빙글 돌아서 원더룹을 봄 */
       W.rotation.y=Math.atan2(gg.root.position.x-P.x,gg.root.position.z-P.z);mark('ggHere');await G.view.meetCard('geokkuri',gg.root,gg.head+.25); /* 처음 만나는 순간: 확대 → 친구 카드 → 대화 */const pc=G.view.pairCam(gg.root,gg.head);if(pc)G.view.hold(pc);else if(G.view.req&&G.view.req.fn===ec)G.view.hold(null);
-      try{st.ggMode='talk';await say('거꾸리',T.g2,4.6);await say('거꾸리',TMP.go,3.2);st.ggMode='idle';}finally{if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);}
+      try{st.ggMode='talk';await say('거꾸리',T.g2,4.6);await say('거꾸리',T2.go,3.2);st.ggMode='idle';}finally{if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);}
       G.state.setFlag(K.met,true);mark('met');});}
   /* ── ④ 서쪽 해돋이 광장 ── */
   const exitHere=P=>{const dx=P.x-c0,dz=P.z-c1;for(const b of PLZ.br){const a=dx*b.d[0]+dz*b.d[1],pp=Math.abs(dx*b.d[1]-dz*b.d[0]);if(a>PLZ.R+1.6&&a<PLZ.R+7&&pp<3.2)return b;}return null;};
   async function sunrise(W,U){mark('sun0');
     await scene(async()=>{const P=W.position;faceTo(gg.root,P.x,P.z);W.rotation.y=Math.atan2(gg.root.position.x-P.x,gg.root.position.z-P.z);
-      st.ggMode='talk';const ln=say('거꾸리',TMP.goal,6.2,{pin:'bottom'}).then(()=>say('거꾸리',TMP.rise,2.6,{pin:'bottom'})); /* 목적을 먼저(왜 해 뜨는 쪽을 찾는지) · 이 장면의 대사창은 아래(세로 화면에서 위에 뜨면 해를 가렸다) */
+      st.ggMode='talk';const ln=say('거꾸리',T2.goal,6.2,{pin:'bottom'}).then(()=>say('거꾸리',T2.rise,2.6,{pin:'bottom'})); /* 목적을 먼저(왜 해 뜨는 쪽을 찾는지) · 이 장면의 대사창은 아래(세로 화면에서 위에 뜨면 해를 가렸다) */
       /* 대사하는 동안 원더룹은 광장 가운데로(해가 서쪽 출구 너머로 똑바로 보이는 자리), 거꾸리는 그 옆으로 */
       {const a=[P.x,P.z],to=[c0+2.8,c1],L=Math.hypot(to[0]-a[0],to[1]-a[1]),TT=Math.max(.6,L/3.6),t0=G.clock.t;await wait(.9);const t1=G.clock.t;U.action='걷기';U.at=0;W.rotation.y=Math.atan2(to[0]-a[0],to[1]-a[1]);st.ggTo=[c0+2.4,c1+1.9];
         await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t1)/TT),x=lerp(a[0],to[0],u),z=lerp(a[1],to[1],u);W.position.set(x,groundY(x,z),z);return u>=1;},TT+1);U.action='서기';U.at=0;st.lastP=null;}
@@ -290,9 +293,9 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
       st.ggMode='point';faceTo(gg.root,c0-30,c1);st.faceW=true;const cam=()=>{const k=pk();return {at:[c0-18,1.5+2.9*st.rise,c1],from:[c0+2.8+7.3*k,1.75+.5*(k-1),c1+.8]};};G.view.hold(cam);
       G.state.setFlag(K.sun,true);SK.to(1,5.8);st.riseGo=true;G.sound.sfx('event-sparkle');mark('rise');
       await wait(2.8);G.react.react('awe',{sound:null});await wait(3.2);G.sound.sfx('event-open',{gain:.8});mark('sun1');
-      st.faceW=false;st.ggMode='talk';faceTo(gg.root,P.x,P.z);await say('거꾸리',TMP.west,4.2,{look:'해',pin:'bottom'});
+      st.faceW=false;st.ggMode='talk';faceTo(gg.root,P.x,P.z);await say('거꾸리',T2.west,4.2,{look:'해',pin:'bottom'});
       /* 어디로 갈지 알려 줌(2026-11-21): 거꾸리가 해 뜨는 쪽(서쪽 출구)으로 먼저 몇 걸음 앞장서 가서 돌아보며 기다림 */
-      st.ggTo=[c0-PLZ.R+1.6,c1+.9];st.ggMode='walk';const ld=say('거꾸리',TMP.lead,3.6,{pin:'bottom'});await wait(1.7);st.ggMode='talk';faceTo(gg.root,P.x,P.z);await ld;st.ggTo=null;st.ggMode='idle';
+      st.ggTo=[c0-PLZ.R+1.6,c1+.9];st.ggMode='walk';const ld=say('거꾸리',T2.lead,3.6,{pin:'bottom'});await wait(1.7);st.ggMode='talk';faceTo(gg.root,P.x,P.z);await ld;st.ggTo=null;st.ggMode='idle';
       if(G.view.req&&G.view.req.fn===cam)G.view.hold(null);},null);}
   async function plazaRight(W,U){G.state.setFlag(K.plaza,true);mark('plaza');G.sound.sfx('event-open',{gain:.9});puffAt(W.position.x,W.position.z,MOB?8:14,1.2,[1,.97,.86]);
     await G.core.until(()=>!G.core.blocking()&&!(U.vert&&U.vert.air),6);
@@ -305,7 +308,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
       mark('card1');if(G.view.req&&G.view.req.fn===pc)G.view.hold(null);st.plzCam=null;});}
   async function plazaWrong(W,U,b,count){if(count){st.wrong++;mark('wrong'+st.wrong);}await carryBack(W,[c0+.4,c1+3.5,Math.atan2(PLZ.inc[0],PLZ.inc[1])]);
     if(count&&st.wrong>=2&&st.wrong%2===0)await scene(async()=>{const sx=c0-PLZ.R+4,sz=c1+2.7;faceTo(gg.root,c0-30,c1);st.ggMode='point';
-      await say('거꾸리',TMP.hint,3.2,{look:{at:[c0-30,c1],name:'해'}});st.ggMode='idle';mark('hint');});}
+      await say('거꾸리',T2.hint,3.2,{look:{at:[c0-30,c1],name:'해'}});st.ggMode='idle';mark('hint');});}
   const discN=()=>Object.values(DISC).filter(k=>F[k]).length;
   /* ── ④ 뭉게 문지기 ── */
   function gateTick(dt,W,U,P){const g=st.gate,inZone=P.x<GS[0]+.6&&P.x>GATE[0]-1.3&&Math.abs(P.z-GATE[1])<8;
@@ -317,7 +320,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     if(!g.said){g.said=true;st.gateIntro=true;mark('gateIn');scene(async()=>{faceTo(gg.root,P.x,P.z);W.rotation.y=Math.atan2(MUNGE[0]-P.x,MUNGE[1]-P.z);
         if(G.profile.seen('munge')){const z=G.view.meetCam(munge.root,2);if(z){G.view.hold(z);await wait(1.5);}}else await G.view.meetCard('munge',munge.root,2,1.4);mark('gateCard');
         W.rotation.y=Math.atan2(gg.root.position.x-P.x,gg.root.position.z-P.z);const pc=G.view.pairCam(gg.root,gg.head);G.view.hold(pc||null);
-        st.ggMode='talk';await say('거꾸리',TMP.gate,7.2,{pin:'bottom'});await say('거꾸리',T.g8,4.4,{pin:'bottom'});st.ggMode='idle';if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);st.gateIntro=false;g.ph='snore';g.iv=null;g.t=1.8;mark('gateGo');},null);return;}
+        st.ggMode='talk';await say('거꾸리',T2.gate,7.2,{pin:'bottom'});await say('거꾸리',T.g8,4.4,{pin:'bottom'});st.ggMode='idle';if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);st.gateIntro=false;g.ph='snore';g.iv=null;g.t=1.8;mark('gateGo');},null);return;}
     quest('코 골 때만 살금살금 걸어요');
     const loud=!!(U.vert&&U.vert.air)||st.spd>8;
     /* 박자(2026-11-19 — 무궁화꽃 놀이처럼): 잠든 동안 코골이 + 작은 오르골 반주 → 눈뜨기 0.8초 전 미리 알림(반주·코골이가 뚝 멈추고 '흐음?' + 몸이 크게 들썩 + 구름 말풍선 '?') → 눈을 뜸(0.2초는 봐줌) → 그 뒤에도 움직이면 '!' */
@@ -344,10 +347,10 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     /* 비행선을 가까이: 카메라가 구름 바다 너머 비행선 앞옆으로 다가가 크게 — 가로 화면은 카드가 위라 비행선을 화면 아래쪽에, 세로 화면은 카드가 아래라 위쪽에 */
     const cam3=()=>{const pt=pk()>1.3,q=ship.position,D=pt?27:15;return {at:[q.x,q.y+(pt?-2.6:1.7),q.z],from:[q.x-sd[0]*D*.9+sd[1]*D*.42,q.y+2.4,q.z-sd[1]*D*.9-sd[0]*D*.42]};};G.view.hold(cam3);await wait(1.7);st.ggMode='idle';mark('look');
     G.state.setFlag(DISC.air,true);G.sound.sfx('card-secret');
-    await G.ui.secret({kicker:'새 발견',title:'구름 위는 지구와 비슷해요',text:T.n14+' 그래서 과학자들은 금성 구름 위에 비행선을 띄우는 탐사를 연구하기도 했어요.',vo:T.n14,count:`발견 ${discN()}/${DISC_TOTAL}`,at:innerHeight>innerWidth?'bottom':null,lines:5}); /* 세로 화면: 위에 뜨면 구름 바다 너머 비행선을 가림 */await wait(.4);mark('card2');
+    await G.ui.secret({kicker:'새 발견',title:'구름 위는 지구와 비슷해요',text:T.n14,vo:T.n14,count:`발견 ${discN()}/${DISC_TOTAL}`,at:innerHeight>innerWidth?'bottom':null,lines:5}); /* 세로 화면: 위에 뜨면 구름 바다 너머 비행선을 가림 */await wait(.4);mark('card2');
     /* ② 거꾸리와 마주 보고 */
     faceTo(gg.root,P.x,P.z);W.rotation.y=Math.atan2(gg.root.position.x-P.x,gg.root.position.z-P.z);
-    {const pc=G.view.pairCam(gg.root,gg.head);G.view.hold(pc||null);st.ggMode='talk';await say('거꾸리',TMP.end1,5.2);st.ggMode='idle';if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);}mark('endTalk');
+    {const pc=G.view.pairCam(gg.root,gg.head);G.view.hold(pc||null);st.ggMode='talk';await say('거꾸리',T2.end1,5.2);st.ggMode='idle';if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);}mark('endTalk');
     /* 배가 떠 옴 */
     const B=mkBoat(-107,-27,.5);
     const cam=()=>{const k=pk();return {at:[B.x+.2,BY+1.35,B.z],from:[B.x+6.4*k,BY+2.5+.9*(k-1),B.z+4.6*k]};}; /* 배 뒤쪽(동쪽) 옆에서(북쪽 = 거꾸리 쪽 — 앞에 선 원더룹이 거꾸리를 가리지 않음. 떠난 뒤 첫 카메라와 같은 쪽) — 뒤를 보고 탄 둘의 얼굴이 보임 */
@@ -399,15 +402,15 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
         try{if(window.wlZone)await window.wlZone.go('space-saturn');}catch(e){console.error(e);}mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);res();}});
     st.dep=dep;mark('sail');st.depTick=dt=>dep.tick(dt,G.clock.t);st.depLate=dt=>dep.late(dt,G.clock.t);});}
   /* ── 또생일(첫 미션: 바람 타고 생일 초 잡기) ── */
-  G.dialog.npc({id:'geokkuri',name:'거꾸리',root:gg.root,bubbleY:gg.head+.32,talkR:.9,bubbleR:4.5,variants:[{when:()=>true,lines:[]},{when:()=>!!F[K.met]&&!F[K.sun]&&!st.scene&&!st.carry&&gg.root.visible&&(st.ggWait||G.dialog.talking()),lines:[TMP.again]},
-    {when:()=>!!F[K.sun]&&!st.scene&&!st.carry&&st.gate.ph==='snore'&&gg.root.visible&&(st.ggWait||G.dialog.talking()),lines:[TMP.again2]}]}); /* 뒤에 있는 맞는 묶음이 이김(dialog rawLines) — 빈 묶음을 맨 앞에 */
+  G.dialog.npc({id:'geokkuri',name:'거꾸리',root:gg.root,bubbleY:gg.head+.32,talkR:.9,bubbleR:4.5,variants:[{when:()=>true,lines:[]},{when:()=>!!F[K.met]&&!F[K.sun]&&!st.scene&&!st.carry&&gg.root.visible&&(st.ggWait||G.dialog.talking()),lines:[T2.again]},
+    {when:()=>!!F[K.sun]&&!st.scene&&!st.carry&&st.gate.ph==='snore'&&gg.root.visible&&(st.ggWait||G.dialog.talking()),lines:[T2.again2]}]}); /* 뒤에 있는 맞는 묶음이 이김(dialog rawLines) — 빈 묶음을 맨 앞에 */
   G.dialog.npc({id:'munge',name:'뭉게 문지기',root:munge.root,bubbleY:2.3,talkR:1.4,bubbleR:.01,variants:[{when:()=>true,lines:[]}]}); /* 말 걸 상대가 아님(자는 중) — 대사 줄에서 이름으로 찾을 수 있게만 */
   G.dialog.npc({id:'ddo',name:'또생일',root:ddo.root,bubbleY:1.0,talkR:1.5,bubbleR:4.5,talkCam:true,
-    variants:[{when:()=>true,lines:[]},{when:()=>!!F[K.ask]&&!F[DISC.day]&&caught()<3&&!st.scene&&!st.ride,lines:[TMP.wait]},{when:()=>!!F[DISC.day]&&!st.scene,lines:[T.d15]}]});
+    variants:[{when:()=>true,lines:[]},{when:()=>!!F[K.ask]&&!F[DISC.day]&&caught()<3&&!st.scene&&!st.ride,lines:[T2.wait]},{when:()=>!!F[DISC.day]&&!st.scene,lines:[T.d15]}]});
   const cakeMark=new THREE.Object3D();cakeMark.position.set(CAKE[0],groundY(...CAKE)+TBH+.3,CAKE[1]);add(cakeMark);
-  /* 부탁: 또생일에게 다가가면 저절로 — S3-015 → '[임시] 바람에 초가 날아갔어!…' → 친구 카드 */
+  /* 부탁: 또생일에게 다가가면 저절로 — S3-015 → S3-021 → 친구 카드 */
   async function ddoAsk(W,U){mark('ask0');await scene(async()=>{const P=W.position;W.rotation.y=Math.atan2(ddo.root.position.x-P.x,ddo.root.position.z-P.z);await G.view.meetCard('ddo',ddo.root,ddo.head+.2); /* 확대 → 친구 카드 → 대화 */const pc=G.view.pairCam(ddo.root,ddo.head);if(pc)G.view.hold(pc);
-      st.ddoHop=9;await say('또생일',T.d15,4.4);await say('또생일',TMP.ask,4.2);st.umbHop=0;G.sound.sfx('event-pop',{gain:.6});candOn.forEach((_,i)=>{candOn[i]=!F[K.c[i]];});await say('또생일',TMP_PARTY,2.6);st.ddoHop=0;
+      st.ddoHop=9;await say('또생일',T.d15,5.4);await say('또생일',T2.ask,4.2);st.umbHop=0;G.sound.sfx('event-pop',{gain:.6});candOn.forEach((_,i)=>{candOn[i]=!F[K.c[i]];});await say('또생일',T2.party,2.6);st.ddoHop=0;
       if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);
       /* 또생일이 먼저 둥실 떠올라 바람을 타고 서쪽으로(안개 속으로 작아지며 사라짐) → 파티장 단상에서 기다림 */
       G.sound.sfx('event-whoosh',{gain:.6});st.ddoFly={t:0};await G.core.until(()=>!st.ddoFly,4);G.state.setFlag(K.ask,true);G.state.setFlag(K.ddo,true);ddoHome();mark('ask');},null);}
@@ -443,17 +446,20 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
   function rideEnd(W,U){const n=caught();st.ride=null;U.riding=null;umb.visible=false;U.action='서기';U.at=0;W.rotation.z=0;W.position.set(LAND[0],groundY(...LAND),LAND[1]);st.lastP=null;G.sound.sfx('land',{gain:.5});puffAt(LAND[0],LAND[1],MOB?8:14,.8);mark('rideEnd'+st.rideN);st.lastQ=null;G.sound.bed(null,{fade:1.2});
     /* 앞(카메라 쪽)을 본 채: 성공 = 웃으면서 폴짝 / 실패 = 아쉬워하는 표정(걱정)과 어깨가 툭 떨어지는 한숨 → 구름이 출발점(동쪽 발판 옆)으로 데려다줌 */
     U.sceneLock=true;st.rideFace={t:0,ry:W.rotation.y};
-    if(n<3){G.react.react('sigh',{sound:'event-whoosh'});if(U.setExpr)U.setExpr('걱정');G.ui.toast(TMP.retry,2.6);mark('rideFail');G.core.wait(2.3).then(()=>{st.rideFace=null;if(U.setExpr)U.setExpr('기본');U.sceneLock=false;if(!st.scene&&!st.carry&&!st.ride)carryBack(W,[PAD[0]-2.1,PAD[1]-.9,Math.atan2(2.1,.9)],3.4).then(()=>{st.padArm=true;});});}
+    if(n<3){G.react.react('sigh',{sound:'event-whoosh'});if(U.setExpr)U.setExpr('걱정');G.ui.toast(T2.retry,2.6);mark('rideFail');G.core.wait(2.3).then(()=>{st.rideFace=null;if(U.setExpr)U.setExpr('기본');U.sceneLock=false;if(!st.scene&&!st.carry&&!st.ride)carryBack(W,[PAD[0]-2.1,PAD[1]-.9,Math.atan2(2.1,.9)],3.4).then(()=>{st.padArm=true;});});}
     else{if(U.setExpr)U.setExpr('기쁨');G.react.react('hop',{sound:'mission-clear'});st.ddoHop=2.2;mark('rideWin');G.core.wait(1.5).then(()=>{st.rideFace=null;if(U.setExpr)U.setExpr('기본');U.sceneLock=false;});}}
   const rideInfo=()=>{const r=st.ride;if(!r)return null;const u=rideU(r),i=cands.findIndex((c,j)=>candOn[j]&&CAND[j][0]>u-.012);const W=U0();return {u:+u.toFixed(3),lat:+r.lat.toFixed(2),up:+r.up.toFixed(2),next:i,dist:i>=0&&W?+cands[i].position.distanceTo(_wt.set(W.position.x,W.position.y+.7,W.position.z)).toFixed(2):null,need:i>=0?[CAND[i][1],CAND[i][2]]:[0,0],du:i>=0?+(CAND[i][0]-u).toFixed(3):1};};
   G.interact.add({root:cakeMark,at:[CAKE[0]-.95,CAKE[1]+.7],face:CAKE,label:'초 꽂기',action:'팔 벌리기',dur:.5,near:2.3,once:false,when:()=>caught()>=3&&!F[DISC.day]&&!st.scene&&!st.ride&&!G.ui.cardShown(),
     onDone:()=>scene(async(W)=>{mark('cake');
-      /* 구도(2026-11-21 — 원더룹만 화면 가운데에 크게 나왔다): 원더룹·또생일(단상 위)·케이크가 한 화면에 — 셋을 잇는 선의 옆(지금 카메라에 가까운 쪽)에서, 셋의 폭·키가 다 들어오는 거리 */
-      const cam3=()=>{const c=G.view.camera,P=W.position,d=ddo.root.position,cx=(P.x+d.x+CAKE[0])/3,cz=(P.z+d.z+CAKE[1])/3,ax=d.x-P.x,az=d.z-P.z,al=Math.hypot(ax,az)||1;let nx=-az/al,nz=ax/al;if((CAKE[0]-cx)*nx+(CAKE[1]-cz)*nz<0){nx=-nx;nz=-nz;} /* 케이크 쪽에서 봄: 케이크가 가운데 앞, 원더룹과 또생일이 양옆(반대쪽에서 보면 원더룹 머리가 케이크를 가렸다) */
-        const Wd=al+2.2,th=Math.tan(15*PI/180),D=Math.max(3.1/2/th,Wd/2/(th*c.aspect))*1.12,pt=c.aspect<1;return {at:[cx,groundY(cx,cz)+(pt?.75:1.05),cz],from:[cx+nx*D,groundY(cx,cz)+1.6+D*.11,cz+nz*D]};};G.view.hold(cam3);st.cakeCam=cam3;
+      /* 구도(2026-11-21 다시 — 원더룹 얼굴이 보이게): 원더룹(왼쪽)·케이크(가운데 앞)·또생일(오른쪽, 단상 위)이 화면 가로로 고르게 벌어지는 쪽에서 봄 — 케이크가 원더룹과 또생일의 한가운데에 오는 가로축 r을 구하고(원더룹 기준 케이크·r = 또생일·r ÷ 2),
+         그 축에 수직인 두 쪽 가운데 케이크가 앞에 오는 쪽에 카메라. 원더룹은 케이크를 보고 섬 = 카메라에서 3/4 얼굴(대사 동안 또생일 쪽으로 돌아서지 않게 say에 look:'케이크', 또생일은 원더룹을 봄). 예전: 또생일이 말하면 원더룹이 또생일 쪽으로 돌아 뒷모습 + 케이크가 몸을 가림 */
+      const cam3=()=>{const c=G.view.camera,P=W.position,d=ddo.root.position,kx=CAKE[0]-P.x,kz=CAKE[1]-P.z,dx=d.x-P.x,dz=d.z-P.z;let rx=-(kz-dz/2),rz=kx-dx/2;{const l=Math.hypot(rx,rz)||1;rx/=l;rz/=l;}if(dx*rx+dz*rz<0){rx=-rx;rz=-rz;}
+        let nx=-rz,nz=rx;if(kx*nx+kz*nz<0){nx=-nx;nz=-nz;}const wd=dx*rx+dz*rz,cx=P.x+rx*wd/2+nx*.1,cz=P.z+rz*wd/2+nz*.1,Wd=wd+2.3,th=Math.tan(15*PI/180),D=Math.max(3.1/2/th,Wd/2/(th*c.aspect))*1.1,pt=c.aspect<1;
+        return {at:[cx,groundY(cx,cz)+(pt?.8:1.05),cz],from:[cx+nx*D,groundY(cx,cz)+1.5+D*.1,cz+nz*D]};};
+      W.rotation.y=Math.atan2(CAKE[0]-W.position.x,CAKE[1]-W.position.z);faceTo(ddo.root,W.position.x,W.position.z);G.view.hold(cam3);st.cakeCam=cam3;
       /* 초 셋이 원더룹 손에서 반짝이며 케이크 위로 날아가 꽂힘(2026-11-20 — 예전: 식탁 위 케이크를 향해 고개·몸을 숙였다) */
       W.userData.action='팔 벌리기';W.userData.at=0;st.fly=cands.map((c,i)=>({i,t:-i*.24,a:[W.position.x,W.position.y+1.55,W.position.z]}));await G.core.until(()=>!st.fly,4);W.userData.action='서기';W.userData.at=0;
-      cake.candles(true);cake.lit(true);G.sound.sfx('event-pop');puffAt(CAKE[0],CAKE[1],MOB?8:12,.7,[1,.92,.6]);mark('stuck');st.ddoHop=9;await say('또생일',TMP.thanks,3.8);
+      cake.candles(true);cake.lit(true);G.sound.sfx('event-pop');puffAt(CAKE[0],CAKE[1],MOB?8:12,.7,[1,.92,.6]);mark('stuck');st.ddoHop=9;faceTo(ddo.root,W.position.x,W.position.z);await say('또생일',T2.thanks,3.8,{look:'케이크'});
       /* 촛불은 생일 주인공 또생일이 직접 붊(케이크 쪽으로 돌아 후 — 입김 알갱이) → 생일 노래(크게) → 발견 카드 */
       {const d=ddo.root.position,dx=CAKE[0]-d.x,dz=CAKE[1]-d.z,L=Math.hypot(dx,dz)||1,t0=G.clock.t;st.ddoBlow=true;faceTo(ddo.root,CAKE[0],CAKE[1]);G.sound.sfx('event-whoosh',{gain:.5});
         await G.core.until(()=>{if(Math.random()<.7)puffs.emit(d.x+dx/L*.25,d.y+.42,d.z+dz/L*.25,dx/L*3.2+(Math.random()-.5)*.5,.35+(Math.random()-.5)*.3,dz/L*3.2+(Math.random()-.5)*.5,.5,[1,1,1]);return G.clock.t-t0>.6;},2);st.ddoBlow=false;}
@@ -470,14 +476,14 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
       a=Math.atan2(dz,dx)+.28,hx=Math.cos(a),hz=Math.sin(a); /* 문지기 → 원더룹 방향에서 남쪽으로 조금 돌아간 쪽 뒤 위: 둘이 화면 가운데 세로로 나란히(멀수록 물러남) */
       return {at:[ax,p2?.9:.5,az],from:[ax+hx*D*.84,1.5+D*.5,az+hz*D*.84]};}}; /* 보는 점을 올려 문지기 머리 위에 '?'·'!' 자리가 남게(2026-11-20) */
     /* 양 몰기 빈터: 가로 화면은 위에서 빈터·울타리가 한 화면에(들어온 쪽 뒤·위), 세로 화면은 폭이 좁아 원더룹을 따라가며 높이서 내려다봄 */
-    if(!want&&SG.started&&!SG.done&&Math.hypot(P.x-GC[0],P.z-GC[1])<RES+2.5)want={id:'glade',fog:1,fn:()=>{const p2=pk()>1.3,Q=W.position;if(p2)return {at:[Q.x+GDIR[0]*1.5,.4,Q.z+GDIR[1]*1.5],from:[Q.x-GDIR[0]*10.5,17.5,Q.z-GDIR[1]*10.5]};const cx=GC[0]+GN[0]*1.2,cz=GC[1]+GN[1]*1.2,D=26;return {at:[cx,.2,cz],from:[cx-GDIR[0]*D*.5,D*.86,cz-GDIR[1]*D*.5]};}};
+    if(!want&&SG.on&&!SG.done&&Math.hypot(P.x-GC[0],P.z-GC[1])<RES+2.5)want={id:'glade',fog:1,fn:()=>{const p2=pk()>1.3,Q=W.position;if(p2)return {at:[Q.x+GDIR[0]*1.5,.4,Q.z+GDIR[1]*1.5],from:[Q.x-GDIR[0]*10.5,17.5,Q.z-GDIR[1]*10.5]};const cx=GC[0]+GN[0]*1.2,cz=GC[1]+GN[1]*1.2,D=26;return {at:[cx,.2,cz],from:[cx-GDIR[0]*D*.5,D*.86,cz-GDIR[1]*D*.5]};}};
     if(want){if(!st.zc||st.zc.id!==want.id){if(st.zcOff!==want.id){if(st.zc&&G.view.req&&G.view.req.fn===st.zc.fn)G.view.hold(null);st.zc={...want,t:0};G.view.hold(want.fn);}}
       else{st.zc.t+=dt;if(st.zc.t>.3&&!st.scene&&!(G.view.req&&G.view.req.fn===st.zc.fn)){st.zcOff=st.zc.id;st.zc=null;}}} /* 만져서 풀렸으면 이 구역에서는 다시 잡지 않음 */
     else{if(st.zc){if(G.view.req&&G.view.req.fn===st.zc.fn)G.view.hold(null);st.zc=null;}st.zcOff=null;}
     st.fv+=((st.zc&&st.zc.fog?1:0)-st.fv)*Math.min(1,dt*2.6);}
   /* ── 매 프레임 ── */
   function update(dt,t){const W=U0();if(!W)return;const U=W.userData,P=W.position,cam=G.view.camera;
-    mark('start');if(pend&&!started){started=true;arr=cloudArrival({G,root,WL:W,groundY,mob:MOB,onDone:()=>{st.arrDone=true;mark('land');G.ui.toast('구름 행성 금성에 도착했어요! 금성은 온통 두꺼운 구름에 덮여 있어요',3.2,'구름 행성 금성에 도착했어요!');},doneAt:3.7});}
+    mark('start');if(pend&&!started){started=true;arr=cloudArrival({G,root,WL:W,groundY,mob:MOB,onDone:()=>{st.arrDone=true;mark('land');G.ui.toast(T.n0,3.2,T.n0);},doneAt:3.7});}
     if(arr)arr.tick(dt,t);puffs.tick(dt);tickCarry(dt);if(st.depTick)st.depTick(dt);if(st.ride)rideTick(dt,t,W,U);
     windMesh.tick(t);st.wk=(st.wk||0)+((st.ride?1:0)-(st.wk||0))*Math.min(1,dt*2);st.wt=(st.wt==null?t:st.wt)+dt*(1+2.4*st.wk);wisps.tick(st.wt,P.x,P.z,P.y,st.wk);wisps.me.visible=!st.hid;wisps.mat.opacity=Math.min(1,.25+.55*Math.min(1,st.fog[1]/30)+.3*st.wk);cands.forEach((c,i)=>{c.visible=candOn[i]&&!st.hid&&Math.hypot(P.x-c.position.x,P.z-c.position.z)<st.fog[1]+8+(st.wk||0)*48;if(c.visible){c.rotation.y=t*1.6+i;c.position.copy(candAt[i]);c.position.y+=Math.sin(t*2+i*2)*.15;if(st.ride&&st.ride.pre>=9){const d=Math.hypot(P.x-candAt[i].x,P.y+.7-candAt[i].y,P.z-candAt[i].z),mk=.2*ss(CATCH+1,CATCH+.1,d);c.position.x+=(P.x-c.position.x)*mk;c.position.y+=(P.y+.7-c.position.y)*mk;c.position.z+=(P.z-c.position.z)*mk;} /* 잡히는 범위 바로 바깥 1m 안까지 왔을 때만 원더룹 쪽으로 약하게 끌려옴(아슬아슬하게 스칠 때 도와줌) */if(Math.random()<dt*2.5)puffs.emit(c.position.x,c.position.y+.4,c.position.z,(Math.random()-.5)*.5,.5,(Math.random()-.5)*.5,.9,[1,.9,.5]);}});
     /* 해돋이(st.rise 0 → 1): 서쪽 빛 띠가 밝아지고 해가 지평선 아래(-3°)에서 +8.5°로, 기둥 그림자가 나타남. 안개는 진행에 따라 천천히 */
@@ -503,11 +509,11 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     ddo.tick(dt,t,st.ddoHop>0||st.ddoFly?'talk':'idle');if(st.ddoHop>0)st.ddoHop-=dt;if(!st.scene&&!st.ddoFly&&Math.hypot(P.x-ddo.root.position.x,P.z-ddo.root.position.z)<5)faceTo(ddo.root,P.x,P.z,dt);cake.tick(t);
     if(st.fly){let live=false;const top=groundY(...CAKE)+TBH+.42;for(const f of st.fly){if(f.done)continue;live=true;f.t+=dt;if(f.t<0)continue;const u=Math.min(1,f.t/.62),e=u*u*(3-2*u),c=cands[f.i];c.visible=true;c.position.set(lerp(f.a[0],CAKE[0],e),lerp(f.a[1],top,e)+Math.sin(u*PI)*.9,lerp(f.a[2],CAKE[1],e));c.rotation.y=t*9;c.scale.setScalar(lerp(1.3,.45,e));
         if(Math.random()<dt*30)puffs.emit(c.position.x,c.position.y,c.position.z,(Math.random()-.5)*.6,.4,(Math.random()-.5)*.6,.7,[1,.92,.55]);if(u>=1){f.done=true;c.visible=false;c.scale.setScalar(1.5);G.sound.sfx('travel-step',{step:5+f.i*2,gain:1});}}if(!live)st.fly=null;}
-    {const d=Math.hypot(P.x-ddo.root.position.x,P.z-ddo.root.position.z);if(d<26&&!st.ddoFly&&!st.scene&&!st.sailing&&!G.dialog.talking()){st.songT-=dt;if(st.songT<=0){st.songT=3.3;G.sound.sfx('tune-birthday',{phrase:st.songK++,gain:Math.max(.35,1.2*(1-d/26))});}}} /* 생일 노래: 가까이 가면 분명히 들리게(예전보다 크게) */
+    {const d=Math.hypot(P.x-ddo.root.position.x,P.z-ddo.root.position.z),gn=1.2*Math.min(1,Math.max(0,(SONG_R-d)/(SONG_R-5)));if(gn>.04&&!st.ddoFly&&!st.scene&&!st.sailing&&!st.ride&&!(SG.on&&!SG.done)&&!G.dialog.talking()){st.songT-=dt;if(st.songT<=0){st.songT=3.3;G.sound.sfx('tune-birthday',{phrase:st.songK++,gain:gn});}}} /* 생일 노래: 가까이 가면 분명히 들리게(예전보다 크게) */
     /* 굴뚝 연기: 위로(카메라가 굴뚝 가까이 있으면 내지 않음 — 큰 알갱이가 화면을 가림) · 비행선: 구름 바다 위를 천천히 */
     if(!st.hid)for(const s of smokes)if(Math.abs(s[0]-P.x)+Math.abs(s[2]-P.z)<36&&(cam.position.x-s[0])**2+(cam.position.z-s[2])**2>49&&Math.random()<dt*4){const k=.82+Math.random()*.14;puffs.emit(s[0],s[1],s[2],-.5-Math.random()*.5,.9,(Math.random()-.5)*.3,2.2+Math.random()*1.2,[.9*k,.84*k,.96*k]);}
     if(st.ggTo&&st.scene){const r=gg.root.position,dx=st.ggTo[0]-r.x,dz=st.ggTo[1]-r.z,d=Math.hypot(dx,dz);if(d>.08){const v=Math.min(d,4.6*dt);ggPlace(r.x+dx/d*v,r.z+dz/d*v);}}
-    {const a=t*.07,o=Math.sin(a)*3;ship.position.set(SHIP[0]+o*.79,SHIP[1]+Math.sin(t*.4)*.35,SHIP[2]-o*.61);ship.rotation.set(Math.sin(t*.5)*.03,.55+Math.sin(a)*.22,Math.sin(t*.33)*.03);}
+    {const a=t*.07,o=Math.sin(a)*3;ship.position.set(SHIP[0]+o*.79,SHIP[1]+Math.sin(t*.4)*.35,SHIP[2]-o*.61);ship.rotation.set(Math.sin(t*.5)*.03,.55+Math.sin(a)*.22,Math.sin(t*.33)*.03);if(ship.visible)ship.userData.spin(t);}
     if(st.boat){st.boat.setBoat(t);const B=st.boat.B,cx=Math.cos(B.ry),sx=Math.sin(B.ry);if(st.aboard&&!st.sailing){W.position.set(B.x+HX*cx-BSIDE*sx,boat.position.y+HSEAT,B.z-HX*sx-BSIDE*cx);U.riding.y=W.position.y;}
       if(st.ggSit){gg.root.position.set(B.x-GX*cx+BSIDE*sx,boat.position.y+GSEAT,B.z+GX*sx+BSIDE*cx);gg.root.rotation.y=B.ry+PI/2;}} /* 거꾸리가 뱃머리 쪽, 원더룹이 배 뒤쪽 — 둘 다 뒤(가는 쪽의 반대)를 봄: 뒤에서 보는 카메라에 원더룹이 앞·거꾸리가 그 뒤, 두 얼굴이 다 보임 */
     /* 거꾸리 길잡이: 원더룹보다 5.5m 앞, 길 한쪽 옆(1.25m)에서 뒷걸음. 광장을 풀기 전에는 광장 안 기다리는 자리(PLZ.wait)에서 멈춤(답을 먼저 가지 않음).
@@ -529,7 +535,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     if(sg==='meet'){quest('');intro(W,U);}
     else if(sg==='ask')quest('거꾸리를 따라가요');
     else if(sg==='wind'){const n=caught(),q=n<3?`생일 초 ${n}/3`:'또생일 케이크에 초를 꽂아요';if(q!==st.lastQ){quest(q);G.goal.set(n<3?{at:PAD,label:'바람길',style:'ant',beam:false}:{at:CAKE,label:'케이크',style:'ant',beam:false});}}
-    else if(sg==='town'){quest(SG.on&&!SG.done?`양을 펜스로 몰아요 ${SG.n}/5`:'해돋이를 보러 광장으로');
+    else if(sg==='town'){quest(SG.on&&!SG.done?`양을 울타리로 몰아요 ${SG.n}/5`:'해돋이를 보러 광장으로');
       /* 마을에 들어설 때 한 번: 따라가기 카메라를 낮춰 집·나무와 먼 구름 탑이 화면에 들어오게(1.2초 — 그 뒤로는 플레이어 것, 만지면 그만) */
       const C=G.controls.input.cam;if(C&&st.camLow==null){st.camLow=0;st.camU=C.user;st.camP=C.pitch;}if(C&&st.camLow<1&&C.user===st.camU&&!G.ui.cardShown()){st.camLow=Math.min(1,st.camLow+dt/1.2);const e=st.camLow*st.camLow*(3-2*st.camLow);C.pitch=lerp(st.camP,Math.min(st.camP,pk()>1.3?.42:.28),e);}}
     else if(sg==='plaza')quest('해 뜨는 쪽 구름 끝으로');
@@ -540,15 +546,15 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     /* 또생일 부탁(다가가면 저절로) · 바람길 발판(올라서면 출발) · 초를 다 찾기 전에는 마을로 못 감 */
     const dD=Math.hypot(P.x-DDO0[0],P.z-DDO0[1]),dPad=Math.hypot(P.x-PAD[0],P.z-PAD[1]);if(dPad>2)st.padArm=true;
     if(sg==='ask'&&!air&&dD<4.2){ddoAsk(W,U);return;}
-    if(sg==='ask'&&!air&&P.x<22){G.ui.toast(TMP.first,2.6);carryBack(W,[START[0]+1,START[1]-.5],2.2);return;}
+    if(sg==='ask'&&!air&&P.x<22){G.ui.toast(T2.first,2.6);carryBack(W,[START[0]+1,START[1]-.5],2.2);return;}
     if(sg==='wind'&&!air&&caught()<3&&st.padArm&&dPad<1.15){rideStart(W,U);return;}
-    if((sg==='ask'||sg==='wind')&&!air&&q.s>S_TOWN+4&&q.d<6){G.ui.toast(TMP.first,2.6);carryBack(W,[0,-7.5]);return;}
+    if((sg==='ask'||sg==='wind')&&!air&&q.s>S_TOWN+4&&q.d<6){G.ui.toast(T2.first,2.6);carryBack(W,[0,-7.5]);return;}
     /* ③ 마을 입구 대사 자리(멈추지 않음) · ④ 광장에 들어서면 해돋이 */
-    if(sg==='town'&&!st.townSaid&&q.s>S_TOWN&&q.d<4&&!air){st.townSaid=true;G.state.setFlag(K.town,true);mark('town');say('거꾸리',TMP.town,3.6);return;}
+    if(sg==='town'&&!st.townSaid&&q.s>S_TOWN&&q.d<4&&!air){st.townSaid=true;G.state.setFlag(K.town,true);mark('town');say('거꾸리',T2.town,3.6);return;}
     /* 구름 양 몰기: 빈터에 들어서면 시작 · 다 몰기 전에 구름 둑을 돌아 지나가면 구름이 빈터로 되돌림 */
     if(sg==='town'&&!SG.done&&!SG.started&&!air&&q.s>GL_S-RES+2.2&&q.d<5){sheepStart(W);return;}
     if(sg==='town'&&!SG.done&&!air&&q.s>BAR_S+2.2&&q.d<6){carryBack(W,[GC[0]-GDIR[0]*.9,GC[1]-GDIR[1]*.9]);return;}
-    if(sg==='town'&&!st.dialSaid&&stopDial&&q.s>sOf(stopDial)-1.4&&q.d<4&&!air){st.dialSaid=true;mark('dial');scene(async()=>{const sx=stopDial[0],sz=stopDial[1];faceTo(gg.root,sx,sz);st.ggMode='point';W.rotation.y=Math.atan2(sx-P.x,sz-P.z);await say('거꾸리',TMP.dial,3.2,{look:{at:[sx,sz],name:'해시계'}});st.ggMode='idle';},null);return;}
+    if(sg==='town'&&!st.dialSaid&&stopDial&&q.s>sOf(stopDial)-1.4&&q.d<4&&!air){st.dialSaid=true;mark('dial');scene(async()=>{const sx=stopDial[0],sz=stopDial[1];faceTo(gg.root,sx,sz);st.ggMode='point';W.rotation.y=Math.atan2(sx-P.x,sz-P.z);await say('거꾸리',T2.dial,3.2,{look:{at:[sx,sz],name:'해시계'}});st.ggMode='idle';},null);return;}
     if(sg==='town'&&dp<5.8&&!air){sunrise(W,U);return;}
     /* 광장 출구: 서쪽 = 맞는 길, 동쪽·남쪽 = 구름이 되돌림 */
     if(F[K.sun]&&!air){const b=exitHere(P);if(b){if(b.ok){if(!F[K.plaza]){plazaRight(W,U);return;}}else{plazaWrong(W,U,b,!F[K.plaza]);return;}}}

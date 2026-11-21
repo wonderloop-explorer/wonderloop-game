@@ -14,7 +14,7 @@ import {lump,M4,sph} from './martians.js';
 import {makeGeokkuri,makeIceBoat} from './cloudfolk.js';
 import {makeSkyBoard,makeOrb,canvasTex,saturnMap} from './skyboard.js';
 import SPACE from '../../worlds/infinite-space.js';
-const ZID='space-saturn',TMP={land:'[임시] 저 커다란 게 바로 토성이에요. 토성은 디딜 땅이 없는 가스 행성이라 고리의 얼음 위에 내렸어요.',card:'[임시] 고리 위 쉼터 이야기는 다음에 이어져요.',gg:'[임시] 쉼터는 아직 준비 중(거꾸리 한마디)'};
+const ZID='space-saturn',TMP={land:'저 커다란 게 바로 토성이에요. 토성은 디딜 땅이 없는 가스 행성이라, 고리의 얼음 위에 내렸어요.' /* SPC-RS-001(나레이터) */,card:'고리 위 쉼터 이야기는 다음에 이어져요.' /* SPC-RS-002 글자만 */}; /* 거꾸리 한마디(SPC-RS-003)는 쉼터를 만들 때 정함 — 그때까지 말 걸 상대가 아님 */
 const HSEAT=.15,GSEAT=.14 /* 배 위에 서는 높이(금성 venus.js와 같은 값) */,DOCKB=[-3.3,0] /* 배가 닿는 자리: 섬의 토성 쪽 — 둘이 카메라(동쪽) 쪽으로 걸어 내림 */,BSIDE=.42,HX=.45,GX=.55,HERO=[.4,.5],GGAT=[1.1,-1.5],BY=.42 /* 배 밑이 얼음 섬 위에 얹히는 높이(예전 -.15는 배가 섬 속으로 들어가 사라졌다) */,SR=250,SD=600,SC=[-SD,-.9,-70] /* 토성 구 가운데(고리 면 높이) */;
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);},lerp=(a,b,t)=>a+(b-a)*t;
 export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',keep=[],R0=rng('space-saturn:ice'),RR=(a,b)=>a+R0()*(b-a),obstacles=[];
@@ -61,12 +61,12 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   const st={t:0,arr:pend?{t:0,ph:'down',cu:null,idle:9}:null,done:!pend,carded:false,T:{}},B={x:DOCKB[0],y:BY,z:DOCKB[1]};
   const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero(),mark=k=>{if(st.T[k]==null)st.T[k]=+G.clock.t.toFixed(2);};
   gg.root.position.set(GGAT[0],0,GGAT[1]);gg.root.rotation.y=PI/2;boat.position.set(B.x,B.y,B.z);if(!pend)boat.visible=false;
-  G.dialog.npc({id:'geokkuri',name:'거꾸리',root:gg.root,bubbleY:gg.head+.32,talkR:1.3,bubbleR:4.5,variants:[{when:()=>true,lines:[]},{when:()=>st.done,lines:[TMP.gg]}]});
+  G.dialog.npc({id:'geokkuri',name:'거꾸리',root:gg.root,bubbleY:gg.head+.32,talkR:1.3,bubbleR:4.5,variants:[{when:()=>true,lines:[]}]});
   const hop=(from,to,sec,fn)=>{const t0=G.clock.t;return G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/sec),e=u*u*(3-2*u);fn(lerp(from[0],to[0],e),lerp(from[1],to[1],e)+Math.sin(u*PI)*.8,lerp(from[2],to[2],e));return u>=1;},sec+1);};
   const card=()=>{if(st.carded)return;st.carded=true;mark('card');G.ui.notice({kicker:'토성 고리',title:'다음 이야기 준비 중',text:TMP.card,icon:SPACE.icons.map()});};
   /* 도착: 배가 내려와 닿음 → 둘이 내림 */
   const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1,FROM=[-8,8.5,4]; /* 토성 쪽 하늘에서 내려옴 */let ggMode='idle',started=false;
-  async function land(W,U){mark('land');G.travel.mark('land');G.ui.toast(TMP.land,5.2);G.sound.sfx('land',{gain:.5});G.sound.sfx('event-pop',{gain:.6});
+  async function land(W,U){mark('land');G.travel.mark('land');G.ui.toast(TMP.land,5.2,TMP.land);G.sound.sfx('land',{gain:.5});G.sound.sfx('event-pop',{gain:.6});
     await G.core.wait(.7);ggMode='walk';G.sound.sfx('jump',{gain:.6});{const r=gg.root.position;await hop([r.x,r.y,r.z],[GGAT[0],0,GGAT[1]],.7,(x,y,z)=>gg.root.position.set(x,y,z));}ggMode='idle';gg.root.rotation.y=PI/2;
     U.action='서기';U.at=0;G.sound.sfx('jump');{const p=W.position;await hop([p.x,p.y,p.z],[HERO[0],0,HERO[1]],.8,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;});}G.sound.sfx('land',{gain:.5});
     st.arr=null;lockOff(G,W);W.scale.set(1,1,1);G.travel.end();mark('free');await G.core.wait(.5);st.turn={t:0}; /* 카메라 쪽을 보며 내린 뒤, 돌아서서 커다란 토성을 올려다봄 */G.react.react('awe',{sound:null});

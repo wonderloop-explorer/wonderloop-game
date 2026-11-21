@@ -182,11 +182,37 @@ export function fenceParts(cx,cz,R,gate,half,gyAt){const out=[],N=22,WD='#c79a72
   for(let i=0;i<N;i++){const a=pts[i],b=pts[i+1],dx=b[0]-a[0],dz=b[2]-a[2],L=Math.hypot(dx,dz),ry=Math.atan2(-dz,dx);for(const y of [.3,.58])out.push([new THREE.BoxGeometry(L,.07,.045).applyMatrix4(M4([(a[0]+b[0])/2,(a[1]+b[1])/2+y,(a[2]+b[2])/2],[0,ry,0])),y>.4?WD:WD2]);}
   return out;}
 /* 낡은 비행선(풍선형): 기운 자국이 있는 풍선 + 줄에 매달린 곤돌라 + 꼬리 날개 — 구름 바다 너머에 천천히 떠다님(그리기 1) */
+/* 금성 비행선(2026-11-21 다시 — 예전: 통통한 공 + 녹색·분홍 덧댄 조각 무늬). 금성 구름 위 비행선 탐사 연구(NASA HAVOC 구상)의 생김새를 참고:
+   매끈하고 길쭉한 유선형 몸통(앞은 둥글고 뒤로 갈수록 가늘게 — 크림·은빛, 가는 이음선 몇 줄) · 등 위에 길게 붙은 남색 태양전지판 띠(구름 위는 햇빛이 강해 태양광으로 난다)
+   · 십자 꼬리날개 넷(끝만 포인트 색) · 아래 작은 곤돌라(창문) + 양옆 프로펠러 둘(천천히 돎) · 장식은 옆구리 띠 한 줄뿐.
+   한 덩어리(그리기 1 그대로) — 프로펠러 날개는 맨 끝 꼭짓점들만 CPU로 돌림(userData.spin(t), 꼭짓점 약 170개). 앞 = +x */
 export function makeAirship(){const g=new THREE.Group();g.name='venus-airship';const L=[],P=(geo,col,p,r,s)=>L.push([geo.applyMatrix4(M4(p||[0,0,0],r||[0,0,0],s||[1,1,1])),col]);
-  P(sph(1,14,10),'#ecd3a8',[0,0,0],[0,0,0],[3.1,1.2,1.2]);P(new THREE.TorusGeometry(1.13,.07,5,16),'#c98f7a',[.9,0,0],[0,PI/2,0]);P(new THREE.TorusGeometry(1.13,.07,5,16),'#c98f7a',[-.9,0,0],[0,PI/2,0]);
-  P(sph(1,8,6),'#9fb7c9',[1.7,.62,.5],[.5,0,-.3],[.5,.1,.42]);P(sph(1,8,6),'#d9a0a0',[-.4,.95,.52],[.5,0,0],[.46,.1,.4]);P(sph(1,8,6),'#b9c79a',[-1.8,.2,.86],[1.2,0,.2],[.4,.1,.36]);P(sph(1,8,6),'#9fb7c9',[.3,-.2,-1.12],[PI/2,0,0],[.5,.1,.4]);
-  P(new THREE.ConeGeometry(.3,.6,8),'#c98f7a',[3.2,0,0],[0,0,-PI/2]);
-  P(new THREE.BoxGeometry(1.1,1.5,.06),'#c98f7a',[-2.9,.55,0],[0,0,.5]);P(new THREE.BoxGeometry(1.1,1.2,.06),'#c98f7a',[-2.9,-.5,0],[0,0,-.5]);P(new THREE.BoxGeometry(1.1,.06,2.0),'#d9a98a',[-2.9,0,0]);
-  P(new THREE.BoxGeometry(1.5,.5,.7),'#8a5a3c',[.1,-1.95,0]);P(new THREE.BoxGeometry(1.6,.08,.8),'#b58d6c',[.1,-1.68,0]);for(const [a,b] of [[-.55,-.3],[-.55,.3],[.75,-.3],[.75,.3]])P(new THREE.CylinderGeometry(.02,.02,.8,4),'#6a4a36',[a,-1.3,b]);
-  P(new THREE.BoxGeometry(.06,.9,.12),'#6a4a36',[-.75,-1.95,0],[.6,0,0]);P(new THREE.BoxGeometry(.3,.2,.04),'#ffe9a8',[.3,-1.92,.36]);
-  const me=lump(L,false,1.2);me.frustumCulled=false;g.add(me);return g;}
+  const X0=-3.4,LEN=6.4,RM=1.15,hr=u=>{if(u>.6){const a=(u-.6)/.4;return RM*Math.sqrt(Math.max(0,1-a*a));}const a=(.6-u)/.6;return RM*(1-.88*Math.pow(a,1.7));},xs=u=>X0+LEN*u,
+    HULL='#efe9da',SEAM='#cbc4b3',SOL=['#27345f','#31417a'],PT='#e0785e',GON='#dcd5c5';
+  {const pts=[new THREE.Vector2(0,X0-.06)];for(let i=0;i<=16;i++){const u=i/16;pts.push(new THREE.Vector2(Math.max(.001,hr(u)),xs(u)));}P(new THREE.LatheGeometry(pts,16),HULL,[0,0,0],[0,0,-PI/2]);}
+  for(const u of [.2,.38,.6,.8])P(new THREE.TorusGeometry(hr(u)+.004,.016,4,18),SEAM,[xs(u),0,0],[0,PI/2,0]); /* 가는 이음선 */
+  /* 몸통 겉면을 따라 붙는 띠: 진행 u0~u1, 둘레 각도 ang(0 = 등 위) ± half, 겉면에서 off만큼 띄움 */
+  const strip=(u0,u1,ang,half,off,n,cols)=>{for(let i=0;i<n;i++){const ua=u0+(u1-u0)*i/n,ub=u0+(u1-u0)*(i+1)/n-(cols.length>1?.006:0),pos=[],idx=[],J=3;
+      for(const u of [ua,ub])for(let j=0;j<=J;j++){const an=ang+(j/J*2-1)*half,r=hr(u)+off;pos.push(xs(u),r*Math.cos(an),r*Math.sin(an));}
+      for(let j=0;j<J;j++){const a0=j,b0=J+1+j,c0=J+2+j,d0=j+1;idx.push(a0,c0,b0,a0,d0,c0);}
+      const ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));ge.setAttribute('uv',new THREE.Float32BufferAttribute(pos.flatMap((_,k)=>k%3===0?[pos[k]*.3,pos[k+2]*.3]:[]),2));ge.setIndex(idx);ge.computeVertexNormals();L.push([ge,cols[i%cols.length]]);}};
+  strip(.24,.86,0,.56,.024,9,SOL); /* 등 위 태양전지판 띠(칸마다 살짝 다른 남색) */
+  strip(.2,.9,PI/2+.16,.055,.02,14,[PT]);strip(.2,.9,-PI/2-.16,.055,.02,14,[PT]); /* 옆구리 띠 한 줄씩 */
+  /* 십자 꼬리날개 넷: 몸통 색, 끝만 포인트 색 */
+  {const sh=(q)=>{const S=new THREE.Shape();S.moveTo(q[0][0],q[0][1]);for(let i=1;i<q.length;i++)S.lineTo(q[i][0],q[i][1]);S.closePath();return new THREE.ExtrudeGeometry(S,{depth:.06,bevelEnabled:false}).translate(0,0,-.03);};
+    for(let k=0;k<4;k++){const r=[k*PI/2+PI/4*0,0,0];P(sh([[-1.95,.3],[-2.555,.98],[-3.263,.98],[-3.15,.3]]),HULL,[0,0,0],r);P(sh([[-2.555,.98],[-2.75,1.2],[-3.3,1.2],[-3.263,.98]]),PT,[0,0,0],r);}}
+  /* 곤돌라(창문 넷씩) + 몸통에 잇는 짧은 기둥 */
+  const GY=-1.43,GX=.35;P(new THREE.CapsuleGeometry(.34,1.15,4,10),GON,[GX,GY,0],[0,0,PI/2]);P(new THREE.BoxGeometry(1.2,.06,.5),SEAM,[GX,GY-.3,0]);
+  for(const x of [-.35,.3])P(new THREE.CylinderGeometry(.05,.05,.3,5),SEAM,[GX+x,GY+.36,0]);
+  for(const sg of [1,-1])for(let i=0;i<4;i++)P(new THREE.BoxGeometry(.17,.14,.03),'#ffdf9a',[GX-.5+i*.33,GY+.05,sg*.335]);
+  /* 프로펠러 받침 팔 + 엔진 통(양옆) — 날개는 아래에서 따로(맨 끝, 돌릴 것) */
+  const PZ=.98,PX=GX-.1,PY=GY+.02;for(const sg of [1,-1]){P(new THREE.BoxGeometry(.12,.06,PZ-.3),SEAM,[PX,PY,sg*(PZ+.3)/2]);P(new THREE.CapsuleGeometry(.1,.3,3,8),'#bdb6a6',[PX,PY,sg*PZ],[0,0,PI/2]);}
+  let nFix=0;for(const [ge] of L)nFix+=ge.index?ge.index.count:ge.attributes.position.count;
+  const props=[];for(const sg of [1,-1]){const c=[PX+.3,PY,sg*PZ];let n0=0;const add=(ge,col)=>{n0+=ge.index?ge.index.count:ge.attributes.position.count;L.push([ge,col]);};
+    add(new THREE.ConeGeometry(.07,.14,6).applyMatrix4(M4([c[0]+.05,c[1],c[2]],[0,0,-PI/2])),PT);
+    for(let b=0;b<3;b++)add(new THREE.BoxGeometry(.03,.52,.1).applyMatrix4(M4([0,.27,0],[0,.35,0])).applyMatrix4(M4(c,[b*PI*2/3,0,0])),'#5d627a');
+    props.push({c,n:n0,sg});}
+  const me=lump(L,false,1.2);me.frustumCulled=false;g.add(me);
+  {const pa=me.geometry.attributes.position,na=me.geometry.attributes.normal;let o=nFix;for(const q of props){q.o=o;q.p=pa.array.slice(o*3,(o+q.n)*3);q.nn=na.array.slice(o*3,(o+q.n)*3);o+=q.n;}
+    g.userData.spin=t=>{for(const q of props){const a=t*2.4*q.sg,cs=Math.cos(a),sn=Math.sin(a);for(let i=0;i<q.n;i++){const k=i*3,y=q.p[k+1]-q.c[1],z=q.p[k+2]-q.c[2],ny=q.nn[k+1],nz=q.nn[k+2],w=(q.o+i)*3;pa.array[w+1]=q.c[1]+y*cs-z*sn;pa.array[w+2]=q.c[2]+y*sn+z*cs;na.array[w+1]=ny*cs-nz*sn;na.array[w+2]=ny*sn+nz*cs;}}pa.needsUpdate=true;na.needsUpdate=true;};}
+  return g;}
