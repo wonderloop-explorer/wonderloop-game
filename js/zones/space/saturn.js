@@ -11,7 +11,7 @@ import * as G from '../../game/index.js';
 import {markChar} from '../../game/bend.js';
 import {RIDE,lockOn,lockOff,camHome} from './meteor-ride.js';
 import {lump,M4,sph} from './martians.js';
-import {makeGeokkuri,makeIceBoat} from './cloudfolk.js';
+import {makeGeokkuri,makeIceBoat,boatStand} from './cloudfolk.js';
 import {makeSkyBoard,makeOrb,canvasTex,saturnMap} from './skyboard.js';
 import SPACE from '../../worlds/infinite-space.js';
 const ZID='space-saturn',TMP={land:'저 커다란 게 바로 토성이에요. 토성은 디딜 땅이 없는 가스 행성이라, 고리의 얼음 위에 내렸어요.' /* SPC-RS-001(나레이터) */,card:'고리 위 쉼터 이야기는 다음에 이어져요.' /* SPC-RS-002 글자만 */}; /* 거꾸리 한마디(SPC-RS-003)는 쉼터를 만들 때 정함 — 그때까지 말 걸 상대가 아님 */
@@ -69,7 +69,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   async function land(W,U){mark('land');G.travel.mark('land');G.ui.toast(TMP.land,5.2,TMP.land);G.sound.sfx('land',{gain:.5});G.sound.sfx('event-pop',{gain:.6});
     await G.core.wait(.7);ggMode='walk';G.sound.sfx('jump',{gain:.6});{const r=gg.root.position;await hop([r.x,r.y,r.z],[GGAT[0],0,GGAT[1]],.7,(x,y,z)=>gg.root.position.set(x,y,z));}ggMode='idle';gg.root.rotation.y=PI/2;
     U.action='서기';U.at=0;G.sound.sfx('jump');{const p=W.position;await hop([p.x,p.y,p.z],[HERO[0],0,HERO[1]],.8,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;});}G.sound.sfx('land',{gain:.5});
-    st.arr=null;lockOff(G,W);W.scale.set(1,1,1);G.travel.end();mark('free');await G.core.wait(.5);st.turn={t:0}; /* 카메라 쪽을 보며 내린 뒤, 돌아서서 커다란 토성을 올려다봄 */G.react.react('awe',{sound:null});
+    st.arr=null;lockOff(G,W);W.scale.set(1,1,1);G.travel.end();W.rotation.y=PI/2;mark('free');await G.core.wait(.5);G.react.react('joy',{sound:null,bounce:false}); /* 카메라 쪽(정면)을 본 채 내려서 그대로 섬(2026-11-22 — 예전: 내린 뒤 토성 쪽으로 돌아서 뒷모습) */
     await G.core.wait(.6);st.boatGo={t:0};G.sound.sfx('event-sparkle',{gain:.5}); /* 둘이 다 내린 뒤에 배가 스르륵 떠올라 고리 너머로 작아지며 사라짐 */await G.core.wait(4.8);st.done=true;card();}
   function update(dt,t){const W=U0();if(!W)return;const U=W.userData,cam=G.view.camera;st.t+=dt;mark('start');
     board.tick(dt,t,cam);{const pt=cam.aspect<1;board.place(board.sunGlow,pt?-.5:-.7,pt?.86:.8,pt?1:.8);board.place(board.sun,pt?-.5:-.7,pt?.86:.8,pt?.5:.4);}
@@ -78,7 +78,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     if(st.boatGo){const b=st.boatGo;b.t+=dt;const u=Math.min(1,b.t/2.6),e=u*u;boat.position.set(B.x-9*e,B.y+3.2*e+Math.sin(t*1.7)*.05,B.z+5*e);boat.scale.setScalar(Math.max(.001,1-ss(.35,1,u)));if(u>=1){boat.visible=false;st.boatGo=null;}}
     const a=st.arr;if(a){if(!started){started=true;lockOn(G,W);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');G.travel.note('phase','arrive');G.travel.landIn(D);const C=G.controls.input.cam;if(C){C.yaw=PI/2-.42;C.pitch=.03;C.dist=9;a.cu=C.user;}U.riding.snap=true;}
       if(a.ph==='down'){a.t+=dt;const u=Math.min(1,a.t/D),e=1-Math.pow(1-u,2.2);B.x=lerp(DOCKB[0]+FROM[0],DOCKB[0],e);B.y=lerp(FROM[1],BY,e)+Math.sin(t*1.7)*.05*(1-u);B.z=lerp(FROM[2],DOCKB[1],e);
-        boat.position.set(B.x,B.y,B.z);W.position.set(B.x+HX,B.y+HSEAT,B.z-BSIDE);U.riding.lookOff=[-(HX+GX)/2,BSIDE];U.riding.y=W.position.y;W.rotation.y=PI/2;gg.root.position.set(B.x-GX,B.y+GSEAT,B.z+BSIDE);gg.root.rotation.y=PI/2;ggMode='idle'; /* 금성에서 탄 그대로: 둘 다 뒤(동쪽 = 카메라 쪽)를 보고 섬 — 원더룹이 앞, 거꾸리가 그 뒤. 얼굴이 보이는 채로 내려와 카메라 쪽으로 걸어 내림 */
+        boat.position.set(B.x,B.y,B.z);boatStand(boat,HX,-BSIDE,W.position);U.riding.lookOff=[-(HX+GX)/2,BSIDE];U.riding.y=W.position.y;W.rotation.y=PI/2;boatStand(boat,-GX,BSIDE,gg.root.position);gg.root.rotation.y=PI/2; /* 발은 배 겉면에 딱(cloudfolk boatStand — 2026-11-22) */ggMode='idle'; /* 금성에서 탄 그대로: 둘 다 뒤(동쪽 = 카메라 쪽)를 보고 섬 — 원더룹이 앞, 거꾸리가 그 뒤. 얼굴이 보이는 채로 내려와 카메라 쪽으로 걸어 내림 */
         if(u>=1){a.ph='off';land(W,U);}}}
     else if(!st.done&&!started){st.done=true;}
     gg.tick(dt,t,ggMode);if(st.done&&!G.dialog.talking()){const P=W.position,ry=Math.atan2(P.x-gg.root.position.x,P.z-gg.root.position.z);gg.root.rotation.y+=Math.atan2(Math.sin(ry-gg.root.rotation.y),Math.cos(ry-gg.root.rotation.y))*Math.min(1,dt*6);}

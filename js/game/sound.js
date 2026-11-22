@@ -150,8 +150,9 @@ function fadeOut(sec){if(!B)return;const b=B;B=null;const c=ctx,now=c.currentTim
   setTimeout(()=>{try{if(b.src)b.src.stop();if(b.h)b.h.stop();b.g.disconnect();}catch(e){}},sec*1000+100);}
 function bed(id,o={}){if((want&&want.id)===(id||undefined))return;
   if(want)want.cue.dur=+(clock.t-want.cue.t).toFixed(3);
-  want=id?{id,gain:o.gain??1,fade:o.fade??1.5,loop:o.loop||null,intro:!!o.intro}:null;if(want){want.cue=bedCue(want);if(SRC[id]&&!BUF[id])load(id);}
+  want=id?{id,gain:o.gain??1,fade:o.fade??1.5,loop:o.loop||null,intro:!!o.intro,once:!!o.once,out:o.out}:null;outSec=o.out??1.2; /* once: 되풀이하지 않고 한 번만(해돋이 음악) · out: 앞 곡이 줄어드는 시간(초) */if(want){want.cue=bedCue(want);if(SRC[id]&&!BUF[id])load(id);}
   nullT=0;} // 바로 끄지 않는다 — 같은 곡을 곧 다시 틀면(처음부터 다시 하기로 구역을 다시 만들 때) 끊김 없이 이어지게(2026-11-03). 끄는 건 tickBed가
+let outSec=1.2;
 const DK={st:'up',t0:0,from:1,last:0}; // 배경음 줄이기 상태: up 원래 크기 · down 줄어듦(줄어드는 중) · rise 되돌아오는 중
 function duckNow(now){if(DK.st==='down')return MIX.duck+(DK.from-MIX.duck)*Math.exp(-(now-DK.t0)/MIX.duckIn);if(DK.st==='rise'){const u=Math.min(1,(now-DK.t0)/MIX.back);return DK.from+(1-DK.from)*u*u*(3-2*u);}return 1;}
 const duckState=()=>ctx?{st:DK.st,k:+duckNow(ctx.currentTime).toFixed(4),bus:+musicBus.gain.value.toFixed(4),bed:+bedBus.gain.value.toFixed(3),t:+ctx.currentTime.toFixed(3)}:null; // 시험용: 지금 줄이기 배율·실제 묶음 값
@@ -168,10 +169,10 @@ function tickBed(dt){
      P.cancelScheduledValues(now);try{P.setValueCurveAtTime(cv,now,MIX.back);}catch(e){P.setValueAtTime(v*MIX.bus,now);P.linearRampToValueAtTime(MIX.bus,now+MIX.back);}DK.st='rise';DK.t0=now;DK.from=v;}
    else if(DK.st==='rise'&&now-DK.t0>MIX.back+.05){P.cancelScheduledValues(now);P.setValueAtTime(MIX.bus,now);DK.st='up';}}
   if(!want)nullT+=dt;
-  if(B&&((!want&&nullT>.8)||(want&&B.id!==want.id)))fadeOut(1.2); // 곡이 없어진 뒤 0.8초 기다렸다가(구역을 다시 만드는 사이)
+  if(B&&((!want&&nullT>.8)||(want&&B.id!==want.id)))fadeOut(outSec); // 곡이 없어진 뒤 0.8초 기다렸다가(구역을 다시 만드는 사이)
   if(want&&!B){const b=BUF[want.id],y=SYN[want.id];if(!b&&!(y&&y.bed))return;
-    const g=c.createGain(),now=c.currentTime;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(want.gain,now+want.fade);g.connect(musicBus);B={id:want.id,g};
-    if(b){const s=c.createBufferSource();s.buffer=b;s.loop=true;
+    const g=c.createGain(),now=c.currentTime;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(want.gain,now+want.fade);g.connect(musicBus);B={id:want.id,g,t0:now,dur:b?b.duration:0};
+    if(b){const s=c.createBufferSource();s.buffer=b;s.loop=!want.once;
       /* 구간 루프(2026-11-12 — 화성 배경음): loop [a,b]초만 되풀이, intro면 처음(0초)부터 한 번 틀고 그 구간으로. 이음매가 튀지 않게 b 바로 앞 60ms를 a 바로 앞 소리와 섞어 둔다(버퍼에 한 번) */
       if(want.loop){const [la,lb,xf=.06]=want.loop;if(!b._xf){b._xf=1;const F=Math.floor(xf*b.sampleRate),ia=Math.floor(la*b.sampleRate),ib=Math.floor(lb*b.sampleRate);if(ia>F&&ib<=b.length)for(let ch=0;ch<b.numberOfChannels;ch++){const d=b.getChannelData(ch);for(let i=0;i<F;i++){const t=i/F;d[ib-F+i]=d[ib-F+i]*(1-t)+d[ia-F+i]*t;}}}
         s.loopStart=la;s.loopEnd=lb;s.connect(g);s.start(0,want.intro?0:la);}
@@ -179,6 +180,8 @@ function tickBed(dt){
   if(B&&B.h&&B.h.tick)B.h.tick(dt);}
 function songs(map){synth(asBeds(map));}
 const bedHandle=()=>B&&B.h||null;
+/* 지금 배경음이 시작된 뒤 흐른 시간(소리 시계, 초) — 연출을 곡 자리에 맞출 때(금성 해돋이). 아직 안 틀렸으면 null */
+const bedTime=id=>B&&B.src&&(!id||B.id===id)&&ctx?{id:B.id,t:ctx.currentTime-B.t0,dur:B.dur}:null;
 /* 구역 배경음: 구역 정보 music → bed. 파일 이름만 적으면 assets/audio/<이름>.mp3 */
 function zoneMusic(m){if(!m){bed(null);return;}let o=typeof m==='string'?{id:m}:m;if(o.lufs!=null&&o.gain==null)o={...o,gain:lufsGain(o.lufs)}; /* lufs: 그 곡(되풀이 구간)을 잰 체감 크기 → MIX.target에 맞춤 */const id=o.id.replace(/\.[a-z0-9]+$/i,'');
   if(!SRC[id]&&!(SYN[id]&&SYN[id].bed))SRC[id]=o.file||('assets/audio/'+(/\.[a-z0-9]+$/i.test(o.id)?o.id:o.id+'.mp3'));bed(id,o);}
@@ -206,4 +209,4 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voicePeak,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voicePeak,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,bedTime,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};

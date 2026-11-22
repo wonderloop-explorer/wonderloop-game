@@ -65,7 +65,7 @@ const NEW={
   'event-snore':[1.1,(c,t,D)=>{noise(c,t,1.0,.05,D,'lowpass',420,.8,200);tone(c,'sine',115,t,1.0,.035,D,{slide:85,a:.3});}], // 드르렁: 코골이 한 번(금성 뭉게 문지기 — 원본 개미굴 snore와 같은 소리, 2026-11-18)
   'tune-birthday':{dur:3,play(c,D,o){const t=c.currentTime+.02,P=[[67,67,69,67,72,71],[67,67,69,67,74,72],[67,67,79,76,72,71,69],[77,77,76,72,74,72]][(((o&&o.phrase)|0)%4+4)%4],L=P.length===7?[.3,.15,.42,.42,.42,.42,.8]:[.3,.15,.42,.42,.42,.8];let a=t;
     P.forEach((m,i)=>{bell(c,m+12,a,L[i]*1.6,.05,D);a+=L[i];});}}, // 오르골 생일 노래 한 구절(sfx(…,{phrase:n}) — 네 구절을 차례로, 금성 또생일 — 2026-11-18, 원본에 없던 소리)
-  'event-baa':[.55,(c,t,D)=>{for(let i=0;i<6;i++){tone(c,'sawtooth',rr(455,475)-i*9+(i%2?14:0),t+i*.075,.1,.035,D);tone(c,'triangle',228-i*4,t+i*.075,.1,.05,D);}}], // 음매: 떨리는 짧은 울음(금성 구름 양 — 2026-11-21, 원본에 없던 소리)
+  'event-baa':{dur:.55,play(c,D,o){const t=c.currentTime,k=(o&&o.pitch)||1;for(let i=0;i<6;i++){tone(c,'sawtooth',(rr(455,475)-i*9+(i%2?14:0))*k,t+i*.075,.1,.035,D);tone(c,'triangle',(228-i*4)*k,t+i*.075,.1,.05,D);}}}, // 음매: 떨리는 짧은 울음(금성 구름 양 — 2026-11-21, 원본에 없던 소리). sfx('event-baa',{pitch}) = 높이 배율(양마다 조금씩 다르게)
   'event-pyong':[.22,(c,t,D)=>{tone(c,'sine',560,t,.1,.15,D,{slide:1500});tone(c,'triangle',1320,t+.07,.12,.06,D,{slide:1760});}], // 뿅: 무언가 쏙 튀어나옴(금성 구름 양 — 2026-11-20, 원본에 없던 소리)
   'cloud-poof':[.9,(c,t,D)=>{noise(c,t,.8,.13,D,'lowpass',rr(520,640),.6,160);noise(c,t+.05,.5,.05,D,'bandpass',rr(1300,1600),.9);tone(c,'sine',196,t+.02,.5,.05,D,{slide:147});}], // 푸훗: 푹신한 구름에 쏙(금성 — 2026-11-12, 원본에 없던 소리)
   'event-dust':[.4,(c,t,D)=>{noise(c,t,.35,.14,D,'lowpass',rr(900,1200),.7,220);noise(c,t+.03,.18,.04,D,'bandpass',rr(2200,2800),1.2);}], // 퍽: 부드러운 흙먼지

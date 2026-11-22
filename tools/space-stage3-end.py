@@ -15,6 +15,7 @@ def run(p, flags, fn):
     pg.goto(URL, wait_until='domcontentloaded'); pg.evaluate('localStorage.clear();localStorage.setItem("wl-help-seen","1")'); pg.reload(wait_until='domcontentloaded')
     pg.wait_for_function('window.wlZone&&wlZone.cur&&window.wlGame&&wlGame.mission.hero()', timeout=120000); pg.wait_for_timeout(2500)
     pg.evaluate("async(fl)=>{for(const k of ['meet:infinite-space:geokkuri','meet:infinite-space:ddo','meet:infinite-space:munge',...fl])wlGame.state.setFlag(k,true);try{wlGame.profile.found&&['geokkuri','ddo','munge'].forEach(i=>wlGame.profile.found(i));}catch(e){}}", flags); pg.wait_for_timeout(400); pg.reload(wait_until='domcontentloaded'); pg.wait_for_function('window.wlZone&&wlZone.cur&&window.wlGame&&wlGame.mission.hero()', timeout=120000); pg.wait_for_timeout(3000)  # 저장한 뒤 다시 열어 그 상태로 구역을 만듦
+    pg.keyboard.press('ArrowLeft'); pg.wait_for_timeout(300)  # 소리 깨우기(키 입력 — 카메라만 조금 돎)
     try: fn(pg)
     finally:
         if errs: print('오류', errs[:3])
@@ -72,7 +73,13 @@ def cake(pg):
     walk(S['cake'][0] - 1.0, S['cake'][1] + .75, 25, .5); pg.wait_for_timeout(500)
     if PC: pg.keyboard.press('e')
     else: pg.evaluate("document.getElementById('wlAct')&&document.getElementById('wlAct').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))"); pg.keyboard.press('e')
-    until('wlZone.cur.state().T.stuck', 12); pg.wait_for_timeout(1300); shot('0b-three'); until('wlZone.cur.state().T.candle', 20); pg.wait_for_timeout(1300); shot('0c-candle-card')
+    until('wlZone.cur.state().T.stuck', 12); pg.wait_for_timeout(1300); shot('0b-three')
+    t0 = time.time(); i = 0  # 또생일이 촛불을 부는 순간(대사 뒤): 연속으로 찍어 바람 줄기·꺼진 뒤 연기를 잡음
+    while time.time() - t0 < 14 and not st()['T'].get('blow'):
+        if pg.evaluate("!!(wlZone.cur.dbgBlow&&wlZone.cur.dbgBlow())"): shot('0b-blow-%d' % i); i += 1
+        else: pg.wait_for_timeout(60)
+    for j in range(2): shot('0b-smoke-%d' % j)
+    until('wlZone.cur.state().T.candle', 20); pg.wait_for_timeout(1300); shot('0c-candle-card')
 def sheep(pg):
     st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); g = S['glade']
     dx, dz = g['gg'][0] - g['c'][0], g['gg'][1] - g['c'][1]; L = (dx * dx + dz * dz) ** .5  # 빈터 바깥(들어오는 길 쪽)에서 걸어 들어감 — 실제 플레이처럼 카메라가 등 뒤에
@@ -86,8 +93,42 @@ def dial(pg):
     for q in (5, 6):
         walk(P[q][0], P[q][1], 25, .8); print(q, sorted(st()['T'].keys()), pg.evaluate("(document.getElementById('wlDlg')||{}).innerText"))
         if st().get('scene'): pg.wait_for_timeout(1500); shot('1a-dial-stop'); until('!wlZone.cur.state().scene', 15)
+def sunrise(pg):
+    """해돋이 광장: 대사 구도 촬영 + 배경음 → 해돋이 음악 → 배경음으로 바뀌는 시점(게임 시계·소리 시계) 재기"""
+    st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); c = S['plaza']['c']; R = S['plaza']['R']; log = []
+    pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.set(x,0,z);W.rotation.y=Math.PI;}", [c[0], c[1] + R + 5]); pg.wait_for_timeout(3500)
+    samp = "(()=>{const b=wlGame.sound.bedTime&&wlGame.sound.bedTime(),s=wlZone.cur.state(),d=wlGame.sound.duckState&&wlGame.sound.duckState();return [+wlGame.clock.t.toFixed(2),b?b.id:null,b?+b.t.toFixed(2):null,s.rise,d?d.bus:null,(document.getElementById('wlDlg')||{}).innerText||'']})()"
+    pg.evaluate('([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)', [c[0], c[1] + 2]); t0 = time.time(); shots = {'034': False, '033': False, 'sun': False}
+    while time.time() - t0 < 75:
+        v = pg.evaluate(samp); log.append(v[:5]); T = st()['T']
+        if not T.get('sun0') and time.time() - t0 < 12: pg.evaluate('([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)', [c[0], c[1] + 2])
+        if '안개 때문에' in v[5] and not shots['033'] and v[2] and v[2] > 4: shots['033'] = True; shot('2a-plaza-talk033')
+        if '해가 뜬다' in v[5] and not shots['034']: shots['034'] = True; pg.wait_for_timeout(900); shot('2b-plaza-talk034')
+        if v[3] >= 1 and not shots['sun']: shots['sun'] = True; shot('2c-plaza-sunup')
+        if T.get('sunEnd') and v[1] == 'venus-bgm' and v[2] and v[2] > 4: break
+        pg.wait_for_timeout(150)
+    s = st(); T = s['T']; first = lambda f: next((x for x in log if f(x)), None)
+    a = first(lambda x: x[1] == 'venus-sunrise'); full = first(lambda x: x[3] >= 1); back = first(lambda x: x[1] == 'venus-bgm' and T.get('sunEnd') and x[0] >= T['sunEnd'])
+    R = {'음악 바뀜(게임 시계 초)': s['mus'], '장면 시작(sun0)': T.get('sun0'), '해돋이 음악 요청(rise)': T.get('rise'), '해돋이 음악이 실제로 울리기 시작(게임 시계)': a and round(a[0] - a[2], 2),
+         '해가 다 뜬 때(게임 시계)': full and full[0], '그때 해돋이 곡 자리(초)': full and full[2], '해 구경 끝(sunEnd) = 배경음으로 돌아가기 시작': T.get('sunEnd'), '배경음이 다시 울리기 시작(게임 시계)': back and round(back[0] - back[2], 2)}
+    print(json.dumps(R, ensure_ascii=False, indent=1)); json.dump({'결과': R, '표본[게임 시계, 곡, 곡 자리, 해 진행, 배경음 묶음]': log}, open(os.path.join(OUT, TAG + '-sunrise-music.json'), 'w'), ensure_ascii=False)
+def fail(pg):
+    """초 잡기 실패 → 구름이 발판 옆으로 되돌려 줄 때 구도"""
+    st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); pad = S['pad']
+    pg.evaluate("wlZone.cur.dbgMiss&&wlZone.cur.dbgMiss(true)")
+    pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.set(x,0,z);}", [pad[0] - 2.5, pad[1] - 1]); pg.wait_for_timeout(1200); walk(pad[0], pad[1], 15, .4)
+    until('wlZone.cur.state().T.rideFail', 45); pg.wait_for_timeout(2600)
+    for i in range(6): pg.wait_for_timeout(650); shot('0d-back-%d' % i)
+def mapmv(pg):
+    """화성 → 금성 우주 지도(발자국 크기·보폭)"""
+    st, shot, until, walk = helpers(pg)
+    pg.evaluate("(async()=>{const SP=(await import('/js/worlds/infinite-space.js')).default;window.__mp=await wlGame.travel.mapFor(SP,'space-mars','space-venus',wlGame.state.flags);})()")
+    pg.wait_for_timeout(1500); shot('60-map-mars-venus-a'); pg.wait_for_timeout(1500); shot('60-map-mars-venus')
 with sync_playwright() as p:
-    if '--dial' in A: run(p, ALL[:9], dial)
+    if '--fail' in A: run(p, ALL[:2], fail)
+    elif '--map' in A: run(p, ALL, mapmv)
+    elif '--sunrise' in A: run(p, ALL[:9], sunrise)
+    elif '--dial' in A: run(p, ALL[:9], dial)
     elif '--sheep' in A: run(p, ALL[:8], sheep)
     elif '--plaza' in A:
         run(p, ALL[:6], cake); run(p, ALL[:10], plaza)

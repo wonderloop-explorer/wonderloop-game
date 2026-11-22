@@ -433,7 +433,7 @@ function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:
   function skyTick(dt){const cam=G.view.camera;if(!cam)return;const a=Math.max(.001,Math.min(1,SK.t-1)),u=flyU,pt=cam.aspect<1,as=Math.min(1,cam.aspect);board.tick(dt,G.clock.t,cam);board.setAlpha(a);
     board.place(board.sunGlow,pt?-.45:-.66,pt?.84:.76,pt?1.0:.8);board.place(board.sun,pt?-.45:-.66,pt?.84:.76,pt?.5:.4);
     const on=a>.5&&u>.3,tiny=1e-4,k1=ss(.36,1,u);
-    board.place(oJup,lerp(pt?.6:.8,pt?.95:1.05,k1),lerp(.66,.56,k1),on?(pt?.11:.085):tiny);board.place(oSat,lerp(pt?-.1:-.22,pt?-.6:-.6,k1),lerp(.9,.84,k1),on?(pt?.05:.04):tiny);
+    board.place(oJup,lerp(pt?.6:.8,pt?.95:1.05,k1),lerp(.66,.56,k1),on?(pt?.11:.085):tiny);board.place(oSat,lerp(pt?.74:.86,pt?.9:1.0,k1),lerp(.2,.12,k1),on?(pt?.05:.04):tiny); /* 토성은 해(왼쪽 위)에서 멀리 떨어진 오른쪽 아래에 작게(2026-11-22 — 해 바로 옆에 붙어 보였다) */
     /* 화성(2026-11-14 — 땅에서 우주로 끊기지 않게): 땅 아래에 진짜 둥근 화성(반지름 RM = 둥근 땅 세기와 같은 곡률)을 두고, 땅과 함께 아래로 멀어짐(drop) → 땅은 화성 흙빛 안개에 묻히고 구가 같은 색에서 드러남
        → 카메라가 고개를 들면 화면 자리(아래 → 왼쪽 아래)로 옮겨 가며 작아짐 */
     {const g=gM.g;g.visible=u>.2;if(g.visible){const k2=ss(.345,.43,u),kk=ss(.38,.84,u),ex=pt?ss(.54,.72,u):0,sz=.9*Math.pow(.24,kk)*(1-.5*ex),tv=Math.tan(cam.fov*PI/360),th=tv*cam.aspect,d=600;

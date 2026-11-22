@@ -99,6 +99,37 @@ export function makeIceBoat(){const g=new THREE.Group();g.name='ice-boat';const 
   L.push([hull,'#cfe6fb']);L.push([new THREE.ConeGeometry(.2,.7,5).applyMatrix4(M4([-1.5,.3,0],[0,0,.75])),'#e8f5ff']);L.push([new THREE.ConeGeometry(.12,.4,5).applyMatrix4(M4([-1.25,.24,.3],[.3,0,.6])),'#bcdaf6']);
   L.push([new THREE.ConeGeometry(.14,.36,5).applyMatrix4(M4([1.35,.2,-.1],[0,0,-.7])),'#bcdaf6']);
   const me=lump(L.map(([q,c])=>[q.index?q.toNonIndexed():q,c]),true,1.4);me.geometry.computeVertexNormals();g.add(me);return g;}
+/* 얼음 배 위에 서는 자리(2026-11-22): 배 좌표 (lx,lz)에서 내려다본 겉면 높이(한 번 계산해 기억)를 배의 지금 자리·기울기로 옮긴 세계 좌표 — 발이 배 바닥에 딱 붙는다.
+   예전: 고정 높이(HSEAT)라 각진 겉면·기울기에 따라 발이 떠 보였다. 배는 구역 뿌리 바로 아래에 있어야 함(boat.matrix = 세계) */
+export function boatStand(boat,lx,lz,out){const U=boat.userData,k=lx+','+lz;U.seat=U.seat||{};let y=U.seat[k];
+  if(y==null){y=-9;const p=boat.children[0].geometry.attributes.position;for(let i=0;i<p.count;i+=3){const ax=p.getX(i),az=p.getZ(i),bx=p.getX(i+1),bz=p.getZ(i+1),cx=p.getX(i+2),cz=p.getZ(i+2),d=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz);if(Math.abs(d)<1e-9)continue;
+      const u=((bz-cz)*(lx-cx)+(cx-bx)*(lz-cz))/d,v=((cz-az)*(lx-cx)+(ax-cx)*(lz-cz))/d,w=1-u-v;if(u<0||v<0||w<0)continue;y=Math.max(y,u*p.getY(i)+v*p.getY(i+1)+w*p.getY(i+2));}if(y<-8)y=.12;U.seat[k]=y;}
+  out=out||new THREE.Vector3();out.set(lx,y,lz);boat.updateMatrix();return out.applyMatrix4(boat.matrix);}
+/* 입김(또생일이 촛불을 붊 — 2026-11-22: 예전 알갱이는 옅어지며 까맣게 보였다): 흰색·연분홍의 휘어지는 바람 줄기 셋 + 작은 반짝임 여섯이 입에서 촛불 쪽으로, 꺼진 뒤 가는 흰 연기 한 줄.
+   한 덩어리(보일 때만 그리기 1) — 꼭짓점을 매 프레임 CPU로(약 120개). blow(입, 촛불, 시각) · smoke(촛불, 시각) · tick(시각, 카메라) */
+export function makeBreath(){const NR=4,NS=12,NSP=6,nv=NR*NS*2+NSP*4,pos=new Float32Array(nv*3),col=new Float32Array(nv*4),idx=[];
+  for(let r=0;r<NR;r++)for(let i=0;i<NS-1;i++){const a=(r*NS+i)*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}
+  for(let s=0;s<NSP;s++){const a=NR*NS*2+s*4;idx.push(a,a+1,a+2,a,a+2,a+3);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,4));geo.setIndex(idx);
+  const mat=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false});mat.userData.noStorybook=true;
+  const me=new THREE.Mesh(geo,mat);me.name='venus-breath';me.frustumCulled=false;me.visible=false;me.renderOrder=6;
+  const RC=[[1,1,1],[1,.8,.9],[1,.96,.98],[1,1,1]],RS=[[-.24,.1],[.02,.26],[.25,.05]] /* 줄기마다 [옆으로 휘는 정도, 위로 휘는 정도] */,st={A:null,B:null,t0:-9,sB:null,s0:-9};
+  const V=(i,x,y,z,c,a)=>{pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;col[i*4]=c[0];col[i*4+1]=c[1];col[i*4+2]=c[2];col[i*4+3]=a;},_t=new THREE.Vector3(),_w=new THREE.Vector3(),_c=new THREE.Vector3(),_r=new THREE.Vector3(),_u=new THREE.Vector3();
+  const pt=(r,u,t,o)=>{const A=st.A,B=st.B,dx=B[0]-A[0],dz=B[2]-A[2],L=Math.hypot(dx,dz)||1,sx=-dz/L,sz=dx/L,[sd,up]=RS[r],b=Math.sin(Math.PI*u),wv=Math.sin(u*9+r*2+t*5)*.018;
+    o.set(A[0]+dx*u+sx*(sd*b+wv),A[1]+(B[1]-A[1])*u+up*b,A[2]+dz*u+sz*(sd*b+wv));return o;};
+  return {me,blow(A,B,t){st.A=A;st.B=B;st.t0=t;},smoke(B,t){st.sB=B;st.s0=t;},
+    tick(t,cam){const h=(t-st.t0)/.72,sm=t-st.s0,onB=st.A&&h>=0&&h<1.7,onS=st.sB&&sm>=0&&sm<1.7;me.visible=!!(onB||onS);if(!me.visible)return;
+      for(let r=0;r<3;r++)for(let i=0;i<NS;i++){const hh=h-r*.1,u=Math.min(1,Math.max(0,hh-.42+.42*i/(NS-1))),k=(r*NS+i)*2;let a=0,wd=0;
+        if(onB){pt(r,u,t,_c);pt(r,Math.min(1,u+.03),t,_t).sub(_c);_w.copy(cam.position).sub(_c);_r.crossVectors(_t,_w).normalize();const e=Math.sin(Math.PI*i/(NS-1));wd=.004+.015*e;a=(hh-.42+.42*i/(NS-1)>=0&&hh-.42+.42*i/(NS-1)<=1.02?1:0)*e*.9*(1-Math.min(1,Math.max(0,(hh-1.05)/.4)));
+          V(k,_c.x+_r.x*wd,_c.y+_r.y*wd,_c.z+_r.z*wd,RC[r],a);V(k+1,_c.x-_r.x*wd,_c.y-_r.y*wd,_c.z-_r.z*wd,RC[r],a);}else{V(k,0,-99,0,RC[r],0);V(k+1,0,-99,0,RC[r],0);}}
+      /* 꺼진 뒤 연기 한 줄(넷째 줄기): 촛불 자리에서 위로 가늘게 살랑이며 */
+      {_r.set(1,0,0).applyQuaternion(cam.quaternion);for(let i=0;i<NS;i++){const u=i/(NS-1),k=(3*NS+i)*2;if(onS){const g=Math.min(1,sm/.6),y=st.sB[1]+u*.5*g+sm*.12,ox=Math.sin(u*7+sm*3)*.035*u,wd=.008+.012*u,a=(1-u)*.75*Math.sin(Math.PI*Math.min(1,u+.08))*(1-Math.min(1,Math.max(0,(sm-.9)/.8)));
+          V(k,st.sB[0]+_r.x*(ox+wd),y,st.sB[2]+_r.z*(ox+wd),RC[3],a);V(k+1,st.sB[0]+_r.x*(ox-wd),y,st.sB[2]+_r.z*(ox-wd),RC[3],a);}else{V(k,0,-99,0,RC[3],0);V(k+1,0,-99,0,RC[3],0);}}}
+      /* 작은 반짝임: 줄기 머리 가까이에서 깜빡이는 마름모 */
+      {_r.set(1,0,0).applyQuaternion(cam.quaternion);_u.set(0,1,0).applyQuaternion(cam.quaternion);for(let s=0;s<NSP;s++){const k=NR*NS*2+s*4,u=h-.06-s*.11,ok=onB&&u>0&&u<1,sz=ok?.028*(.45+.55*Math.abs(Math.sin(t*17+s*2.1))):0,c=s%2?RC[1]:RC[0];
+          if(ok){pt(s%3,u,t,_c);_c.y+=.05*Math.sin(s*3.3);}else _c.set(0,-99,0);
+          V(k,_c.x+_r.x*sz,_c.y+_r.y*sz,_c.z+_r.z*sz,c,ok?1:0);V(k+1,_c.x+_u.x*sz*1.5,_c.y+_u.y*sz*1.5,_c.z+_u.z*sz*1.5,c,ok?1:0);V(k+2,_c.x-_r.x*sz,_c.y-_r.y*sz,_c.z-_r.z*sz,c,ok?1:0);V(k+3,_c.x-_u.x*sz*1.5,_c.y-_u.y*sz*1.5,_c.z-_u.z*sz*1.5,c,ok?1:0);}}
+      geo.attributes.position.needsUpdate=true;geo.attributes.color.needsUpdate=true;}};}
 /* 구름 기둥 하나(높이 h — 아래가 넓고 위로 몽글몽글): lump 목록에 넣을 [geo, 색]들 */
 export function pillarParts(x,z,gy,h=3.2,seed=0){const out=[],n=5,cols=['#b99ad8','#a987cd','#c6abe0','#9c7cc2']; /* 안개·땅(밝은 연보라)과 뚜렷이 구분되게 한 단계 진한 보라 — 위쪽 덩이만 밝게 */
   for(let i=0;i<n;i++){const u=i/(n-1),r=.82-.3*u+Math.sin(seed*3.1+i*1.7)*.07,ox=Math.sin(seed*2.3+i*2.1)*.2*(.3+u),oz=Math.cos(seed*1.7+i*1.3)*.2*(.3+u);out.push([puff(r,x+ox,gy+.35+u*(h-.8),z+oz,[1,.92,1]),i===n-1?'#e9dcf7':cols[(i+Math.abs(seed|0))%4]]);}
