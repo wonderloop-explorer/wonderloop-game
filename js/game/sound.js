@@ -146,11 +146,13 @@ function voice(v){let id=v.id,e=null;if(!id&&!SHOT&&VB.dir){e=vbFind(v.who,v.tex
 /* 배경음 (구역마다 하나) */
 let want=null,B=null,nullT=0; // want: 틀어야 할 배경음 {id,gain,fade,cue}, B: 지금 울리는 것 {id,g,src|h}
 function bedCue(w){return cue({kind:'music',id:w.id,file:SRC[w.id]||null,dur:0,loop:true,...(!BUF[w.id]&&SYN[w.id]?{synth:true}:{})});}
-function fadeOut(sec){if(!B)return;const b=B;B=null;const c=ctx,now=c.currentTime;b.g.gain.cancelScheduledValues(now);b.g.gain.setValueAtTime(b.g.gain.value,now);b.g.gain.linearRampToValueAtTime(0,now+sec);
+const POS={}; /* 곡마다 멈춘 자리(초) — bed(id,{resume:true})가 그 자리부터 이어 튼다(2026-11-22: 놀이 곡이 끝나면 금성 배경음이 처음부터 다시 나왔다) */
+function bedPos(b,now){if(!b||!b.src)return null;let p=(b.off||0)+(now-b.t0);if(b.loop){const [la,lb]=b.loop;if(p>lb)p=la+((p-lb)%(lb-la));}else if(b.dur&&p>b.dur)return null;return p;}
+function fadeOut(sec){if(!B)return;const b=B;B=null;const c=ctx,now=c.currentTime;{const p=bedPos(b,now);if(p!=null)POS[b.id]=p;}b.g.gain.cancelScheduledValues(now);b.g.gain.setValueAtTime(b.g.gain.value,now);b.g.gain.linearRampToValueAtTime(0,now+sec);
   setTimeout(()=>{try{if(b.src)b.src.stop();if(b.h)b.h.stop();b.g.disconnect();}catch(e){}},sec*1000+100);}
 function bed(id,o={}){if((want&&want.id)===(id||undefined))return;
   if(want)want.cue.dur=+(clock.t-want.cue.t).toFixed(3);
-  want=id?{id,gain:o.gain??1,fade:o.fade??1.5,loop:o.loop||null,intro:!!o.intro,once:!!o.once,out:o.out}:null;outSec=o.out??1.2; /* once: 되풀이하지 않고 한 번만(해돋이 음악) · out: 앞 곡이 줄어드는 시간(초) */if(want){want.cue=bedCue(want);if(SRC[id]&&!BUF[id])load(id);}
+  want=id?{id,gain:o.gain??1,fade:o.fade??1.5,loop:o.loop||null,intro:!!o.intro,once:!!o.once,out:o.out,resume:!!o.resume}:null;outSec=o.out??1.2; /* once: 되풀이하지 않고 한 번만(해돋이 음악) · out: 앞 곡이 줄어드는 시간(초) */if(want){want.cue=bedCue(want);if(SRC[id]&&!BUF[id])load(id);}
   nullT=0;} // 바로 끄지 않는다 — 같은 곡을 곧 다시 틀면(처음부터 다시 하기로 구역을 다시 만들 때) 끊김 없이 이어지게(2026-11-03). 끄는 건 tickBed가
 let outSec=1.2;
 const DK={st:'up',t0:0,from:1,last:0}; // 배경음 줄이기 상태: up 원래 크기 · down 줄어듦(줄어드는 중) · rise 되돌아오는 중
@@ -171,17 +173,17 @@ function tickBed(dt){
   if(!want)nullT+=dt;
   if(B&&((!want&&nullT>.8)||(want&&B.id!==want.id)))fadeOut(outSec); // 곡이 없어진 뒤 0.8초 기다렸다가(구역을 다시 만드는 사이)
   if(want&&!B){const b=BUF[want.id],y=SYN[want.id];if(!b&&!(y&&y.bed))return;
-    const g=c.createGain(),now=c.currentTime;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(want.gain,now+want.fade);g.connect(musicBus);B={id:want.id,g,t0:now,dur:b?b.duration:0};
+    const g=c.createGain(),now=c.currentTime;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(want.gain,now+want.fade);g.connect(musicBus);B={id:want.id,g,t0:now,dur:b?b.duration:0,off:0,loop:want.loop};
     if(b){const s=c.createBufferSource();s.buffer=b;s.loop=!want.once;
       /* 구간 루프(2026-11-12 — 화성 배경음): loop [a,b]초만 되풀이, intro면 처음(0초)부터 한 번 틀고 그 구간으로. 이음매가 튀지 않게 b 바로 앞 60ms를 a 바로 앞 소리와 섞어 둔다(버퍼에 한 번) */
       if(want.loop){const [la,lb,xf=.06]=want.loop;if(!b._xf){b._xf=1;const F=Math.floor(xf*b.sampleRate),ia=Math.floor(la*b.sampleRate),ib=Math.floor(lb*b.sampleRate);if(ia>F&&ib<=b.length)for(let ch=0;ch<b.numberOfChannels;ch++){const d=b.getChannelData(ch);for(let i=0;i<F;i++){const t=i/F;d[ib-F+i]=d[ib-F+i]*(1-t)+d[ia-F+i]*t;}}}
-        s.loopStart=la;s.loopEnd=lb;s.connect(g);s.start(0,want.intro?0:la);}
+        s.loopStart=la;s.loopEnd=lb;s.connect(g);const rs=want.resume&&POS[want.id]!=null?Math.min(POS[want.id],lb-.05):null;B.off=rs!=null?rs:want.intro?0:la;s.start(0,B.off);}
       else{s.connect(g);s.start();}B.src=s;}else B.h=y.bed(c,g);}
   if(B&&B.h&&B.h.tick)B.h.tick(dt);}
 function songs(map){synth(asBeds(map));}
 const bedHandle=()=>B&&B.h||null;
 /* 지금 배경음이 시작된 뒤 흐른 시간(소리 시계, 초) — 연출을 곡 자리에 맞출 때(금성 해돋이). 아직 안 틀렸으면 null */
-const bedTime=id=>B&&B.src&&(!id||B.id===id)&&ctx?{id:B.id,t:ctx.currentTime-B.t0,dur:B.dur}:null;
+const bedTime=id=>B&&B.src&&(!id||B.id===id)&&ctx?{id:B.id,t:ctx.currentTime-B.t0,dur:B.dur,pos:bedPos(B,ctx.currentTime)}:null; /* t = 이번에 틀기 시작한 뒤 흐른 초 · pos = 곡 안의 자리(이어 틀었으면 그 자리부터) */
 /* 구역 배경음: 구역 정보 music → bed. 파일 이름만 적으면 assets/audio/<이름>.mp3 */
 function zoneMusic(m){if(!m){bed(null);return;}let o=typeof m==='string'?{id:m}:m;if(o.lufs!=null&&o.gain==null)o={...o,gain:lufsGain(o.lufs)}; /* lufs: 그 곡(되풀이 구간)을 잰 체감 크기 → MIX.target에 맞춤 */const id=o.id.replace(/\.[a-z0-9]+$/i,'');
   if(!SRC[id]&&!(SYN[id]&&SYN[id].bed))SRC[id]=o.file||('assets/audio/'+(/\.[a-z0-9]+$/i.test(o.id)?o.id:o.id+'.mp3'));bed(id,o);}

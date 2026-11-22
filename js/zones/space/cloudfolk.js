@@ -107,7 +107,7 @@ export function boatStand(boat,lx,lz,out){const U=boat.userData,k=lx+','+lz;U.se
   out=out||new THREE.Vector3();out.set(lx,y,lz);boat.updateMatrix();return out.applyMatrix4(boat.matrix);}
 /* 입김(또생일이 촛불을 붊 — 2026-11-22: 예전 알갱이는 옅어지며 까맣게 보였다): 흰색·연분홍의 휘어지는 바람 줄기 셋 + 작은 반짝임 여섯이 입에서 촛불 쪽으로, 꺼진 뒤 가는 흰 연기 한 줄.
    한 덩어리(보일 때만 그리기 1) — 꼭짓점을 매 프레임 CPU로(약 120개). blow(입, 촛불, 시각) · smoke(촛불, 시각) · tick(시각, 카메라) */
-export function makeBreath(){const NR=4,NS=12,NSP=6,nv=NR*NS*2+NSP*4,pos=new Float32Array(nv*3),col=new Float32Array(nv*4),idx=[];
+export function makeBreath(mob){const WK=mob?1.9:1,LEN=mob?.56:.42 /* 휴대폰: 줄기 두께 1.9배·길이 1.3배(2026-11-22 — 작은 화면에서 너무 가늘었다) */,NR=4,NS=12,NSP=6,nv=NR*NS*2+NSP*4,pos=new Float32Array(nv*3),col=new Float32Array(nv*4),idx=[];
   for(let r=0;r<NR;r++)for(let i=0;i<NS-1;i++){const a=(r*NS+i)*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}
   for(let s=0;s<NSP;s++){const a=NR*NS*2+s*4;idx.push(a,a+1,a+2,a,a+2,a+3);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,4));geo.setIndex(idx);
@@ -118,15 +118,15 @@ export function makeBreath(){const NR=4,NS=12,NSP=6,nv=NR*NS*2+NSP*4,pos=new Flo
   const pt=(r,u,t,o)=>{const A=st.A,B=st.B,dx=B[0]-A[0],dz=B[2]-A[2],L=Math.hypot(dx,dz)||1,sx=-dz/L,sz=dx/L,[sd,up]=RS[r],b=Math.sin(Math.PI*u),wv=Math.sin(u*9+r*2+t*5)*.018;
     o.set(A[0]+dx*u+sx*(sd*b+wv),A[1]+(B[1]-A[1])*u+up*b,A[2]+dz*u+sz*(sd*b+wv));return o;};
   return {me,blow(A,B,t){st.A=A;st.B=B;st.t0=t;},smoke(B,t){st.sB=B;st.s0=t;},
-    tick(t,cam){const h=(t-st.t0)/.72,sm=t-st.s0,onB=st.A&&h>=0&&h<1.7,onS=st.sB&&sm>=0&&sm<1.7;me.visible=!!(onB||onS);if(!me.visible)return;
-      for(let r=0;r<3;r++)for(let i=0;i<NS;i++){const hh=h-r*.1,u=Math.min(1,Math.max(0,hh-.42+.42*i/(NS-1))),k=(r*NS+i)*2;let a=0,wd=0;
-        if(onB){pt(r,u,t,_c);pt(r,Math.min(1,u+.03),t,_t).sub(_c);_w.copy(cam.position).sub(_c);_r.crossVectors(_t,_w).normalize();const e=Math.sin(Math.PI*i/(NS-1));wd=.004+.015*e;a=(hh-.42+.42*i/(NS-1)>=0&&hh-.42+.42*i/(NS-1)<=1.02?1:0)*e*.9*(1-Math.min(1,Math.max(0,(hh-1.05)/.4)));
+    tick(t,cam){const h=(t-st.t0)/(mob?.8:.72),sm=t-st.s0,onB=st.A&&h>=0&&h<1.7,onS=st.sB&&sm>=0&&sm<1.7;me.visible=!!(onB||onS);if(!me.visible)return;
+      for(let r=0;r<3;r++)for(let i=0;i<NS;i++){const hh=h-r*.1,u=Math.min(1,Math.max(0,hh-LEN+LEN*i/(NS-1))),k=(r*NS+i)*2;let a=0,wd=0;
+        if(onB){pt(r,u,t,_c);pt(r,Math.min(1,u+.03),t,_t).sub(_c);_w.copy(cam.position).sub(_c);_r.crossVectors(_t,_w).normalize();const e=Math.sin(Math.PI*i/(NS-1));wd=(.004+.015*e)*WK;a=(hh-LEN+LEN*i/(NS-1)>=0&&hh-LEN+LEN*i/(NS-1)<=1.02?1:0)*e*.9*(1-Math.min(1,Math.max(0,(hh-1.05)/.4)));
           V(k,_c.x+_r.x*wd,_c.y+_r.y*wd,_c.z+_r.z*wd,RC[r],a);V(k+1,_c.x-_r.x*wd,_c.y-_r.y*wd,_c.z-_r.z*wd,RC[r],a);}else{V(k,0,-99,0,RC[r],0);V(k+1,0,-99,0,RC[r],0);}}
       /* 꺼진 뒤 연기 한 줄(넷째 줄기): 촛불 자리에서 위로 가늘게 살랑이며 */
       {_r.set(1,0,0).applyQuaternion(cam.quaternion);for(let i=0;i<NS;i++){const u=i/(NS-1),k=(3*NS+i)*2;if(onS){const g=Math.min(1,sm/.6),y=st.sB[1]+u*.5*g+sm*.12,ox=Math.sin(u*7+sm*3)*.035*u,wd=.008+.012*u,a=(1-u)*.75*Math.sin(Math.PI*Math.min(1,u+.08))*(1-Math.min(1,Math.max(0,(sm-.9)/.8)));
           V(k,st.sB[0]+_r.x*(ox+wd),y,st.sB[2]+_r.z*(ox+wd),RC[3],a);V(k+1,st.sB[0]+_r.x*(ox-wd),y,st.sB[2]+_r.z*(ox-wd),RC[3],a);}else{V(k,0,-99,0,RC[3],0);V(k+1,0,-99,0,RC[3],0);}}}
       /* 작은 반짝임: 줄기 머리 가까이에서 깜빡이는 마름모 */
-      {_r.set(1,0,0).applyQuaternion(cam.quaternion);_u.set(0,1,0).applyQuaternion(cam.quaternion);for(let s=0;s<NSP;s++){const k=NR*NS*2+s*4,u=h-.06-s*.11,ok=onB&&u>0&&u<1,sz=ok?.028*(.45+.55*Math.abs(Math.sin(t*17+s*2.1))):0,c=s%2?RC[1]:RC[0];
+      {_r.set(1,0,0).applyQuaternion(cam.quaternion);_u.set(0,1,0).applyQuaternion(cam.quaternion);for(let s=0;s<NSP;s++){const k=NR*NS*2+s*4,u=h-.06-s*.11,ok=onB&&u>0&&u<1,sz=ok?.028*(mob?1.5:1)*(.45+.55*Math.abs(Math.sin(t*17+s*2.1))):0,c=s%2?RC[1]:RC[0];
           if(ok){pt(s%3,u,t,_c);_c.y+=.05*Math.sin(s*3.3);}else _c.set(0,-99,0);
           V(k,_c.x+_r.x*sz,_c.y+_r.y*sz,_c.z+_r.z*sz,c,ok?1:0);V(k+1,_c.x+_u.x*sz*1.5,_c.y+_u.y*sz*1.5,_c.z+_u.z*sz*1.5,c,ok?1:0);V(k+2,_c.x-_r.x*sz,_c.y-_r.y*sz,_c.z-_r.z*sz,c,ok?1:0);V(k+3,_c.x-_u.x*sz*1.5,_c.y-_u.y*sz*1.5,_c.z-_u.z*sz*1.5,c,ok?1:0);}}
       geo.attributes.position.needsUpdate=true;geo.attributes.color.needsUpdate=true;}};}
