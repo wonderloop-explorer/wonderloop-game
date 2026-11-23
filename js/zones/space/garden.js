@@ -610,7 +610,8 @@ function light(env,dt){/* 해: 그림판 기준 왼쪽 뒤 위에서(원더룹 �
   lav.intensity=.34;}
 /* ── 놓아두기·충돌 */
 const areas={planet:{bounds:[-HALF-4,HALF+4,-HALF-4,HALF+4],obstacles,camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}};
-const platforms=[{c:[ROCK.c[0],ROCK.c[1],ROCK.r*.98],top:ROCK_TOP}];
+const platforms=[{c:[ROCK.c[0],ROCK.c[1],ROCK.r*.98],top:ROCK_TOP},
+  {c:[EXIT[0],EXIT[1],1.5],top:groundY(...EXIT)+.16}]; /* 출구 돌판 윗면(2026-11-23 — 발판이 아니어서 원더룹이 돌판 속 땅 높이에 서 발목 아래가 묻혔다) */
 /* ── 이야기 진행 */
 const F=G.state.flags,HAVE='have:'+WID+':necklace',K={demo:'space:demo',rock:'space:rock',clear:'clear:space-garden',cave:'secret:'+WID+':icecave'};
 G.profile.setup({world:WID,cards:SPACE.cards}); /* 친구 카드는 세계 설정(스테이지마다 같은 목록 — '만난 친구 n/m'이 세계 전체 수) */
