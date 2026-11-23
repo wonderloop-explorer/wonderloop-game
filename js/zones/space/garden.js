@@ -849,18 +849,14 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
     [new THREE.TorusGeometry(.345,.024,6,28),strap,[0,.5,-.01],[PI/2,0,.75],[1,1,.9]]]); // 등의 지도를 맨 끈: 몸을 한 바퀴 감는 띠(예전 반 바퀴 끈은 끝이 허공에 떠 '검은 막대'처럼 보였다)
   root.add(body);
   const head=new THREE.Group();head.position.set(0,.84,0);root.add(head);
-  const earBent=new THREE.Group();
   head.add(lump([[S(.29),fur,[0,.12,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.02,.15,.085),FRONT,.004,.03,[0,.12,0,.3045,.2755,.29]),cream],[S(.035,8,6),pink,[0,.08,.29]],
     [S(.04,8,6),dark,[-.1,.15,.25],0,[.8,1.2,.5]],...[-1,1].map(sx=>[wrapOn(headG,ellipseShape(0,0,.055,.034,4,20),radial([0,.12,0],[sx*.18,-.08,.21]),.004,0,[0,.12,0,.3045,.2755,.29]),'#f6a0ac']),
     // 오른쪽 눈(원더룹을 보는 쪽 +x) 망원경 안경: 놋쇠 테 + 짧은 통 + 렌즈
     [new THREE.TorusGeometry(.06,.014,6,16),brass,[.1,.15,.27]],[Cy(.045,.05,.12,10),brass,[.1,.15,.33],[PI/2,0,0]],[Cy(.04,.04,.01,10),'#bfe0f0',[.1,.15,.395],[PI/2,0,0]],[S(.02,6,5),dark,[.1,.15,.25]],
-    // 쫑긋한 왼귀(−x)
-    [S(.075,10,8),fur,[-.12,.55,-.02],[0,0,.12],[1,3.4,.7]],[S(.045,8,6),pink,[-.12,.55,.025],[0,0,.12],[1,3,.5]],
-    // 모자: 챙 + 몸통 + 붉은 띠
-    [Cy(.2,.2,.025,16),dark,[.04,.39,0],[0,0,-.12]],[Cy(.12,.13,.2,14),dark,[.05,.5,0],[0,0,-.12]],[Cy(.133,.137,.05,14),red,[.045,.43,0],[0,0,-.12]]]));
-  // 반쯤 접힌 오른귀(+x): 아랫마디는 서고 윗마디가 바깥으로 꺾여 내려옴
-  earBent.position.set(.14,.36,-.02);head.add(earBent);
-  earBent.add(lump([[S(.07,10,8),fur,[0,.12,0],[0,0,-.1],[1,2,.7]],[S(.065,10,8),fur,[.13,.26,0],[0,0,-1.2],[1,1.9,.65]],[S(.04,8,6),pink,[.13,.26,.03],[0,0,-1.2],[1,1.7,.5]]]));
+    // 쫑긋한 두 귀: 좌우 대칭(같은 모양·각도·크기 — 2026-11-23, 예전엔 +x 귀가 반쯤 접혀 옆으로 납작해 보였다)
+    ...[-1,1].flatMap(sx=>[[S(.075,10,8),fur,[sx*.12,.55,-.02],[0,0,-sx*.12],[1,3.4,.7]],[S(.045,8,6),pink,[sx*.12,.55,.025],[0,0,-sx*.12],[1,3,.5]]]),
+    // 모자: 챙 + 몸통 + 붉은 띠 — 머리 한가운데 똑바로(두 귀가 똑같이 가려지게)
+    [Cy(.2,.2,.025,16),dark,[0,.39,0]],[Cy(.12,.13,.2,14),dark,[0,.5,0]],[Cy(.133,.137,.05,14),red,[0,.43,0]]]));
   const arm=(s)=>{const g=new THREE.Group();g.position.set(s*.3,.6,.04);g.add(lump([[S(.07,10,8),fur,[0,-.13,0],0,[1,2.1,1]],[S(.065,10,8),cream,[0,-.27,.01]]]));root.add(g);return g;};
   const armL=arm(-1),armR=arm(1);
   const map=lump([[new THREE.BoxGeometry(.5,.32,.012),paper,[0,0,0]],[Cy(.03,.03,.34,8),paper,[-.26,0,0]],[Cy(.03,.03,.34,8),paper,[.26,0,0]],
@@ -876,7 +872,7 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
     if(wave){const P=wave,dx=P.x-root.position.x,dz=P.z-root.position.z;root.rotation.y+=Math.atan2(Math.sin(Math.atan2(dx,dz)-root.rotation.y),Math.cos(Math.atan2(dx,dz)-root.rotation.y))*Math.min(1,dt*3); // 별똥별 타고 가는 원더룹에게 두 팔 번쩍 손 흔들기
       armR.rotation.set(-2.5,0,-.25+Math.sin(t*8)*.45);armL.rotation.set(-2.5,0,.25-Math.sin(t*8+1.3)*.45);head.rotation.x=-.4;head.rotation.z=Math.sin(t*1.6)*.05;map.scale.x=.001;map.visible=false;scroll.visible=false;return;}
     const k=hop?0:ss(0,.6,mt)*ss(6.5,5.8,mt);// 동작 세기(들어갔다 나옴)
-    head.rotation.z=Math.sin(t*.9)*.04;head.position.y=.84+Math.sin(t*1.8)*.008;earBent.rotation.z=Math.sin(t*1.3)*.08;
+    head.rotation.z=Math.sin(t*.9)*.04;head.position.y=.84+Math.sin(t*1.8)*.008;
     scroll.visible=!!hop;
     if(hop){armL.rotation.set(0,0,-1.2);armR.rotation.set(-.5,0,1.0);map.scale.x=0;map.visible=false;return;}
     if(mode===0){// 지도 펼쳐 보기: 두 팔을 앞으로, 지도가 가운데서 양옆으로 펴짐, 고개를 숙여 봄
