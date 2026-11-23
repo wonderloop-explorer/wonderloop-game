@@ -193,12 +193,14 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
     const grabK=st.phase==='come'?0:ss(0,.45,T-2.4),f1=Math.sin(st.face),f2=Math.cos(st.face);
     endP.set(mid.x+f1*.6,mid.y+.1,mid.z+f2*.6).lerp(mid,grabK);
     ctrl.set(endP.x+f1*1.05,endP.y+.2+Math.sin(t*2.3)*.06,endP.z+f2*1.05);
+    /* 빛줄기가 얼굴을 가로지르지 않게(2026-11-23): 꼬리의 휘는 점을 카메라 반대쪽 옆으로 1.5m 밀어, 손에서 나간 빛줄기가 얼굴 앞이 아니라 머리 옆·뒤로 돌아 올라감(카메라가 반대쪽으로 넘어가면 천천히 따라 넘어감) */
+    {const c=G.view.camera,sx=f2,sz=-f1;let sd=st.tside||0;if(c){const d=(c.position.x-WL.position.x)*sx+(c.position.z-WL.position.z)*sz;if(Math.abs(d)>.6)sd=d>0?-1:1;}st.tsd=(st.tsd||0)+(sd-(st.tsd||0))*Math.min(1,dt*2.2);st.tside=sd;ctrl.x+=sx*st.tsd*1.5;ctrl.z+=sz*st.tsd*1.5;ctrl.y-=.3*Math.abs(st.tsd);} /* 옆으로 낮게 나갔다가 올라감 */
     st.endP=endP;st.head=head;    M.g.position.copy(head);M.setTail(head,endP,ctrl,t);SC.tick(t,st.phase==='fly',1);}
     /* 기본 각도(손을 뗀 지 1.6초 뒤 이쪽으로 — 2026-11-09 다듬기: 등 뒤 위만 보면 초록 탈만 보이고 휴대폰에선 꼬리가 탈에 붙은 풍선 같았다):
        내려와 잡을 때까지 옆 앞 → 끌려 올라간 직후 앞옆 낮게(얼굴·꼬리 잡은 손·멀어지는 달) → 마을 내려다보기(짧게) → 옆모습(목성·토성이 뒤로 스쳐 감)
        → 어깨 너머로 다가오는 화성 → 마지막 얼굴 정면(반짝 신남). 키: [비행 진행 u, 원더룹 기준 방향, 위아래, 거리] */
     {const u=st.phase==='fly'?Math.min(1,(T-st.liftT)/FLY):-1,K=o.camk||CAMK,LE=o.lookEnd||[.31,.38];let a,p,d;
-     if(u<0){a=o.camk?K[0][1]:1.15;p=.22;d=6.5;} /* 카메라 키를 따로 준 이동은 뜨기 전에도 첫 키 방향(얼음 배: 거꾸리가 보이는 쪽) */else{let i=0;while(i<K.length-2&&u>K[i+1][0])i++;const A=K[i],B=K[i+1],x=Math.min(1,Math.max(0,(u-A[0])/Math.max(1e-6,B[0]-A[0]))),w=B[4]==='in'?x*x:B[4]==='out'?1-(1-x)*(1-x):ss(A[0],B[0],u); /* 키 다섯째 값 'in'·'out': 그 구간을 점점 빠르게·점점 느리게(두 구간을 이어 멈추지 않고 한 번에 돌 때) */let dy=B[1]-A[1];dy=Math.atan2(Math.sin(dy),Math.cos(dy));a=A[1]+dy*w;p=A[2]+(B[2]-A[2])*w;d=A[3]+(B[3]-A[3])*w;}
+     if(u<0){a=o.camk?K[0][1]:1.15;p=.22;d=6.5;if(o.pre){const q=o.pre(T);p=q[0];d=q[1];}} /* o.pre(T) → [위아래, 거리]: 뜨기 전 카메라(얼음 배 — 줌인) */ /* 카메라 키를 따로 준 이동은 뜨기 전에도 첫 키 방향(얼음 배: 거꾸리가 보이는 쪽) */else{let i=0;while(i<K.length-2&&u>K[i+1][0])i++;const A=K[i],B=K[i+1],x=Math.min(1,Math.max(0,(u-A[0])/Math.max(1e-6,B[0]-A[0]))),w=B[4]==='in'?x*x:B[4]==='out'?1-(1-x)*(1-x):ss(A[0],B[0],u); /* 키 다섯째 값 'in'·'out': 그 구간을 점점 빠르게·점점 느리게(두 구간을 이어 멈추지 않고 한 번에 돌 때) */let dy=B[1]-A[1];dy=Math.atan2(Math.sin(dy),Math.cos(dy));a=A[1]+dy*w;p=A[2]+(B[2]-A[2])*w;d=A[3]+(B[3]-A[3])*w;}
      let ya=st.face+FO+a;
      /* 출발지 볼거리(o.lookAt [x,z] — 손 흔드는 친구들): 내려다보는 장면(u .08~.36) 동안 카메라가 원더룹 너머 그쪽을 보도록(친구들이 화면 가운데에 약 2초) */
      if(o.lookAt&&u>=.06&&u<LE[1]){const w=ss(.06,.13,u)*(1-ss(LE[0],LE[1],u)),yl=Math.atan2(WL.position.x-o.lookAt[0],WL.position.z-o.lookAt[1])+(o.lookOff||0);let dy=yl-ya;dy=Math.atan2(Math.sin(dy),Math.cos(dy));ya+=dy*w;}

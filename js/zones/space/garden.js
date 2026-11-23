@@ -165,13 +165,15 @@ for(let i=0;i<8;i++){const a=i/8*PI*2+PI/8;put(new THREE.OctahedronGeometry(.13,
 /* ── 얼음 동굴(비밀): 분화구 남쪽 깊은 곳 — 얼음 덩이를 둥글게 쌓은 굴, 입구는 분화구 가운데(북쪽)를 봄. 따로 한 덩어리(가리면 흐려짐) */
 const caveParts=[],caveBoxes=[];
 {const [cx,cz]=CAVE,y=groundY(cx,cz);for(let i=0;i<10;i++){const a=PI*.75+i/9*PI*1.5,x=cx+Math.cos(a)*1.5,z=cz+Math.sin(a)*1.5;
-    put(lumpy(.46,1),iceCols[i%3],{pos:[x,y+.45,z],rot:[rnd(0,PI),rnd(0,PI),0],s:[1,1.7,1]},caveParts);obstacles.push({c:[x,z,.32]});caveBoxes.push(new THREE.Box3(new THREE.Vector3(x-.5,y-.1,z-.5),new THREE.Vector3(x+.5,y+1.25,z+.5)));}
-  for(let i=0;i<6;i++){const a=PI*.78+i/5*PI*1.44,x=cx+Math.cos(a)*.95,z=cz+Math.sin(a)*.95;put(lumpy(.42,1),iceCols[(i+1)%3],{pos:[x,y+1.45,z],rot:[rnd(0,PI),0,rnd(0,PI)],s:[1.2,.7,1.2]},caveParts);
+    put(lumpy(.46,1),iceCols[i%3],{pos:[x,y+.45,z],rot:[rnd(0,PI),rnd(0,PI),0],s:[1,1.7,1]},caveParts).attributes.wlPiece.array.fill(i+1);obstacles.push({c:[x,z,.32]});caveBoxes.push(new THREE.Box3(new THREE.Vector3(x-.5,y-.1,z-.5),new THREE.Vector3(x+.5,y+1.25,z+.5)));}
+  for(let i=0;i<6;i++){const a=PI*.78+i/5*PI*1.44,x=cx+Math.cos(a)*.95,z=cz+Math.sin(a)*.95;put(lumpy(.42,1),iceCols[(i+1)%3],{pos:[x,y+1.45,z],rot:[rnd(0,PI),0,rnd(0,PI)],s:[1.2,.7,1.2]},caveParts).attributes.wlPiece.array.fill(11+i);
     caveBoxes.push(new THREE.Box3(new THREE.Vector3(x-.55,y+1.15,z-.55),new THREE.Vector3(x+.55,y+1.75,z+.55)));}
   put(new THREE.CircleGeometry(1.25,12),'#5a6f98',{pos:[cx,y+.025,cz],rot:[-PI/2,0,0]});crystals(cx-.5,cz-.6,5,.8,iceCols);crystals(cx+.6,cz-.4,4,.7,iceCols);halos.push({x:cx,z:cz,y:y+.6,c:'#a9d8ff',s:1.6});}
 function occMesh(list,boxes,name,strict=false){const m=sbMat('#ffffff');m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(list),m);me.name=name;me.castShadow=me.receiveShadow=true;root.add(me);keep.push(me);
   G.occlude.add(me,1.5,2.5,{near:true,speed:6,boxes,strict});return me;}
-occMesh(caveParts,caveBoxes,'icecave');
+/* 얼음 동굴(2026-11-23 — 예전: 한 덩어리로 가림에 등록해 원더룹이 들어가면 동굴이 통째로 흐려져 사라졌다): 벽 덩이 열·천장 덩이 여섯에 조각 번호를 붙여(wlPiece 1~16)
+   카메라 → 원더룹 시선에 걸린 조각만 점무늬로 흐림(game/occlude pieces always — 나머지 벽·천장은 그대로). 카메라는 update의 caveCam이 입구 쪽에서 낮게 */
+{const m=sbMat('#ffffff');m.vertexColors=true;const me=new THREE.Mesh(mergeGeometries(caveParts),m);me.name='icecave';me.castShadow=me.receiveShadow=true;root.add(me);keep.push(me);const bx={};caveBoxes.forEach((b,i)=>{bx[i+1]=b;});G.occlude.pieces({meshes:[me],boxes:bx,always:true});}
 /* ── 높은 바위(분화구 끝 — 둥실 뛰기로만): 위가 평평한 큰 바위 + 꼭대기 판. 따로 한 덩어리(가리면 흐려짐) */
 const ROCK_TOP=groundY(...ROCK.c)+1.85; // 둥실 뛰기(꼭대기 약 2.7m)로 넉넉히, 보통 점프(0.8m)로는 못 오름
 {const rp=[],[x,z]=ROCK.c,y=groundY(x,z);put(new THREE.CylinderGeometry(ROCK.r*.95,ROCK.r*1.18,ROCK_TOP-y+.4,7,2),'#a5a0a8',{pos:[x,(ROCK_TOP+y-.4)/2,z],rot:[0,.3,0]},rp);
@@ -329,7 +331,7 @@ function tickSparks(t,P,cam){const cF=col('#cfe8ff'),cH=col('#ffd9a0'),cC=col('#
   else if(s.kind===3||s.kind===4){y=s.y0;k=s.kind===4?.5+.08*Math.sin(t*3+s.ph):.42+.2*Math.sin(t*1.3*s.sp+s.ph*6);c=s.c;}
   else if(s.kind===5){const bx=P?P.x:0,bz=P?P.z:0;x=bx+(((s.x+Math.sin(t*.13*s.sp+s.ph)*1.4-bx+9)%18+18)%18)-9;z=bz+(((s.z+Math.cos(t*.11*s.sp+s.ph)*1.4-bz+9)%18+18)%18)-9;
     y=groundY(x,z)+s.y0+Math.sin(t*.4*s.sp+s.ph)*.3;const w=Math.sin(t*1.6*s.sp+s.ph*5);k=(.22+.78*Math.max(0,w)**4)*.75*sunK;c=cD;}
-  else{y=s.y0+(s.kind===2?.4+((s.ph*3)%1.2):.12+(s.ph%.5));const w=Math.sin(t*2.3*s.sp+s.ph*6);k=Math.max(0,w)**6*(s.kind===2?1:.9);c=s.kind===2?cC:cF;}
+  else{y=s.y0+(s.kind===2?.4+((s.ph*3)%1.2):.12+(s.ph%.5));const w=Math.sin(t*2.3*s.sp+s.ph*6);const ck=s.kind===2?(st.caveK||0):0;k=Math.max(0,w)**(6-3.5*ck)*(s.kind===2?1+2.4*ck:.9);c=s.kind===2?cC:cF;} /* 동굴 안에 들어가면 안쪽 얼음이 더 자주·더 밝게 푸르게 반짝 */
   sp.pos[i*3]=x;sp.pos[i*3+1]=y;sp.pos[i*3+2]=z;sp.col[i*3]=c.r*k;sp.col[i*3+1]=c.g*k;sp.col[i*3+2]=c.b*k;}
   spGeo.attributes.position.needsUpdate=true;spGeo.attributes.color.needsUpdate=true;}
 /* ── 보름 할아버지(달토끼, 키 1.38m = 원더룹과 같음): 정점 색 덩어리 다섯(몸·머리·두 팔·펼친 지도) — 그리기 5번 */
@@ -495,13 +497,13 @@ const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(
 /* 횟수 표시(2026-11-10 두 번째): 절구 바로 위에 크게(game/float count — 화면 위 가운데 칩도 세로가 낮은 창 1280×632에서 대화창에 가려졌다). 대화창·획득 카드가 뜨면 그 위로 비켜남 */
 /* 횟수는 화면 위쪽 고정 자리(할 일 안내 바로 아래 — 화면 가림 규칙 4, 2026-11-10: 절구 위에 띄우면 가까이 잡은 카메라에서 원더룹 얼굴에 걸렸다) */
 function cntShow(n){G.ui.count(n==null?null:{label:'떡 찧기',n,max:3});}
-const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,
+const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,when:()=>!F[CAKE_KEY]&&!st.poundDone, /* 세 번 찧으면 끝 — 다시 다가가도 더 찧을 수 없음(2026-11-23: 예전엔 0부터 다시 셌다) */
   onPress:()=>{st.poundGo=true;G.goal.set(null);}, /* 2026-11-17: '찧기'를 누르는 순간 떡방아 빛기둥·길 안내를 바로 끔(찧는 동안 남아 있었다) — 그만두고 떠나면 다시 */
   onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=!F[CAKE_KEY];if(st.cntOn){st.cntK=(st.cntK||0)+1;cntShow(PEST.n);}}, /* 이미 달떡을 얻은 뒤 다시 찧을 때는 횟수 표시 없음(2026-11-17) */
   onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;
     if(st.cntOn)cntShow(n);
     if(n<3)return; /* 횟수는 절구 위 표시가 맡는다(단추 글자는 '찧기' 그대로) */
-    mortarIt.label='찧기';PEST.n=0;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;cntShow(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
+    mortarIt.label='찧기';PEST.n=0;st.poundDone=true;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;cntShow(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
 function tickCake(dt){if(st.cakeT==null)return;st.cakeT-=dt;if(st.cakeT>0)return;st.cakeT=null;const first=!F[CAKE_KEY]; /* 처음이면 기쁨 리액션(카메라를 봄)·획득 카드가 끝난 뒤에 할아버지 대사 — 깃발을 켠 뒤에 물어 늘 0.4초였고, 원더룹이 카메라를 본 채 대사가 나왔다(2026-11-11) */
   if(first){G.state.setFlag(CAKE_KEY,true);G.react.react('joy');const it=(SPACE.items||[]).find(i=>i.id==='dalddeok');
     G.ui.itemCard({title:'달떡을 얻었어요!',text:'낮은 중력에서 찧은 쫀득한 달떡 — 가방에 넣었어요',icon:it&&it.icon?it.icon():null,sec:4,sound:'item-get',vo:CAKE_NAR});} /* 2026-11-17 세 번째: 획득 카드가 뜨는 순간 나레이션(S1-035)이 같이 — 목소리만(글은 따로 안 띄움) */
@@ -572,7 +574,7 @@ const twinkles=(()=>{const n=MOB?10:18,pos=new Float32Array(n*3),pr=new Float32A
     fragmentShader:'uniform sampler2D uMap;varying float vK;void main(){vec4 c=texture2D(uMap,gl_PointCoord);if(c.a<.01)discard;gl_FragColor=vec4(c.rgb*c.a*vK,1.);}'});
   m.userData.noBend=true;const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.renderOrder=-3;pts.userData.noMerge=true;anchor.add(pts);return pts;})();
 /* 그림판 자리(화면 좌표 ndc, 크기 = 화면 짧은 쪽 비율) — 세로 화면은 좁아서 가운데로 모음 */
-const LAYOUT={sunG:[sunG,-.76,.8,.62,-.5,.86,.86],sun:[sunM,-.76,.8,.3,-.5,.86,.42],sat:[sat.g,-.12,.8,.2,.05,.9,.3],jup:[jup.g,.98,.5,1.05,1.05,.66,.78],neb:[neb,-.35,.62,1.3,-.2,.66,1.4],milky:[milkyB,.05,.7,1.0,0,.72,1.0]};
+const LAYOUT={sunG:[sunG,-.76,.8,.62,-.5,.86,.86],sun:[sunM,-.76,.8,.3,-.5,.86,.42],sat:[sat.g,.3,.56,.13,.26,.34,.2], /* 토성은 해(왼쪽 위)에서 멀리 떨어진 오른쪽 가운데에 작게(2026-11-23 — 해 바로 옆에 붙어 있었다: 토성은 해에서 아주 멀다) */jup:[jup.g,.98,.5,1.05,1.05,.66,.78],neb:[neb,-.35,.62,1.3,-.2,.66,1.4],milky:[milkyB,.05,.7,1.0,0,.72,1.0]};
 const sunView=new THREE.Vector3(),_od=new THREE.Vector3(); // 해 방향(세계, 카메라에서) — 먼지 역광
 function tickAnchor(dt,cam){if(!cam)return;anchor.position.copy(cam.position);if(!aqOn){aq.copy(cam.quaternion);aqOn=true;}else aq.slerp(cam.quaternion,1-Math.exp(-dt*1.4));anchor.quaternion.copy(aq);
   const tv=Math.tan(cam.fov*PI/360),th=tv*cam.aspect,u=Math.min(tv,th),port=cam.aspect<1;
@@ -583,7 +585,7 @@ function tickAnchor(dt,cam){if(!cam)return;anchor.position.copy(cam.position);if
   sat.U.uRn.value.set(.16,.88,.45).normalize().applyQuaternion(aq);
   /* 별똥별 비행(FLY.k 0~1): 토성·목성이 커지며 옆으로 스쳐 지나가고(앞으로 갈 곳 미리 보기), 끝에 붉은 화성이 가운데 위에서 점점 커짐 */
   if(FLY.k>0){const k=FLY.k,e1=ss(.28,.82,k),e2=ss(.16,.7,k),put=(m,x,y,f)=>{m.position.set(x*th*D,y*tv*D,-D);m.scale.multiplyScalar(f);};
-    {const Ls=LAYOUT.sat,x=port?Ls[4]:Ls[1],y=port?Ls[5]:Ls[2];put(sat.g,x+((port?-1.6:-1.5)-x)*e1,y+(.05-y)*e1,1+2.4*e1);}
+    {const Ls=LAYOUT.sat,x=port?Ls[4]:Ls[1],y=port?Ls[5]:Ls[2];put(sat.g,x-.22*e1,y+.05*e1,1+.3*e1);} /* 별똥별을 타고 가는 동안에도 멀리 작게(2026-11-23 — 예전: 원더룹 바로 옆을 크게 스쳐 지나감. 달과 화성 사이에는 토성이 없다) */
     {const Lj=LAYOUT.jup,x=port?Lj[4]:Lj[1],y=port?Lj[5]:Lj[2];put(jup.g,x+((port?1.9:2.1)-x)*e2,y+(-.5-y)*e2,1+.6*e2);}
     const em=ss(.55,1,k);mars.g.visible=k>.52;if(mars.g.visible){mars.g.position.set(0,(.5-.38*em)*tv*D,-D*.95);mars.g.scale.setScalar(2*u*D*(.035+.62*em*em+1.1*ss(.9,1,k))*.46);}}
   else mars.g.visible=false;
@@ -656,6 +658,7 @@ async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopW
     await say('보름 할아버지','어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.',4.4);
     await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2);
     await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라가 보렴.',6.4);
+    await say('보름 할아버지','그 전에 꼭 알아 둘 게 있단다. 여기선 걷고 뛰는 게 지구랑 조금 다르거든.',6.8); /* SPC-S1-037(2026-11-23 — 해 볼 것 안내에서 뛰는 법으로 넘어가는 말) */
     await say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.4);
     cam(false);await hopDemo();faceEach(W);
     await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);
@@ -672,6 +675,11 @@ const W0=P=>P; // 손 흔들기: 원더룹 자리(할아버지·토끼가 바라
 function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,cam);if(!WL)return;const U=WL.userData,P=WL.position;
   if(!st.culled){st.culled=true;root.traverse(o=>{o.frustumCulled=false;});U.wrapShift=wrapShift;}
   if(st.cntOn&&dist(P.x,P.z,MORTAR)>4.5){st.cntOn=false;cntShow(null);}
+  /* 얼음 동굴 안: 카메라가 입구 쪽(동굴이 열린 +z 쪽)으로 낮게 다가가 안에 선 원더룹을 비춤 — 나가거나 카메라를 만지면 풀림(그 방문에서는 다시 안 잡음) */
+  {const dC=dist(P.x,P.z,CAVE),inC=dC<1.25;st.caveK=(st.caveK||0)+((inC?1:0)-(st.caveK||0))*Math.min(1,dt*2.5);
+    if(inC&&!st.caveCam&&!st.caveOff&&!st.scene&&!ride){const fn=()=>{const c=G.view.camera,k=c.aspect<1?Math.min(2,1.25/c.aspect):1,cx=P.x+wd(CAVE[0]-P.x),cz=P.z+wd(CAVE[1]-P.z),D=5.4+3.2*(k-1);const A=bentPos({x:P.x*.7+cx*.3,y:P.y+(k>1?.95:.85),z:P.z*.7+cz*.3}),B=bentPos({x:cx+.5,y:groundY(cx,cz)+1.05+.5*(k-1),z:cz+D});return {at:[A.x,A.y,A.z],from:[B.x,B.y,B.z]};};st.caveCam=fn;G.view.hold(fn);}
+    else if(st.caveCam){const held=G.view.req&&G.view.req.fn===st.caveCam;if(!held){st.caveCam=null;st.caveOff=true;}else if(dC>2.3){G.view.hold(null);st.caveCam=null;}}
+    if(dC>3.2)st.caveOff=false;}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown()){ /* 2026-11-17 세 번째: 그늘 안내 문구가 떠 있으면 지우고 카드 먼저(겹쳐 떴다) — 다 못 읽었으면(2.6초 안) 카드가 닫힌 뒤 다시 */
     if(st.coldT!=null&&G.clock.t-st.coldT<4.4){G.ui.toast(COLD_MSG,0);if(G.clock.t-st.coldT<2.6)st.cold=false;}st.coldT=null;st.caveT=G.clock.t;caveSecret();} // 얼음 동굴(2026-11-17부터 꼭 지나가는 단계 — 출구는 이 카드를 본 뒤에)
   bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);tickTry(dt,t,P);
@@ -735,7 +743,9 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
       onEnd:async()=>{G.travel.note('phase','map');RIDE.pending={from:'space-garden',scarf:true};const mp=await G.travel.mapFor(SPACE,'space-garden','space-mars',F);
         G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil();await veil.cover(.75);G.travel.mark('veil');
         try{if(window.wlZone)await window.wlZone.go('space-mars');}catch(e){console.error(e);}mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}});};
-  if(first){G.react.react('hop');Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]).then(()=>setTimeout(go,250));}
+  if(first){ /* 2026-11-23: 출구에 닿으면 먼저 카메라 쪽으로 돌아서고(뒷모습으로 완료 창이 떴다) → 폴짝 + 완료 창 → 이동 */
+    const c=G.view.camera.position,P=W.position,ry=Math.atan2(c.x-P.x,c.z-P.z),t0=G.clock.t;U.action='서기';U.at=0;
+    G.core.until(()=>{const d=ry-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.22;return G.clock.t-t0>.5;},1.2).then(()=>{W.rotation.y=ry;G.react.react('hop',{face:'기쁨'});return Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]);}).then(()=>{if(U.setExpr)U.setExpr('기본');setTimeout(go,250);});}
   else go();}
 const ICON_MAP=()=>SPACE.icons.map();
 // 얼음 동굴 카드(꼭 지나가는 단계 — 카드 모양은 그대로 '숨겨진 비밀')

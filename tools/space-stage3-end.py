@@ -41,6 +41,7 @@ def helpers(pg):
 def end(pg):
     st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); R = {}
     walk(S['end'][0] + 1.5, S['end'][1], 60, .6); until('wlZone.cur.state().T.end', 20)
+    R['들어올 때 배경음'] = pg.evaluate("(()=>{const b=wlGame.sound.bedTime&&wlGame.sound.bedTime();return b?[b.id,+b.pos.toFixed(1)]:null})()")
     if '--ship' in A:  # 비행선 확대만: 구름 끝에 닿은 뒤 0.8초마다 여덟 장
         for i in range(8): pg.wait_for_timeout(800); shot('41-ship-%d' % i)
         return
@@ -51,6 +52,12 @@ def end(pg):
     while time.time() - t0 < 60:
         if pg.evaluate('!!(wlZone.cur&&wlZone.cur.spots&&wlZone.cur.spots.dock)'): break
         el = time.time() - t0
+        try:
+            m = pg.evaluate("(()=>{const d=wlGame.sound.duckState&&wlGame.sound.duckState(),b=wlGame.sound.bedTime&&wlGame.sound.bedTime();return [d?d.bed:null,b?b.id:null,b?+b.pos.toFixed(1):null]})()")
+            if m[0] is not None and m[0] < .5 and 'bedHalf' not in R: R['배경음(해돋이 음악)이 절반으로 줄어든 때(배 출발 뒤 초)'] = round(el, 2); R['그때 곡·자리'] = m[1:]
+            if m[0] is not None and m[0] < .03 and 'bedOff' not in R: R['bedOff'] = 1; R['배경음이 다 꺼진 때(배 출발 뒤 초)'] = round(el, 2)
+            if m[0] is not None and m[0] < .5: R['bedHalf'] = 1
+        except Exception: pass
         if sh and el >= sh[0][0]: shot(sh.pop(0)[1])
         try: bk = pg.evaluate("(()=>{const W=wlGame.mission.hero(),c=wlGame.view.camera;if(!W||!c||!wlZone.cur.state().sailing)return null;const a=Math.atan2(c.position.x-W.position.x,c.position.z-W.position.z);let d=a-W.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));return Math.abs(d)>2.0})()")
         except Exception: bk = None
@@ -124,9 +131,25 @@ def mapmv(pg):
     st, shot, until, walk = helpers(pg)
     pg.evaluate("(async()=>{const SP=(await import('/js/worlds/infinite-space.js')).default;window.__mp=await wlGame.travel.mapFor(SP,'space-mars','space-venus',wlGame.state.flags);})()")
     pg.wait_for_timeout(1500); shot('60-map-mars-venus-a'); pg.wait_for_timeout(1500); shot('60-map-mars-venus')
+def ddo(pg):
+    """또생일 부탁 대화 구도(거꾸리가 또생일 쪽을 보는지) · 대화 동안 우산이 가만히 있는지"""
+    st, shot, until, walk = helpers(pg); S = pg.evaluate('wlZone.cur.spots'); d = S['ddo0']
+    pg.evaluate("([x,z])=>{const W=wlGame.mission.hero();W.position.set(x,0,z);}", [d[0] - 5.5, d[1] + 3.2]); pg.wait_for_timeout(1500); walk(d[0] - 1.8, d[1] + 1.2, 12, .5)
+    txt = "((document.getElementById('wlDlg')||{}).innerText||'')"; seen = set(); t0 = time.time(); umb = []
+    while time.time() - t0 < 60 and not st()['T'].get('ask'):
+        v = pg.evaluate(txt)
+        try:
+            u = pg.evaluate("(()=>{let o=null,r=wlGame.mission.hero();while(r.parent)r=r.parent;r.traverse(x=>{if(x.name==='venus-umbrella')o=x;});return o?[+o.position.x.toFixed(2),+o.position.y.toFixed(2),+o.position.z.toFixed(2)]:null})()")
+            if u: umb.append(u + [1 if '또생일' in v else 0])
+        except Exception: pass
+        for k, n in (('내 생일이야', '05a-ddo-talk1'), ('초가 날아갔어', '05b-ddo-talk2'), ('파티장에서', '05c-ddo-talk3')):
+            if k in v and k not in seen: seen.add(k); pg.wait_for_timeout(1100); shot(n)
+        pg.wait_for_timeout(120)
+    talk = [u[:3] for u in umb if u and u[3]]; print('대화 동안 우산 자리(처음·끝·움직인 거리)', talk[:1], talk[-1:], round(max([((a[0]-talk[0][0])**2+(a[2]-talk[0][2])**2)**.5 for a in talk] or [0]), 2))
 with sync_playwright() as p:
-    if '--fail' in A: run(p, ALL[:2], fail)
-    elif '--map' in A: run(p, ALL, mapmv)
+    if '--ddo' in A: run(p, ALL[:1], ddo)
+    elif '--fail' in A: run(p, ALL[:2], fail)
+    elif '--map' in A: run(p, ALL + ['secret:infinite-space:marssound', 'secret:infinite-space:bluesunset'], mapmv)
     elif '--sunrise' in A: run(p, ALL[:9], sunrise)
     elif '--dial' in A: run(p, ALL[:9], dial)
     elif '--sheep' in A: run(p, ALL[:8], sheep)

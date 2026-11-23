@@ -47,7 +47,8 @@ function say(who,text,sec,id,o){return new Promise(r=>sayQ.push({who,text,sec,id
 function tickSay(){
   if(saying&&clock.t>=saying.end&&!(saying.h&&saying.h.live())&&!(saying.until&&!saying.until())){hideDialog();const r=saying.r;saying=null;r(true);} /* 목소리가 아직 나오는 중이면 기다림(2026-11-15) */
   if(!saying&&!talk&&sayQ.length&&!blocking()&&!voiceHold()){const s=sayQ.shift(); /* 카드 나레이션이 끝난 뒤(+0.35초)에 다음 장면 대사 — 2026-11-15 */showDialog(s.who,s.text,s.more||'',s.pin);sfx('talk-next');const h=voice({id:s.id,text:s.text,who:s.who,kind:'dialogue'});
-    s.end=clock.t+Math.max(s.sec||0,h.dur+(h.id?MIX.voiceTail:0));s.h=h;s.t0=clock.t;saying=s;}}
+    {const vd=h.id&&h.dur>0?h.dur:0,want=Math.max(s.sec||0,h.dur+(h.id?MIX.voiceTail:0));s.end=clock.t+(vd?Math.min(want,vd+MIX.lineGap):want); /* 목소리가 있으면 끝난 뒤 쉬는 시간은 1초까지(목소리가 없으면 적어 둔 시간 그대로) */
+      if(window.__sayLog)window.__sayLog.push([s.who,String(s.text).slice(0,22),s.sec||0,+vd.toFixed(2),+(s.end-clock.t).toFixed(2)]);}s.h=h;s.t0=clock.t;saying=s;}}
 /* 말풍선 (안내 표시) — 개미굴 편 bubbleSprite 그대로: 크림색(#fffaf2) 둥근 네모 + 왼쪽 아래 뾰족한 꼬리, 진한 점 세 개(#3e2834).
    아직 한 번도 말을 걸지 않은 인물 가운데 가장 가까운 하나(7m 안)의 머리 바로 위에만 — 'E 말 걸기'가 떠도 계속 보이고, 말을 건 뒤에는 그 인물 위에 다시 뜨지 않는다(2026-11-02).
    위아래로 살짝 흔들림(움직임 줄이기면 멈춤). 깊이를 봐서 잎 뒤로 숨은 인물의 말풍선은 같이 가려진다. 가까이 가면 조금 작게(원더룹 얼굴·화면 위 안내 문구와 겹치지 않게).

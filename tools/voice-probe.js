@@ -12,7 +12,7 @@
   const tick=()=>{requestAnimationFrame(tick);const G=window.wlGame;if(!G||!G.sound||!G.sound.voiceLog)return;S.frames++;
     try{const L=G.sound.voiceLog();S.maxAtOnce=Math.max(S.maxAtOnce,L.max);S.has=L.has;S.lines=L.lines;S.temp=L.temp;
       for(const e of L.log){const k=S.reloads+':'+e.t+':'+e.g+':'+e.ev+':'+e.text;if(S.seen[k])continue;S.seen[k]=1;
-        if(e.ev==='play')S.plays.push([e.id,e.dur,e.n]);else if(e.ev==='nofile')S.nofile[e.id]=(S.nofile[e.id]||0)+1;else if(e.ev==='unlisted')S.unlisted[e.text]=(S.unlisted[e.text]||0)+1;
+        if(e.ev==='play')S.plays.push([e.id,e.dur,e.n,e.g,S.reloads]); /* e.g = 시작한 게임 시계(초) — 목소리 사이 쉬는 시간 재기 */else if(e.ev==='nofile')S.nofile[e.id]=(S.nofile[e.id]||0)+1;else if(e.ev==='unlisted')S.unlisted[e.text]=(S.unlisted[e.text]||0)+1;
         else if(e.ev==='skip')S.skip.push(e.id||e.text);else if(e.ev==='late')S.late.push(e.id);else if(e.ev==='asleep')S.asleep.push(e.id);else if(e.ev==='cut')S.cut.push(e.id);else if(e.ev==='userclose')S.userclose.push(e.id);else if(e.ev==='replaced')S.replaced.push([e.id,e.text]);else if(e.ev==='stop')S.stops.push([e.id,e.dur]);else if(e.ev==='queue')S.queued.push(e.id);}
       /* 도착 안내(TR-003·004): 목소리가 나오는 동안 안내 문구가 떠 있는지 · 배경음 묶음(줄이기)·스테이지 배경음 크기(이동 테마 뒤 되돌아오는 중) */
       {const N2=G.sound.voiceNow(),t2=document.getElementById('wlToast'),on2=!!t2&&t2.classList.contains('on'),D2=G.sound.duckState(),tr=/SPC-TR-00[34]/.test(N2.id||'');
@@ -31,7 +31,8 @@
     }catch(e){S.err=String(e);}
     if(performance.now()-saved>1000){saved=performance.now();save();}};
   requestAnimationFrame(tick);addEventListener('pagehide',save);
+  window.__sayLog={push(x){(S.say=S.say||[]).push(x);}}; /* 장면 대사 한 줄마다 [말하는 사람, 글 앞부분, 적어 둔 최소 시간, 목소리 길이, 실제 떠 있는 시간] — game/dialog가 넣음(대사 뒤 쉬는 시간 재기, 2026-11-23) */
   window.__voice={report(){save();const ids=S.plays.map(p=>p[0]),dup={};ids.forEach(i=>dup[i]=(dup[i]||0)+1);
     return {색인:{줄:S.lines,'파일 있는 줄':S.has,임시:S.temp},'튼 목소리(번)':S.plays.length,'튼 줄(서로 다른)':Object.keys(dup).length,'동시에 나온 목소리 최대':S.maxAtOnce,'대화창이 닫힐 때 목소리가 남은 횟수':S.cutByClose,'그 줄':S.cuts,
       '파일 없는 줄(자막만)':S.nofile,'대본에 없는 글':S.unlisted,'건너뛴 작은 목소리':S.skip,'늦게 읽혀 못 튼 줄':S.late,'카드 나레이션이 끊긴 줄(저절로)':S.cut,'카드를 눌러 닫아 멈춘 줄':S.userclose,'새 목소리가 앞 목소리를 끊은 횟수':S.replaced.length,'끊긴 줄':S.replaced,'줄을 섰다 나온 작은 목소리':S.queued,'도착 안내':S.arrive,'끝나기 전에 멈춘 목소리(번호·그때까지 초)':S.stops,'글자만 안내 문구가 뜬 횟수':S.muteToast,'그때 배경음이 줄어든 횟수':S.muteDuck,'소리가 깨기 전이라 못 튼 줄':S.asleep,
-      '배경음 줄이기':S.duck,'다시 연 횟수':S.reloads,'측정 오류':S.err||null,plays:S.plays};}};})();
+      '배경음 줄이기':S.duck,'다시 연 횟수':S.reloads,'측정 오류':S.err||null,plays:S.plays,'대사 줄':S.say||[]};}};})();

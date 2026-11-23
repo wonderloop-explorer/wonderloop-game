@@ -379,7 +379,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   /* 카메라: 셋 뒤 비스듬히 위에서 서쪽(해 쪽)을 — 셋과 낮게 걸린 파란 해가 한 화면에. 노을을 보는 동안 완전히 고정(2026-11-17 — 예전엔 처음 각도만 잡아 주고 따라가기 카메라로 넘어가 위아래로 흔들렸다). 만지면 플레이어 것 */
   const c=[SUNSET.wl[0],groundY(...SUNSET.wl),SUNSET.wl[1]],SD=(()=>{const d=DUSK.sunDir,l=Math.hypot(d[0],d[2]);return [-d[0]/l,-d[2]/l];})(), /* 해 쪽 수평 방향(정서쪽에서 남쪽으로 약 9°) */
     fix=()=>{const k=pk(),pt=k>1.3,D=7.4*k*(pt?1.12:1);return {at:[c[0]+SD[0]*3,c[1]+2.4,c[2]+SD[1]*3],from:[c[0]-SD[0]*D,c[1]+1.7+.9*(k-1),c[2]-SD[1]*D]};};G.view.hold(fix); /* 2026-11-17: 카메라를 해 → 원더룹을 잇는 선 위(원더룹 뒤)에 — 해가 화면에서 원더룹 머리 바로 위에 옴(예전엔 정동쪽에서 봐서 해가 왼쪽 위로 치우치고 세로 화면에서는 화면 밖) */ /* 세로 화면은 셋이 다 들어오게 정면 뒤에서 조금 더 멀리 */ /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
-  await wait(1.6);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
+  await wait(.7);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
   await wait(.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','같이 보니까 더 파랗다!',2.4,{look:'노을'});dung.mode='idle';
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
     await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',vo:'화성의 노을은 파랗게 물들어요.',count:`발견 ${discN()}/${DISC_TOTAL}`,at:innerHeight>innerWidth?'bottom':null});} /* 세로 화면: 카드를 아래쪽에(위에 뜨면 원더룹 머리 위의 해를 가렸다 — 2026-11-17) */
@@ -407,6 +407,8 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   st.sunFace=true;{const a=[pipi.root.position.x,pipi.root.position.z],t0=G.clock.t;await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/.9),e=u*u*(3-2*u);place(pipi,pipiOb,lerp(a[0],SUNSET.pipi[0],e),lerp(a[1],SUNSET.pipi[1],e));
       const d=SUNSET.face-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.12;return u>=1;},2);}
   /* 맨 마지막에 'STAGE 2 완료!' 카드(2026-11-17) → 사진 안내 한 줄(막지 않음) */
+  /* 완료(2026-11-23 — 달·금성과 같은 규칙): 노을을 보던 원더룹이 먼저 카메라 쪽으로 돌아서고 폴짝 → 완료 창 */
+  {const c=G.view.camera.position,P=W.position,ry=Math.atan2(c.x-P.x,c.z-P.z),t0=G.clock.t;await G.core.until(()=>{const d=ry-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.22;return G.clock.t-t0>.5;},1.2);W.rotation.y=ry;G.react.react('hop',{sound:null,face:'기쁨'});}
   G.sound.sfx('mission-clear');G.state.setFlag(K.clear,true);saveAfterMars();
   await Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 구름 행성',icon:SPACE.icons.map(),sec:3.2,sound:null,who:'완료'}),wait(3.8)]);
   G.ui.toast(PHOTO_TIP,4.6);saveAfterMars();}
@@ -576,7 +578,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     else if(!st.scene&&!st.cross){if(!st.pipiWalk&&stage()!=='meet')faceTo(pipi,P.x,P.z,dt);if(!dung.root.userData.fixed&&stage()!=='meet')faceTo(dung,P.x,P.z,dt*.5);}}
   if(st.pipiWalk){const r=pipi.root.position,to=st.pipiWalk.to,dx=to[0]-r.x,dz=to[1]-r.z,d=Math.hypot(dx,dz),far=Math.hypot(P.x-r.x,P.z-r.z);
     const wd=Math.hypot(P.x-to[0],P.z-to[1]),sp=wd>d+8&&far>10?0:far>22?4.6:3.1; /* 원더룹이 한참 뒤에 있으면 기다리고, 앞서 가 있으면 조금 빨리 */if(pHold){faceTo(pipi,P.x,P.z,dt);}else if(d<.15){st.pipiWalk=null;pipi.mode='idle';}else if(sp>0){const s=Math.min(d,sp*dt);place(pipi,pipiOb,r.x+dx/d*s,r.z+dz/d*s);faceTo(pipi,to[0],to[1],dt);}else{faceTo(pipi,P.x,P.z,dt);}}
-  if(st.pipiWait){const w=st.pipiWait;w.t+=dt;if(w.t>.6){if(G.sound.voiceBusy())w.q=0;else w.q+=dt;if(w.q>=2){st.pipiWait=null;st.pipiRun=true;}}} /* 2026-11-17: 도착 나레이션이 끝나고 2초 쉰 다음 삐삐가 달려옴(목소리가 없으면 착지 약 2.6초 뒤) */
+  if(st.pipiWait){const w=st.pipiWait;w.t+=dt;if(w.t>.6){if(G.sound.voiceBusy())w.q=0;else w.q+=dt;if(w.q>=1){st.pipiWait=null;st.pipiRun=true;}}} /* 2026-11-23: 쉬는 시간 2초 → 1초 */ /* 2026-11-17: 도착 나레이션이 끝나고 2초 쉰 다음 삐삐가 달려옴(목소리가 없으면 착지 약 2.6초 뒤) */
   if(st.pipiRun&&!F[K.met]&&!st.scene){const r=pipi.root.position,d=Math.hypot(P.x-r.x,P.z-r.z);if(d>2.1){const s2=Math.min(d-2.1,RUN*dt);place(pipi,pipiOb,r.x+(P.x-r.x)/d*s2,r.z+(P.z-r.z)/d*s2);pipi.mode='walk';faceTo(pipi,P.x,P.z,dt);}else pipi.mode='idle';}
   if(arr&&!st.arrDone){return;}
   if(G.front&&G.front.frontShown&&G.front.frontShown())return;

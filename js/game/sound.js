@@ -28,7 +28,7 @@ import {asBeds} from './music.js';
    bus 배경음 묶음 크기 · travelBus 이동 테마 묶음 크기 · target 배경음·이동 테마가 묶음을 나온 뒤의 체감 크기(LUFS — 곡마다 잰 값 lufs를 적으면 lufsGain이 이 크기로 맞춤)
    duck 대사·대화창이 떠 있는 동안 배경음 배율 · duckIn 줄어드는 빠르기(시상수 초) · hold 대화가 끝나고 이만큼(초) 조용해야 되돌리기 시작(짧게 이어지는 대화 사이에는 줄어든 채로)
    back 되돌아오는 시간(초) — 처음엔 느리게 끝에서 살며시 멈추는 곡선(smoothstep) */
-const MIX={bus:.5,travelBus:.42,target:-21.5,duck:.4,duckIn:.12,hold:1.5,back:1.8,voice:1,voiceTail:.35};
+const MIX={bus:.5,travelBus:.42,target:-21.5,duck:.4,duckIn:.12,hold:1.5,back:1.8,voice:1,voiceTail:.35,lineGap:1}; /* lineGap: 목소리가 있는 장면 대사는 목소리 끝 + 최대 1초 뒤 다음 줄로(2026-11-23 — 대사마다 적어 둔 최소 시간이 목소리보다 길어 2~3초씩 비던 곳) */
 /* voice 목소리 묶음 크기(메뉴 '목소리 크기' 배율을 곱함) · voiceTail 목소리가 끝난 뒤 대화창이 머무는 시간(초).
    목소리가 나오는 동안에도 같은 duck·hold·back을 쓴다(목소리 파일 유무와 상관없이 대화창이 떠 있으면 줄어든 채 — 줄마다 줄었다 커졌다 하지 않음) */
 const lufsGain=(lufs,bus=MIX.bus)=>lufs==null?1:Math.pow(10,(MIX.target-lufs)/20)/bus;
