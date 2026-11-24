@@ -17,6 +17,7 @@ import {bentY} from '../../game/bend.js';
 import {radialTex} from '../../game/glowtex.js';
 const LOWFX=(()=>{try{const q=new URLSearchParams(location.search),t=q.get('quality');return t?t==='mobile':(!q.has('shot')&&matchMedia('(pointer:coarse)').matches);}catch(e){return false;}})();
 const PI=Math.PI;
+const NOWRAP=(()=>{try{return new URLSearchParams(location.search).has('nowrap');}catch(e){return false;}})();
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
 /* 정점 색 덩어리: [geometry(이미 자리 잡은 것), 색] 목록 → 메시 하나 */
 function lump(list,cast=true,uvK=1){const gs=list.map(([geo,c])=>{let g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);
@@ -29,14 +30,33 @@ const sph=(r,w=12,h=9)=>new THREE.SphereGeometry(r,w,h);
 function onHead(geo,R,c,el,az,roll,out=0,sc=[1,1,1]){const n=new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
   const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),n).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),roll));
   const m=new THREE.Matrix4().compose(n.clone().multiplyScalar(R+out).add(new THREE.Vector3(...c)),q,new THREE.Vector3(...sc));return geo.applyMatrix4(m);}
-/* 화성 친구 하나 */
-export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mouth='o',name='martian'}){
+/* 머리 겉면에 그림처럼 붙는 얼굴 무늬(2026-11-25 — 눈·별빛·볼·입이 머리에서 떠 보이던 것. 원인: ① 머리 공은 앞뒤 0.96·위아래 0.97로 눌렀는데 무늬는 누르기 전 반지름 R 자리에 놓여 앞쪽에서 4%(삐삐 1cm) 떠 있었고
+   ② 무늬가 겉면에 세운 납작한 타원 공(평평한 판에 가까움)이라 둥근 머리에서 가장자리가 더 뜨고 ③ 별빛은 3cm나 밖에 있었다):
+   타원 무늬의 점마다 실제 머리 타원체(반지름 RAD) 겉면으로 옮기고 eps(반지름 대비)만큼만 띄움 — 법선도 머리 겉면 법선. 같은 덩어리에 합쳐 그리기 수 그대로. (el·az·roll·크기는 예전 onHead와 같은 뜻) */
+function faceDecal(R,RAD,c,el,az,roll,a,b,eps,nr=4,na=22){const n=new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
+  const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),n).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),roll)),e1=new THREE.Vector3(1,0,0).applyQuaternion(q),e2=new THREE.Vector3(0,1,0).applyQuaternion(q);
+  const pos=[],nor=[],uv=[],idx=[],v=new THREE.Vector3(),put=(x,y)=>{v.copy(n).addScaledVector(e1,x/R).addScaledVector(e2,y/R).normalize();pos.push(c[0]+v.x*RAD[0]*(1+eps),c[1]+v.y*RAD[1]*(1+eps),c[2]+v.z*RAD[2]*(1+eps));
+    const nx=v.x/RAD[0],ny=v.y/RAD[1],nz=v.z/RAD[2],l=Math.hypot(nx,ny,nz);nor.push(nx/l,ny/l,nz/l);uv.push(.5+x/a*.5,.5+y/b*.5);};
+  put(0,0);for(let k=1;k<=nr;k++)for(let j=0;j<na;j++){const t=j/na*PI*2,r=k/nr;put(Math.cos(t)*a*r,Math.sin(t)*b*r);}
+  for(let j=0;j<na;j++)idx.push(0,1+j,1+(j+1)%na);
+  for(let k=1;k<nr;k++)for(let j=0;j<na;j++){const A=1+(k-1)*na+j,B=1+(k-1)*na+(j+1)%na,C=1+k*na+j,D=1+k*na+(j+1)%na;idx.push(A,C,D,A,D,B);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);return g;}
+/* 화성 친구 하나 — wrap:true면 얼굴을 머리 겉면에 붙임(faceDecal) + 머리 면을 더 매끈하게 */
+export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mouth='o',name='martian',wrap=false}){
   const root=new THREE.Group();root.name=name;const body=new THREE.Group();root.add(body);
   const dark='#2a2230',skinD=new THREE.Color(skin).multiplyScalar(.82).getStyle(),cheek='#f0a08e';
   const hc=[0,height-headR*.98,0],R=headR;
   const L=[];
   /* 머리: 아래가 살짝 갸름한 공(외계인 탈처럼) */
-  L.push([sph(R,16,12).applyMatrix4(M4(hc,[0,0,0],[1,.97,.96])),skin]);
+  L.push([sph(R,wrap?32:16,wrap?22:12).applyMatrix4(M4(hc,[0,0,0],[1,.97,.96])),skin]);
+  if(wrap){const RAD=[R,R*.97,R*.96],D=(el,az,roll,a,b,eps,col,nr,na)=>L.push([faceDecal(R,RAD,hc,el,az,roll,a,b,eps,nr,na),col]);
+    for(const s of [-1,1]){const el=.08,az=s*.43,roll=s*.42;
+      D(el,az,roll,R*.34,R*.155,.008,dark,5,28);
+      D(el+.06,az-s*.08,0,R*.055,R*.055,.016,'#ffffff',2,12);D(el-.05,az+s*.07,0,R*.022,R*.022,.016,'#ffffff',1,8);
+      if(lids)D(el+.085,az,roll,R*.37,R*.12,.024,skinD,4,24);
+      D(-.2,s*.6,0,R*.1,R*.06,.008,cheek,3,16);}
+    if(mouth==='o')D(-.3,0,0,R*.06,R*.085,.008,'#7a2f2a',3,16);}
+  else{
   /* 아몬드 눈: 납작한 타원 공을 겉면에 세워 바깥 끝이 올라가게(roll), 눈 안 흰 별빛 */
   for(const s of [-1,1]){const el=.08,az=s*.43,roll=s*.42;
     L.push([onHead(sph(1,14,8),R,hc,el,az,roll,-.006,[R*.34,R*.155,R*.05]),dark]);
@@ -45,7 +65,7 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
     if(lids)L.push([onHead(sph(1,14,8),R,hc,el+.085,az,roll,.004,[R*.37,R*.12,R*.06]),skinD]); /* 둥둥: 눈꺼풀이 위 절반을 덮어 느긋한 눈 */
     L.push([onHead(sph(1,8,6),R,hc,-.2,s*.6,0,0,[R*.1,R*.06,R*.03]),cheek]);}
   if(mouth==='o')L.push([onHead(sph(1,8,6),R,hc,-.3,0,0,0,[R*.06,R*.085,R*.03]),'#7a2f2a']);
-  else L.push([onHead(new THREE.TorusGeometry(1,.16,5,12,PI),R,hc,-.27,0,PI,0,[R*.13,R*.09,R*.06]),'#6a2a24']); /* 둥둥: 웃는 입(아래로 둥근 반 고리) */
+  else L.push([onHead(new THREE.TorusGeometry(1,.16,5,12,PI),R,hc,-.27,0,PI,0,[R*.13,R*.09,R*.06]),'#6a2a24']);} /* 둥둥: 웃는 입(아래로 둥근 반 고리) */
   /* 목·몸통(가늘고 마른 — 위가 조금 넓은 원통)·다리(가는 둘) */
   /* 2026-11-10 두 번째: 도톰하게 바꾼 몸보다 원래 가는 몸이 더 낫다는 사용자 확인 → 원래 모습 그대로(다시 바꾸지 않기) */
   const tTop=hc[1]-R*.82,tBot=legs;
@@ -78,7 +98,7 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
   return {root,body,arms,st,tick,height,headY:hc[1],give:[0,tTop-.02-armLen*Math.cos(1.25)+torso*.25,armLen*Math.sin(1.25)+torso*.6], /* 내민 두 손 위(몸 기준 자리) */
     set mode(v){st.mode=v;},get mode(){return st.mode;},
     dispose(){root.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}};}
-export const makePipi=()=>makeMartian({name:'pipi',skin:'#E8946A',height:.966,headR:.25,torso:.075,legs:.2,armLen:.27,mouth:'o'});
+export const makePipi=()=>makeMartian({name:'pipi',skin:'#E8946A',height:.966,headR:.25,torso:.075,legs:.2,armLen:.27,mouth:'o',wrap:!NOWRAP}); /* 2026-11-25: 삐삐부터 얼굴을 겉면에 붙임(?nowrap = 예전 모습 — 비교용) */
 export const makeDungdung=()=>makeMartian({name:'dungdung',skin:'#C2633F',height:1.79,headR:.34,torso:.1,legs:.22,armLen:.66,lids:true,mouth:'smile'});
 /* ── 먼지 회오리 ── */
 export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){

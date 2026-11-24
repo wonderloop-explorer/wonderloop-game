@@ -23,8 +23,9 @@ import * as G from '../../game/index.js';
 import {markChar} from '../../game/bend.js';
 import {sbMat} from '../../game/storybook.js';
 import {radialTex,gradTex} from '../../game/glowtex.js';
+import {popShown} from '../../game/popup.js';
 import {RIDE,lockOn,lockOff,camHome,departure,dustVeil,points} from './meteor-ride.js';
-import {lump,M4,makeCassette} from './martians.js';
+import {lump,M4} from './martians.js';
 import {makeGeokkuri,makeIceBoat,boatStand} from './cloudfolk.js';
 import {makeSkyBoard,makeOrb,canvasTex,saturnMap,jupiterMap} from './skyboard.js';
 import SPACE from '../../worlds/infinite-space.js';
@@ -32,15 +33,20 @@ const ZID='space-saturn',WID=SPACE.id;
 /* 대사 — 모두 [임시](docs/voice/script.csv SPC-RS-003~, 목소리는 나중에 한꺼번에) */
 const T={land:'저 커다란 게 바로 토성이에요. 토성은 디딜 땅이 없는 가스 행성이라, 고리의 얼음 위에 내렸어요.' /* SPC-RS-001(나레이터 — 확정·녹음 완료) */,
   g1:'[임시] 여기서 좀 쉬었다 가자! 이 고리, 엄청 넓은데 두께는 10m쯤밖에 안 된대.' /* RS-003 */,g2:'[임시] 고리 행성에선 고리 던지기지! 저 얼음 뿔에 고리를 걸어 봐.' /* RS-004 */,
-  rule:'[임시] 누른 만큼 멀리 날아가요' /* RS-005 글자만 */,g3:'[임시] 다 걸었다! 이제 진짜 쉬자.' /* RS-006 */,g4:'[임시] 이렇게 큰 토성을 아주 큰 욕조에 넣으면 둥둥 뜬대!' /* RS-007 */,
+  howPC:'E를 길게 누르면 게이지가 움직여요. 동그란 표시에 닿을 때 떼면 걸려요!',howPhone:'던지기를 길게 누르면 게이지가 움직여요. 동그란 표시에 닿을 때 떼면 걸려요!' /* 놀이 설명 창(화면 글 — 목소리 없음) */,
+  doneT:'토성 고리 쉼터 완료!',done:'다음 목적지: 목성',g3:'[임시] 다 걸었다! 이제 진짜 쉬자.' /* RS-006 */,g4:'[임시] 이렇게 큰 토성을 아주 큰 욕조에 넣으면 둥둥 뜬대!' /* RS-007 */,
   cardT:'토성은 물보다 가벼워요',card:'[임시] 토성은 태양계에서 유일하게 평균 밀도가 물보다 낮은 행성이에요. 아주 큰 욕조가 있다면 둥둥 뜰 거예요.' /* RS-008 */,
   g5:'[임시] 난 이 배 타고 금성으로 돌아갈게. 목성에서 다들 모인대! 거기서 또 만나!' /* RS-009 */};
+/* 쉬기 장면 나레이션 일곱 줄(SPC-RS-011~017 — 나레이터, [임시]) */
+const NARR=['[임시] 토성은 지구보다 아홉 배쯤 넓은 커다란 행성이에요.','[임시] 이 고리는 셀 수 없이 많은 얼음 조각이에요. 모래알만 한 것부터 산만 한 것까지 있대요.','[임시] 이렇게 큰데도 토성은 아주 빨리 돌아요. 하루가 11시간도 안 된대요.',
+  '[임시] 토성 북극에는 육각형 모양의 커다란 구름 띠가 있어요. 왜 이런 모양인지는 아직 다 밝혀지지 않았대요.','[임시] 작은 달 엔켈라두스는 얼음 분수를 뿜어요. 그 얼음이 토성의 바깥쪽 고리가 된대요.','[임시] 가장 큰 달 타이탄에는 호수와 강이 있어요. 물이 아니라 아주 차가운 메탄으로요.','[임시] 토성을 도는 달은 270개가 넘어요. 지금도 새로 찾아내고 있대요.'];
 const K={met:'rest:met',toss:'rest:toss',sat:'rest:sat',float:'secret:'+WID+':saturnfloat',clear:'clear:'+ZID};
 const HSEAT=.15,GSEAT=.14 /* 배 위에 서는 높이(금성 venus.js와 같은 값) */,DOCKB=[-3.3,0] /* 배가 닿는 자리: 섬의 토성 쪽 */,BSIDE=.42,HX=.45,GX=.55,HERO=[.4,.5],GGAT=[1.1,-1.5],BY=.42 /* 배 밑이 얼음 섬 위에 얹히는 높이 */,SR=250,SD=600,SC=[-SD,-.9,-70] /* 토성 구 가운데(고리 면 높이) */;
 /* 고리 던지기 자리: 던지는 곳 → 얼음 뿔 셋(서쪽 = 토성 쪽으로 한 줄) */
 const THROW=[2.8,-2.0],PEGS=[[0,-2.2],[-2.4,-2.6],[-4.9,-2.4]],PEGH=1.15,GTOSS=[3.9,-.1],D0=1.4,DK=8.2 /* 날아가는 거리 = D0 + DK×세기 */,FILL=1.7 /* 게이지가 끝까지 차는 초 */,RING_R=.3;
 /* 앉는 얼음 조각 */
-const SLAB=[1.0,3.7],STOP=.32,HS=[1.3,3.05],GS=[1.3,4.45],REST=40;
+const SLAB=[1.0,3.7],STOP=.32,HS=[1.3,3.05],GS=[1.3,4.45],REST=112;
+const TITAN=[-250,270,640],TITAN_R=62; /* 가장 큰 달 타이탄(주황 안개 공) — 토성 남쪽 하늘 */
 const AFTER=[[-.3,1.3],[-.3,-.5]],BYEH=[-.4,1.5],GGB=[-1.5,.9],PORT=[-2.3,.7]; /* 끝낸 뒤 다시 왔을 때 붉은 빛이 기다리는 자리(시작 자리에서 약 2.7m) */
 const ENC_D=new THREE.Vector3(-Math.cos(.17)*Math.cos(.74),Math.sin(.17),-Math.cos(.17)*Math.sin(.74)),ENC_R=30,ENC_DIST=1050,ENC_PD=new THREE.Vector3(.34,.86,-.2).normalize(); /* 엔켈라두스: 토성 오른쪽(북서) 하늘 낮게 · 분수가 뿜는 방향 */
 const STORM_VEIL={blobs:['#f2b08e','#e98a6c','#f6c9a6','#dd6f58','#f0a07e'],bg:['#eca486','#de7a62'],fade:'rgba(236,150,120,0)',tiles:[[255,226,196],[196,84,62]],dots:['255,236,214','226,110,84','246,176,140']};
@@ -50,16 +56,48 @@ const PLAY_SONG={name:'토성 고리 던지기(임시)',bpm:132,lead:'celesta',n
        [76,null,79,null,84,null,79,null],[76,null,81,84,null,81,76,null],[77,81,84,null,86,null,84,null],[83,null,79,null,84,null,null,null]],
   parts:{mel:{v:.085},pad:{v:.02},bass:{v:.1,pat:[0,null,7,null,0,null,7,null]},arp:{v:.03},wood:{p:.5,v:.03}}};
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);},lerp=(a,b,t)=>a+(b-a)*t;
+function titanMap(g,w,h){for(let y=0;y<h;y++){const v=y/h,k=.5+.5*Math.sin(v*9+Math.sin(v*23)*.6);g.fillStyle='rgb('+Math.round(228+18*k)+','+Math.round(150+28*k)+','+Math.round(66+24*k)+')';g.fillRect(0,y,w,1);}}
 function encMap(g,w,h){g.fillStyle='#eef4fb';g.fillRect(0,0,w,h);g.strokeStyle='#a9c8ea';g.lineWidth=2;g.lineCap='round';for(let i=0;i<9;i++){const x=(i*37%w),y=h*(.25+.5*((i*53%17)/17));g.globalAlpha=.5;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+w*.08,y+h*.06*(i%2?1:-1),x+w*.17,y+h*.02);g.stroke();}g.globalAlpha=1;}
 /* 놀이 화면 표시(던지기 단추 + 힘 게이지) — 모양은 말 걸기 단추(#wlAct)와 같은 자리·크기 */
-const CSS=`#wlToss{position:fixed;right:calc(env(safe-area-inset-right,0px) + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);min-width:66px;height:66px;border-radius:33px;padding:0 .9rem;border:0;background:#ffd76a;color:#3a2218;
-font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.02rem;box-shadow:0 4px 0 rgba(0,0,0,.28);cursor:pointer;z-index:36;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-#wlToss.on{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.28);background:#ffc23a}
-#wlTossBar{position:fixed;right:calc(env(safe-area-inset-right,0px) + 22px);bottom:calc(env(safe-area-inset-bottom,0px) + 208px);width:150px;height:20px;border-radius:10px;background:rgba(46,28,44,.74);box-shadow:0 0 0 2px rgba(255,244,228,.75) inset;z-index:36;overflow:hidden;pointer-events:none}
-#wlTossBar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#5cc4b9,#ffe07a);border-radius:10px}
-#wlTossBar b{position:absolute;top:2px;bottom:2px;border-radius:7px;box-shadow:0 0 0 2px #fff inset;background:rgba(255,255,255,.28)}
+const CSS=`#wlToss{position:fixed;display:none;right:calc(env(safe-area-inset-right,0px) + 24px);bottom:calc(env(safe-area-inset-bottom,0px) + 34px);width:76px;height:76px;border-radius:50%;padding:0;box-sizing:border-box;border:3px solid #ffd76a;background:rgba(46,28,44,.72);color:#fff4e4;
+font-family:"Jua","Gowun Dodum",sans-serif;font-size:1.02rem;place-items:center;cursor:pointer;z-index:36;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+@media (pointer:coarse){#wlToss{display:grid}}
+#wlToss.on{transform:translateY(2px) scale(.96);background:rgba(88,58,30,.86);box-shadow:0 0 0 4px rgba(255,215,106,.35)}
+#wlTossBar{position:fixed;left:50%;top:max(118px,19vh);transform:translateX(-50%);width:min(520px,58vw);height:40px;z-index:36;pointer-events:none;box-sizing:border-box;border-radius:22px;background:rgba(46,28,44,.86);border:3px solid #fff4e4;box-shadow:0 5px 0 rgba(0,0,0,.28),0 8px 22px rgba(0,0,0,.3)}
+@media (pointer:coarse){#wlTossBar{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 134px);width:min(330px,calc(100vw - 150px));height:36px}}
+#wlTossBar .tk{position:absolute;inset:3px;border-radius:16px;overflow:hidden}
+#wlTossBar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#5cc4b9,#ffe07a);border-radius:16px}
+#wlTossBar u{position:absolute;top:5px;bottom:5px;border-radius:12px;background:rgba(255,224,122,.22)}
+#wlTossBar b{position:absolute;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;box-sizing:border-box;border:4px solid #ffe07a;background:radial-gradient(circle,rgba(255,255,255,.5),rgba(255,224,122,.2) 62%,rgba(255,224,122,0) 70%);box-shadow:0 0 10px 2px rgba(255,224,122,.7);animation:wlTossPulse 1.1s ease-in-out infinite}
+#wlTossBar b::after{content:"✦";position:absolute;right:-9px;top:-13px;font-size:15px;color:#fff;text-shadow:0 0 6px #ffe07a;animation:wlTossTw .8s ease-in-out infinite}
+#wlTossBar em{position:absolute;top:50%;width:14px;height:30px;margin:-15px 0 0 -7px;border-radius:7px;background:#fff;box-shadow:0 0 0 2px rgba(46,28,44,.55);opacity:0}
+#wlTossBar.go em{opacity:1}
+#wlTossBar.hot{border-color:#ffe07a;box-shadow:0 5px 0 rgba(0,0,0,.28),0 0 22px 6px rgba(255,224,122,.75)}
+#wlTossBar.hot i{background:linear-gradient(90deg,#8fe6d8,#fff3b0);filter:brightness(1.15)}
+#wlTossBar.hot b{border-color:#fff;background:radial-gradient(circle,#fff,rgba(255,240,170,.75) 60%,rgba(255,224,122,0) 72%);box-shadow:0 0 18px 7px rgba(255,236,150,.95);transform:scale(1.16)}
+@keyframes wlTossPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes wlTossTw{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.15)}}
+#wlTossHow{background:rgba(20,12,22,.45);z-index:44}
+#wlTossHow .wl-pop-card{width:min(430px,92vw);border-radius:22px;background:rgba(44,30,42,.96);color:#fbe9d8;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:18px 18px 16px;gap:12px}
+#wlTossHow h3{margin:0;text-align:center;font:400 1.3rem "Jua","Gowun Dodum",sans-serif;color:#ffe07a}
+#wlTossHow .pic{position:relative;height:118px;border-radius:14px;background:rgba(255,244,228,.08);margin:12px 0 10px}
+#wlTossHow .pic .g{position:absolute;left:9%;right:9%;top:22px;height:24px;border-radius:13px;background:rgba(20,12,22,.7);border:2px solid #fff4e4;box-sizing:border-box}
+#wlTossHow .pic .g i{position:absolute;left:2px;top:2px;bottom:2px;border-radius:10px;background:linear-gradient(90deg,#5cc4b9,#ffe07a);animation:wlHowFill 2.6s ease-in-out infinite}
+#wlTossHow .pic .g b{position:absolute;left:64%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:3px solid #ffe07a;box-sizing:border-box;box-shadow:0 0 8px 2px rgba(255,224,122,.7);animation:wlHowHit 2.6s linear infinite}
+#wlTossHow .pic .k{position:absolute;left:50%;top:62px;transform:translateX(-50%);min-width:46px;height:46px;border-radius:12px;display:grid;place-items:center;padding:0 10px;box-sizing:border-box;background:#fff4e4;color:#3a2218;font:400 1.15rem "Jua",sans-serif;box-shadow:0 4px 0 #b9a48c;animation:wlHowKey 2.6s ease-in-out infinite}
+#wlTossHow .pic .k.r{border-radius:50%;width:50px;height:50px;padding:0;background:rgba(46,28,44,.9);color:#fff4e4;border:3px solid #ffd76a;font-size:.8rem;box-shadow:0 3px 0 rgba(0,0,0,.4)}
+#wlTossHow p{margin:0;text-align:center;font:400 1.02rem/1.55 "Gowun Dodum",sans-serif;word-break:keep-all}
+#wlTossHow .wl-pop-foot{align-self:center;border:0;border-radius:999px;padding:.55rem 1.6rem;background:#5cc4b9;color:#22313a;font:400 1.05rem "Jua","Gowun Dodum",sans-serif;cursor:pointer}
+@keyframes wlHowFill{0%,8%{width:0}62%,84%{width:66%}100%{width:0}}
+@keyframes wlHowHit{0%,58%{transform:scale(1);background:transparent}66%,84%{transform:scale(1.25);background:rgba(255,255,255,.75)}100%{transform:scale(1);background:transparent}}
+@keyframes wlHowKey{0%,6%{transform:translateX(-50%)}12%,62%{transform:translateX(-50%) translateY(4px);box-shadow:0 0 0 #b9a48c}70%,100%{transform:translateX(-50%)}}
 #wlRestSkip{position:fixed;right:calc(env(safe-area-inset-right,0px) + 16px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:45;border:0;border-radius:999px;padding:.5rem 1.1rem;background:rgba(46,28,44,.7);color:#fff4e4;font-family:"Jua","Gowun Dodum",sans-serif;font-size:1rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
-body.wl-nohints #wlToss,body.wl-nohints #wlTossBar{display:none}`;
+#wlRestCap{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 72px);transform:translateX(-50%);z-index:44;width:max-content;max-width:min(680px,calc(100vw - 28px));box-sizing:border-box;padding:.7rem 1.15rem;border-radius:16px;background:rgba(44,30,42,.82);color:#fbe9d8;
+font:400 clamp(1.08rem,1.55vw,1.3rem)/1.55 "Gowun Dodum",sans-serif;text-align:center;word-break:keep-all;pointer-events:none;opacity:0;transition:opacity .6s}
+#wlRestCap.on{opacity:1}
+body.wl-toss #wlJoy,body.wl-toss #wlJump,body.wl-toss #wlDash,body.wl-toss #wlAct{visibility:hidden!important;pointer-events:none!important}
+body.wl-nohints #wlToss,body.wl-nohints #wlTossBar{display:none}
+@media (prefers-reduced-motion:reduce){#wlTossBar b,#wlTossBar b::after,#wlTossHow .pic *{animation:none}}`;
 export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',keep=[],R0=rng('space-saturn:ice'),RR=(a,b)=>a+R0()*(b-a),obstacles=[],F=G.state.flags;
   G.profile.setup({world:SPACE.id,cards:SPACE.cards});G.sound.songs({'saturn-play-code':PLAY_SONG});G.travel.prepare(SPACE.travel);
   if(!document.getElementById('wlSaturnCss')){const s=document.createElement('style');s.id='wlSaturnCss';s.textContent=CSS;document.head.appendChild(s);}
@@ -139,7 +177,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   const HAS={};['saturn-play','saturn-rest'].forEach(async id=>{try{const r=await fetch('assets/audio/'+id+'.mp3?v='+(window.WL_V||''),{method:'HEAD'});HAS[id]=r.ok&&r.headers.get('content-type')!=='text/html';}catch(e){HAS[id]=false;}});
   const music=m=>{if(st.mus===m)return;st.mus=m;st.musLog=(st.musLog||[]);st.musLog.push([m,+G.clock.t.toFixed(2)]);
     if(m==='play'){if(HAS['saturn-play'])G.sound.zoneMusic({id:'saturn-play',fade:.6,out:1.2});else G.sound.bed('saturn-play-code',{fade:.6,out:1.2});}
-    else if(m==='rest'){if(HAS['saturn-rest'])G.sound.zoneMusic({id:'saturn-rest',fade:2.5,out:1.5});else G.sound.zoneMusic({id:'moon-bgm',fade:2.5,out:1.5,loop:[14.44,87.04,.12],lufs:-13.8,gain:undefined});}
+    else if(m==='rest'){if(HAS['saturn-rest'])G.sound.zoneMusic({id:'saturn-rest',fade:2.5,out:1.5,lufs:-16.1}); /* 수노 '토성 쉬기' 2분 19초(2026-11-25 넣음 — 쉬기 장면 약 2분 동안 한 번, 체감 크기 −16.1 LUFS를 MIX.target에 맞춤) */else G.sound.zoneMusic({id:'moon-bgm',fade:2.5,out:1.5,loop:[14.44,87.04,.12],lufs:-13.8,gain:undefined});}
     else G.sound.bed(null);};
   /* 이야기 장면 감싸기(금성과 같은 방식): 원더룹은 서 있고(sceneLock), who를 주면 대화 카메라 */
   let ggMode='idle';
@@ -151,7 +189,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     return G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/sec);o.position.x=lerp(a[0],to[0],u);o.position.z=lerp(a[1],to[1],u);if(u>=1){if(U){U.action='서기';U.at=0;}else ggMode='idle';}return u>=1;},sec+1);};
   const frontCam=(W,D0=6.2)=>{const P=W.position,c=G.view.camera.position;let nx=c.x-P.x,nz=c.z-P.z;const l=Math.hypot(nx,nz)||1;nx/=l;nz/=l;const k=pk(),pt=k>1.3,D=(pt?D0+.4:D0)*k;W.rotation.y=Math.atan2(nx,nz);return ()=>({at:[P.x,P.y+(pt?.6:1.0),P.z],from:[P.x+nx*D,P.y+1.5+.25*(k-1),P.z+nz*D]});};
   /* ── ① 도착: 배가 내려와 닿음 → 둘이 내림 ── */
-  const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1,FROM=[-8,8.5,4]; /* 토성 쪽 하늘에서 내려옴 */let started=false;
+  const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1,FROM=[-15,13,8],ASPIN=PI*2.5; /* 토성 쪽 하늘에서 빙글 돌며 내려옴(2026-11-25 — 예전: 화면 왼쪽에서 가운데로 미끄러져 들어오고 끝) */let started=false;
   async function land(W,U){mark('land');G.travel.mark('land');G.ui.toast(T.land,5.2,T.land);G.sound.sfx('land',{gain:.5});G.sound.sfx('event-pop',{gain:.6});
     await G.core.wait(.7);ggMode='walk';G.sound.sfx('jump',{gain:.6});{const r=gg.root.position;await hop([r.x,r.y,r.z],[GGAT[0],0,GGAT[1]],.7,(x,y,z)=>gg.root.position.set(x,y,z));}ggMode='idle';gg.root.rotation.y=PI/2;
     U.action='서기';U.at=0;G.sound.sfx('jump');{const p=W.position;await hop([p.x,p.y,p.z],[HERO[0],0,HERO[1]],.8,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;});}G.sound.sfx('land',{gain:.5});
@@ -175,16 +213,23 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   const pegDist=i=>Math.hypot(PEGS[i][0]-THROW[0],PEGS[i][1]-THROW[1]),tol=i=>.62+.24*Math.min(3,Math.floor(TS.miss[i]/2)); /* 같은 뿔을 두 번 놓칠 때마다 걸리는 범위를 넓힘 */
   const band=i=>{const d=pegDist(i),t=tol(i);return [Math.max(0,(d-t-D0)/DK),Math.min(1,(d+t-D0)/DK)];};
   const handPos=(W,out)=>{const R=W.getObjectByName('forearm.R');W.updateMatrixWorld(true);return R.localToWorld(out.set(0,-.24,.06));};
-  let btn=null,bar=null,barFill=null,barBand=null;
+  let btn=null,bar=null,barFill=null,barBand=null,barDot=null,barHead=null;
   const tossDown=()=>{if(!TS.on||TS.ph!=='ready')return;const W=U0();TS.ph='charge';TS.ct=0;TS.p=0;if(btn)btn.classList.add('on');if(W){W.userData.action='뿌리기';W.userData.at=0;}G.sound.sfx('ui-click',{gain:.5});};
   const tossUp=()=>{if(btn)btn.classList.remove('on');if(!TS.on||TS.ph!=='charge')return;if(TS.ct<.12){TS.ph='ready';const W=U0();if(W){W.userData.action='서기';W.userData.at=0;}return;}throwRing(TS.p);};
   const onKey=e=>{if(e.code!=='KeyE'||e.repeat)return;if(e.type==='keydown')tossDown();else tossUp();};
   function tossUI(on){if(on&&!btn){const host=document.querySelector('.wlg')||document.body;btn=document.createElement('button');btn.id='wlToss';btn.type='button';btn.textContent='던지기';btn.setAttribute('aria-label','얼음 고리 던지기 — 누르고 있다가 떼기');
-      bar=document.createElement('div');bar.id='wlTossBar';bar.setAttribute('aria-hidden','true');barBand=document.createElement('b');barFill=document.createElement('i');bar.append(barFill,barBand);host.append(bar,btn);
+      /* 게이지(2026-11-25): PC는 화면 가운데 위쪽·휴대폰은 아래 가운데에 크게. 차오르는 칸(i) + 칸 끝 흰 표시(em) + 걸리는 범위(u, 옅게) + 동그란 표시(b — 맞는 세기, 반짝임). 칸 끝이 범위 안이면 .hot(빛남) */
+      bar=document.createElement('div');bar.id='wlTossBar';bar.setAttribute('aria-hidden','true');const tk=document.createElement('div');tk.className='tk';barBand=document.createElement('u');barFill=document.createElement('i');tk.append(barBand,barFill);barDot=document.createElement('b');barHead=document.createElement('em');bar.append(tk,barDot,barHead);host.append(bar,btn);document.body.classList.add('wl-toss');
       btn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{btn.setPointerCapture(e.pointerId);}catch(_){}tossDown();});['pointerup','pointercancel'].forEach(k=>btn.addEventListener(k,e=>{e.preventDefault();e.stopPropagation();tossUp();}));
-      btn.addEventListener('keydown',e=>{if((e.code==='Space'||e.code==='Enter')&&!e.repeat){e.preventDefault();tossDown();}});btn.addEventListener('keyup',e=>{if(e.code==='Space'||e.code==='Enter'){e.preventDefault();tossUp();}});
       window.addEventListener('keydown',onKey);window.addEventListener('keyup',onKey);}
-    else if(!on&&btn){window.removeEventListener('keydown',onKey);window.removeEventListener('keyup',onKey);btn.remove();bar.remove();btn=bar=barFill=barBand=null;}}
+    else if(!on&&btn){window.removeEventListener('keydown',onKey);window.removeEventListener('keyup',onKey);btn.remove();bar.remove();btn=bar=barFill=barBand=barDot=barHead=null;document.body.classList.remove('wl-toss');}}
+  /* 놀이 설명 창(놀이를 시작할 때 한 번 — 그림: 게이지가 차올라 동그란 표시에 닿는 순간 + 누르는 키/단추). 팝업 공통 틀(.wl-pop). '알겠어요'·E·Enter로 닫음 */
+  function tossHow(){return new Promise(res=>{const touch=matchMedia('(pointer:coarse)').matches,el=document.createElement('div');el.className='wl-pop';el.id='wlTossHow';el.setAttribute('role','dialog');el.setAttribute('aria-label','얼음 고리 던지기 방법');
+      el.innerHTML='<div class="wl-pop-card"><div class="wl-pop-body"><h3>얼음 고리 던지기</h3><div class="pic" aria-hidden="true"><div class="g"><i></i><b></b></div><div class="k'+(touch?' r':'')+'">'+(touch?'던지기':'E')+'</div></div><p></p></div><button type="button" class="wl-pop-foot">알겠어요</button></div>';
+      el.querySelector('p').textContent=touch?T.howPhone:T.howPC;document.body.appendChild(el);popShown('tossHow',true);G.core.block('tossHow',true);G.sound.sfx('ui-open');st.how=true;let armed=false;
+      const close=()=>{if(!el.isConnected)return;window.removeEventListener('keyup',ku);window.removeEventListener('keydown',kd);el.remove();popShown('tossHow',false);G.core.block('tossHow',false);G.sound.sfx('ui-click');st.how=false;res();};
+      const kd=e=>{if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){armed=true;e.preventDefault();}},ku=e=>{if(armed&&(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'||e.code==='Escape'))close();};
+      window.addEventListener('keydown',kd);window.addEventListener('keyup',ku);el.querySelector('button').addEventListener('click',close);st.howClose=close;});}
   function throwRing(p){const W=U0();if(!W)return;const i=TS.i,dx=PEGS[i][0]-THROW[0],dz=PEGS[i][1]-THROW[1],L=Math.hypot(dx,dz),ux=dx/L,uz=dz/L,d=D0+DK*p,hit=Math.abs(d-L)<tol(i),h0=handPos(W,_v).clone();
     TS.n++;TS.ph='fly';TS.fl={t:0,dur:1.25+.13*d,from:h0,to:new THREE.Vector3(hit?PEGS[i][0]:THROW[0]+ux*d,hit?PEGH+.12:.07,hit?PEGS[i][1]:THROW[1]+uz*d),peak:1.2+.2*d,hit,ux,uz,d,i};TS.log.push([i,+p.toFixed(3),hit?1:0]);
     G.sound.sfx('jump',{gain:.45});G.sound.sfx('event-whoosh',{gain:.3});W.userData.action='서기';W.userData.at=0;mark('throw1');}
@@ -192,7 +237,8 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     if(TS.on){tmark.visible=TS.i<3&&G.ui.hintsVisible();if(TS.i<3){tmark.position.set(PEGS[i][0],.03,PEGS[i][1]);tmark.scale.setScalar(1+.08*Math.sin(t*4));}
       if(TS.ph==='ready'||TS.ph==='charge'){W.rotation.y+=Math.atan2(Math.sin(Math.atan2(PEGS[i][0]-W.position.x,PEGS[i][1]-W.position.z)-W.rotation.y),Math.cos(Math.atan2(PEGS[i][0]-W.position.x,PEGS[i][1]-W.position.z)-W.rotation.y))*Math.min(1,dt*8);}
       if(TS.ph==='charge'){TS.ct+=dt;const m=(TS.ct/FILL)%2;TS.p=m<1?m:2-m;}
-      if(bar){const b=band(i);barFill.style.width=(TS.ph==='charge'?TS.p*100:0)+'%';barBand.style.left=(b[0]*100)+'%';barBand.style.width=((b[1]-b[0])*100)+'%';bar.style.opacity=TS.ph==='ready'||TS.ph==='charge'?1:.45;if(btn)btn.style.opacity=TS.ph==='ready'||TS.ph==='charge'?1:.5;}}
+      if(bar){const b=band(i),ch=TS.ph==='charge',hot=ch&&TS.p>=b[0]&&TS.p<=b[1];barFill.style.width=(ch?TS.p*100:0)+'%';barBand.style.left=(b[0]*100)+'%';barBand.style.width=((b[1]-b[0])*100)+'%';barDot.style.left=((b[0]+b[1])*50)+'%';barHead.style.left=(TS.p*100)+'%';
+        bar.classList.toggle('go',ch);bar.classList.toggle('hot',hot);TS.hot=hot;bar.style.opacity=TS.ph==='ready'||ch?1:.45;if(btn)btn.style.opacity=TS.ph==='ready'||ch?1:.5;}}
     const f=TS.fl;
     if(TS.ph==='fly'&&f){f.t+=dt;const u=Math.min(1,f.t/f.dur);r.on=true;r.p.lerpVectors(f.from,f.to,u);r.p.y+=4*f.peak*u*(1-u);r.spin+=dt*9;r.tilt=.35*Math.sin(f.t*5)*(1-u*.6);r.s=1;
       if(Math.random()<dt*16)spark.emit(r.p.x+(Math.random()-.5)*.3,r.p.y,r.p.z+(Math.random()-.5)*.3,0,.15,0,.7,[.75,.9,1]);
@@ -209,44 +255,66 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     spark.tick(dt);putRings();}
   async function toss(W,U){mark('toss');U.sceneLock=true;st.scene=true; /* 놀이 동안 원더룹은 던지는 자리에 서 있음(조이스틱 숨김 — 던지기 단추만) */
     const mv=[moveTo(W,THROW,Math.max(.6,Math.hypot(W.position.x-THROW[0],W.position.z-THROW[1])/3.4),true),moveTo(gg.root,GTOSS,1.2)];await Promise.all(mv);faceTo(gg.root,PEGS[1][0],PEGS[1][1]);faceTo(W,PEGS[0][0],PEGS[0][1]);
-    const tcam=()=>{const k=pk(),pt=k>1.3;return {at:[-1.0,pt?1.3:.5,pt?-1.5:-1.9],from:[THROW[0]+(pt?11:7.2),pt?9.2:5.2,THROW[1]-(pt?4.6:4.3)]};}; /* 원더룹 뒤쪽 비스듬한 위에서 — 뿔 셋이 다 보이게(세로 화면은 더 높이·멀리) */G.view.hold(tcam);st.tcam=tcam;
-    music('play');quest('얼음 고리를 걸어요 0/3');G.ui.toast(T.rule,4.5);TS.on=true;TS.i=0;TS.ph='ready';tossUI(true);
+    const tcam=()=>{const k=pk(),pt=k>1.3;return {at:[-1.0,pt?-.6:.5,pt?-1.5:-1.9],from:[THROW[0]+(pt?11:7.2),pt?9.2:5.2,THROW[1]-(pt?4.6:4.3)]};}; /* 원더룹 뒤쪽 비스듬한 위에서 — 뿔 셋이 다 보이게(세로 화면은 더 높이·멀리) */G.view.hold(tcam);st.tcam=tcam;
+    await wait(.5);await tossHow();
+    music('play');quest('얼음 고리를 걸어요 0/3');TS.on=true;TS.i=0;TS.ph='ready';tossUI(true);
     await G.core.until(()=>{quest('얼음 고리를 걸어요 '+Math.min(3,TS.i)+'/3');if(G.view.req==null&&TS.ph!=='done'&&!st.tcamOff){/* 플레이어가 카메라를 만지면 그대로 둠 */st.tcamOff=true;}return TS.ph==='done';},600);
     TS.on=false;tossUI(false);tmark.visible=false;G.state.setFlag(K.toss,true);mark('tossDone');quest('');st.lastQ=null;music(null);
     /* 결과: 원더룹이 카메라 쪽을 보며 웃으며 폴짝(앞모습) */
     const fc=frontCam(W);faceTo(gg.root,G.view.camera.position.x,G.view.camera.position.z);G.view.hold(fc);await wait(.6);G.sound.sfx('mission-clear');G.react.react('hop',{sound:null,face:'기쁨'});st.ggHop=G.clock.t;await wait(1.5);G.react.react('hop',{sound:null,face:'기쁨'});st.ggHop=G.clock.t;await wait(1.3);
     if(G.view.req&&G.view.req.fn===fc)G.view.hold(null);if(U.setExpr)U.setExpr('기본');st.scene=false;U.sceneLock=false;
     await scene(async()=>{ggMode='talk';await say('거꾸리',T.g3,3.4);ggMode='idle';},gg);}
-  /* ── ③ 앉아서 쉬기 ── */
-  const cas=makeCassette();cas.g.scale.setScalar(1.7);cas.g.visible=false;cas.g.position.set(SLAB[0]-.55,STOP,SLAB[1]+.05);cas.g.rotation.y=-PI/2+.5;add(cas.g);
-  /* 카세트에 담긴 지나온 길의 소리(초 — 켠 뒤): 달 떡방아 쿵·아기 토끼 웃음 → 화성 바람·삐삐와 둥둥 웃음 → 금성 생일 노래 조금·양 음매 → 딸깍, 조용 */
-  const TAPE=[[0,'cassette-click',{}],[.5,'cassette-run',{gain:.6}],[1.9,'event-tok',{gain:.55}],[2.0,'land',{gain:.4}],[2.9,'event-tok',{gain:.55}],[3.0,'land',{gain:.4}],[3.9,'event-tok',{gain:.6}],[4.0,'land',{gain:.45}],[5.0,'voice-giggle',{pitch:1.5,gain:.55}],[6.1,'voice-giggle',{pitch:1.65,n:3,gain:.45}],
-    [8.2,'event-wind',{gain:.7}],[9.6,'voice-giggle',{pitch:1.25,gain:.55}],[10.7,'voice-giggle',{pitch:.62,n:3,gain:.6}],[12.2,'event-wind',{gain:.55}],[14.6,'cassette-run',{gain:.4}],
-    [15.4,'tune-birthday',{phrase:0,gain:.6}],[18.6,'tune-birthday',{phrase:3,gain:.55}],[21.6,'event-baa',{pitch:1.1,gain:.5}],[22.7,'event-baa',{pitch:.9,gain:.45}],[24.6,'cassette-click',{}]];
-  /* 카메라 다섯 구간(초, 보는 자리 from · 보는 점 at) — 사이는 부드럽게 이어 감 */
-  const CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],EH=[ENC_D.x/Math.hypot(ENC_D.x,ENC_D.z),ENC_D.z/Math.hypot(ENC_D.x,ENC_D.z)];
-  const restKeys=()=>{const k=pk(),pt=k>1.3,m=pt?1.5:1,F3=[CC[0]-EH[0]*8.5*m,pt?2.9:2.5,CC[2]-EH[1]*8.5*m],E3=[F3[0]+ENC_D.x*40,F3[1]+ENC_D.y*40-(pt?4.4:3.9),F3[2]+ENC_D.z*40],SCP=[SC[0],SR*.99,SC[2]];return [
-    [0,[CC[0]-4.3*m,1.0,CC[2]+3.5*m],[CC[0],pt?1.25:.95,CC[2]]],[7.5,[CC[0]-3.3*m,1.25,CC[2]+4.5*m],[CC[0],pt?1.25:.95,CC[2]]],                       /* 1 둘의 옆모습(조금 앞쪽에서 — 정옆이면 거꾸리가 원더룹을 가림) */
-    [10.5,[CC[0]-4.6*m,1.5,CC[2]-2.6*m],[CC[0]+6,1.0,CC[2]+3]],[17,[CC[0]-6*m,2.1,CC[2]-4.2*m],[CC[0]+40,3.2,CC[2]+26]],                               /* 2 끝없는 고리 얼음 들판과 작아진 해 */
-    [19.5,F3,E3],[24.5,[F3[0]-EH[0]*1.6,F3[1]+.4,F3[2]-EH[1]*1.6],[E3[0],E3[1]+.7,E3[2]]],                                                                 /* 3 엔켈라두스의 얼음 분수(둘의 뒷모습 너머) */
-    [28,pt?[620,1500,SC[2]+40]:[170,840,SC[2]+60],[SC[0],pt?120:60,SC[2]]],[29.2,pt?[600,1480,SC[2]+40]:[150,830,SC[2]+60],[SC[0],pt?120:70,SC[2]]],        /* 4 높이 올라가 고리를 두른 토성 → 북극의 육각형 폭풍으로 다가감 */
-    [31.6,pt?[-230,760,SC[2]+40]:[-370,530,SC[2]+40],SCP],[32.8,pt?[-250,740,SC[2]+40]:[-385,515,SC[2]+40],SCP],
-    [36,[CC[0]-4.4*m,1.15,CC[2]-2.4*m],[CC[0],pt?1.2:.95,CC[2]]],[REST,[CC[0]-4.0*m,1.1,CC[2]-1.6*m],[CC[0],pt?1.2:.95,CC[2]]]];};                           /* 5 다시 둘에게(앞모습) */
-  const RS={on:false,t:0,keys:null,ti:0,skip:false,chip:null,chipT:0};
-  const restCam=()=>{const Kk=RS.keys,t=Math.min(REST,RS.t);let i=0;while(i<Kk.length-2&&t>Kk[i+1][0])i++;const A=Kk[i],Bk=Kk[i+1],w=ss(A[0],Bk[0],t);return {from:[0,1,2].map(j=>lerp(A[1][j],Bk[1][j],w)),at:[0,1,2].map(j=>lerp(A[2][j],Bk[2][j],w))};};
+  /* ── ③ 앉아서 쉬기(2026-11-25 새로 — 약 2분): 둘이 얼음에 앉으면 처음부터 끝까지 배경음 하나(saturn-rest), 나레이션이 토성 이야기를 천천히 하고 카메라가 그 이야기에 맞는 곳을 천천히 보여 줌(한 장면 약 15초, 부드럽게 이어서).
+       화면 글자·단추는 모두 숨기고 나레이션 자막(#wlRestCap)만 아래에. 카세트·지나온 행성 소리는 뺌. 10초 뒤부터 화면을 누르면 '건너뛰기' 단추가 잠깐 뜸.
+       일곱 구간(카메라 키 restKeys · 나레이션 시작 초 NT): 1 둘의 뒤로 토성과 고리 전체 → 2 고리 얼음 들판 위를 낮게 → 3 토성 줄무늬 구름(천천히 흐름) → 4 천천히 올라가 북극 육각형 → 5 엔켈라두스 얼음 분수 → 6 주황 안개에 싸인 타이탄 → 7 하늘 곳곳 작은 달들 반짝 → 내려와 둘에게 ── */
+  /* 타이탄(주황 안개 공): 구 1 + 둘레 주황 빛무리 판 1 */
+  const oTi=makeOrb(root,{map:canvasTex(128,titanMap,64),rep:[3,2],seg:[44,30]});oTi.g.position.set(...TITAN);oTi.g.scale.setScalar(TITAN_R);oTi.g.name='titan';oTi.U.uL.value.set(.55,.6,.45).normalize();oTi.body.material.transparent=true;oTi.body.renderOrder=-3;
+  oTi.halo.material.color.set('#ff9a4e');oTi.halo.material.opacity=.9;oTi.halo.renderOrder=-3.1;oTi.halo.scale.setScalar(1.02);keep.push(oTi.g);
+  /* 작은 달들(일곱째 구간에만 — 동쪽 하늘 곳곳의 빛 점이 저마다 다른 박자로 반짝): 점 묶음 1(보일 때만) */
+  const moons=(()=>{const N=MOB?54:70,pos=new Float32Array(N*3),sa=new Float32Array(N*2),r=rng('space-saturn:moons');for(let i=0;i<N;i++){const az=.2+(r()-.5)*1.1,el=.6+(r()-.5)*.62,d=1500;pos.set([Math.cos(az)*Math.cos(el)*d,Math.sin(el)*d,Math.sin(az)*Math.cos(el)*d],i*3);sa.set([r()*6.28,.5+r()],i*2);}
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('sa',new THREE.BufferAttribute(sa,2));
+    const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:false,fog:false,blending:THREE.AdditiveBlending,uniforms:{uT:{value:0},uK:{value:0},uSc:{value:1},uMap:{value:dotTex}},
+      vertexShader:'uniform float uT,uK,uSc;attribute vec2 sa;varying float vA;void main(){float tw=.3+.7*pow(.5+.5*sin(uT*(1.2+sa.y*1.4)+sa.x),3.);vA=uK*tw;vec4 mv=viewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;gl_PointSize=(10.+16.*sa.y*tw)*uSc;}',
+      fragmentShader:'uniform sampler2D uMap;varying float vA;void main(){vec4 c=texture2D(uMap,gl_PointCoord);if(c.a<.02)discard;gl_FragColor=vec4(vec3(1.,.95,.8)*c.a*vA*1.6,1.);}'});
+    m.userData.noBend=true;const pts=new THREE.Points(geo,m);pts.name='saturn-moons';pts.frustumCulled=false;pts.userData.noMerge=true;pts.renderOrder=4;pts.visible=false;add(pts);
+    return {set(k,t){pts.visible=k>.01;m.uniforms.uK.value=k;m.uniforms.uT.value=t;m.uniforms.uSc.value=Math.min(window.devicePixelRatio||1,MOB?1.25:2);}};})();
+  const CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],NT=[4.5,22,39,56.5,70.5,86,100.5];
+  const restKeys=()=>{const k=pk(),pt=k>1.3,m=pt?1.5:1,fr=pt?1.75:1,E=oEnc.g.position,SCP=[SC[0],SR*.97,SC[2]],V=(b,o,q=1)=>[b[0]+o[0]*q,b[1]+o[1]*q,b[2]+o[2]*q],
+      g0=[30,1.5,10],g1=[-11,2.0,-52],gd=[-.55,-.02,-.83],ek=pt?24:45,EA=[E.x+ENC_PD.x*ek,E.y+ENC_PD.y*ek,E.z+ENC_PD.z*ek],face=[CC[0],pt?1.2:.95,CC[2]];
+    return [
+    [0,[CC[0]+(pt?10.6:6.2),pt?2.0:1.5,CC[2]+(pt?0:1.4)],[CC[0]-40,pt?-.9:1.3,CC[2]-(pt?0:5)]],[3,[CC[0]+(pt?11.6:7.0),pt?2.3:1.8,CC[2]+(pt?0:1.6)],[CC[0]-40,pt?-.5:1.7,CC[2]-(pt?0:5)]],        /* 1 둘의 뒷모습 너머 커다란 토성 → 천천히 뒤로·위로 물러나 토성과 고리 전체 */
+    [15.5,[SC[0]+1120*fr,380*fr,SC[2]+240*fr],[SC[0],pt?-30:10,SC[2]]],
+    [21,g0,V(g0,gd,60)],[32,g1,V(g1,gd,60)],                                                                                               /* 2 고리 얼음 들판 위를 낮게 미끄러지듯(토성은 왼쪽에) */
+    [38,[-250,70,200],[SC[0],45,SC[2]]],[46.5,[-285,92,172],[SC[0],60,SC[2]]],                                                             /* 3 토성 줄무늬 구름(가까이 — 화면 가득) */
+    [55.5,V(SCP,[180,313,140],m),SCP],[63,V(SCP,[152,337,114],m),SCP],                                                                    /* 4 천천히 올라가 북극의 육각형 구름 띠 */
+    [69.5,V([E.x,E.y,E.z],[150,25,170],m),EA],[78,V([E.x,E.y,E.z],[132,40,186],m),V(EA,[0,7,0])],                                         /* 5 엔켈라두스의 얼음 분수 */
+    [85,V(TITAN,[200,20,-140],pt?2.3:1.15),TITAN],[93.5,V(TITAN,[182,34,-160],pt?2.3:1.15),TITAN],                                                            /* 6 주황 안개에 싸인 타이탄 */
+    [100,[-34,26,-8],[266,236,52]],[105,[-30,22,-6],[270,226,54]],                                                                        /* 7 동쪽 하늘 곳곳 작은 달들 반짝 → 천천히 내려와 둘에게(앞모습) */
+    [111,pt?[CC[0]-13,1.5,CC[2]-.8]:[CC[0]-4.4,1.15,CC[2]-2.4],face],[REST,pt?[CC[0]-12.6,1.45,CC[2]-.6]:[CC[0]-4.0,1.1,CC[2]-1.6],face]];};
+  const RS={on:false,t:0,keys:null,ni:0,skip:false,chip:null,chipT:0,cap:null,capEnd:0};
+  const _a=new THREE.Vector3(),_b=new THREE.Vector3();
+  /* 자리는 곧게, 보는 방향은 두 키의 방향을 섞어(멀리 떨어진 두 자리의 '보는 점'을 곧게 이으면 가는 동안 엉뚱한 곳을 봄) */
+  const restCam=()=>{const Kk=RS.keys,t=Math.min(REST,RS.t);let i=0;while(i<Kk.length-2&&t>Kk[i+1][0])i++;const A=Kk[i],Bk=Kk[i+1],w=ss(A[0],Bk[0],t),from=[0,1,2].map(j=>lerp(A[1][j],Bk[1][j],w));
+    _a.set(A[2][0]-A[1][0],A[2][1]-A[1][1],A[2][2]-A[1][2]).normalize();_b.set(Bk[2][0]-Bk[1][0],Bk[2][1]-Bk[1][1],Bk[2][2]-Bk[1][2]).normalize();_a.lerp(_b,w).normalize();return {from,at:[from[0]+_a.x*60,from[1]+_a.y*60,from[2]+_a.z*60]};};
+  const capShow=tx=>{if(!RS.cap){const c=document.createElement('div');c.id='wlRestCap';c.setAttribute('role','status');document.body.appendChild(c);RS.cap=c;}RS.cap.textContent=tx;void RS.cap.offsetWidth;RS.cap.classList.add('on');},capHide=()=>{if(RS.cap)RS.cap.classList.remove('on');};
   const restTap=()=>{if(!RS.on||RS.t<10)return;if(!RS.chip){const b=document.createElement('button');b.id='wlRestSkip';b.type='button';b.textContent='건너뛰기 ▸';b.addEventListener('pointerdown',e=>{e.stopPropagation();});b.addEventListener('click',e=>{e.stopPropagation();RS.skip=true;});document.body.appendChild(b);RS.chip=b;}RS.chipT=3.5;};
   const restKey=e=>{if(!RS.on||RS.t<10||e.repeat)return;if(RS.chip&&(e.code==='Enter'||e.code==='KeyE'||e.code==='Escape'))RS.skip=true;else restTap();};
-  async function rest(W,U){mark('rest');U.sceneLock=true;st.scene=true;
+  function tickRest(dt,t){RS.t+=dt;if(RS.chip){RS.chipT-=dt;RS.chip.style.opacity=RS.chipT>0?1:0;RS.chip.style.pointerEvents=RS.chipT>0?'auto':'none';}
+    if(G.view.req==null||G.view.req.fn!==restCam)G.view.hold(restCam,{snap:true}); /* 쉬는 동안은 정해진 카메라(끌어도 다시 잡음) */
+    const busy=!!(G.sound.voiceBusy&&G.sound.voiceBusy());
+    if(RS.ni<NARR.length&&RS.t>=NT[RS.ni]&&!busy&&RS.t>RS.capEnd+1.2){const tx=NARR[RS.ni++];capShow(tx);RS.capEnd=RS.t+Math.max(5.5,tx.replace('[임시] ','').length/6.2);G.sound.voice({text:tx,who:'나레이터',kind:'narration'});RS.log.push([RS.ni,+RS.t.toFixed(1)]);} /* 대사 사이 1.2초 넘게 여유 */
+    else if(RS.capEnd&&RS.t>RS.capEnd&&!busy&&RS.cap&&RS.cap.classList.contains('on'))capHide();
+    moons.set(ss(96.5,100.5,RS.t)*(1-ss(107,110.5,RS.t)),t);}
+  async function rest(W,U){mark('rest');U.sceneLock=true;st.scene=true;music('rest'); /* 배경음 하나로 처음부터 끝까지 */
     /* 얼음 조각 옆으로 걸어가 폴짝 올라앉음 */
     await Promise.all([moveTo(W,[HS[0]+1.9,HS[1]-.3],Math.max(.6,Math.hypot(W.position.x-HS[0]-1.9,W.position.z-HS[1]+.3)/3.4),true),moveTo(gg.root,[GS[0]+1.9,GS[1]+.2],1.4)]);
     U.riding={y:W.position.y,carry:false};G.core.block('meteor',true);st.hints=G.ui.hintsVisible();G.ui.setHints(false);quest('');
     G.sound.sfx('jump',{gain:.6});await Promise.all([hop([W.position.x,W.position.y,W.position.z],[HS[0],STOP,HS[1]],.7,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;}),hop([gg.root.position.x,0,gg.root.position.z],[GS[0],STOP,GS[1]],.8,(x,y,z)=>gg.root.position.set(x,y,z))]);
     W.rotation.y=-PI/2;gg.root.rotation.y=-PI/2;U.action='앉기';U.at=0;ggMode='sit';G.sound.sfx('land',{gain:.4});st.sitting=true;
-    st.farMin=4200;RS.keys=restKeys();RS.t=0;RS.ti=0;RS.skip=false;RS.on=true;G.view.hold(restCam);window.addEventListener('pointerdown',restTap);window.addEventListener('keydown',restKey);
-    await wait(1.2);cas.g.visible=true;cas.run(true);G.sound.sfx('event-pop',{gain:.5});music('rest');RS.t0=RS.t; /* 카세트를 꺼내 켬 */
-    await G.core.until(()=>RS.skip||RS.t>=REST,REST+30);mark('restEnd');
-    RS.on=false;window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);if(RS.chip){RS.chip.remove();RS.chip=null;}
-    if(G.view.req&&G.view.req.fn===restCam)G.view.hold(null);st.farMin=0;cas.run(false);cas.g.visible=false;music(null);
+    st.farMin=5600;RS.keys=restKeys();RS.t=0;RS.ni=0;RS.capEnd=0;RS.log=[];RS.skip=false;RS.on=true;G.view.hold(restCam);window.addEventListener('pointerdown',restTap);window.addEventListener('keydown',restKey);
+    await G.core.until(()=>RS.skip||RS.t>=REST,REST+60);mark('restEnd');
+    RS.on=false;window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);if(RS.chip){RS.chip.remove();RS.chip=null;}if(RS.cap){const c=RS.cap;RS.cap=null;c.classList.remove('on');setTimeout(()=>c.remove(),700);}moons.set(0,0);
+    if(G.view.req&&G.view.req.fn===restCam)G.view.hold(null);st.farMin=0;music(null);
     /* 일어나 내려옴 */
     st.sitting=false;U.action='서기';U.at=0;ggMode='idle';G.sound.sfx('jump',{gain:.5});
     await Promise.all([hop([HS[0],STOP,HS[1]],[HS[0]-1.9,0,HS[1]-.6],.7,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;}),hop([GS[0],STOP,GS[1]],[GS[0]-2.6,0,GS[1]-.5],.8,(x,y,z)=>gg.root.position.set(x,y,z))]);
@@ -269,7 +337,10 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     U.action='손 흔들기';U.at=0;if(U.setExpr)U.setExpr('기쁨');G.view.hold(camA);await wait(.5);st.boatOut={t:0};G.sound.sfx('travel-depart',{gain:.5});await wait(2.9);
     const camB=()=>({at:[P.x,P.y+(pt?.75:1.0),P.z],from:[P.x-(pt?7.8:5.6),P.y+(pt?2.5:1.9),P.z+(pt?2.6:1.9)]});W.rotation.y=Math.atan2(-5.6,1.9);G.view.hold(camB,{snap:true});await wait(3.0); /* 반대쪽 구도로 바로 넘어감(섞으면 카메라가 반 바퀴 휘돌아 바닥을 훑었다) */
     if(G.view.req&&G.view.req.fn===camB)G.view.hold(null);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('기본');gg.root.visible=false;boat.visible=false;st.ggBoat=false;st.boatOut=null;
-    G.state.setFlag(K.clear,true);G.state.saveAfter(ZID,{time:0});mark('clear');st.scene=false;U.sceneLock=false;}
+    /* 완료(2026-11-25 — 인사한 뒤 바로 떠나지 않고): 원더룹이 카메라 쪽(앞)을 보며 폴짝 → 완료 창 → 그다음 붉은 빛 */
+    const fc=frontCam(W);G.view.hold(fc);await wait(.7);G.sound.sfx('mission-clear');G.state.setFlag(K.clear,true);G.state.saveAfter(ZID,{time:0});mark('clear');G.react.react('hop',{sound:null,face:'기쁨'});let up=true;G.core.wait(1.5).then(()=>{if(up)G.react.react('hop',{sound:null,face:'기쁨'});});
+    await Promise.race([G.ui.itemCard({title:T.doneT,text:T.done,icon:SPACE.icons.map(),sec:3.2,sound:null,who:'완료'}),wait(3.8)]);up=false;mark('doneCard');if(U.setExpr)U.setExpr('기본');
+    if(G.view.req&&G.view.req.fn===fc)G.view.hold(null);st.scene=false;U.sceneLock=false;}
   /* ── 붉은 소용돌이 빛(목성의 붉은 폭풍이 끌어당김) ── 점 묶음(나선으로 감겨 오르는 빛 알갱이) + 옅은 빛 기둥. 그리기 2(보일 때만) */
   const storm=(()=>{const g=new THREE.Group();g.name='red-storm';g.visible=false;root.add(g);const N=MOB?150:260,pos=new Float32Array(N*3),sa=new Float32Array(N*4),r=rng('space-saturn:storm');for(let i=0;i<N;i++)sa.set([(i%3)*PI*2/3+(r()-.5)*.5,r(),.85+r()*.3,r()],i*4); /* 세 가닥으로 감겨 오름 */
     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('sa',new THREE.BufferAttribute(sa,4));
@@ -294,8 +365,10 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     const pathF=u=>({x:P0.x+18*ss(0,.3,u)+520*ss(.2,1,u),y:P0.y+1.1+55*ss(0,.34,u)+205*ss(.25,1,u),z:P0.z+8*ss(.1,.5,u)});
     /* 카메라 키: [비행 진행, 가는 방향 기준(0 = 앞쪽에서 돌아봄), 위아래, 거리] — 달 → 화성 차례: 앞옆 낮게(빙글 도는 얼굴) → 등 뒤 위에서 내려다봄(멀어지는 얼음 섬·고리·토성)
        → 옆에서 나란히(별빛이 휙휙) → 어깨 너머로 다가오는 목성 → 마지막: 원더룹이 뒤돌아 카메라를 보고(앞모습) 그 뒤로 목성이 화면을 덮음 */
-    const CK=[[0,.95,.02,5.6],[.1,.95,.02,5.6],[.15,PI+.4,.92,9.5],[.31,PI+.4,.92,10.5],[.37,PI/2,.08,6.8],[.56,PI/2,.08,6.8],[.62,PI+.42,.2,5.6],[.74,PI+.38,.16,6.2],[.84,PI+.3,.05,5.4],[1,PI+.22,.03,4.8]];
-    const spin=u=>PI*2*ss(.0,.13,u)+PI*ss(.5,.62,u); /* 소용돌이에 한 바퀴 빙글 → 중간부터 뒤돌아(카메라 쪽) */
+    const CK=[[0,.95,.02,5.6],[.1,.95,.02,5.6],[.15,PI+.4,.92,9.5],[.31,PI+.4,.92,10.5],[.37,PI/2,.08,6.8],[.54,PI/2,.08,6.8],
+      /* 2026-11-25(좌우로만 오가던 끝부분): 옆에서 → 얼굴 앞을 지나(가까이 4.6m) → 반대쪽 옆으로 물러나며(8.2m — 옆에서 커지는 목성) → 등 뒤로 크게 돌아 들어가 다가감(4.8m, 길게 느려지며 — 목성이 화면을 덮음) */
+      [.66,.49,.1,4.6,'in'],[.72,-.59,.16,8.2,'lin'],[1,-PI+.22,.03,4.8,'out']];
+    const spin=u=>PI*2*ss(.0,.13,u)+PI*ss(.74,.93,u); /* 소용돌이에 한 바퀴 빙글 → 카메라가 얼굴 앞을 지나 등 뒤로 돌아 들어가는 동안 천천히 뒤돌아 카메라를 봄(끝까지 얼굴이 보임) */
     const carrier={hang:false,pose:{grab:'팔 벌리기',fly:u=>u<.4?'팔 벌리기':'둥실'},lift:T2=>1.1*ss(2.4,3.75,T2),stop(){storm.set(0);zip.pts.visible=false;},dispose(){},
       late(dt,t,s2){if(s2.phase==='fly')W.rotation.y=s2.face+spin(flyU);else W.rotation.y=PI/2+PI*2*ss(2.6,3.75,s2.t)*0;},
       tick(dt,t,s2,wp){lastS=s2;const cam=G.view.camera,u=flyU,T2=s2.t;
@@ -307,9 +380,9 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
         /* 토성이 뒤로 멀어짐 */
         setSat(2700*Math.pow(ss(.3,.86,u),1.3));if(u>.42&&!hid){hid=true;[island,rings,oEnc.g,spark.pts,tmark].forEach(o=>{o.visible=false;});st.hid=true;}
         /* 목성: 가는 쪽 하늘의 한 방향에 박혀 있다가 다가갈수록 커져 화면을 압도(토성보다 크게 — 끝 반지름 약 44°), 붉은 점이 우리 쪽 */
-        {const on=u>.4,g=oJup.g;g.visible=on;if(on){const pt=cam.aspect<1,pp=ss(.2,1,u),TF=pt?.37:.76,thF=Math.atan(TF),th=Math.atan(TF/(1+26*(1-pp)))*ss(.4,.48,u),
+        {const on=u>.4,g=oJup.g;g.visible=on;if(on){const pt=cam.aspect<1,TF=pt?.37:.76,thF=Math.atan(TF),th=Math.atan(TF*(.03+.97*Math.pow(ss(.42,1,u),1.5)))*ss(.4,.48,u), /* 크기: 다가갈수록 커지다가 끝에서 천천히(슬로우 아웃 — 예전: 마지막에 확) */
               /* 마지막 카메라(가는 방향에서 0.22 왼쪽을 봄)에서 붉은 점(목성 가운데에서 오른쪽 0.2·위 0.31 × 반지름)이 화면 안(가로 화면: 오른쪽 12°·위 9°, 세로 화면: 가운데 조금 오른쪽·위 8°)에 오게 목성 가운데 방향을 정함 */
-              psi=lerp(-.4,-.22+(pt?.1:.21)-.2*thF,ss(.68,.9,u)),el=lerp(.1,(pt?.06:.1)-.309*thF,ss(.7,.95,u)),c=board.D;
+              psi=lerp(-.4,-.22+(pt?.1:.21)-.2*thF,ss(.6,.92,u)),el=lerp(.1,(pt?.06:.1)-.309*thF,ss(.6,.95,u)),c=board.D;
             _d.set(Math.cos(psi)*Math.cos(el),Math.sin(el),Math.sin(psi)*Math.cos(el));g.parent.getWorldQuaternion(_q2).invert();g.position.copy(_d).applyQuaternion(_q2).multiplyScalar(c);g.quaternion.copy(_q2);g.scale.setScalar(c*Math.sin(th));oJup.U.uL.value.copy(SL);oJup.halo.quaternion.copy(cam.quaternion);st.jupTh=th;}}
         st.sailU=u;if(Math.floor(T2/2.1)!==wi){wi=Math.floor(T2/2.1);if(T2>2.4)G.sound.sfx('event-wind',{gain:.5});}}};
     G.sound.sfx('event-whirl',{gain:.9});G.sound.sfx('event-sparkle',{gain:.7});
@@ -324,8 +397,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     try{if(!F[K.met])await intro();if(!F[K.toss])await toss(W,U);if(!F[K.sat])await rest(W,U);if(!F[K.float])await floatCard();
       if(!F[K.clear]){await bye(W,U);await wait(.7);departStorm(W,U);}}catch(e){console.error(e);}}
   function update(dt,t){const W=U0();if(!W)return;const U=W.userData,cam=G.view.camera;st.t+=dt;mark('start');
-    board.tick(dt,t,cam);{const pt=cam.aspect<1,w=RS.on?ss(8.5,11,RS.t)*(1-ss(17.5,19.5,RS.t)):0; /* 쉬기 둘째 구간: 아주 작아진 해가 들판 위에 */
-      const sx=lerp(pt?-.5:-.7,pt?.2:.34,w),sy=lerp(pt?.86:.8,pt?.5:.52,w);board.place(board.sunGlow,sx,sy,lerp(pt?.6:.5,.42,w));board.place(board.sun,sx,sy,lerp(pt?.26:.22,.16,w));} /* 토성에서 보는 해는 아주 작다(지구에서의 약 1/10) */
+    board.tick(dt,t,cam);{const pt=cam.aspect<1,sx=pt?-.5:-.7,sy=pt?.86:.8;board.place(board.sunGlow,sx,sy,pt?.6:.5);board.place(board.sun,sx,sy,pt?.26:.22);} /* 토성에서 보는 해는 아주 작다(지구에서의 약 1/10) */
     if(st0.ring){st0.ring.uniforms.uT.value=t;const fk=ss(40,170,cam.position.y);st0.ring.uniforms.uFly.value=fk;hexCap.visible=cam.position.y>60;}
     plume.uniforms.uT.value=t;plume.uniforms.uSc.value=innerHeight*Math.min(window.devicePixelRatio||1,MOB?1.25:2)/(2*Math.tan(cam.fov*PI/360));
     if(!st.ggBoat&&!st.boatIn&&!st.boatOut)boat.rotation.set(Math.sin(t*1.3)*.02,0,Math.sin(t*1.1)*.03);
@@ -334,15 +406,14 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     if(st.boatOut){const b=st.boatOut;b.t+=dt;const u=Math.min(1,b.t/5.6),e=u*u*(3-2*u)*u;B.x=DOCKB[0]-16*e;B.y=BY+.4*ss(0,.12,u)+8*e;B.z=DOCKB[1]+9*e;boat.position.set(B.x,B.y+Math.sin(t*1.7)*.05,B.z);boat.rotation.set(Math.sin(t*1.3)*.04,-.5*ss(0,.4,u),Math.sin(t*1.1)*.06);boat.scale.setScalar(Math.max(.001,1-ss(.7,1,u)));}
     if(st.ggBoat){boatStand(boat,0,0,gg.root.position);faceTo(gg.root,W.position.x,W.position.z);gg.root.scale.setScalar(boat.scale.x);}
     else if(st.ggHop!=null){const k=t-st.ggHop;gg.root.position.y=(st.sitting?STOP:0)+(k<.5?Math.sin(k/.5*PI)*.45:0);if(k>=.5)st.ggHop=null;}
-    const a=st.arr;if(a){if(!started){started=true;lockOn(G,W);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');G.travel.note('phase','arrive');G.travel.landIn(D);const C=G.controls.input.cam;if(C){C.yaw=PI/2-.42;C.pitch=.03;C.dist=9;a.cu=C.user;}U.riding.snap=true;}
+    const a=st.arr;if(a){if(!started){started=true;lockOn(G,W);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');G.travel.note('phase','arrive');G.travel.landIn(D);const C=G.controls.input.cam;if(C){C.yaw=PI/2-.42+1.7;C.pitch=.39;C.dist=15.5;a.cu=C.user;}U.riding.snap=true;}
       if(a.ph==='down'){a.t+=dt;const u=Math.min(1,a.t/D),e=1-Math.pow(1-u,2.2);B.x=lerp(DOCKB[0]+FROM[0],DOCKB[0],e);B.y=lerp(FROM[1],BY,e)+Math.sin(t*1.7)*.05*(1-u);B.z=lerp(FROM[2],DOCKB[1],e);
-        boat.position.set(B.x,B.y,B.z);boatStand(boat,HX,-BSIDE,W.position);U.riding.lookOff=[-(HX+GX)/2,BSIDE];U.riding.y=W.position.y;W.rotation.y=PI/2;boatStand(boat,-GX,BSIDE,gg.root.position);gg.root.rotation.y=PI/2; /* 발은 배 겉면에 딱(cloudfolk boatStand) */ggMode='idle';
+        const sp=ASPIN*Math.pow(1-u,2.4),cs=Math.cos(sp),sn=Math.sin(sp);a.e=e; /* 남은 회전(점점 느려지며 멈춤 — 끝에는 예전과 같은 방향) */
+        boat.position.set(B.x,B.y,B.z);boat.rotation.set(Math.sin(t*1.3)*.02+.16*(1-e)*Math.sin(t*5),sp,Math.sin(t*1.1)*.03+.2*(1-e));boatStand(boat,HX,-BSIDE,W.position);U.riding.lookOff=[-(HX+GX)/2*cs+BSIDE*sn,(HX+GX)/2*sn+BSIDE*cs];U.riding.y=W.position.y;W.rotation.y=PI/2+sp;boatStand(boat,-GX,BSIDE,gg.root.position);gg.root.rotation.y=PI/2+sp; /* 발은 배 겉면에 딱(cloudfolk boatStand) */ggMode='idle';
         if(u>=1){a.ph='off';land(W,U);}}}
     else if(!st.done&&!started){st.done=true;}
-    gg.tick(dt,t,ggMode);cas.tick(dt);
-    if(RS.on){RS.t+=dt;if(RS.chip){RS.chipT-=dt;RS.chip.style.opacity=RS.chipT>0?1:0;RS.chip.style.pointerEvents=RS.chipT>0?'auto':'none';}
-      if(G.view.req==null||G.view.req.fn!==restCam)G.view.hold(restCam,{snap:true}); /* 쉬는 동안은 정해진 카메라(끌어도 다시 잡음) */
-      if(RS.t0!=null){const tt=RS.t-RS.t0;while(RS.ti<TAPE.length&&TAPE[RS.ti][0]<=tt){const q=TAPE[RS.ti++];G.sound.sfx(q[1],q[2]);}}}
+    gg.tick(dt,t,ggMode);oTi.halo.quaternion.copy(cam.quaternion);oSat.body.rotation.y+=dt*(.006+(RS.on?.02*ss(33,38,RS.t)*(1-ss(48,53,RS.t)):0)); /* 토성 줄무늬 구름이 아주 천천히 흐름(쉬기 셋째 구간에는 조금 더) */
+    if(RS.on)tickRest(dt,t);
     tickToss(dt,t,W);
     if(st.depTick)st.depTick(dt);
     /* 흐름 시작: 도착 연출이 끝났거나(이동해 옴) 바로 열었을 때 첫 화면이 닫힌 뒤 */
@@ -351,7 +422,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     if(F[K.clear]&&!st.dep&&!st.scene&&st.flow&&st.T.clear==null){storm.set(.75);storm.g.position.set(PORT[0],-.2,PORT[1]);storm.tick(t,cam);quest('붉은 빛을 타고 목성으로');
       if(!st.goalOn){st.goalOn=true;G.goal.set({at:PORT,y:0,label:'목성행 붉은 빛',h:2.2,beam:false});}
       if(Math.hypot(W.position.x-PORT[0],W.position.z-PORT[1])<1.15&&!U.riding)departStorm(W,U);}}
-  function lateUpdate(dt){const a=st.arr;if(a&&started)camHome(G,dt,PI/2-.42,.03,a.ph==='down'?9:9.5,a,1.6); /* 원더룹 뒤 옆에서 토성 쪽을(낮게 — 커다란 토성과 발밑 고리 들판이 한 화면에) */
+  function lateUpdate(dt){const a=st.arr;if(a&&started){const r=a.ph==='down'?1-(a.e||0):0;camHome(G,dt,PI/2-.42+1.7*r,.03+.36*r,(a.ph==='down'?9:9.5)+6.5*r,a,2.6);} /* 내려오는 동안: 옆 위 멀리에서 돌며 다가와(줌인) 원더룹 뒤 옆 낮은 자리로 */ /* 원더룹 뒤 옆에서 토성 쪽을(낮게 — 커다란 토성과 발밑 고리 들판이 한 화면에) */
     if(st.depLate)st.depLate(dt);}
   return {name:'토성 고리',kind:'outdoor',start:{compass:true},world:null,
     spawn:{x:HERO[0],z:HERO[1],ry:-PI/2},
@@ -359,7 +430,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     platforms:[{r:[SLAB[0]-1.45,SLAB[0]+1.45,SLAB[1]-.95,SLAB[1]+.95],top:STOP}],
     sun:{dir:new THREE.Vector3(...KEY.sunDir).normalize(),shadow:14,follow:true},
     sky:SK,far:2400,get farMin(){return st.farMin||1400;} /* 엔켈라두스(1050m)까지 — 쉬기 넷째 구간·떠날 때는 더 멀리 */,ambience:'space',rim:.2,groundY:()=>0,ground:[island],keepOut:keep,
-    state:()=>({arr:st.arr?st.arr.ph:null,done:st.done,flow:st.flow,scene:st.scene,T:{...st.T},t:+G.clock.t.toFixed(2),toss:{on:TS.on,i:TS.i,ph:TS.ph,p:+TS.p.toFixed(3),band:TS.i<3?band(TS.i):null,n:TS.n,miss:[...TS.miss],log:TS.log.slice(-12)},rest:{on:RS.on,t:+RS.t.toFixed(2)},sailU:st.sailU||0,dep:st.dep?st.dep.state.phase:null,jupTh:st.jupTh||0,mus:st.musLog||[]}),
+    state:()=>({arr:st.arr?st.arr.ph:null,done:st.done,flow:st.flow,scene:st.scene,T:{...st.T},t:+G.clock.t.toFixed(2),toss:{on:TS.on,i:TS.i,ph:TS.ph,p:+TS.p.toFixed(3),band:TS.i<3?band(TS.i):null,n:TS.n,miss:[...TS.miss],log:TS.log.slice(-12)},rest:{on:RS.on,t:+RS.t.toFixed(2),narr:RS.log||[],cap:RS.cap&&RS.cap.classList.contains('on')?RS.cap.textContent:''},how:!!st.how,hot:!!TS.hot,sailU:st.sailU||0,dep:st.dep?st.dep.state.phase:null,jupTh:st.jupTh||0,mus:st.musLog||[]}),
     spots:{hero:HERO,gg:GGAT,dock:DOCKB,throw:THROW,pegs:PEGS,slab:SLAB,port:PORT},
     dbgRest(t){RS.t=t;},dbgDown:tossDown,dbgUp:tossUp,dbgStorm(){const W=U0();if(W)departStorm(W,W.userData);},
-    update,lateUpdate,dispose(){board.dispose&&board.dispose();tossUI(false);if(RS.chip)RS.chip.remove();window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);const W=U0();if(W){W.scale.set(1,1,1);if(st.arr){try{lockOff(G,W);}catch(e){}}if(RS.on||st.sitting){W.userData.riding=null;G.core.block('meteor',false);G.ui.setHints(true);}W.userData.sceneLock=false;}}};}
+    update,lateUpdate,dispose(){board.dispose&&board.dispose();tossUI(false);if(st.howClose&&st.how)st.howClose();if(RS.chip)RS.chip.remove();if(RS.cap)RS.cap.remove();window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);const W=U0();if(W){W.scale.set(1,1,1);if(st.arr){try{lockOff(G,W);}catch(e){}}if(RS.on||st.sitting){W.userData.riding=null;G.core.block('meteor',false);G.ui.setHints(true);}W.userData.sceneLock=false;}}};}

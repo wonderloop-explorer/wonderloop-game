@@ -42,14 +42,17 @@ with sync_playwright() as p:
             until("wlGame.dialog.talking&&document.body.innerText.includes('쉬었다 가자')", 30); pg.wait_for_timeout(900); shot('00-intro-line1'); res['첫 대사(초)'] = round(time.time() - T0, 1)
         if not FROM or FROM == 'toss':
             # ── 고리 던지기 ──
+            # 놀이 설명 창(한 번) → 닫기(PC는 E, 휴대폰은 '알겠어요')
+            until('wlZone.cur.state().how', 60); pg.wait_for_timeout(1900); shot('01-toss-how'); res['설명 창 글'] = pg.evaluate("document.querySelector('#wlTossHow p').textContent")
+            if PHONE: pg.locator('#wlTossHow button').tap()
+            else: pg.keyboard.press('KeyE')
             until('wlZone.cur.state().toss.on', 60); pg.wait_for_timeout(1200); shot('01-toss-ready'); tt0 = time.time()
-            box = pg.locator('#wlToss').bounding_box(); cxp, cyp = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+            res['던지기 화면'] = pg.evaluate("(()=>{const v=id=>{const e=document.getElementById(id);if(!e)return null;const c=getComputedStyle(e),r=e.getBoundingClientRect();return c.display!=='none'&&c.visibility!=='hidden'?[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]:false;};return {단추:v('wlToss'),게이지:v('wlTossBar'),조이스틱:v('wlJoy'),점프:v('wlJump'),대쉬:v('wlDash'),화면:[innerWidth,innerHeight]};})()")
             def press():
                 if PHONE: pg.evaluate("()=>wlZone.cur.dbgDown()")
-                else: pg.mouse.move(cxp, cyp); pg.mouse.down()
+                else: pg.keyboard.down('KeyE')
             def release():
-                if PHONE: pg.evaluate("()=>wlZone.cur.dbgUp()")
-                else: pg.mouse.up()
+                if not PHONE: pg.keyboard.up('KeyE')
             n = 0; missLeft = 2 if '--miss' in A else 0; shots = set()
             while n < 14:
                 s = st()['toss']
@@ -59,7 +62,7 @@ with sync_playwright() as p:
                 if missLeft: missLeft -= 1
                 press()
                 if 'g' not in shots:  # 게이지가 차오르는 모습
-                    until('wlZone.cur.state().toss.p>.3', 4); shots.add('g'); shot('01-toss-gauge')
+                    until('wlZone.cur.state().toss.p>.25', 4); shots.add('g'); shot('01-toss-gauge'); until('wlZone.cur.state().hot', 4); shot('01-toss-hot')
                 # 떼는 순간은 페이지 안에서(프레임마다 게이지를 보고) — 밖에서 값을 읽고 떼면 느린 헤드리스에서는 그사이 게이지가 지나간다
                 pg.evaluate("""(goal)=>new Promise(r=>{const t0=performance.now(),f=()=>{const p=wlZone.cur.state().toss.p;if(Math.abs(p-goal)<.025||performance.now()-t0>9000){wlZone.cur.dbgUp();r();}else requestAnimationFrame(f);};f();})""", goal)
                 release(); n += 1
@@ -75,14 +78,16 @@ with sync_playwright() as p:
         if not FROM or FROM in ('toss', 'rest'):
             # ── 쉬기 ──
             until('wlZone.cur.state().rest.on', 60); tr0 = time.time(); ui = None
-            for n, t in (('1-side', 3.5), ('2-field', 14.5), ('3-enceladus', 22.5), ('4-hexagon', 30.2), ('5-back', 37.5)):
-                until('wlZone.cur.state().rest.t>=%s' % t, 60); shot('02-rest-%s' % n); draw()
+            for n, t in (('1a-two', 2.5), ('1b-saturn', 9), ('1c-ring', 15.3), ('2-field', 26), ('2b-field', 31), ('3-bands', 43), ('4a-rise', 52), ('4-hexagon', 60), ('5-enceladus', 75), ('6-titan', 90), ('7a-moons', 103), ('7b-down', 108.5), ('7c-two', 111.4)):
+                until('wlZone.cur.state().rest.t>=%s' % t, 200); shot('02-rest-%s' % n); draw()
+                if t == 15.3:
+                    if PHONE: pg.touchscreen.tap(200, 300)
+                    else: pg.mouse.click(400, 300)
+                    pg.wait_for_timeout(300); res['건너뛰기 단추(10초 뒤 누르면)'] = pg.evaluate("!!document.getElementById('wlRestSkip')")
+                    if '--skip' in A: pg.evaluate("document.getElementById('wlRestSkip').click()"); break
                 if ui is None: ui = pg.evaluate("(()=>{const v=id=>{const e=document.getElementById(id);if(!e)return null;const c=getComputedStyle(e);return c.display!=='none'&&c.visibility!=='hidden'&&+c.opacity>0.05;};return {joy:v('wlJoy'),act:v('wlAct'),quest:v('wlQuest'),hud:v('wlHud'),menu:v('wlMenu'),dlg:v('wlDlg'),toss:v('wlToss')};})()")
             res['쉬는 동안 보이는 화면 표시'] = ui
-            if PHONE: pg.touchscreen.tap(200, 300)
-            else: pg.mouse.click(400, 300)
-            pg.wait_for_timeout(300); res['건너뛰기 단추(10초 뒤 누르면)'] = pg.evaluate("!!document.getElementById('wlRestSkip')")
-            if '--skip' in A: pg.evaluate("document.getElementById('wlRestSkip').click()")
+            res['나레이션 [번호, 시작 초]'] = st()['rest']['narr']
             until('!wlZone.cur.state().rest.on', 60); res['쉬기(초)'] = round(time.time() - tr0, 1)
         if not FROM or FROM in ('toss', 'rest', 'card'):
             until("document.body.innerText.includes('욕조에 넣으면')", 40); pg.wait_for_timeout(900); shot('03-card-line')
@@ -92,13 +97,13 @@ with sync_playwright() as p:
             until('wlZone.cur.state().T.bye!=null', 30)
             for n, d in (('1-boat-in', 2.2), ('2-wave-side', 5.3), ('3-wave-far', 6.2), ('4-hero-front', 8.3)): # 게임 시계(헤드리스는 실제보다 느리게 돎)
                 until('wlZone.cur.state().t-wlZone.cur.state().T.bye>=%s' % d, 60); shot('04-bye-%s' % n)
-            until('wlZone.cur.state().T.clear!=null', 30)
+            until('wlZone.cur.state().T.clear!=null', 30); pg.wait_for_timeout(450); shot('04-done-hop'); until("document.body.innerText.includes('쉼터 완료')", 10); pg.wait_for_timeout(700); shot('04-done-card'); until('wlZone.cur.state().T.doneCard!=null', 30)
         else:
             pg.wait_for_timeout(2500); shot('05-portal'); pg.evaluate('wlZone.cur.dbgStorm()')
         # ── 붉은 빛 → 목성 ──
         until('wlZone.cur.state().dep!=null', 30); ts0 = time.time(); T = st()['T']; res['쉼터 단계 시각(게임 초)'] = T; res['쉼터 전체(게임 초 — 구역을 연 뒤 ~ 붉은 빛이 내려옴)'] = round(T.get('storm', 0) - T.get('start', 0), 1) if T.get('storm') else None; until('wlZone.cur.state().t-wlZone.cur.state().T.storm>=1.5', 30); shot('05-storm-0-come')
         until("wlZone.cur.state().dep==='pull'", 20); shot('05-storm-1-pull')
-        for u, n in ((.05, '2-lift'), (.2, '3-down'), (.28, '3-down2'), (.46, '4-side'), (.68, '5-shoulder'), (.8, '5-shoulder2'), (.9, '6-jupiter'), (.97, '7-jupiter'), (.995, '8-jupiter')):
+        for u, n in ((.05, '2-lift'), (.2, '3-down'), (.28, '3-down2'), (.46, '4-side'), (.6, '5a-turn'), (.66, '5b-face'), (.72, '5c-far'), (.8, '5d-in'), (.88, '6-jupiter'), (.95, '7-jupiter'), (.995, '8-jupiter')):
             until('wlZone.cur.state().sailU>=%s' % u, 40); shot('05-storm-%s' % n); draw()
         until("!!document.getElementById('wlTravelMap')", 20); c0 = pg.evaluate('performance.now()'); pg.wait_for_timeout(1500); shot('06-map'); pg.wait_for_timeout(1300); shot('06-map-2')  # 지도는 약 4초(실제 시간) — 발자국이 찍히는 중간과 다 찍힌 때
         until("wlZone.cur&&wlZone.cur.name==='붉은 폭풍'", 30); pg.wait_for_timeout(1700); shot('07-jupiter-arrive')

@@ -65,7 +65,8 @@ def end(pg):
         if bk and lastb is not None and el < 17.5: back += now - lastb
         lastb = now; pg.wait_for_timeout(60)
     R['얼음 배 비행 중 뒷모습(초)'] = round(back, 2); R['카메라 마디(비행 진행)'] = None
-    pg.wait_for_timeout(1500); shot('50-saturn-arrive'); pg.wait_for_timeout(1200); shot('50b-saturn-down'); until('wlZone.cur.state().T.land', 15); pg.wait_for_timeout(1150); shot('50c-saturn-hop')
+    for i in range(8): pg.wait_for_timeout(380); shot('50-arrive-%d' % i)  # 토성 도착: 배가 빙글 돌며 내려오고 카메라가 돌며 다가옴(2026-11-25)
+    until('wlZone.cur.state().T.land', 15); pg.wait_for_timeout(1150); shot('50c-saturn-hop')
     until('wlZone.cur.state().T.free', 15); pg.wait_for_timeout(1400); shot('51-saturn-look'); until('wlZone.cur.state().done', 30); pg.wait_for_timeout(600); shot('52-saturn-field')
     try: R['이동 기록'] = {k: v for k, v in pg.evaluate('wlGame.travel.log()').items() if k in ('err', 'ahead', 'fix', 'resolveMinusLand')}
     except Exception: pass
@@ -111,6 +112,13 @@ def sunrise(pg):
         if not T.get('sun0') and time.time() - t0 < 12: pg.evaluate('([x,z])=>wlGame.mission.hero().userData.walkTo(x,z)', [c[0], c[1] + 2])
         if '안개 때문에' in v[5] and not shots['033'] and v[2] and v[2] > 4: shots['033'] = True; shot('2a-plaza-talk033')
         if '해가 뜬다' in v[5] and not shots['034']: shots['034'] = True; pg.wait_for_timeout(900); shot('2b-plaza-talk034')
+        if '--tap' in A and shots['034'] and not shots.get('tap'):  # 휴대폰에서 대사를 넘기려 누를 때처럼 손가락이 조금 밀림(22화소) → 카메라가 풀리는지
+            shots['tap'] = True
+            if '--nohold' in A: pg.evaluate('window.__noSunHold=true')
+            vp = pg.viewport_size; cdp = pg.context.new_cdp_session(pg); x, y = vp['width'] * .5, vp['height'] * .45
+            cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x, 'y': y}]})
+            for i in range(1, 5): cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x + 6 * i, 'y': y + 2 * i}]}); pg.wait_for_timeout(30)
+            cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []}); pg.wait_for_timeout(1500); shot('2b2-after-tap')
         if v[3] >= 1 and not shots['sun']: shots['sun'] = True; shot('2c-plaza-sunup')
         if T.get('sunEnd') and v[1] == 'venus-bgm' and v[2] and v[2] > 4: break
         pg.wait_for_timeout(150)
