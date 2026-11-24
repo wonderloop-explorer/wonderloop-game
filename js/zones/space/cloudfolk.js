@@ -34,13 +34,13 @@ export function makeGeokkuri(){const root=new THREE.Group();root.name='geokkuri'
   {const f=new THREE.Mesh(new THREE.CircleGeometry(.238,24).applyMatrix4(M4([0,.034,0],[-PI/2,0,0])).applyMatrix4(HM),dialMat());f.name='geokkuri-dial';me.add(f);}
   const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*.37,.56,.06);me.add(g);g.add(lump([[puff(.085,0,-.1,0,[1,1.5,1]),B],[puff(.075,0,-.22,.01),A]],true,2.2));g.rotation.z=s*.5;g.userData.s=s;return g;});
   const st={mode:'idle',pt:0};
-  /* mode: idle · walk(뒷걸음 뒤뚱) · talk · point(오른팔로 가리킴) · sit */
+  /* mode: idle · walk(뒷걸음 뒤뚱) · talk · point(오른팔로 가리킴) · sit · wave(오른팔을 높이 들어 흔듦 — 토성 쉼터 작별, 2026-11-24) */
   function tick(dt,t,mode){st.mode=mode||'idle';const w=st.mode==='walk',tk=st.mode==='talk';
     body.position.y=w?Math.abs(Math.sin(t*9))*.07:tk?Math.abs(Math.sin(t*6))*.03:Math.sin(t*2.2)*.012+(st.mode==='sit'?-.1:0);
     body.rotation.z=w?Math.sin(t*9)*.09:Math.sin(t*1.7)*.02;body.rotation.x=w?-.07:0;
     const sy=1+(tk?Math.sin(t*12)*.015:Math.sin(t*2.2)*.012);me.scale.set(1/Math.sqrt(sy),sy,1/Math.sqrt(sy));
-    st.pt+=((st.mode==='point'?1:0)-st.pt)*Math.min(1,dt*8);
-    arms.forEach(g=>{const s=g.userData.s,sw=w?Math.sin(t*9+(s>0?0:PI))*.35:Math.sin(t*2+s)*.06;g.rotation.z=s*(.5+(tk?.25+Math.sin(t*7+s)*.2:0))+(s>0?st.pt*1.25:0);g.rotation.x=sw-(s>0?st.pt*.5:0);});}
+    st.pt+=((st.mode==='point'?1:0)-st.pt)*Math.min(1,dt*8);st.wv=(st.wv||0)+((st.mode==='wave'?1:0)-(st.wv||0))*Math.min(1,dt*8);
+    arms.forEach(g=>{const s=g.userData.s,sw=w?Math.sin(t*9+(s>0?0:PI))*.35:Math.sin(t*2+s)*.06;g.rotation.z=s*(.5+(tk?.25+Math.sin(t*7+s)*.2:0))+(s>0?st.pt*1.25+st.wv*(1.9+Math.sin(t*9)*.35):0);g.rotation.x=sw-(s>0?st.pt*.5:0);});}
   return {root,body,mesh:me,tick,head:1.0};}
 /* ── 뭉게 문지기 ── */
 export function makeMunge(){const root=new THREE.Group();root.name='munge';const body=new THREE.Group();root.add(body);

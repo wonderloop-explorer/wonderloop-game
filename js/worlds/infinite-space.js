@@ -118,11 +118,12 @@ export default {
     {flag:'secret:infinite-space:volcano',name:'큰 화산 꼭대기',where:'STAGE 2 붉은 모래 언덕',open:'화산 꼭대기에 올라가면 알게 돼요', /* open: 숨겨진 비밀이 아니라 꼭 지나가는 발견(2026-11-13 — 깃발을 꽂아야 금성으로 떠남) */text:'태양계에서 가장 높은 화산, 올림푸스 산이에요. 경사가 아주 완만한 방패 모양이고, 꼭대기에 거대한 분화구가 있어요.',note:{flag:'mars:flag',text:'깃발을 꽂았어요'}},
     {flag:'secret:infinite-space:venussun',name:'해가 서쪽에서 떠요',where:'STAGE 3 구름 행성',open:'해돋이 광장에서 해 쪽으로 나가면 알게 돼요',text:'금성은 다른 행성과 거꾸로 돌아서, 해가 서쪽에서 뜨고 동쪽으로 져요.'},
     {flag:'secret:infinite-space:venusair',name:'구름 위는 지구와 비슷해요',where:'STAGE 3 구름 행성',open:'구름 끝에서 알게 돼요',text:'금성 땅은 아주 뜨겁지만, 구름 위 높은 곳은 기압과 온도가 지구와 비슷해요.'},
-    {flag:'secret:infinite-space:venusday',name:'한 바퀴보다 1년이 먼저 끝나요',where:'STAGE 3 구름 행성',open:'또생일의 생일 초를 찾아 주면 알게 돼요',text:'금성이 제자리에서 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요. 한 바퀴 도는 것보다 1년이 먼저 끝나요.'}],
-  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'구름 행성',zone:'space-venus'},{name:'쉼터',zone:null,rest:true},{name:'붉은 폭풍',zone:null}], /* rest: 번호 없는 쉼터(토성) — 아직 없는 곳은 zone null */
+    {flag:'secret:infinite-space:venusday',name:'한 바퀴보다 1년이 먼저 끝나요',where:'STAGE 3 구름 행성',open:'또생일의 생일 초를 찾아 주면 알게 돼요',text:'금성이 제자리에서 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요. 한 바퀴 도는 것보다 1년이 먼저 끝나요.'},
+    {flag:'secret:infinite-space:saturnfloat',name:'토성은 물보다 가벼워요',where:'쉼터 토성 고리',open:'토성 고리에서 쉬고 나면 알게 돼요',text:'토성은 태양계에서 유일하게 평균 밀도가 물보다 낮은 행성이에요. 아주 큰 욕조가 있다면 둥둥 뜰 거예요.' /* SPC-RS-008 임시 */}],
+  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'구름 행성',zone:'space-venus'},{name:'쉼터',zone:'space-saturn',rest:true},{name:'붉은 폭풍',zone:null}], /* rest: 번호 없는 쉼터(토성 — 2026-11-24 본편) — 아직 없는 곳은 zone null(붉은 폭풍은 임시 구역 space-jupiter만 있음) */
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   /* 목소리(2026-11-15 — docs/voice/README.md): 대본 목록 docs/voice/script.csv의 번호 SPC-…, 파일 assets/voice/space/<번호>.mp3. stages = 구역마다 미리 읽을 스테이지 */
-  voice:{dir:'space',stages:{'space-garden':'S1','space-mars':'S2','space-venus':'S3'}},
+  voice:{dir:'space',stages:{'space-garden':'S1','space-mars':'S2','space-venus':'S3','space-saturn':'RS'}},
   music:{id:'space-title',song:{name:'무한 우주 타이틀',bpm:72,lead:'celesta',noVary:true,
     bars:[45,41,43,40,45,41,38,40].map((r,i)=>{const q=[3,4,4,3,3,4,4,4][i];return {bass:r,pad:[r+24,r+24+q,r+31]};}),
     mel:[[76,null,null,79,81,null,null,null],[77,null,76,null,72,null,null,null],[74,null,null,79,83,null,81,null],[79,null,null,null,76,null,null,null],
@@ -155,10 +156,10 @@ export default {
      구역 사이 예고 한 줄(나레이션 자리 — 지금은 자막만), 지나온 스테이지에서 발견한 것(flag가 켜진 것만 작은 그림으로) */
   /* 이동 테마 = 수노 '02.무한우주_이동 테마(오르골 왈츠)'(2026-11-09, 원본 WAV는 wonderloop-studio/infinite-space/audio/) — D장조 3/4, 0:13 현악 합류 → 0:17~0:28 절정 → 0:32 E♭으로 비켜 갔다
      0:33.5 D장조로 해결 → 0:37까지 울림. 한 마디 1.3765초(한 박 0.459초), 마디 자리 12.35초 기준, 늘이거나 줄이는 자리는 절정 안 24.74초 마디 경계 */
-  travel:{order:['space-garden','space-mars','space-venus','space-saturn'], /* 다녀오는 순서(우주 지도: 지난 길·발자국 도장) */theme:{file:'assets/audio/travel-theme.mp3',lufs:-13.1,from:13,to:37,resolve:33.5,bar:1.3765,beat0:12.35,jumpAt:25},
+  travel:{order:['space-garden','space-mars','space-venus','space-saturn','space-jupiter'], /* 다녀오는 순서(우주 지도: 지난 길·발자국 도장) */theme:{file:'assets/audio/travel-theme.mp3',lufs:-13.1,from:13,to:37,resolve:33.5,bar:1.3765,beat0:12.35,jumpAt:25},
     map:{bodies:[{id:'sun',name:'해',color:'#F6C85A',r:.06,glow:true},{id:'venus',name:'금성',color:'#C9A6E0',r:.05,zone:'space-venus'},{id:'moon',name:'달',color:'#BFC3CC',r:.05,zone:'space-garden'},
-      {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true,zone:'space-saturn'}]},
-    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파랗대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'},'space-venus>space-saturn':{id:'travel-venus-saturn',text:'저 고리 행성의 고리는 얼음 조각들로 되어 있대요.'}},
+      {id:'mars',name:'화성',color:'#D9704A',r:.058,zone:'space-mars'},{id:'jupiter',name:'목성',color:'#E9C49A',r:.085,zone:'space-jupiter'},{id:'saturn',name:'토성',color:'#E8D29A',r:.068,ring:true,zone:'space-saturn'}]},
+    lines:{'space-garden>space-mars':{id:'travel-moon-mars',text:'저 붉은 행성에선 노을이 파랗대요.'},'space-mars>space-venus':{id:'travel-mars-venus',text:'저 구름 행성에선 해가 서쪽에서 뜬대요.'},'space-venus>space-saturn':{id:'travel-venus-saturn',text:'저 고리 행성의 고리는 얼음 조각들로 되어 있대요.'},'space-saturn>space-jupiter':{id:'travel-saturn-jupiter',text:'[임시] 저 줄무늬 행성의 붉은 점은 지구보다 큰 폭풍이래요.' /* SPC-TR-006 임시 */}},
     facts:{'space-garden':[{flag:'have:infinite-space:necklace',img:()=>ICON_NECK()},{flag:'secret:infinite-space:icecave',img:()=>ICON_ICE()},
       {flag:'secret:infinite-space:telescope',img:()=>ICON_SCOPE()},{flag:'item:infinite-space:dalddeok',img:()=>ICON_CAKE()}],
       'space-mars':[{flag:'secret:infinite-space:bluesunset',img:()=>ICON_DUSK()},{flag:'secret:infinite-space:marssound',img:()=>ICON_VOICE()}]}},

@@ -67,6 +67,8 @@ sfx:{'item-get':'ant-dex',                          // 다른 소리 이름으�
 | `travel-arrive` | **새로 만듦** | 다음 행성 대기에 들어섬(낮은 우웅이 부풀었다 잦아듦) | — | game/travel.js | 1.6 | — |
 | `event-baa` | **새로 만듦** (2026-11-21) | 음매 — 구름 양 울음(금성 양 몰기: 울타리에 들어갔을 때) | — | zones/space/venus.js | 0.55 | — |
 | `event-pyong` | **새로 만듦** (2026-11-20) | 뿅 — 작은 것이 구멍에서 쏙 튀어나옴(금성 구름 양 재우기) | — | zones/space/venus.js(양이 튀어나올 때) | 0.22 | — |
+| `event-ding` | **새로 만듦** (2026-11-24) | 딩 — 맑은 얼음 종소리(토성 쉼터 고리 던지기: 고리가 얼음 뿔에 걸림, `sfx('event-ding',{pitch})`) | — | zones/space/saturn.js | 1.1 | — |
+| `voice-giggle` | **새로 만듦** (2026-11-24) | 히히 — 짧은 웃음소리(토성 쉼터 카세트에 담긴 친구들 웃음, `sfx('voice-giggle',{pitch,n})`) | — | zones/space/saturn.js | 0.9 | — |
 | `cloud-poof` | **새로 만듦** (2026-11-12) | 푹신한 구름에 들어섬·사뿐히 내려앉음(부드러운 푸훗 — 금성) | — | zones/space/mars.js(구름 덮개) · whirl-lift.js(내려앉음) | 0.9 | — |
 | `photo-shutter` | **새로 만듦** | 사진 찍기 셔터 찰칵(사진 모드, 2026-11-08 — 높은 딸깍 두 번, 원본 `click`과 비슷한 크기) | — | game/photo.js | 0.2 | — |
 | `voice-mumble` | **새로 만듦** | 웅얼 목소리 — 진짜 녹음 전 자리(2026-11-09 화성: 모음 소리를 음절로 이어 붙임 · `{low}` 낮고 느린 둥둥 / 아니면 높고 빠른 삐삐 · `{sec}` 길이 · `{tape}` 카세트로 들을 때 좁은 대역 + 쉬익) | — | zones/space/mars.js | 2.4 | — |

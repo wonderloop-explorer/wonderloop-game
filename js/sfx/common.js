@@ -67,6 +67,8 @@ const NEW={
     P.forEach((m,i)=>{bell(c,m+12,a,L[i]*1.6,.05,D);a+=L[i];});}}, // 오르골 생일 노래 한 구절(sfx(…,{phrase:n}) — 네 구절을 차례로, 금성 또생일 — 2026-11-18, 원본에 없던 소리)
   'event-baa':{dur:.55,play(c,D,o){const t=c.currentTime,k=(o&&o.pitch)||1;for(let i=0;i<6;i++){tone(c,'sawtooth',(rr(455,475)-i*9+(i%2?14:0))*k,t+i*.075,.1,.035,D);tone(c,'triangle',(228-i*4)*k,t+i*.075,.1,.05,D);}}}, // 음매: 떨리는 짧은 울음(금성 구름 양 — 2026-11-21, 원본에 없던 소리). sfx('event-baa',{pitch}) = 높이 배율(양마다 조금씩 다르게)
   'event-pyong':[.22,(c,t,D)=>{tone(c,'sine',560,t,.1,.15,D,{slide:1500});tone(c,'triangle',1320,t+.07,.12,.06,D,{slide:1760});}], // 뿅: 무언가 쏙 튀어나옴(금성 구름 양 — 2026-11-20, 원본에 없던 소리)
+  'event-ding':{dur:1.1,play(c,D,o){const t=c.currentTime,k=(o&&o.pitch)||1;tone(c,'sine',1568*k,t,.9,.11,D);tone(c,'sine',2349*k,t+.01,.7,.05,D);tone(c,'triangle',3136*k,t+.02,.35,.02,D);}}, // 딩: 맑은 얼음 종소리(토성 쉼터 — 얼음 고리가 뿔에 걸림, 2026-11-24, 원본에 없던 소리). sfx('event-ding',{pitch}) = 높이 배율
+  'voice-giggle':{dur:.9,play(c,D,o){const t=c.currentTime,k=(o&&o.pitch)||1,n=(o&&o.n)||4;for(let i=0;i<n;i++){const f=(520+i%2*90-i*14)*k;tone(c,'triangle',f,t+i*.16,.11,.06,D,{slide:f*1.18});tone(c,'sine',f*2,t+i*.16,.08,.018,D);}}}, // 히히: 짧은 웃음소리(토성 쉼터 카세트 — 지나온 친구들 웃음, 2026-11-24, 원본에 없던 소리). sfx('voice-giggle',{pitch,n}) = 높이 배율·마디 수
   'cloud-poof':[.9,(c,t,D)=>{noise(c,t,.8,.13,D,'lowpass',rr(520,640),.6,160);noise(c,t+.05,.5,.05,D,'bandpass',rr(1300,1600),.9);tone(c,'sine',196,t+.02,.5,.05,D,{slide:147});}], // 푸훗: 푹신한 구름에 쏙(금성 — 2026-11-12, 원본에 없던 소리)
   'event-dust':[.4,(c,t,D)=>{noise(c,t,.35,.14,D,'lowpass',rr(900,1200),.7,220);noise(c,t+.03,.18,.04,D,'bandpass',rr(2200,2800),1.2);}], // 퍽: 부드러운 흙먼지
   'photo-shutter':[.2,(c,t,D)=>{noise(c,t,.03,.16,D,'highpass',3800,.8);tone(c,'square',1900,t,.018,.035,D,{lp:4200});noise(c,t+.075,.05,.12,D,'bandpass',2600,1.4);tone(c,'square',1300,t+.075,.02,.03,D,{lp:3600});}], // 찰-칵: 높은 딸깍 두 번(원본 click과 비슷한 크기)
@@ -143,6 +145,8 @@ const KINDS={
   'tune-birthday':['사건','tune-birthday','오르골 생일 노래 한 구절(sfx(…,{phrase:n}) — 금성 또생일, 원본에 없던 소리)'],
   'event-baa':['사건','event-baa','음매 — 구름 양 울음(금성 양 몰기 — 원본에 없던 소리)'],
   'event-pyong':['사건','event-pyong','뿅 — 작은 것이 쏙 튀어나옴(금성 구름 양 — 원본에 없던 소리)'],
+  'event-ding':['사건','event-ding','딩 — 맑은 얼음 종소리(토성 쉼터 고리 던지기: 고리가 뿔에 걸림 — 원본에 없던 소리)'],
+  'voice-giggle':['목소리','voice-giggle','히히 — 짧은 웃음소리(토성 쉼터 카세트: 지나온 친구들 웃음, sfx(…,{pitch,n}) — 원본에 없던 소리)'],
   'cloud-poof':['이동','cloud-poof','푹신한 구름에 들어섬·내려앉음(금성 — 원본에 없던 소리)'],
   'event-dust':['사건','event-dust','먼지 퐁(착지 때 흙먼지가 피어오름 — 원본에 없던 소리)'],
   'voice-mumble':['목소리','voice-mumble','웅얼 목소리 — 진짜 녹음 전 자리(sfx(…,{low,sec,tape}) — 높고 빠른 삐삐·낮고 느린 둥둥, 카세트로 들을 때 tape, 원본에 없던 소리)'],
