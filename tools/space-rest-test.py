@@ -100,7 +100,7 @@ with sync_playwright() as p:
         until("wlZone.cur.state().dep==='pull'", 20); shot('05-storm-1-pull')
         for u, n in ((.05, '2-lift'), (.2, '3-down'), (.28, '3-down2'), (.46, '4-side'), (.68, '5-shoulder'), (.8, '5-shoulder2'), (.9, '6-jupiter'), (.97, '7-jupiter'), (.995, '8-jupiter')):
             until('wlZone.cur.state().sailU>=%s' % u, 40); shot('05-storm-%s' % n); draw()
-        until("!!document.getElementById('wlTravelMap')", 20); c0 = pg.evaluate('performance.now()'); pg.wait_for_timeout(2000 if PHONE else 2600); shot('06-map'); pg.wait_for_timeout(900 if PHONE else 1500); shot('06-map-2')
+        until("!!document.getElementById('wlTravelMap')", 20); c0 = pg.evaluate('performance.now()'); pg.wait_for_timeout(1500); shot('06-map'); pg.wait_for_timeout(1300); shot('06-map-2')  # 지도는 약 4초(실제 시간) — 발자국이 찍히는 중간과 다 찍힌 때
         until("wlZone.cur&&wlZone.cur.name==='붉은 폭풍'", 30); pg.wait_for_timeout(1700); shot('07-jupiter-arrive')
         until('wlZone.cur.state().carded', 40); pg.wait_for_timeout(1200); shot('07-jupiter-card'); res['붉은 빛 → 목성 카드(초)'] = round(time.time() - ts0, 1)
         try: res['이동 음악'] = pg.evaluate('(()=>{const l=wlGame.travel.log&&wlGame.travel.log();return l?{resolve:l.resolveAt,land:l.landAt,diff:l.diff,fix:l.fix}:null})()')
