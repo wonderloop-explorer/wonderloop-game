@@ -33,14 +33,20 @@ function onHead(geo,R,c,el,az,roll,out=0,sc=[1,1,1]){const n=new THREE.Vector3(M
 /* 머리 겉면에 그림처럼 붙는 얼굴 무늬(2026-11-25 — 눈·별빛·볼·입이 머리에서 떠 보이던 것. 원인: ① 머리 공은 앞뒤 0.96·위아래 0.97로 눌렀는데 무늬는 누르기 전 반지름 R 자리에 놓여 앞쪽에서 4%(삐삐 1cm) 떠 있었고
    ② 무늬가 겉면에 세운 납작한 타원 공(평평한 판에 가까움)이라 둥근 머리에서 가장자리가 더 뜨고 ③ 별빛은 3cm나 밖에 있었다):
    타원 무늬의 점마다 실제 머리 타원체(반지름 RAD) 겉면으로 옮기고 eps(반지름 대비)만큼만 띄움 — 법선도 머리 겉면 법선. 같은 덩어리에 합쳐 그리기 수 그대로. (el·az·roll·크기는 예전 onHead와 같은 뜻) */
-function faceDecal(R,RAD,c,el,az,roll,a,b,eps,nr=4,na=22){const n=new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
+function wrap2D(R,RAD,c,el,az,roll,pts,idx,eps,uvs){const n=new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
   const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),n).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),roll)),e1=new THREE.Vector3(1,0,0).applyQuaternion(q),e2=new THREE.Vector3(0,1,0).applyQuaternion(q);
-  const pos=[],nor=[],uv=[],idx=[],v=new THREE.Vector3(),put=(x,y)=>{v.copy(n).addScaledVector(e1,x/R).addScaledVector(e2,y/R).normalize();pos.push(c[0]+v.x*RAD[0]*(1+eps),c[1]+v.y*RAD[1]*(1+eps),c[2]+v.z*RAD[2]*(1+eps));
-    const nx=v.x/RAD[0],ny=v.y/RAD[1],nz=v.z/RAD[2],l=Math.hypot(nx,ny,nz);nor.push(nx/l,ny/l,nz/l);uv.push(.5+x/a*.5,.5+y/b*.5);};
-  put(0,0);for(let k=1;k<=nr;k++)for(let j=0;j<na;j++){const t=j/na*PI*2,r=k/nr;put(Math.cos(t)*a*r,Math.sin(t)*b*r);}
+  const pos=[],nor=[],uv=[],v=new THREE.Vector3();pts.forEach(([x,y],i)=>{v.copy(n).addScaledVector(e1,x/R).addScaledVector(e2,y/R).normalize();pos.push(c[0]+v.x*RAD[0]*(1+eps),c[1]+v.y*RAD[1]*(1+eps),c[2]+v.z*RAD[2]*(1+eps));
+    const nx=v.x/RAD[0],ny=v.y/RAD[1],nz=v.z/RAD[2],l=Math.hypot(nx,ny,nz);nor.push(nx/l,ny/l,nz/l);uv.push(uvs?uvs[i][0]:.5,uvs?uvs[i][1]:.5);});
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);return g;}
+/* 타원 무늬(눈·별빛·볼·입): 가운데 + 고리 nr겹 */
+function faceDecal(R,RAD,c,el,az,roll,a,b,eps,nr=4,na=22){const pts=[[0,0]],uv=[[.5,.5]],idx=[];
+  for(let k=1;k<=nr;k++)for(let j=0;j<na;j++){const t=j/na*PI*2,r=k/nr;pts.push([Math.cos(t)*a*r,Math.sin(t)*b*r]);uv.push([.5+Math.cos(t)*r*.5,.5+Math.sin(t)*r*.5]);}
   for(let j=0;j<na;j++)idx.push(0,1+j,1+(j+1)%na);
   for(let k=1;k<nr;k++)for(let j=0;j<na;j++){const A=1+(k-1)*na+j,B=1+(k-1)*na+(j+1)%na,C=1+k*na+j,D=1+k*na+(j+1)%na;idx.push(A,C,D,A,D,B);}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);return g;}
+  return wrap2D(R,RAD,c,el,az,roll,pts,idx,eps,uv);}
+/* 반 고리 무늬(웃는 입·감은 눈 — 예전 반쪽 도넛 자리): 타원 반 바퀴(위쪽 반 — roll PI면 아래로 둥근 웃는 입)를 따라가는 띠, 두께 = 반지름의 w배, 끝은 둥글게 가늘어짐 */
+function faceArc(R,RAD,c,el,az,roll,a,b,w,eps,n=18){const pts=[],idx=[];for(let i=0;i<=n;i++){const t=i/n*PI,k=w*Math.sqrt(Math.max(.04,Math.sin(Math.min(1,Math.min(i,n-i)/2.2)*PI/2)));pts.push([Math.cos(t)*a*(1-k),Math.sin(t)*b*(1-k)],[Math.cos(t)*a*(1+k),Math.sin(t)*b*(1+k)]);}
+  for(let i=0;i<n;i++){const A=i*2,B=A+1,C=A+2,D=A+3;idx.push(A,B,D,A,D,C);}return wrap2D(R,RAD,c,el,az,roll,pts,idx,eps);}
 /* 화성 친구 하나 — wrap:true면 얼굴을 머리 겉면에 붙임(faceDecal) + 머리 면을 더 매끈하게 */
 export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mouth='o',name='martian',wrap=false}){
   const root=new THREE.Group();root.name=name;const body=new THREE.Group();root.add(body);
@@ -55,7 +61,7 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
       D(el+.06,az-s*.08,0,R*.055,R*.055,.016,'#ffffff',2,12);D(el-.05,az+s*.07,0,R*.022,R*.022,.016,'#ffffff',1,8);
       if(lids)D(el+.085,az,roll,R*.37,R*.12,.024,skinD,4,24);
       D(-.2,s*.6,0,R*.1,R*.06,.008,cheek,3,16);}
-    if(mouth==='o')D(-.3,0,0,R*.06,R*.085,.008,'#7a2f2a',3,16);}
+    if(mouth==='o')D(-.3,0,0,R*.06,R*.085,.008,'#7a2f2a',3,16);else L.push([faceArc(R,RAD,hc,-.27,0,PI,R*.13,R*.09,.2,.008),'#6a2a24']);} /* 둥둥: 웃는 입(아래로 둥근 띠) */
   else{
   /* 아몬드 눈: 납작한 타원 공을 겉면에 세워 바깥 끝이 올라가게(roll), 눈 안 흰 별빛 */
   for(const s of [-1,1]){const el=.08,az=s*.43,roll=s*.42;
@@ -99,7 +105,7 @@ export function makeMartian({skin,height,headR,torso,legs,armLen,lids=false,mout
     set mode(v){st.mode=v;},get mode(){return st.mode;},
     dispose(){root.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}};}
 export const makePipi=()=>makeMartian({name:'pipi',skin:'#E8946A',height:.966,headR:.25,torso:.075,legs:.2,armLen:.27,mouth:'o',wrap:!NOWRAP}); /* 2026-11-25: 삐삐부터 얼굴을 겉면에 붙임(?nowrap = 예전 모습 — 비교용) */
-export const makeDungdung=()=>makeMartian({name:'dungdung',skin:'#C2633F',height:1.79,headR:.34,torso:.1,legs:.22,armLen:.66,lids:true,mouth:'smile'});
+export const makeDungdung=()=>makeMartian({name:'dungdung',skin:'#C2633F',height:1.79,headR:.34,torso:.1,legs:.22,armLen:.66,lids:true,mouth:'smile',wrap:!NOWRAP});
 /* ── 먼지 회오리 ── */
 export function makeWhirl(root,{radius=1.9,height=6,seed=0,big=false}={}){
   const RS=20,HS=14,pos=[],uv=[],idx=[];
@@ -191,7 +197,7 @@ export function jumbleBubble({camera,obj,y,text,tone='hi',hint}){const el=docume
       obj.getWorldPosition(v);v.y+=y;v.y=bentY(v.x,v.z,v.y);v.project(camera);const vis=v.z<1&&Math.abs(v.x)<1.2&&Math.abs(v.y)<1.2;el.style.display=vis?'':'none';
       el.style.left=((v.x+1)/2*innerWidth)+'px';el.style.top=((1-v.y)/2*innerHeight-6)+'px';},
     remove(){el.classList.remove('on');setTimeout(()=>el.remove(),300);}};}
-export {lump,M4,sph};
+export {faceDecal,faceArc,NOWRAP,lump,M4,sph};
 
 /* ── 원더룹 깃발(makeFlag, 2026-11-12 — 화성 큰 화산 꼭대기 '깃발 꽂기') ── 나무 깃대 + 크림색 천(노란 별 ✦과 동그란 탈 무늬) — 한 덩어리(그리기 1번):
    깃대·천이 그림 한 장을 같이 쓰고(아래 띠 = 나무색), 천 꼭짓점(10×6)만 매 프레임 물결(tech-lab 목도리처럼 깃대에서 멀수록 크게 출렁) — 가벼운 CPU 계산.

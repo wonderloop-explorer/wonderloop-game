@@ -4,7 +4,7 @@
    또생일 0.6(0.83m): 작은 케이크 모양 고깔모자를 쓴 꼬마 — 그리기 1 / 케이크(초 셋) 2(케이크·불꽃)
    고리 얼음 배 1 · 구름 기둥·구름 둑은 구역(venus.js)이 한 덩어리로 */
 import * as THREE from 'three';
-import {lump,M4,sph} from './martians.js';
+import {lump,M4,sph,faceDecal,faceArc,NOWRAP} from './martians.js';
 const PI=Math.PI;
 /* 공(가운데 c·반지름 R·축 배율 k) 겉면의 한 점(위아래 el·좌우 az — 앞이 +z)에 납작한 무늬를 세워 붙임 */
 function on(geo,R,c,el,az,roll=0,out=0,sc=[1,1,1],k=[1,1,1]){const n=new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
@@ -13,17 +13,20 @@ function on(geo,R,c,el,az,roll=0,out=0,sc=[1,1,1],k=[1,1,1]){const n=new THREE.V
   return geo.applyMatrix4(new THREE.Matrix4().compose(p,q,new THREE.Vector3(...sc)));}
 const puff=(r,x,y,z,s=[1,1,1])=>sph(r,10,8).applyMatrix4(M4([x,y,z],[0,0,0],s));
 const DARK='#3a2c44';
+/* 얼굴 무늬를 머리 겉면에 붙임(2026-11-25 — martians faceDecal·faceArc: 눈·별빛·볼·입이 납작한 조각이라 둥근 머리에서 떠 보였다, 별빛은 3cm 밖). R·c·k = 머리 공. ?nowrap = 예전 모습 */
+const WRAP=!NOWRAP,fd=(R,c,k,el,az,roll,a,b,eps,nr=3,na=18)=>faceDecal(R,[R*k[0],R*k[1],R*k[2]],c,el,az,roll,a,b,eps,nr,na),fa=(R,c,k,el,az,roll,a,b,w,eps)=>faceArc(R,[R*k[0],R*k[1],R*k[2]],c,el,az,roll,a,b,w,eps);
 /* ── 거꾸리 ── */
 export function makeGeokkuri(){const root=new THREE.Group();root.name='geokkuri';const body=new THREE.Group();root.add(body);
   const A='#c9a6e0',B='#d9bfee',C='#b48fd2',L=[],R=.4,c=[0,.56,0],k=[1,.96,.9];
-  L.push([sph(R,16,12).applyMatrix4(M4(c,[0,0,0],k)),A]);
+  L.push([sph(R,WRAP?32:16,WRAP?22:12).applyMatrix4(M4(c,[0,0,0],k)),A]);
   [[-.3,.36,-.05,.24,B],[.3,.36,-.05,.24,B],[0,.3,-.26,.27,C],[-.2,.74,-.2,.22,B],[.22,.76,-.16,.21,A],[0,.9,-.02,.25,B],[-.3,.62,.02,.2,A],[.3,.64,.0,.2,A],[.0,.3,.2,.22,B]]
     .forEach(([x,y,z,r,col])=>L.push([puff(r,x,y,z),col]));
-  for(const s of [-1,1]){L.push([on(sph(1,10,7),R,c,.2,s*.36,0,-.004,[R*.1,R*.135,R*.04],k),DARK]);
+  for(const s of [-1,1]){if(WRAP){L.push([fd(R,c,k,.2,s*.36,0,R*.1,R*.135,.008,4,20),DARK]);L.push([fd(R,c,k,.27,s*.36-s*.04,0,R*.035,R*.035,.016,2,10),'#ffffff']);L.push([fd(R,c,k,-.02,s*.66,0,R*.12,R*.075,.008),'#f4a9c0']);}
+    else{L.push([on(sph(1,10,7),R,c,.2,s*.36,0,-.004,[R*.1,R*.135,R*.04],k),DARK]);
     L.push([on(sph(1,6,5),R,c,.27,s*.36-s*.04,0,.03,[R*.035,R*.035,R*.02],k),'#ffffff']);
-    L.push([on(sph(1,8,6),R,c,-.02,s*.66,0,0,[R*.12,R*.075,R*.03],k),'#f4a9c0']);
+    L.push([on(sph(1,8,6),R,c,-.02,s*.66,0,0,[R*.12,R*.075,R*.03],k),'#f4a9c0']);}
     L.push([puff(.1,s*.17,.07,.06,[1,.62,1.35]),C]);}
-  L.push([on(new THREE.TorusGeometry(1,.2,5,12,PI),R,c,-.04,0,PI,.004,[R*.12,R*.085,R*.05],k),'#6a3a5a']);
+  L.push(WRAP?[fa(R,c,k,-.04,0,PI,R*.12,R*.085,.2,.008),'#6a3a5a']:[on(new THREE.TorusGeometry(1,.2,5,12,PI),R,c,-.04,0,PI,.004,[R*.12,R*.085,R*.05],k),'#6a3a5a']);
   /* 머리 장식 = 해시계(2026-11-19 — 납작한 접시처럼 보였다): 앞으로 기울인 금빛 둥근 판(테두리 진한 금) + 위로 솟은 세모 바늘 + 바늘의 작은 그림자. 숫자 눈금은 판 위에 붙이는 그림(dialTex — 반시계 방향) */
   /* 2026-11-20: 판이 낮고 많이 기울어 머리 꼭대기 구름이 판 가운데를 뚫고 나왔다 → 더 위(1.26)·덜 기울임(.24) + 판 밑 둥근 받침(모자처럼 얹힘, 머리와 안 겹침) */
   const hy=1.26,HT=.24,HM=M4([0,hy,.02],[HT,0,0]),hp=(g,c,p,r)=>L.push([g.applyMatrix4(M4(p||[0,0,0],r||[0,0,0])).applyMatrix4(HM),c]);
@@ -45,15 +48,15 @@ export function makeGeokkuri(){const root=new THREE.Group();root.name='geokkuri'
 /* ── 뭉게 문지기 ── */
 export function makeMunge(){const root=new THREE.Group();root.name='munge';const body=new THREE.Group();root.add(body);
   const A='#f6f1fb',B='#e9def5',C='#ddcdef',L=[],R=.86,c=[0,.86,0],k=[1.22,.94,1];
-  L.push([sph(R,18,13).applyMatrix4(M4(c,[0,0,0],k)),A]);
+  L.push([sph(R,WRAP?32:18,WRAP?22:13).applyMatrix4(M4(c,[0,0,0],k)),A]);
   [[-.95,.5,.1,.5,B],[.95,.5,.1,.5,B],[-.6,.42,.55,.42,A],[.62,.4,.55,.42,A],[0,.36,.7,.4,B],[-.75,1.2,-.2,.48,A],[.72,1.24,-.15,.46,B],[0,1.52,-.05,.52,A],[-.4,1.62,.12,.34,B],[.42,1.6,.08,.36,A],
     [0,.6,-.7,.6,C],[-.8,.8,-.5,.5,C],[.8,.8,-.5,.5,C],[-1.25,.36,-.2,.34,C],[1.25,.36,-.2,.34,C]].forEach(([x,y,z,r,col])=>L.push([puff(r,x,y,z),col]));
-  for(const s of [-1,1])L.push([on(sph(1,8,6),R,c,-.08,s*.52,0,0,[R*.13,R*.08,R*.03],k),'#f6b3c6']);
-  L.push([on(sph(1,8,6),R,c,-.2,0,0,0,[R*.05,R*.06,R*.03],k),'#7a4a66']);
+  for(const s of [-1,1])L.push(WRAP?[fd(R,c,k,-.08,s*.52,0,R*.13,R*.08,.006),'#f6b3c6']:[on(sph(1,8,6),R,c,-.08,s*.52,0,0,[R*.13,R*.08,R*.03],k),'#f6b3c6']);
+  L.push(WRAP?[fd(R,c,k,-.2,0,0,R*.05,R*.06,.006),'#7a4a66']:[on(sph(1,8,6),R,c,-.2,0,0,0,[R*.05,R*.06,R*.03],k),'#7a4a66']);
   const me=lump(L,true,1.6);me.name='munge-body';body.add(me);
   /* 감은 눈(아래로 둥근 선 — 졸림) · 뜬 눈(반쯤 → 크게) */
-  const closed=lump([-1,1].map(s=>[on(new THREE.TorusGeometry(1,.17,5,12,PI),R,c,.1,s*.3,PI,.01,[R*.1,R*.06,R*.05],k),DARK]),false);me.add(closed);
-  const open=lump([-1,1].flatMap(s=>[[on(sph(1,10,7),R,c,.1,s*.3,0,.004,[R*.085,R*.1,R*.035],k),DARK],[on(sph(1,6,5),R,c,.15,s*.3-s*.03,0,.04,[R*.03,R*.03,R*.02],k),'#ffffff']]),false);me.add(open);open.visible=false;
+  const closed=lump([-1,1].map(s=>WRAP?[fa(R,c,k,.1,s*.3,PI,R*.1,R*.06,.2,.007),DARK]:[on(new THREE.TorusGeometry(1,.17,5,12,PI),R,c,.1,s*.3,PI,.01,[R*.1,R*.06,R*.05],k),DARK]),false);me.add(closed);
+  const open=lump([-1,1].flatMap(s=>WRAP?[[fd(R,c,k,.1,s*.3,0,R*.085,R*.1,.007,4,20),DARK],[fd(R,c,k,.15,s*.3-s*.03,0,R*.03,R*.03,.013,2,10),'#ffffff']]:[[on(sph(1,10,7),R,c,.1,s*.3,0,.004,[R*.085,R*.1,R*.035],k),DARK],[on(sph(1,6,5),R,c,.15,s*.3-s*.03,0,.04,[R*.03,R*.03,R*.02],k),'#ffffff']]),false);me.add(open);open.visible=false;
   const st={ph:0,puff:0,eye:0,wob:0};
   /* state: sleep(코 골며 부풀었다 꺼짐) · ask(뒤척이며 눈을 반쯤) · wake(눈을 크게, 몸이 푹 부풂). 돌려주는 값 = 들숨이 시작된 프레임이면 true(코골이 소리 박자) */
   function tick(dt,t,state){const sl=state==='sleep',ask=state==='ask',wk=state==='wake',wn=state==='warn';let beat=false; /* warn(2026-11-19): 눈뜨기 전 미리 알림 — 코골이가 멈추고 몸이 크게 들썩 */
@@ -68,10 +71,11 @@ export function makeMunge(){const root=new THREE.Group();root.name='munge';const
 export function makeDdo(){const root=new THREE.Group();root.name='ddo';const body=new THREE.Group();root.add(body);
   const A='#fbe6f0',B='#f6d2e2',L=[],R=.19,c=[0,.44,0],k=[1,.97,.95];
   L.push([puff(.2,0,.2,0,[1,1.05,.95]),A]);[[-.15,.14,0,.11,B],[.15,.14,0,.11,B],[0,.14,-.13,.12,B],[0,.3,.1,.1,A]].forEach(([x,y,z,r,col])=>L.push([puff(r,x,y,z),col]));
-  L.push([sph(R,14,10).applyMatrix4(M4(c,[0,0,0],k)),A]);
-  for(const s of [-1,1]){L.push([on(sph(1,10,7),R,c,.08,s*.4,0,-.003,[R*.11,R*.14,R*.04],k),DARK]);L.push([on(sph(1,6,5),R,c,.16,s*.4-s*.05,0,.03,[R*.04,R*.04,R*.02],k),'#ffffff']);
-    L.push([on(sph(1,8,6),R,c,-.16,s*.66,0,0,[R*.13,R*.08,R*.03],k),'#f59ab5']);L.push([puff(.06,s*.09,.04,.04,[1,.6,1.3]),B]);L.push([puff(.055,s*.2,.26,.03),A]);}
-  L.push([on(sph(1,8,6),R,c,-.24,0,0,0,[R*.1,R*.12,R*.03],k),'#8a3a4a']);
+  L.push([sph(R,WRAP?28:14,WRAP?20:10).applyMatrix4(M4(c,[0,0,0],k)),A]);
+  for(const s of [-1,1]){if(WRAP){L.push([fd(R,c,k,.08,s*.4,0,R*.11,R*.14,.012,4,20),DARK]);L.push([fd(R,c,k,.16,s*.4-s*.05,0,R*.04,R*.04,.024,2,10),'#ffffff']);L.push([fd(R,c,k,-.16,s*.66,0,R*.13,R*.08,.012),'#f59ab5']);}
+    else{L.push([on(sph(1,10,7),R,c,.08,s*.4,0,-.003,[R*.11,R*.14,R*.04],k),DARK]);L.push([on(sph(1,6,5),R,c,.16,s*.4-s*.05,0,.03,[R*.04,R*.04,R*.02],k),'#ffffff']);
+    L.push([on(sph(1,8,6),R,c,-.16,s*.66,0,0,[R*.13,R*.08,R*.03],k),'#f59ab5']);}L.push([puff(.06,s*.09,.04,.04,[1,.6,1.3]),B]);L.push([puff(.055,s*.2,.26,.03),A]);}
+  L.push(WRAP?[fd(R,c,k,-.24,0,0,R*.1,R*.12,.012),'#8a3a4a']:[on(sph(1,8,6),R,c,-.24,0,0,0,[R*.1,R*.12,R*.03],k),'#8a3a4a']);
   /* 케이크 고깔모자: 크림 고깔 + 분홍 크림 띠 둘 + 꼭대기 딸기 + 작은 초 */
   const hy=.6;L.push([new THREE.ConeGeometry(.14,.2,12).applyMatrix4(M4([0,hy+.1,-.01],[-.08,0,0])),'#fff3d6']);
   L.push([new THREE.TorusGeometry(.125,.03,6,14).applyMatrix4(M4([0,hy+.02,-.01],[PI/2-.08,0,0])),'#f59ab5']);

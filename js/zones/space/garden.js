@@ -792,6 +792,7 @@ function crayonGround(g,size){const R=srand(20261107),rr=(a,b)=>a+R()*(b-a),cols
    경계는 모양 그대로 매끈한 선, 겉면이 꺾이면 같이 꺾임(겹쳐 깜빡이지 않음). bulge: 가운데로 갈수록 더 볼록(점의 세 번째 값 w — 가운데 1, 가장자리 0) */
 /* (함수 선언만 — 구역 코드 위쪽(집)에서 먼저 불러도 되게) */
 function FRONT(u,v){return [[u,v,5],[0,0,-1]];}
+const NOWRAP=(()=>{try{return new URLSearchParams(location.search).has('nowrap');}catch(e){return false;}})(); /* ?nowrap = 얼굴을 겉면에 붙이기 전 모습(비교용 — 2026-11-25) */
 function surfHit(target,frame,u,v,off){const T=surfHit.T||(surfHit.T={rc:new THREE.Raycaster(),o:new THREE.Vector3(),d:new THREE.Vector3(),m:new THREE.MeshBasicMaterial({side:THREE.DoubleSide})});
   const [O,D]=frame(u,v);T.o.set(...O);T.d.set(...D).normalize();T.rc.set(T.o,T.d);const h=T.rc.intersectObject(target.userData.rm||(target.userData.rm=new THREE.Mesh(target,T.m)),false)[0];
   const p=h?h.point.clone():T.o.clone().addScaledVector(T.d,5);return p.addScaledVector(T.d,-off);}
@@ -828,11 +829,12 @@ function lumpMesh(list){const gs=list.map(([geo,c,pos,rot,s])=>{let g=geo.index?
 /* 아기 토끼(키 약 0.9m — 원더룹의 0.65): 둥근 몸·큰 머리·쫑긋한 두 귀·목도리·흰 꼬리 — 한 덩어리(그리기 1번). squash(u): 뛰는 동안 늘었다 줄었다 */
 function makeBunny(fur,scarf){const root=new THREE.Group();const S=(r,w=12,h=9)=>new THREE.SphereGeometry(r,w,h);
   const furD=new THREE.Color(fur).multiplyScalar(.86).getStyle(),lum=(c=>.3*c.r+.59*c.g+.11*c.b)(new THREE.Color(fur).convertLinearToSRGB()),cream=lum>.8?'#ffffff':'#f3ebe0', /* 털이 밝으면 주둥이·배는 흰색 */pink='#f2a7b4',dark='#2a2633';
-  const bodyG=S(.2).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.24,0),new THREE.Quaternion(),new THREE.Vector3(1,1.05,.95))),headG=S(.21).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.6,0),new THREE.Quaternion(),new THREE.Vector3(1.05,.95,1)));
+  const bodyG=S(.2).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.24,0),new THREE.Quaternion(),new THREE.Vector3(1,1.05,.95))),headG=S(.21,NOWRAP?12:20,NOWRAP?9:14).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.6,0),new THREE.Quaternion(),new THREE.Vector3(1.05,.95,1)));
+  const eye=sx=>NOWRAP?[S(.032,6,5),dark,[sx*.08,.63,.18],0,[.8,1.2,.5]]:[wrapOn(headG,ellipseShape(0,0,.027,.04,3,16),radial([0,.6,0],[sx*.08,.03,.18]),.004,0,[0,.6,0,.2205,.1995,.21]),dark]; /* 눈도 머리 겉면에 붙은 납작한 타원(2026-11-25 — 예전: 머리에 반쯤 박힌 공) */
   const me=lumpMesh([[S(.2),fur,[0,.24,0],0,[1,1.05,.95]],[wrapOn(bodyG,ellipseShape(0,.21,.095,.125),FRONT,.003,.004,[0,.24,0,.2,.21,.19]),cream],[S(.08,8,6),fur,[-.1,.04,.06],0,[1,.55,1.5]],[S(.08,8,6),fur,[.1,.04,.06],0,[1,.55,1.5]],
     [S(.07,8,6),'#ffffff',[0,.18,-.19]],[new THREE.TorusGeometry(.13,.04,6,16),scarf,[0,.4,0],[PI/2,0,0],[1,1,.9]],[S(.05,8,6),scarf,[.06,.36,.14]],
-    [S(.21),fur,[0,.6,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.535,.105,.06),FRONT,.003,.02,[0,.6,0,.2205,.1995,.21]),cream],[S(.025,6,5),pink,[0,.58,.21]],
-    [S(.032,6,5),dark,[-.08,.63,.18],0,[.8,1.2,.5]],[S(.032,6,5),dark,[.08,.63,.18],0,[.8,1.2,.5]],...[-1,1].map(sx=>[wrapOn(headG,ellipseShape(0,0,.042,.027,4,20),radial([0,.6,0],[sx*.14,-.05,.15]),.004,0,[0,.6,0,.2205,.1995,.21]),'#f6a0ac']), /* 볼터치: 볼 겉면에 붙은 납작한 타원(예전 공 덩어리는 튀어나와 보였다, 2026-11-10) */
+    [S(.21,NOWRAP?12:20,NOWRAP?9:14),fur,[0,.6,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.535,.105,.06),FRONT,.003,.02,[0,.6,0,.2205,.1995,.21]),cream],[S(.025,6,5),pink,[0,.58,.21]],
+    eye(-1),eye(1),...[-1,1].map(sx=>[wrapOn(headG,ellipseShape(0,0,.042,.027,4,20),radial([0,.6,0],[sx*.14,-.05,.15]),.004,0,[0,.6,0,.2205,.1995,.21]),'#f6a0ac']), /* 볼터치: 볼 겉면에 붙은 납작한 타원(예전 공 덩어리는 튀어나와 보였다, 2026-11-10) */
     [S(.055,8,6),fur,[-.08,.9,-.02],[0,0,.18],[1,2.9,.7]],[S(.032,6,5),pink,[-.08,.9,.012],[0,0,.18],[1,2.6,.5]],[S(.055,8,6),fur,[.08,.9,-.02],[0,0,-.18],[1,2.9,.7]],[S(.032,6,5),pink,[.08,.9,.012],[0,0,-.18],[1,2.6,.5]],
     [S(.05,8,6),furD,[-.15,.3,.06]],[S(.05,8,6),furD,[.15,.3,.06]]]);
   root.add(me);root.scale.setScalar(.81); // 키 약 0.86m(귀 끝까지) = 원더룹의 0.62 — 보름 할아버지(1.0)와 확실히 구분
@@ -843,15 +845,15 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
   const lump=lumpMesh;
   const S=(r,w=14,h=10)=>new THREE.SphereGeometry(r,w,h),Cy=(a,b,h,n=12)=>new THREE.CylinderGeometry(a,b,h,n);
   const fur='#c3c4cc',cream='#efe6d6',pink='#f2a7b4',dark='#2a2633',red='#c8463c',brass='#d8a24a',paper='#f3e4c4',strap='#7a4e32';
-  const bodyG=S(.34).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.42,0),new THREE.Quaternion(),new THREE.Vector3(1,1.08,.92))),headG=S(.29).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.12,0),new THREE.Quaternion(),new THREE.Vector3(1.05,.95,1)));
+  const bodyG=S(.34).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.42,0),new THREE.Quaternion(),new THREE.Vector3(1,1.08,.92))),headG=S(.29,NOWRAP?14:24,NOWRAP?10:16).applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(0,.12,0),new THREE.Quaternion(),new THREE.Vector3(1.05,.95,1)));
   /* 배·입 둘레 크림 무늬(2026-11-08 다시): 몸·머리 겉면에 붙인 매끈한 타원 하나(wrapOn — 예전엔 크림 구를 몸에 박아 넣어 로우폴리 두 구가 만나는 경계가 들쭉날쭉했다) */
   const body=lump([[S(.34),fur,[0,.42,0],0,[1,1.08,.92]],[wrapOn(bodyG,ellipseShape(0,.4,.155,.2),FRONT,.004,.006,[0,.42,0,.34,.3672,.3128]),cream],[S(.13,10,8),fur,[-.15,.07,.08],0,[1,.55,1.5]],[S(.13,10,8),fur,[.15,.07,.08],0,[1,.55,1.5]],
     [S(.1,10,8),'#ffffff',[0,.3,-.31]],[Cy(.075,.075,.56),paper,[0,.62,-.3],[0,0,PI/2]],[Cy(.08,.08,.04),strap,[.12,.62,-.3],[0,0,PI/2]],[Cy(.08,.08,.04),strap,[-.12,.62,-.3],[0,0,PI/2]],
     [new THREE.TorusGeometry(.345,.024,6,28),strap,[0,.5,-.01],[PI/2,0,.75],[1,1,.9]]]); // 등의 지도를 맨 끈: 몸을 한 바퀴 감는 띠(예전 반 바퀴 끈은 끝이 허공에 떠 '검은 막대'처럼 보였다)
   root.add(body);
   const head=new THREE.Group();head.position.set(0,.84,0);root.add(head);
-  head.add(lump([[S(.29),fur,[0,.12,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.02,.15,.085),FRONT,.004,.03,[0,.12,0,.3045,.2755,.29]),cream],[S(.035,8,6),pink,[0,.08,.29]],
-    [S(.04,8,6),dark,[-.1,.15,.25],0,[.8,1.2,.5]],...[-1,1].map(sx=>[wrapOn(headG,ellipseShape(0,0,.055,.034,4,20),radial([0,.12,0],[sx*.18,-.08,.21]),.004,0,[0,.12,0,.3045,.2755,.29]),'#f6a0ac']),
+  head.add(lump([[S(.29,NOWRAP?14:24,NOWRAP?10:16),fur,[0,.12,0],0,[1.05,.95,1]],[wrapOn(headG,ellipseShape(0,.02,.15,.085),FRONT,.004,.03,[0,.12,0,.3045,.2755,.29]),cream],[S(.035,8,6),pink,[0,.08,.29]],
+    NOWRAP?[S(.04,8,6),dark,[-.1,.15,.25],0,[.8,1.2,.5]]:[wrapOn(headG,ellipseShape(0,0,.034,.05,3,16),radial([0,.12,0],[-.1,.03,.25]),.004,0,[0,.12,0,.3045,.2755,.29]),dark],...[-1,1].map(sx=>[wrapOn(headG,ellipseShape(0,0,.055,.034,4,20),radial([0,.12,0],[sx*.18,-.08,.21]),.004,0,[0,.12,0,.3045,.2755,.29]),'#f6a0ac']),
     // 오른쪽 눈(원더룹을 보는 쪽 +x) 망원경 안경: 놋쇠 테 + 짧은 통 + 렌즈
     [new THREE.TorusGeometry(.06,.014,6,16),brass,[.1,.15,.27]],[Cy(.045,.05,.12,10),brass,[.1,.15,.33],[PI/2,0,0]],[Cy(.04,.04,.01,10),'#bfe0f0',[.1,.15,.395],[PI/2,0,0]],[S(.02,6,5),dark,[.1,.15,.25]],
     // 쫑긋한 두 귀: 좌우 대칭(같은 모양·각도·크기 — 2026-11-23, 예전엔 +x 귀가 반쯤 접혀 옆으로 납작해 보였다)
