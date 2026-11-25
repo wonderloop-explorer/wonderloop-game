@@ -62,7 +62,9 @@ with sync_playwright() as p:
                 if missLeft: missLeft -= 1
                 press()
                 if 'g' not in shots:  # 게이지가 차오르는 모습
-                    until('wlZone.cur.state().toss.p>.25', 4); shots.add('g'); shot('01-toss-gauge'); until('wlZone.cur.state().hot', 4); shot('01-toss-hot')
+                    until('wlZone.cur.state().toss.p>.25', 4); shots.add('g'); shot('01-toss-gauge')
+                if 'hot%d' % i not in shots:  # 뿔마다: 게이지 칸이 동그란 표시 위에 온 순간
+                    shots.add('hot%d' % i); until('wlZone.cur.state().hot', 5); shot('01-toss-hot-%d' % (i + 1)); res.setdefault('맞는 세기 범위(뿔마다)', []).append([round(v, 3) for v in s['band']])
                 # 떼는 순간은 페이지 안에서(프레임마다 게이지를 보고) — 밖에서 값을 읽고 떼면 느린 헤드리스에서는 그사이 게이지가 지나간다
                 pg.evaluate("""(goal)=>new Promise(r=>{const t0=performance.now(),f=()=>{const p=wlZone.cur.state().toss.p;if(Math.abs(p-goal)<.025||performance.now()-t0>9000){wlZone.cur.dbgUp();r();}else requestAnimationFrame(f);};f();})""", goal)
                 release(); n += 1
@@ -70,7 +72,7 @@ with sync_playwright() as p:
                 if 'f%d' % i not in shots: shots.add('f%d' % i); shot('01-toss-fly-%d' % (i + 1))
                 until("['drop','slide','wait','ready','done'].includes(wlZone.cur.state().toss.ph)", 6); pg.wait_for_timeout(260)
                 ph = st()['toss']['ph']
-                if ph == 'drop' and 'h%d' % i not in shots: shots.add('h%d' % i); shot('01-toss-hit-%d' % (i + 1))
+                if ph == 'drop' and 'h%d' % i not in shots: shots.add('h%d' % i); shot('01-toss-hit-%d' % (i + 1)); res.setdefault('걸린 순간 할 일 글', []).append(pg.evaluate("(document.getElementById('wlQuest')||{}).innerText||''"))
                 if ph == 'slide' and 'm' not in shots: shots.add('m'); shot('01-toss-miss')
                 until("['ready','done'].includes(wlZone.cur.state().toss.ph)", 6)
             s = st()['toss']; res['던지기'] = {'던진 횟수': s['n'], '놓침': s['miss'], '기록(뿔, 세기, 걸림)': s['log'], '걸린 시간(초)': round(time.time() - tt0, 1)}
@@ -78,9 +80,9 @@ with sync_playwright() as p:
         if not FROM or FROM in ('toss', 'rest'):
             # ── 쉬기 ──
             until('wlZone.cur.state().rest.on', 60); tr0 = time.time(); ui = None
-            for n, t in (('1a-two', 2.5), ('1b-saturn', 9), ('1c-ring', 15.3), ('2-field', 26), ('2b-field', 31), ('3-bands', 43), ('4a-rise', 52), ('4-hexagon', 60), ('5-enceladus', 75), ('6-titan', 90), ('7a-moons', 103), ('7b-down', 108.5), ('7c-two', 111.4)):
+            for n, t in (('1a-two', 2), ('1b-saturn', 8), ('1c-ring', 13.5), ('2-field', 28), ('2b-field', 33), ('3-bands', 44), ('3b-bands', 48), ('4a-rise', 54), ('4-hexagon', 62), ('5-enceladus', 77), ('6-titan', 92), ('7a-moons', 104), ('7a2-moons', 108), ('7b-down', 112), ('7c-two', 115.4)):
                 until('wlZone.cur.state().rest.t>=%s' % t, 200); shot('02-rest-%s' % n); draw()
-                if t == 15.3:
+                if t == 13.5:
                     if PHONE: pg.touchscreen.tap(200, 300)
                     else: pg.mouse.click(400, 300)
                     pg.wait_for_timeout(300); res['건너뛰기 단추(10초 뒤 누르면)'] = pg.evaluate("!!document.getElementById('wlRestSkip')")

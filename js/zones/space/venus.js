@@ -352,7 +352,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
         scene(async()=>{G.react.react('startle',{sound:null});const s=say('뭉게 문지기',T.m10,2.4,{hear:'혼잣말',look:'깜짝',pin:'bottom'});await wait(.45);await carryBack(W,[GS[0]+1.2,GS[1],-PI/2],1.3);await s;qmark.show(false);st.mState='sleep';g.ph='snore';g.iv=null;g.t=2.2;},null);}
       else if(g.t<=0){g.ph='snore';g.iv=null;g.t=2.4;qmark.show(false);}}}
   /* ── ⑤ 구름 끝: 얼음 조각 배 ── */
-  const BY=SEA+.55,HSEAT=.15,GSEAT=.14,BSIDE=.42,HX=.45,GX=.55 /* 배 가운데에서 원더룹은 뒤쪽으로 HX, 거꾸리는 뱃머리 쪽으로 GX */ /* 좌우로 조금 엇갈려 섬(앞에 선 거꾸리가 뒤의 원더룹을 가리지 않게) */; /* 2026-11-21: 배 위에 서서 감(앉은 자세는 배 위에 떠 보였다) — 배 윗면 높이 */ // /* 배 바닥에 앉는 높이(원더룹 '앉기'는 자세가 0.235 내려감 — 예전 .6·.44는 배 위에 둥둥 떠 보였다, 2026-11-20) */
+  const BY=SEA+.55,HSEAT=.15,GSEAT=.14,BSIDE=.5,HX=.8,GX=.85 /* 2026-11-25: 둘을 더 떨어뜨림(서로 가리지 않게 — 예전 .42·.45·.55) */ /* 배 가운데에서 원더룹은 뒤쪽으로 HX, 거꾸리는 뱃머리 쪽으로 GX */ /* 좌우로 조금 엇갈려 섬(앞에 선 거꾸리가 뒤의 원더룹을 가리지 않게) */; /* 2026-11-21: 배 위에 서서 감(앉은 자세는 배 위에 떠 보였다) — 배 윗면 높이 */ // /* 배 바닥에 앉는 높이(원더룹 '앉기'는 자세가 0.235 내려감 — 예전 .6·.44는 배 위에 둥둥 떠 보였다, 2026-11-20) */
   const hop=(from,to,sec,fn)=>{const t0=G.clock.t;return G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/sec),e=u*u*(3-2*u);fn(lerp(from[0],to[0],e),lerp(from[1],to[1],e)+Math.sin(u*PI)*.8,lerp(from[2],to[2],e));return u>=1;},sec+1);};
   const seatAt=(lx,lz)=>{const q=boatStand(boat,lx,lz);return [q.x,q.y,q.z];}; /* 배 위에 서는 자리(겉면 높이 — cloudfolk boatStand) */
   const mkBoat=(x,z,ry)=>{const B={x,z,ry};boat.visible=true;st.boat={B,setBoat:t=>{boat.position.set(B.x,(st.sailY!=null?st.sailY:BY)+Math.sin(t*1.7)*.05,B.z);boat.rotation.set(Math.sin(t*1.3)*.03,B.ry,Math.sin(t*1.1)*.04);}};return B;};
@@ -430,7 +430,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
       {const mk=(map,rp,r,u,lat,up)=>{const o=makeOrb(root,{map,rep:rp,seg:[28,18]}),p=pathF(u);o.g.position.set(p.x,p.y+up,p.z+side*lat);o.g.scale.setScalar(r);o.U.uL.value.copy(SL);o.g.visible=false;return o;};
         oM=mk(canvasTex(256,marsMap,128),[3,2],4.2,.56,30,5);oJ=mk(canvasTex(256,jupiterMap,128),[4,2],13,.75,80,12);}};let camOn=false,lastS=null,lastW=null,zAcc=0;const _bv=new THREE.Vector3(),zip=points(root,MOB?90:160,{map:glowTex,add:true,size:.42,grav:0,drag:0});
     /* 배가 빙글 돌면서 날아감(2026-11-25 — 달 → 화성처럼): 떠오르며 한 바퀴 → 우주에서 천천히 두 바퀴 → 토성 앞에서 멈춰 원래 방향(카메라 키는 가는 방향 기준이라 그대로 — 화면에서 배와 둘이 돎) */
-    const bspin=u=>PI*2*(ss(.1,.27,u)+2*ss(.36,.84,u)); /* 첫 바퀴는 카메라가 물러난 뒤에(가까울 때 돌면 거꾸리 등이 원더룹을 가림) */
+    const bspin=u=>{const a=PI*2*(ss(.1,.27,u)+2*ss(.36,.84,u));return a-.86*Math.sin(a);}; /* 얼굴이 카메라 쪽일 때 천천히·등이 보일 때 휙(뒷모습은 스쳐 지나가는 정도 — 2026-11-25 두 번째) */ /* 첫 바퀴는 카메라가 물러난 뒤에(가까울 때 돌면 거꾸리 등이 원더룹을 가림) */
     const carrier={hang:false,plain:true /* 배에 앉아서 감 — 공통 비행 동작(몸 늘어남·목도리 펄럭임) 없음 */,pose:{grab:'서기',fly:()=>'서기'},lift:T=>1.3*ss(.15,3.75,T),stop(){},dispose(){},pre:T=>[.22-.08*ss(.3,3.4,T),6.5-2.2*ss(.3,3.4,T)], /* 뜨는 동안 원더룹에게 줌인(6.5 → 4.3m) */
       /* 07 뒤(원더룹 자리가 정해진 뒤): 배가 원더룹 발밑에 딱 붙어 따라감(서는 자리 = 배 겉면, 기울어도) · 거꾸리도 배 겉면에 · 뗏목 위 작은 움직임(2026-11-22):
          출발할 때 살짝 흔들림(떠오르며 좌우로 기우뚱 → 잦아듦), 우주에서 둥실 오르내림(보는 점 높이를 천천히 — 화면에서 뗏목이 오르내려 보임)·느린 기울임, 지나가는 행성 쪽으로 둘이 몸을 돌려 봄(멀어지는 금성 → 다가오는 토성, 끝에는 다시 앞) */
