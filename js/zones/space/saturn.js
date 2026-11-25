@@ -56,10 +56,16 @@ const PLAY_SONG={name:'토성 고리 던지기(임시)',bpm:132,lead:'celesta',n
        [76,null,79,null,84,null,79,null],[76,null,81,84,null,81,76,null],[77,81,84,null,86,null,84,null],[83,null,79,null,84,null,null,null]],
   parts:{mel:{v:.085},pad:{v:.02},bass:{v:.1,pat:[0,null,7,null,0,null,7,null]},arp:{v:.03},wood:{p:.5,v:.03}}};
 const ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);},lerp=(a,b,t)=>a+(b-a)*t;
-/* 토성 겉면: 줄무늬(공용 saturnMap) 위에 구름 얼룩·긴 물결 줄기를 더함(2026-11-25 — 줄무늬만으로는 구가 돌아도 흐르는 게 안 보였다). 고정 값 난수(순서와 상관없음) */
-function satCloudMap(g,w,h){saturnMap(g,w,h);let sd=7;const R=()=>(sd=(sd*16807)%2147483647)/2147483647,C=['rgba(255,244,214,','rgba(176,128,70,','rgba(255,232,186,','rgba(150,104,60,'];
-  for(let i=0;i<70;i++){const x=R()*w,y=h*(.12+.76*R()),rx=w*(.012+.05*R()),ry=h*(.006+.016*R()),a=.16+.2*R();g.fillStyle=C[i%4]+a+')';for(const dx of [0,-w,w]){g.beginPath();g.ellipse(x+dx,y,rx,ry,0,0,Math.PI*2);g.fill();}}
-  g.lineCap='round';for(let i=0;i<26;i++){const x=R()*w,y=h*(.15+.7*R()),L=w*(.05+.1*R()),am=h*(.006+.012*R());g.strokeStyle=C[i%4]+(.2+.2*R())+')';g.lineWidth=h*(.004+.008*R());for(const dx of [0,-w,w]){g.beginPath();for(let k=0;k<=12;k++){const xx=x+dx+L*k/12,yy=y+Math.sin(k*.9+i)*am;k?g.lineTo(xx,yy):g.moveTo(xx,yy);}g.stroke();}}}
+/* 토성 겉면(2026-11-25 세 번째 — 가는 물결 줄기·빗금이 머리카락·금 간 자국처럼 보였다): 가는 선 없이, 넓은 줄무늬를 옅은 겹으로 여러 번 겹쳐 경계가 흐릿하게 물결치게 + 크고 옅은 소용돌이 얼룩 몇 개.
+   물결은 가로로 정수 번 되풀이(이음매 없음), 고정 값 난수(순서와 상관없음). 이 구가 보이는 모든 곳(도착·쉬기·떠날 때)이 같은 그림 */
+function satCloudMap(g,w,h){g.fillStyle='#efc979';g.fillRect(0,0,w,h);let sd=7;const R=()=>(sd=(sd*16807)%2147483647)/2147483647,TAU=Math.PI*2;
+  const B=[[.07,'214,172,108',.05],[.17,'250,230,184',.06],[.28,'208,164,96',.075],[.40,'252,234,190',.07],[.52,'202,156,88',.085],[.63,'250,228,180',.06],[.73,'210,166,100',.07],[.84,'248,226,176',.06],[.93,'208,166,104',.05]];
+  g.lineCap='butt';g.lineJoin='round';
+  B.forEach(([y,c,wd],bi)=>{const n1=2+(bi%3),n2=5+((bi*2)%4),p1=R()*TAU,p2=R()*TAU,a1=h*(.018+.013*R()),a2=h*(.007+.006*R());
+    for(let k=0;k<7;k++){g.strokeStyle='rgba('+c+','+(.11+.02*k)+')';g.lineWidth=h*wd*(1.7-.2*k);g.beginPath(); /* 넓고 옅은 겹 → 좁고 조금 진한 겹: 가장자리가 번진 띠 */
+      for(let x=-8;x<=w+8;x+=8){const u=x/w*TAU,yy=y*h+Math.sin(u*n1+p1)*a1+Math.sin(u*n2+p2)*a2;x>-8?g.lineTo(x,yy):g.moveTo(x,yy);}g.stroke();}});
+  for(let i=0;i<9;i++){const x=R()*w,y=h*(.2+.6*R()),rx=w*(.035+.04*R()),ry=h*(.022+.02*R()),c=i%2?'255,240,206':'198,154,92'; /* 크고 옅은 소용돌이 얼룩(가장자리 없이 겹겹이 옅게) */
+    for(let k=0;k<6;k++){const q=1-k*.15;g.fillStyle='rgba('+c+',.055)';for(const dx of [0,-w,w]){g.beginPath();g.ellipse(x+dx,y,rx*q,ry*q,0,0,TAU);g.fill();}}}}
 function titanMap(g,w,h){for(let y=0;y<h;y++){const v=y/h,k=.5+.5*Math.sin(v*9+Math.sin(v*23)*.6);g.fillStyle='rgb('+Math.round(228+18*k)+','+Math.round(150+28*k)+','+Math.round(66+24*k)+')';g.fillRect(0,y,w,1);}}
 function encMap(g,w,h){g.fillStyle='#eef4fb';g.fillRect(0,0,w,h);g.strokeStyle='#a9c8ea';g.lineWidth=2;g.lineCap='round';for(let i=0;i<9;i++){const x=(i*37%w),y=h*(.25+.5*((i*53%17)/17));g.globalAlpha=.5;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+w*.08,y+h*.06*(i%2?1:-1),x+w*.17,y+h*.02);g.stroke();}g.globalAlpha=1;}
 /* 놀이 화면 표시(던지기 단추 + 힘 게이지) — 모양은 말 걸기 단추(#wlAct)와 같은 자리·크기 */
@@ -110,7 +116,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   const SK=G.sky.sky({parent:root,keys:[KEY,KEY,KEY],t:0,nStars:0,space:true});
   const board=makeSkyBoard(root,{mob:MOB,seed:'space-saturn:sky'});
   /* 토성: 고리 면에 반쯤 잠긴 커다란 구(불투명) — 그 앞으로 발밑에서부터 고리 판이 깔림 */
-  const oSat=makeOrb(root,{map:canvasTex(1024,satCloudMap,512),rep:[9,5],ring:false,seg:MOB?[48,28]:[72,40]});oSat.g.position.set(...SC);oSat.g.scale.setScalar(SR);oSat.g.rotation.z=.06;oSat.g.name='saturn-planet';oSat.U.uL.value.set(.55,.6,.45).normalize();if(oSat.halo)oSat.halo.visible=false;oSat.g.traverse(o=>{o.frustumCulled=false;});oSat.body.material.transparent=true;oSat.body.renderOrder=-3; /* 하늘 그림판(별·성운 — 카메라 앞 90m의 반투명 판)보다 뒤에 그려야 그 판에 덮이지 않는다: 반투명 차례로 옮겨 그림판 다음에(불투명도는 1 그대로, 고리 판·얼음은 깊이로 앞을 가림) */keep.push(oSat.g);
+  const oSat=makeOrb(root,{map:canvasTex(1024,satCloudMap,512),rep:[26,14],ring:false,seg:MOB?[48,28]:[72,40]});oSat.U.uCrayK.value=.3; /* 크레용 결은 잘고 옅게(크게 보이는 구라 결의 획이 긁힌 자국 같았다) */oSat.g.position.set(...SC);oSat.g.scale.setScalar(SR);oSat.g.rotation.z=.06;oSat.g.name='saturn-planet';oSat.U.uL.value.set(.55,.6,.45).normalize();if(oSat.halo)oSat.halo.visible=false;oSat.g.traverse(o=>{o.frustumCulled=false;});oSat.body.material.transparent=true;oSat.body.renderOrder=-3; /* 하늘 그림판(별·성운 — 카메라 앞 90m의 반투명 판)보다 뒤에 그려야 그 판에 덮이지 않는다: 반투명 차례로 옮겨 그림판 다음에(불투명도는 1 그대로, 고리 판·얼음은 깊이로 앞을 가림) */keep.push(oSat.g);
   /* 북극의 육각형 폭풍(2026-11-24 — 쉬기 넷째 구간에서 카메라가 높이 올라가면 보임. NASA: 토성 북극에는 육각형 모양 제트기류가 있다): 극을 덮는 얇은 덮개 한 장(정점 색·알파 — 가운데 눈 → 밝은 구름 → 진한 육각형 띠 → 옅어짐).
      구의 겉면 바로 위(1.004), 모서리가 둥근 육각형. 높이 올라갔을 때만 그림(평소 0) */
   const hexCap=(()=>{const NA=72,S=[0,.1,.22,.4,.62,.8,.9,1,1.1,1.26],C0=.3 /* 육각형 띠의 가운데 각(극에서 — 약 17°, 잘 보이게 실제 12°보다 조금 크게) */,pos=[],col=[],idx=[],c=new THREE.Color(),
@@ -273,7 +279,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     await scene(async()=>{ggMode='talk';await say('거꾸리',T.g3,3.4);ggMode='idle';},gg);}
   /* ── ③ 앉아서 쉬기(2026-11-25 새로 — 약 2분): 둘이 얼음에 앉으면 처음부터 끝까지 배경음 하나(saturn-rest), 나레이션이 토성 이야기를 천천히 하고 카메라가 그 이야기에 맞는 곳을 천천히 보여 줌(한 장면 약 15초, 부드럽게 이어서).
        화면 글자·단추는 모두 숨기고 나레이션 자막(#wlRestCap)만 아래에. 카세트·지나온 행성 소리는 뺌. 10초 뒤부터 화면을 누르면 '건너뛰기' 단추가 잠깐 뜸.
-       일곱 구간(카메라 키 restKeys · 나레이션 시작 초 NT): 1 둘의 뒤로 토성과 고리 전체 → 2 고리 얼음 들판 위를 낮게 → 3 토성 줄무늬 구름(천천히 흐름) → 4 천천히 올라가 북극 육각형 → 5 엔켈라두스 얼음 분수 → 6 주황 안개에 싸인 타이탄 → 7 하늘 곳곳 작은 달들 반짝 → 내려와 둘에게 ── */
+       일곱 구간(카메라 키 restKeys · 나레이션 시작 초 NT): 1 둘의 뒤로 토성과 고리 전체 → 2 고리 얼음 들판 위를 낮게 → 3 토성 줄무늬 구름(천천히 흐름) → 4 천천히 올라가 북극 육각형 → 5 엔켈라두스 얼음 분수 → 6 주황 안개에 싸인 타이탄 → 7 멀리서 본 작은 토성과 달들 → (디졸브) 둘의 앞모습 ── */
   /* 타이탄(주황 안개 공): 구 1 + 둘레 주황 빛무리 판 1 */
   const oTi=makeOrb(root,{map:canvasTex(128,titanMap,64),rep:[3,2],seg:[44,30]});oTi.g.position.set(...TITAN);oTi.g.scale.setScalar(TITAN_R);oTi.g.name='titan';oTi.U.uL.value.set(.55,.6,.45).normalize();oTi.body.material.transparent=true;oTi.body.renderOrder=-3;
   oTi.halo.material.color.set('#ff9a4e');oTi.halo.material.opacity=.9;oTi.halo.renderOrder=-3.1;oTi.halo.scale.setScalar(1.3);keep.push(oTi.g);
@@ -291,7 +297,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
       fragmentShader:'uniform sampler2D uMap;varying float vA;void main(){vec4 c=texture2D(uMap,gl_PointCoord);if(c.a<.02)discard;gl_FragColor=vec4(vec3(1.,.95,.8)*c.a*vA*1.6,1.);}'});
     m.userData.noBend=true;const pts=new THREE.Points(geo,m);pts.name='saturn-moons';pts.frustumCulled=false;pts.userData.noMerge=true;pts.renderOrder=-2.6;pts.visible=false;add(pts);
     return {set(k,t){pts.visible=k>.01;m.uniforms.uK.value=k;m.uniforms.uT.value=t;m.uniforms.uSc.value=Math.min(window.devicePixelRatio||1,MOB?1.25:2);}};})();
-  const CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],NT=[9.5,24.5,41,58.5,72.5,88,102.5]; /* 1구간 자막은 토성과 고리 전체가 다 보인 뒤(카메라가 물러난 11.5초 앞뒤)에 */
+  const CUT=110.4,CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],NT=[9.5,24.5,41,58.5,72.5,88,102.5]; /* 1구간 자막은 토성과 고리 전체가 다 보인 뒤(카메라가 물러난 11.5초 앞뒤)에 */
   const restKeys=()=>{const k=pk(),pt=k>1.3,m=pt?1.5:1,fr=pt?1.75:1,E=oEnc.g.position,SCP=[SC[0],SR*.97,SC[2]],V=(b,o,q=1)=>[b[0]+o[0]*q,b[1]+o[1]*q,b[2]+o[2]*q],
       g0=[30,1.5,10],g1=[-11,2.0,-52],gd=[-.55,-.02,-.83],ek=pt?24:45,EA=[E.x+ENC_PD.x*ek,E.y+ENC_PD.y*ek,E.z+ENC_PD.z*ek],face=[CC[0],pt?1.2:.95,CC[2]];
     const FAR=pt?[SC[0]+3300,1150,SC[2]+1500]:[SC[0]+2050,720,SC[2]+960],FARA=pt?[SC[0],-60,SC[2]]:[SC[0]+330,-40,SC[2]-160]; /* 7구간: 멀리서 — 토성은 화면 한쪽에 작게(가로 화면 왼쪽, 세로 화면 가운데), 둘레를 도는 작은 달들 */
@@ -299,17 +305,29 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     [0,[CC[0]+(pt?10.6:6.2),pt?2.0:1.5,CC[2]+(pt?0:1.4)],[CC[0]-40,pt?-.9:1.3,CC[2]-(pt?0:5)]],[2.5,[CC[0]+(pt?11.4:6.8),pt?2.2:1.7,CC[2]+(pt?0:1.6)],[CC[0]-40,pt?-.5:1.6,CC[2]-(pt?0:5)]], /* 1 둘의 뒷모습 너머 커다란 토성 → 뒤로·위로 물러나 토성과 고리 전체(11.5초부터 머묾 — 자막은 이때) */
     [11.5,[SC[0]+1120*fr,380*fr,SC[2]+240*fr],[SC[0],pt?-30:10,SC[2]]],[17.5,[SC[0]+1160*fr,400*fr,SC[2]+180*fr],[SC[0],pt?-30:10,SC[2]]],
     [23,g0,V(g0,gd,60)],[34,g1,V(g1,gd,60)],                                                                                               /* 2 고리 얼음 들판 위를 낮게 미끄러지듯(토성은 왼쪽에) */
-    [40,pt?[SC[0]+900,150,SC[2]+640]:[SC[0]+560,120,SC[2]+420],[SC[0]+(pt?0:70),pt?70:55,SC[2]]],[48.5,pt?[SC[0]+860,175,SC[2]+690]:[SC[0]+520,140,SC[2]+470],[SC[0]+(pt?0:70),pt?75:60,SC[2]]], /* 3 줄무늬 구름: 둥근 가장자리와 줄무늬 여러 줄이 함께(구가 빨리 돎 — 구름 무늬가 옆으로 흐름) */
+    [40,pt?[SC[0]+1250,240,SC[2]+880]:[SC[0]+560,120,SC[2]+420],[SC[0]+(pt?0:70),pt?125:55,SC[2]]],[48.5,pt?[SC[0]+1200,265,SC[2]+940]:[SC[0]+520,140,SC[2]+470],[SC[0]+(pt?0:70),pt?130:60,SC[2]]], /* 세로 화면은 더 물러나 둥근 윗가장자리와 그 위 하늘이 보이게(2026-11-25 세 번째 — 겉면이 화면을 거의 다 덮었다) */ /* 3 줄무늬 구름: 둥근 가장자리와 줄무늬 여러 줄이 함께(구가 빨리 돎 — 구름 무늬가 옆으로 흐름) */
     [57.5,V(SCP,[180,313,140],m),SCP],[65,V(SCP,[152,337,114],m),SCP],                                                                    /* 4 천천히 올라가 북극의 육각형 구름 띠 */
     [71.5,V([E.x,E.y,E.z],[150,25,170],m),EA],[80,V([E.x,E.y,E.z],[132,40,186],m),V(EA,[0,7,0])],                                         /* 5 엔켈라두스의 얼음 분수 */
     [87,V(TITAN,[200,20,-140],pt?2.3:1.15),TITAN],[95.5,V(TITAN,[182,34,-160],pt?2.3:1.15),TITAN],                                        /* 6 주황 안개에 싸인 타이탄 */
     [102,FAR,FARA],[108.5,V(FAR,[-60,20,40]),FARA],                                                                                       /* 7 멀리서 본 작은 토성과 그 둘레를 도는 작은 달들 → 천천히 내려와 둘에게 */
-    /* 끝은 처음 구도로(둘의 뒷모습 너머 토성 — 2026-11-25 두 번째: 앞모습으로 돌아 내려오면 도는 동안 약 2초 빈 하늘만 보였다. 토성을 계속 보면서 곧게 내려옴) */
-    [114.8,[CC[0]+(pt?11.4:6.8),pt?2.2:1.7,CC[2]+(pt?0:1.6)],[CC[0]-40,pt?-.5:1.6,CC[2]-(pt?0:5)]],[REST,[CC[0]+(pt?10.6:6.2),pt?2.0:1.5,CC[2]+(pt?0:1.4)],[CC[0]-40,pt?-.9:1.3,CC[2]-(pt?0:5)]]];};
+    [CUT+4,V(FAR,[-95,32,64]),FARA]];}; /* 7구간은 넘어가는 순간(CUT)까지 그대로 흐름 — 그 뒤는 faceCam */
   const RS={on:false,t:0,keys:null,ni:0,skip:false,chip:null,chipT:0,cap:null,capEnd:0};
   const _a=new THREE.Vector3(),_b=new THREE.Vector3();
   /* 자리는 곧게, 보는 방향은 두 키의 방향을 섞어(멀리 떨어진 두 자리의 '보는 점'을 곧게 이으면 가는 동안 엉뚱한 곳을 봄) */
-  const restCam=()=>{const Kk=RS.keys,t=Math.min(REST,RS.t);let i=0;while(i<Kk.length-2&&t>Kk[i+1][0])i++;const A=Kk[i],Bk=Kk[i+1],w=ss(A[0],Bk[0],t),from=[0,1,2].map(j=>lerp(A[1][j],Bk[1][j],w));
+  /* 끝 구도(2026-11-25 세 번째 — 얼굴로 끝내기): 7구간 토성 장면을 그대로 찍어 둔 그림(화면 위 캔버스 한 장)이 약 1초에 걸쳐 옅어지며 둘의 앞모습(3/4) 장면으로 넘어감(디졸브 — 카메라가 돌아 들어오는 구간이 없어 빈 하늘이 안 보임).
+     둘은 앉아서 토성 쪽을 보다가 카메라 쪽으로 몸을 살짝 돌리고 원더룹이 웃음. 그림은 그 프레임을 다 그린 직후(scene.onAfterRender)에 2D 캔버스로 옮김 — 그리기 수 그대로 */
+  const faceFrom=tau=>{const pt=pk()>1.3,w=ss(0,REST-CUT,tau);return [CC[0]-lerp(pt?10.6:6.0,pt?9.6:5.2,w),lerp(pt?1.55:1.35,pt?1.4:1.2,w),CC[2]+lerp(pt?2.6:2.5,pt?2.1:2.0,w)];},faceAt=()=>[CC[0],pk()>1.3?1.0:.92,CC[2]];
+  const snapArm=()=>{let sc=root;while(sc.parent)sc=sc.parent;if(!sc.isScene){RS.fadeT=RS.t;return;}const prev=sc.onAfterRender;RS.armed=true;
+    let tries=0;sc.onAfterRender=function(r){if(r.getRenderTarget&&r.getRenderTarget())return;let c=null;
+      try{const src=r.domElement,k=Math.min(1,1600/Math.max(src.width,src.height));c=document.createElement('canvas');c.width=Math.max(2,Math.round(src.width*k));c.height=Math.max(2,Math.round(src.height*k));const g2=c.getContext('2d');g2.drawImage(src,0,0,c.width,c.height);
+        let a=0;for(const [fx,fy] of [[.5,.5],[.3,.8],[.7,.2],[.5,.92]])a+=g2.getImageData(c.width*fx|0,c.height*fy|0,1,1).data[3];
+        if(!a&&++tries<8)return; /* 같은 프레임의 다른 그리기(빈 화면)에서 불렸으면 다음 번에 다시 */
+        if(!a)c=null;}catch(e){c=null;}
+      sc.onAfterRender=prev;RS.armed=false;
+      if(c&&RS.on){c.id='wlRestFade';c.setAttribute('aria-hidden','true');c.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:1';document.body.appendChild(c);RS.fade=c;}
+      RS.fadeT=RS.on?RS.t:null;};};
+  const fadeOff=()=>{if(RS.fade){RS.fade.remove();RS.fade=null;}};
+  const restCam=()=>{if(RS.fadeT!=null)return {from:faceFrom(RS.t-RS.fadeT),at:faceAt()};const Kk=RS.keys,t=Math.min(REST,RS.t);let i=0;while(i<Kk.length-2&&t>Kk[i+1][0])i++;const A=Kk[i],Bk=Kk[i+1],w=ss(A[0],Bk[0],t),from=[0,1,2].map(j=>lerp(A[1][j],Bk[1][j],w));
     _a.set(A[2][0]-A[1][0],A[2][1]-A[1][1],A[2][2]-A[1][2]).normalize();_b.set(Bk[2][0]-Bk[1][0],Bk[2][1]-Bk[1][1],Bk[2][2]-Bk[1][2]).normalize();_a.lerp(_b,w).normalize();return {from,at:[from[0]+_a.x*60,from[1]+_a.y*60,from[2]+_a.z*60]};};
   const capShow=tx=>{if(!RS.cap){const c=document.createElement('div');c.id='wlRestCap';c.setAttribute('role','status');document.body.appendChild(c);RS.cap=c;}RS.cap.textContent=tx;void RS.cap.offsetWidth;RS.cap.classList.add('on');},capHide=()=>{if(RS.cap)RS.cap.classList.remove('on');};
   const restTap=()=>{if(!RS.on||RS.t<10)return;if(!RS.chip){const b=document.createElement('button');b.id='wlRestSkip';b.type='button';b.textContent='건너뛰기 ▸';b.addEventListener('pointerdown',e=>{e.stopPropagation();});b.addEventListener('click',e=>{e.stopPropagation();RS.skip=true;});document.body.appendChild(b);RS.chip=b;}RS.chipT=3.5;};
@@ -319,16 +337,21 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     const busy=!!(G.sound.voiceBusy&&G.sound.voiceBusy());
     if(RS.ni<NARR.length&&RS.t>=NT[RS.ni]&&!busy&&RS.t>RS.capEnd+1.2){const tx=NARR[RS.ni++];capShow(tx);RS.capEnd=RS.t+Math.max(5.5,tx.replace('[임시] ','').length/6.2);G.sound.voice({text:tx,who:'나레이터',kind:'narration'});RS.log.push([RS.ni,+RS.t.toFixed(1)]);} /* 대사 사이 1.2초 넘게 여유 */
     else if(RS.capEnd&&RS.t>RS.capEnd&&!busy&&RS.cap&&RS.cap.classList.contains('on'))capHide();
-    moons.set(ss(98.5,102,RS.t)*(1-ss(109.5,112.5,RS.t)),t);}
+    moons.set(RS.fadeT!=null?0:ss(98.5,102,RS.t),t);
+    if(RS.fadeT==null){if(RS.t>=CUT&&!RS.armed)snapArm();}
+    else{if(!RS.cut){RS.cut=true;G.view.hold(restCam,{snap:true});} /* 넘어가는 순간 카메라는 바로 새 자리로(늦게 따라가면 날아가는 게 보임) */
+      const tau=RS.t-RS.fadeT,W=RS.W,k=ss(1.5,2.7,tau)*.8,f=faceFrom(tau);if(RS.fade){const o=1-ss(.05,1.1,tau);if(o<=0)fadeOff();else RS.fade.style.opacity=o.toFixed(3);}
+      for(const o of [W,gg.root]){if(!o)continue;let d=Math.atan2(f[0]-o.position.x,f[2]-o.position.z)+PI/2;d=Math.atan2(Math.sin(d),Math.cos(d));o.rotation.y=-PI/2+d*k;} /* 토성 쪽(-x)을 보다가 카메라 쪽으로 */
+      if(tau>1.9&&!RS.smile){RS.smile=true;if(W&&W.userData.setExpr)W.userData.setExpr('신남');}}}
   async function rest(W,U){mark('rest');U.sceneLock=true;st.scene=true;music('rest'); /* 배경음 하나로 처음부터 끝까지 */
     /* 얼음 조각 옆으로 걸어가 폴짝 올라앉음 */
     await Promise.all([moveTo(W,[HS[0]+1.9,HS[1]-.3],Math.max(.6,Math.hypot(W.position.x-HS[0]-1.9,W.position.z-HS[1]+.3)/3.4),true),moveTo(gg.root,[GS[0]+1.9,GS[1]+.2],1.4)]);
     U.riding={y:W.position.y,carry:false};G.core.block('meteor',true);st.hints=G.ui.hintsVisible();G.ui.setHints(false);quest('');
     G.sound.sfx('jump',{gain:.6});await Promise.all([hop([W.position.x,W.position.y,W.position.z],[HS[0],STOP,HS[1]],.7,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;}),hop([gg.root.position.x,0,gg.root.position.z],[GS[0],STOP,GS[1]],.8,(x,y,z)=>gg.root.position.set(x,y,z))]);
     W.rotation.y=-PI/2;gg.root.rotation.y=-PI/2;U.action='앉기';U.at=0;ggMode='sit';G.sound.sfx('land',{gain:.4});st.sitting=true;
-    st.farMin=7600;RS.keys=restKeys();RS.t=0;RS.ni=0;RS.capEnd=0;RS.log=[];RS.skip=false;RS.on=true;G.view.hold(restCam);window.addEventListener('pointerdown',restTap);window.addEventListener('keydown',restKey);
+    st.farMin=7600;RS.keys=restKeys();RS.W=W;RS.fadeT=null;RS.cut=false;RS.armed=false;RS.smile=false;RS.t=0;RS.ni=0;RS.capEnd=0;RS.log=[];RS.skip=false;RS.on=true;G.view.hold(restCam);window.addEventListener('pointerdown',restTap);window.addEventListener('keydown',restKey);
     await G.core.until(()=>RS.skip||RS.t>=REST,REST+60);mark('restEnd');
-    RS.on=false;window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);if(RS.chip){RS.chip.remove();RS.chip=null;}if(RS.cap){const c=RS.cap;RS.cap=null;c.classList.remove('on');setTimeout(()=>c.remove(),700);}moons.set(0,0);
+    RS.on=false;window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);if(RS.chip){RS.chip.remove();RS.chip=null;}if(RS.cap){const c=RS.cap;RS.cap=null;c.classList.remove('on');setTimeout(()=>c.remove(),700);}moons.set(0,0);fadeOff();RS.fadeT=null;if(U.setExpr)U.setExpr('기본');
     if(G.view.req&&G.view.req.fn===restCam)G.view.hold(null);st.farMin=0;music(null);
     /* 일어나 내려옴 */
     st.sitting=false;U.action='서기';U.at=0;ggMode='idle';G.sound.sfx('jump',{gain:.5});
@@ -449,4 +472,4 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     state:()=>({arr:st.arr?st.arr.ph:null,done:st.done,flow:st.flow,scene:st.scene,T:{...st.T},t:+G.clock.t.toFixed(2),toss:{on:TS.on,i:TS.i,ph:TS.ph,p:+TS.p.toFixed(3),band:TS.i<3?band(TS.i):null,n:TS.n,miss:[...TS.miss],log:TS.log.slice(-12)},rest:{on:RS.on,t:+RS.t.toFixed(2),narr:RS.log||[],cap:RS.cap&&RS.cap.classList.contains('on')?RS.cap.textContent:''},how:!!st.how,hot:!!TS.hot,sailU:st.sailU||0,dep:st.dep?st.dep.state.phase:null,jupTh:st.jupTh||0,mus:st.musLog||[]}),
     spots:{hero:HERO,gg:GGAT,dock:DOCKB,throw:THROW,pegs:PEGS,slab:SLAB,port:PORT},
     dbgRest(t){RS.t=t;},dbgDown:tossDown,dbgUp:tossUp,dbgStorm(){const W=U0();if(W)departStorm(W,W.userData);},
-    update,lateUpdate,dispose(){board.dispose&&board.dispose();tossUI(false);if(st.howClose&&st.how)st.howClose();if(RS.chip)RS.chip.remove();if(RS.cap)RS.cap.remove();window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);const W=U0();if(W){W.scale.set(1,1,1);if(st.arr){try{lockOff(G,W);}catch(e){}}if(RS.on||st.sitting){W.userData.riding=null;G.core.block('meteor',false);G.ui.setHints(true);}W.userData.sceneLock=false;}}};}
+    update,lateUpdate,dispose(){board.dispose&&board.dispose();tossUI(false);if(st.howClose&&st.how)st.howClose();if(RS.chip)RS.chip.remove();if(RS.cap)RS.cap.remove();if(RS.fade)RS.fade.remove();window.removeEventListener('pointerdown',restTap);window.removeEventListener('keydown',restKey);const W=U0();if(W){W.scale.set(1,1,1);if(st.arr){try{lockOff(G,W);}catch(e){}}if(RS.on||st.sitting){W.userData.riding=null;G.core.block('meteor',false);G.ui.setHints(true);}W.userData.sceneLock=false;}}};}

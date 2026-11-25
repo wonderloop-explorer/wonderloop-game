@@ -83,13 +83,13 @@ const ORB_GLSL='float ringA(float r){if(r<1.32||r>2.3)return 0.;float u=(r-1.32)
 const crayTex=(()=>{const m=sbMat('#ffffff');return m.map;})();
 export function makeOrb(parent,{map,rep=[5,3],ring=false,seg=[20,14]}){const g=new THREE.Group();parent.add(g);g.frustumCulled=false;
   const U={uMap:{value:map},uCray:{value:crayTex},uRep:{value:new THREE.Vector2(...rep)},uL:{value:new THREE.Vector3(-1,.5,.6).normalize()},uSky:{value:SKYC},uRim:{value:new THREE.Color('#fff1cf')},
-    uRn:{value:new THREE.Vector3(0,1,0)},uRing:{value:ring?1:0},uFlat:{value:0},uFlatC:{value:new THREE.Color('#b8694c')}}; /* uFlat: 구 전체를 한 가지 색으로(땅이 안개 색으로 묻힌 뒤 구로 넘어갈 때 — 화성 → 금성) */
+    uRn:{value:new THREE.Vector3(0,1,0)},uRing:{value:ring?1:0},uFlat:{value:0},uFlatC:{value:new THREE.Color('#b8694c')},uCrayK:{value:1}}; /* uCrayK: 크레용 결 세기(1 = 그대로. 가까이서 크게 보는 구는 낮춤 — 결의 짧은 획이 긁힌 자국처럼 보였다, 토성 쉼터 2026-11-25) */ /* uFlat: 구 전체를 한 가지 색으로(땅이 안개 색으로 묻힌 뒤 구로 넘어갈 때 — 화성 → 금성) */
   const body=new THREE.Mesh(new THREE.SphereGeometry(1,seg[0],seg[1]),new THREE.ShaderMaterial({uniforms:U,fog:false,
     vertexShader:'varying vec3 vW,vN,vP;varying vec2 vUv;void main(){vUv=uv;vP=position;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}',
-    fragmentShader:'uniform sampler2D uMap,uCray;uniform vec2 uRep;uniform vec3 uL,uSky,uRim,uRn,uFlatC;uniform float uRing,uFlat;varying vec3 vW,vN,vP;varying vec2 vUv;'+ORB_GLSL+
+    fragmentShader:'uniform sampler2D uMap,uCray;uniform vec2 uRep;uniform vec3 uL,uSky,uRim,uRn,uFlatC;uniform float uRing,uFlat,uCrayK;varying vec3 vW,vN,vP;varying vec2 vUv;'+ORB_GLSL+
       'void main(){vec3 Nf=normalize(cross(dFdx(vW),dFdy(vW)));vec3 N=normalize(mix(normalize(vN),Nf,.32));vec3 V=normalize(cameraPosition-vW);'+
       'float d=dot(N,uL);float k=mix(.56,.8,smoothstep(-.14,0.,d));k=mix(k,1.,smoothstep(.36,.5,d));'+
-      'vec3 base=texture2D(uMap,vUv).rgb*dot(texture2D(uCray,vUv*uRep).rgb,vec3(.3333));vec3 col=base*k+uSky*(1.-k)*.45;'+
+      'vec3 base=texture2D(uMap,vUv).rgb*mix(.93,dot(texture2D(uCray,vUv*uRep).rgb,vec3(.3333)),uCrayK);vec3 col=base*k+uSky*(1.-k)*.45;'+
       'if(uRing>0.){float dn=dot(uL,uRn);if(abs(dn)>.02){float t=-dot(vP,uRn)/dn;if(t>0.){float a=ringA(length(vP+uL*t));col*=1.-a*.5;}}}'+ // 고리 그림자(해 쪽으로 고리 면을 비춰 봄)
       'float nv=max(dot(N,V),0.);col*=mix(.8,1.,pow(nv,.4));'+ // 가장자리 어두움
       'col=mix(col,uSky*1.3,smoothstep(.26,0.,nv)*.3);'+ // 하늘과 만나는 경계로 갈수록 연보라
