@@ -56,6 +56,7 @@ const CROSS_TO=[16.4,3.4]; /* 둥둥이 회오리에서 내려서는 자리(삐�
 const BOUNDS=[-62,64,-38,38];
 /* 대사(기획서 + 사용자 메시지) */
 const LINE_A='둥둥아! 노을 같이 보기로 한 날, 왜 안 왔어? 나 우리 언덕에서 한참 기다렸단 말이야!';
+const BLUE_T='화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주기 때문이래요.'; /* 파란 노을 발견 카드: 화면 글 = 나레이션 글(SPC-S2-035 — 2026-11-26, 글자가 다르면 목소리가 안 나옴) */
 const DISC={sound:'secret:'+WID+':marssound',blue:'secret:'+WID+':bluesunset',vol:'secret:'+WID+':volcano'},DISC_TOTAL=3;
 const K={met:'mars:met',call:'mars:call',recA:'mars:recA',recB:'mars:recB',told:'mars:told',clear:'clear:space-mars',glass:'item:'+WID+':bluesunset-glass',flag:'mars:flag'}; /* flag: 화산 꼭대기에 깃발을 꽂음(저장 — 다시 열어도 그대로, 끝낸 뒤의 모습에도) */
 /* 화산 높이: 고원(평평) → 완만하게 내려가다 밑동에서 가파르게, 비탈에는 옅은 골짜기 결. 분화구는 가운데가 조금씩 어긋난 구덩이 셋(계단처럼 무너진 테두리),
@@ -382,7 +383,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   await wait(.7);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
   await wait(.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','같이 보니까 더 파랗다!',2.4,{look:'노을'});dung.mode='idle';
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
-    await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:'화성의 낮 하늘은 주황빛인데, 해 질 녘엔 해 둘레가 파랗게 물들어요. 아주 고운 먼지가 파란 빛을 해 쪽으로 더 잘 보내 주어서라고 봐요. 아직 다 밝혀지진 않았대요.',vo:'화성의 노을은 파랗게 물들어요.',count:`발견 ${discN()}/${DISC_TOTAL}`,at:innerHeight>innerWidth?'bottom':null});} /* 세로 화면: 카드를 아래쪽에(위에 뜨면 원더룹 머리 위의 해를 가렸다 — 2026-11-17) */
+    await G.ui.secret({kicker:'새 발견',title:'화성의 노을은 파래요',text:BLUE_T,vo:BLUE_T,lines:6,count:`발견 ${discN()}/${DISC_TOTAL}`,at:innerHeight>innerWidth?'bottom':null});} /* 세로 화면: 카드를 아래쪽에(위에 뜨면 원더룹 머리 위의 해를 가렸다 — 2026-11-17) */
   if(G.view.req&&G.view.req.fn===fix)G.view.hold(null);st.sunFace=false;
   /* 유리 조각 건네기(2026-11-11): 노을을 보며 하는 말은 위 두 줄까지 — 여기부터 삐삐가 원더룹 쪽으로 돌아서 한 걸음 다가와 두 손으로 유리 조각을 내밀고, 원더룹도 삐삐를 보고,
      카메라는 대화 카메라(말하는 삐삐 얼굴이 보이는 어깨 너머 — view.pairCam)로. 둥둥·삐삐의 다음 말도 같은 식으로 원더룹을 보며. 끝나면 셋 다 다시 노을 쪽(st.sunFace) */

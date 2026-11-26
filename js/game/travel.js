@@ -131,7 +131,7 @@ function shadeHex(h,k){const n=parseInt(h.slice(1),16);let r=n>>16,g=n>>8&255,b=
 /* 지도가 화면을 다 덮은 동안 참 — 08이 3D를 그리지 않음(2026-11-14 버벅거림: 안 보이는 3D 장면을 지도 밑에서 계속 그렸다) */
 let COVERING=false;export const covering=()=>COVERING;
 export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=document.createElement('canvas');cv.id='wlTravelMap';cv.setAttribute('aria-hidden','true');
-  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:58;pointer-events:none;opacity:0;transition:opacity .35s';document.body.appendChild(cv);
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:58;pointer-events:none;opacity:0;transition:opacity .22s';document.body.appendChild(cv);
   // 미니어처: 위·아래 띠를 흐리게(가운데만 또렷)
   /* 2026-11-14 버벅거림: 휴대폰은 흐림 띠(backdrop-filter — 아래 지도 캔버스가 매 프레임 바뀌어 다시 흐렸다) 대신 위아래를 살짝 어둡게만 */
   const LOW=matchMedia('(pointer:coarse)').matches;
@@ -147,8 +147,8 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
   const STAR=[];for(let i=0;i<300;i++)STAR.push([Math.random(),Math.random(),.4+Math.random()*1.5,Math.random()*6,Math.random()]);
   const TWK=[];for(let i=0;i<16;i++)TWK.push([Math.random(),Math.random()*.9,3+Math.random()*4,Math.random()*6]);
   const NEB=[[.2,.25,.5,'255,150,190',.16],[.78,.3,.55,'140,170,255',.16],[.5,.8,.6,'201,166,224',.18],[.9,.78,.4,'255,190,150',.1]];
-  const NSTEP=o.steps||8,STEP0=.72,CT=.4 /* 지도 그림·글자는 바탕이 화면을 다 덮은 뒤(0.4초)부터 — 앞 장면 위에 행성 이름이 비쳐 보였다(2026-11-14) */,STEPD=.27;let NS=NSTEP,bgC=null,stepN=0,stampS=false,CURVES={},t0=performance.now(),on=true,w=0,h=0,dpr=1;
-  requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{if(on)COVERING=true;},420); /* 지도가 화면을 다 덮은 동안 3D 그리기 쉼(08 — covering()) */setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
+  const NSTEP=o.steps||8,STEP0=.72,CT=.24 /* 2026-11-26: .4 → .24, 바탕도 .35 → .22초에 덮음(컴퓨터에서 지도 그림이 뜨기 전 약 1초 보라색 빈 화면이 보였다) ·  지도 그림·글자는 바탕이 화면을 다 덮은 뒤(0.4초)부터 — 앞 장면 위에 행성 이름이 비쳐 보였다(2026-11-14) */,STEPD=.27;let NS=NSTEP,bgC=null,stepN=0,stampS=false,CURVES={},t0=performance.now(),on=true,w=0,h=0,dpr=1;
+  requestAnimationFrame(()=>{cv.style.opacity='1';blur.forEach(d=>d.style.opacity='1');});setTimeout(()=>{if(on)COVERING=true;},280); /* 지도가 화면을 다 덮은 동안 3D 그리기 쉼(08 — covering()) */setTimeout(()=>{cap.style.opacity='1';cap.style.transform='translate(-50%,0)';},450);
   // 자리: 지나온 행성 → 다음 행성 사이를 넓게(발자국 길), 나머지는 고르게. 가로 화면은 왼쪽 → 오른쪽 완만한 물결, 세로 화면은 아래 → 위 지그재그
   const GW=B.map((b,i)=>i===0?0:((i===iF&&i-1===iT)||(i===iT&&i-1===iF))?2.6:1),GS=[];{let a=0;GW.forEach(v=>{a+=v;GS.push(a);});}
   function lay(){const pt=h>w,tot=GS[GS.length-1]||1;return B.map((b,i)=>{const s=B.length>1?GS[i]/tot:.5;
@@ -217,7 +217,9 @@ export function map(o){return new Promise(done=>{const sec=o.sec||3.6,cv=documen
         g.beginPath();g.arc(x,y,s*.62,0,PI*2);g.fill();g.stroke();if(f.im&&f.im.complete&&f.im.naturalWidth)g.drawImage(f.im,x-s*.5,y-s*.5,s,s);else if(f.draw){g.translate(x,y);f.draw(g,s);}g.restore();});}
     if(t<sec+2)requestAnimationFrame(draw);}
   requestAnimationFrame(draw);
-  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;COVERING=false;cv.remove(); /* 지도 자막 목소리는 멈추지 않고 끝까지(지도가 걷힌 뒤 구름·먼지 덮개 위로 이어짐 — 4.4초짜리 줄의 끝이 잘렸다, 2026-11-15) */blur.forEach(d=>d.remove());cap.remove();}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
+  const fin=()=>{if(fin.d)return;fin.d=1;if(MAPSKIP===fin)MAPSKIP=null;done({remove(){on=false;COVERING=false;cv.remove(); /* 지도 자막 목소리는 멈추지 않고 끝까지(지도가 걷힌 뒤 구름·먼지 덮개 위로 이어짐 — 4.4초짜리 줄의 끝이 잘렸다, 2026-11-15) */blur.forEach(d=>d.remove());cap.remove();},
+    /* 서서히 걷힘(sec초 — 지도 뒤에 같은 장면이 이어질 때: 금성 → 토성은 비행 중간에 지도가 뜸, 2026-11-26) */
+    fade(s2=.4){on=false;COVERING=false;for(const e of [cv,cap,...blur]){e.style.transition='opacity '+s2+'s';e.style.opacity='0';}setTimeout(()=>{cv.remove();blur.forEach(d=>d.remove());cap.remove();},s2*1000+80);}});};MAPSKIP=fin;setTimeout(fin,sec*1000);});}
 let MAPSKIP=null;
 /* 우주 지도를 지금 끝냄(화면을 눌러 넘길 때 — map()의 약속이 바로 풀림) */
 export function mapSkip(){if(MAPSKIP)MAPSKIP();}

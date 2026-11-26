@@ -41,6 +41,16 @@ export function marsMap(g,w,h){g.fillStyle='#cf6a45';g.fillRect(0,0,w,h);const R
   g.globalAlpha=1;g.fillStyle='#f6ece2';g.fillRect(0,0,w,h*.07);g.fillRect(0,h*.95,w,h*.05);
   hatch(g,0,0,w,h,420,['#f0a074','#b04e34','#fbe0c8'],31,{len:[5,13],alpha:[.07,.16]});}
 /* 토성 줄무늬 그림(equirect): 금빛 몸통 + 옅은 줄무늬 + 빗금 */
+/* 토성 겉면(2026-11-25 세 번째 — 가는 물결 줄기·빗금이 머리카락·금 간 자국처럼 보였다): 가는 선 없이, 넓은 줄무늬를 옅은 겹으로 여러 번 겹쳐 경계가 흐릿하게 물결치게 + 크고 옅은 소용돌이 얼룩 몇 개.
+   물결은 가로로 정수 번 되풀이(이음매 없음), 고정 값 난수(순서와 상관없음). 크게 보이는 토성(쉼터의 큰 구 · 금성 → 토성 이동 끝에 다가오는 구)이 같은 그림 — 작게만 보이는 곳은 saturnMap */
+export function satCloudMap(g,w,h){g.fillStyle='#efc979';g.fillRect(0,0,w,h);let sd=7;const R=()=>(sd=(sd*16807)%2147483647)/2147483647,TAU=Math.PI*2;
+  const B=[[.07,'214,172,108',.05],[.17,'250,230,184',.06],[.28,'208,164,96',.075],[.40,'252,234,190',.07],[.52,'202,156,88',.085],[.63,'250,228,180',.06],[.73,'210,166,100',.07],[.84,'248,226,176',.06],[.93,'208,166,104',.05]];
+  g.lineCap='butt';g.lineJoin='round';
+  B.forEach(([y,c,wd],bi)=>{const n1=2+(bi%3),n2=5+((bi*2)%4),p1=R()*TAU,p2=R()*TAU,a1=h*(.018+.013*R()),a2=h*(.007+.006*R());
+    for(let k=0;k<7;k++){g.strokeStyle='rgba('+c+','+(.11+.02*k)+')';g.lineWidth=h*wd*(1.7-.2*k);g.beginPath(); /* 넓고 옅은 겹 → 좁고 조금 진한 겹: 가장자리가 번진 띠 */
+      for(let x=-8;x<=w+8;x+=8){const u=x/w*TAU,yy=y*h+Math.sin(u*n1+p1)*a1+Math.sin(u*n2+p2)*a2;x>-8?g.lineTo(x,yy):g.moveTo(x,yy);}g.stroke();}});
+  for(let i=0;i<9;i++){const x=R()*w,y=h*(.2+.6*R()),rx=w*(.035+.04*R()),ry=h*(.022+.02*R()),c=i%2?'255,240,206':'198,154,92'; /* 크고 옅은 소용돌이 얼룩(가장자리 없이 겹겹이 옅게) */
+    for(let k=0;k<6;k++){const q=1-k*.15;g.fillStyle='rgba('+c+',.055)';for(const dx of [0,-w,w]){g.beginPath();g.ellipse(x+dx,y,rx*q,ry*q,0,0,TAU);g.fill();}}}}
 export function saturnMap(g,w,h){g.fillStyle='#efc979';g.fillRect(0,0,w,h);const R=srand(31);
   [[.28,'#e2bc78',5],[.42,'#f6e0ae',4],[.55,'#ddb26a',6],[.68,'#f3dba6',3],[.8,'#d9ad66',4]].forEach(([y,c,lw])=>{g.strokeStyle=c;g.lineWidth=lw;g.beginPath();for(let x=0;x<=w;x+=4){const yy=y*h+Math.sin(x/w*PI*6+y*9)*1.6;x?g.lineTo(x,yy):g.moveTo(x,yy);}g.stroke();});
   hatch(g,0,0,w,h,260,['#fff4d6','#c99a52'],33,{len:[4,10],alpha:[.08,.18],lw:[1,1.6]});}
@@ -139,7 +149,14 @@ export function makeSkyBoard(root,{mob=false,seed='space-travel'}={}){const anch
   const orbs=[];let tv=.4,th=.4,u=.4,port=false;
   /* 화면 좌표(x,y: -1~1)·크기(화면 짧은 쪽 비율 s)로 그림판 위에 놓기. 구(orb)는 반지름 = s×짧은 쪽 */
   function place(o,x,y,s,dk=1){const g=o.g||o;g.position.set(x*th*D*dk,y*tv*D*dk,-D*dk);g.quaternion.identity();const sz=s*2*u*D*dk;if(o.g)g.scale.setScalar(sz*.5);else g.scale.set(sz,sz,1);}
-  function tick(dt,t,cam){if(!cam)return;anchor.position.copy(cam.position);if(!aqOn){aq.copy(cam.quaternion);aq2.copy(aq);aqOn=true;}else{aq.slerp(cam.quaternion,1-Math.exp(-dt*1.4));aq2.slerp(cam.quaternion,1-Math.exp(-dt*6));}anchor.quaternion.copy(aq);near.quaternion.copy(aq).invert().multiply(aq2);
+  /* 그림판 자리는 그리기 바로 전에 카메라에 맞춘다(2026-11-26 — 토성 쉬기 장면 달 구간에서 휴대폰의 해가 떨림): tick은 구역 update에서 불려 08이 카메라를 옮기기 전이라
+     그림판이 늘 한 프레임 전 카메라 자리에 있었다 → 카메라가 빨리 움직이는 연출에서 90m 앞의 해·별이 (카메라 속도 × 프레임 시간)만큼 어긋나고, 프레임 시간이 고르지 않은 휴대폰(초당 30장)에서는 그 양이 들쭉날쭉해 떨려 보임(잰 값 0.35~0.87m).
+     scene.onBeforeRender(행렬 계산 뒤·그리기 전)에서 자리만 다시 놓고 행렬을 고침. 그림판이 장면에서 떨어지면(구역을 떠남) 고리는 스스로 풀림 */
+  let hooked=null;const hook=()=>{let sc=anchor;while(sc.parent)sc=sc.parent;if(!sc.isScene||hooked)return;const prev=sc.onBeforeRender;hooked=sc;
+    const fn=function(r,s2,cam){let top=anchor;while(top.parent)top=top.parent;if(top!==sc){if(sc.onBeforeRender===fn)sc.onBeforeRender=prev;hooked=null;}
+      else if(cam&&cam.isPerspectiveCamera&&!(r.getRenderTarget&&r.getRenderTarget()&&r.getRenderTarget().isWebGLCubeRenderTarget)){anchor.position.copy(cam.position);anchor.updateMatrixWorld(true);}
+      return prev&&prev.apply(this,arguments);};sc.onBeforeRender=fn;};
+  function tick(dt,t,cam){if(!cam)return;if(!hooked)hook();anchor.position.copy(cam.position);if(!aqOn){aq.copy(cam.quaternion);aq2.copy(aq);aqOn=true;}else{aq.slerp(cam.quaternion,1-Math.exp(-dt*1.4));aq2.slerp(cam.quaternion,1-Math.exp(-dt*6));}anchor.quaternion.copy(aq);near.quaternion.copy(aq).invert().multiply(aq2);
     tv=Math.tan(cam.fov*PI/360);th=tv*cam.aspect;u=Math.min(tv,th);port=cam.aspect<1;starU.uT.value=t;
     place(neb,port?-.2:-.35,port?.66:.62,port?1.4:1.3);place(milkyB,port?0:.05,port?.72:.7,1);milkyB.rotation.z=port?-.55:-.22;
     {const gs=2*D*.995*Math.max(tv,th)*4.2;grain.position.set(0,0,-D);grain.scale.set(gs,gs,1);grain.material.map.repeat.set(9,9);}

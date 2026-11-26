@@ -80,7 +80,7 @@ with sync_playwright() as p:
         if not FROM or FROM in ('toss', 'rest'):
             # ── 쉬기 ──
             until('wlZone.cur.state().rest.on', 60); tr0 = time.time(); ui = None
-            for n, t in (('1a-two', 2), ('1b-saturn', 8), ('1c-ring', 13.5), ('2-field', 28), ('2b-field', 33), ('3-bands', 44), ('3b-bands', 48), ('4a-rise', 54), ('4-hexagon', 62), ('5-enceladus', 77), ('6-titan', 92), ('7a-moons', 104), ('7a2-moons', 108), ('7b-down', 112), ('7c-two', 115.4)):
+            for n, t in (('1a-two', 2), ('1b-saturn', 8), ('1c-ring', 13.5), ('2-field', 28), ('2b-field', 33), ('3-bands', 44), ('3b-bands', 48), ('4a-rise', 54), ('4-hexagon', 62), ('5-enceladus', 80), ('5b-cut', 84.8), ('6-titan', 91), ('7a-moons', 103), ('7a2-moons', 108), ('7b-cut', 109.8), ('7c-two', 113.6)):
                 until('wlZone.cur.state().rest.t>=%s' % t, 200); shot('02-rest-%s' % n); draw()
                 if t == 13.5:
                     if PHONE: pg.touchscreen.tap(200, 300)
