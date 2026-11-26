@@ -9,13 +9,13 @@ OUT = os.path.join(ROOT, A[A.index('--out') + 1] if '--out' in A else 'docs/comp
 FROM = A[A.index('--from') + 1] if '--from' in A else None
 VW = (390, 844) if PHONE else (1280, 632); TAG = 'phone' if PHONE else 'pc'; W = 'infinite-space'
 READY = 'window.wlZone&&wlZone.cur&&window.wlGame&&wlGame.mission.hero()'
-ORDER = ['toss', 'rest', 'card', 'bye', 'storm']; FL = {'toss': ['rest:met'], 'rest': ['rest:toss'], 'card': ['rest:sat'], 'bye': ['secret:%s:saturnfloat' % W], 'storm': ['clear:space-saturn']}
+ORDER = ['rest', 'card', 'toss', 'bye', 'storm']; FL = {'rest': ['rest:met', 'meet:%s:toring' % W], 'card': ['rest:sat'], 'toss': ['secret:%s:saturnfloat' % W], 'bye': ['rest:toss'], 'storm': ['clear:space-saturn']}  # 2026-11-26 ③: 마중 → 쉬기 → 발견 카드 → 고리 던지기 → 배웅 → 붉은 빛
 with sync_playwright() as p:
-    b = p.chromium.launch(args=['--mute-audio']); cx = b.new_context(viewport={'width': VW[0], 'height': VW[1]}, device_scale_factor=2, has_touch=PHONE, is_mobile=PHONE); pg = cx.new_page(); errs = []
+    b = p.chromium.launch(args=['--mute-audio'] + (['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal'] if '--video' in A else [])); VID = '--video' in A; cx = b.new_context(viewport={'width': VW[0], 'height': VW[1]}, device_scale_factor=2, has_touch=PHONE, is_mobile=PHONE, **(dict(record_video_dir=OUT + '/_v', record_video_size={'width': VW[0], 'height': VW[1]}) if VID else {})); pg = cx.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append('console: ' + m.text[:300]) if m.type == 'error' and '404' not in m.text and 'Failed to load resource' not in m.text else None)
-    url = 'http://localhost:8000/?world=infinite-space&zone=space-saturn&notitle&quality=%s' % ('mobile' if PHONE else 'high')
+    url = 'http://localhost:8000/?world=infinite-space&zone=space-saturn&notitle&quality=%s%s' % ('mobile' if PHONE else 'high', '' if FROM else '&arrive')
     pg.goto(url, wait_until='domcontentloaded'); pg.evaluate('localStorage.clear();localStorage.setItem("wl-help-seen","1")'); pg.reload(wait_until='domcontentloaded'); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(600)
-    flags = ['have:%s:necklace' % W, 'meet:%s:geokkuri' % W]
+    flags = ['have:%s:necklace' % W]
     if FROM:
         for k in ORDER[:ORDER.index(FROM) + 1]: flags += FL[k]
     pg.evaluate("(fl)=>{for(const k of fl)wlGame.state.setFlag(k,true);}", flags); pg.wait_for_timeout(300)
@@ -26,6 +26,7 @@ with sync_playwright() as p:
         t0 = time.time()
         while time.time() - t0 < sec:
             try:
+                pg.evaluate("(()=>{const c=document.getElementById('wlProf');if(c&&c.classList.contains('on')){const b=c.querySelector('button');if(b)b.click();}})()")  # 친구 카드(토링)는 '가방에 넣기'로 닫음
                 if pg.evaluate('!!(' + js + ')'): return True
             except Exception: pass
             pg.wait_for_timeout(40)
@@ -39,8 +40,25 @@ with sync_playwright() as p:
     res = {'크기': '%dx%d' % VW}
     try:
         if not FROM:
-            until("wlGame.dialog.talking&&document.body.innerText.includes('쉬었다 가자')", 30); pg.wait_for_timeout(900); shot('00-intro-line1'); res['첫 대사(초)'] = round(time.time() - T0, 1)
-        if not FROM or FROM == 'toss':
+            until("wlGame.dialog.talking&&document.body.innerText.includes('고리지기야')", 60); pg.wait_for_timeout(900); shot('00-intro-line1'); res['첫 대사(초)'] = round(time.time() - T0, 1)
+        if not FROM or FROM == 'rest':
+            # ── 쉬기 ──
+            until('wlZone.cur.state().rest.on', 60); tr0 = time.time(); ui = None
+            for n, t in (('1a-two', 2), ('1b-saturn', 8), ('1c-ring', 13.5), ('2-field', 28), ('2b-field', 33), ('3-bands', 44), ('3b-bands', 48), ('4a-rise', 54), ('4-hexagon', 62), ('5-enceladus', 80), ('5b-cut', 84.8), ('6-titan', 91), ('7a-moons', 103), ('7a2-moons', 108), ('7b-cut', 109.8), ('7c-two', 113.6)):
+                until('wlZone.cur.state().rest.t>=%s' % t, 200); shot('02-rest-%s' % n); draw()
+                if t == 13.5:
+                    if PHONE: pg.touchscreen.tap(200, 300)
+                    else: pg.mouse.click(400, 300)
+                    pg.wait_for_timeout(300); res['건너뛰기 단추(10초 뒤 누르면)'] = pg.evaluate("!!document.getElementById('wlRestSkip')")
+                    if '--skip' in A: pg.evaluate("document.getElementById('wlRestSkip').click()"); break
+                if ui is None: ui = pg.evaluate("(()=>{const v=id=>{const e=document.getElementById(id);if(!e)return null;const c=getComputedStyle(e);return c.display!=='none'&&c.visibility!=='hidden'&&+c.opacity>0.05;};return {joy:v('wlJoy'),act:v('wlAct'),quest:v('wlQuest'),hud:v('wlHud'),menu:v('wlMenu'),dlg:v('wlDlg'),toss:v('wlToss')};})()")
+            res['쉬는 동안 보이는 화면 표시'] = ui
+            res['나레이션 [번호, 시작 초]'] = st()['rest']['narr']
+            until('!wlZone.cur.state().rest.on', 60); res['쉬기(초)'] = round(time.time() - tr0, 1)
+        if not FROM or FROM in ('rest', 'card'):
+            until("document.body.innerText.includes('욕조에 넣으면')", 40); pg.wait_for_timeout(900); shot('03-card-line')
+            until("document.body.innerText.includes('물보다 가벼워요')", 40); pg.wait_for_timeout(900); shot('03-card'); draw()
+        if not FROM or FROM in ('rest', 'card', 'toss'):
             # ── 고리 던지기 ──
             # 놀이 설명 창(한 번) → 닫기(PC는 E, 휴대폰은 '알겠어요')
             until('wlZone.cur.state().how', 60); pg.wait_for_timeout(1900); shot('01-toss-how'); res['설명 창 글'] = pg.evaluate("document.querySelector('#wlTossHow p').textContent")
@@ -76,29 +94,9 @@ with sync_playwright() as p:
                 if ph == 'slide' and 'm' not in shots: shots.add('m'); shot('01-toss-miss')
                 until("['ready','done'].includes(wlZone.cur.state().toss.ph)", 6)
             s = st()['toss']; res['던지기'] = {'던진 횟수': s['n'], '놓침': s['miss'], '기록(뿔, 세기, 걸림)': s['log'], '걸린 시간(초)': round(time.time() - tt0, 1)}
-            pg.wait_for_timeout(1500); shot('01-toss-clear'); until("document.body.innerText.includes('다 걸었다')", 20); pg.wait_for_timeout(700); shot('01-toss-line')
-        if not FROM or FROM in ('toss', 'rest'):
-            # ── 쉬기 ──
-            until('wlZone.cur.state().rest.on', 60); tr0 = time.time(); ui = None
-            for n, t in (('1a-two', 2), ('1b-saturn', 8), ('1c-ring', 13.5), ('2-field', 28), ('2b-field', 33), ('3-bands', 44), ('3b-bands', 48), ('4a-rise', 54), ('4-hexagon', 62), ('5-enceladus', 80), ('5b-cut', 84.8), ('6-titan', 91), ('7a-moons', 103), ('7a2-moons', 108), ('7b-cut', 109.8), ('7c-two', 113.6)):
-                until('wlZone.cur.state().rest.t>=%s' % t, 200); shot('02-rest-%s' % n); draw()
-                if t == 13.5:
-                    if PHONE: pg.touchscreen.tap(200, 300)
-                    else: pg.mouse.click(400, 300)
-                    pg.wait_for_timeout(300); res['건너뛰기 단추(10초 뒤 누르면)'] = pg.evaluate("!!document.getElementById('wlRestSkip')")
-                    if '--skip' in A: pg.evaluate("document.getElementById('wlRestSkip').click()"); break
-                if ui is None: ui = pg.evaluate("(()=>{const v=id=>{const e=document.getElementById(id);if(!e)return null;const c=getComputedStyle(e);return c.display!=='none'&&c.visibility!=='hidden'&&+c.opacity>0.05;};return {joy:v('wlJoy'),act:v('wlAct'),quest:v('wlQuest'),hud:v('wlHud'),menu:v('wlMenu'),dlg:v('wlDlg'),toss:v('wlToss')};})()")
-            res['쉬는 동안 보이는 화면 표시'] = ui
-            res['나레이션 [번호, 시작 초]'] = st()['rest']['narr']
-            until('!wlZone.cur.state().rest.on', 60); res['쉬기(초)'] = round(time.time() - tr0, 1)
-        if not FROM or FROM in ('toss', 'rest', 'card'):
-            until("document.body.innerText.includes('욕조에 넣으면')", 40); pg.wait_for_timeout(900); shot('03-card-line')
-            until("document.body.innerText.includes('물보다 가벼워요')", 40); pg.wait_for_timeout(900); shot('03-card'); draw()
+            pg.wait_for_timeout(1500); shot('01-toss-clear'); until("document.body.innerText.includes('고리지기 해도')", 20); pg.wait_for_timeout(700); shot('01-toss-line')
         if not FROM or FROM != 'storm':
-            until("document.body.innerText.includes('거기서 또 만나')", 60); pg.wait_for_timeout(900); shot('04-bye-line')
-            until('wlZone.cur.state().T.bye!=null', 30)
-            for n, d in (('1-boat-in', 2.2), ('2-wave-side', 5.3), ('3-wave-far', 6.2), ('4-hero-front', 8.3)): # 게임 시계(헤드리스는 실제보다 느리게 돎)
-                until('wlZone.cur.state().t-wlZone.cur.state().T.bye>=%s' % d, 60); shot('04-bye-%s' % n)
+            until("document.body.innerText.includes('또 와')", 60); pg.wait_for_timeout(900); shot('04-bye-line')
             until('wlZone.cur.state().T.clear!=null', 30); pg.wait_for_timeout(450); shot('04-done-hop'); until("document.body.innerText.includes('쉼터 완료')", 10); pg.wait_for_timeout(700); shot('04-done-card'); until('wlZone.cur.state().T.doneCard!=null', 30)
         else:
             pg.wait_for_timeout(2500); shot('05-portal'); pg.evaluate('wlZone.cur.dbgStorm()')
@@ -117,4 +115,8 @@ with sync_playwright() as p:
         try: res['단계 시각'] = st().get('T')
         except Exception: pass
         res['오류'] = errs[:8]; print(json.dumps(res, ensure_ascii=False, indent=1))
-        json.dump(res, open(os.path.join(OUT, '%s-result%s.json' % (TAG, '-' + FROM if FROM else '')), 'w', encoding='utf-8'), ensure_ascii=False, indent=1); b.close()
+        json.dump(res, open(os.path.join(OUT, '%s-result%s.json' % (TAG, '-' + FROM if FROM else '')), 'w', encoding='utf-8'), ensure_ascii=False, indent=1); cx.close(); b.close()
+        if VID:
+            import glob, shutil, subprocess
+            for f in glob.glob(OUT + '/_v/*.webm'): subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', '3', '-i', f, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '26', '-movflags', '+faststart', '%s/%s-toring.mp4' % (OUT, TAG)], check=False)
+            shutil.rmtree(OUT + '/_v', ignore_errors=True)

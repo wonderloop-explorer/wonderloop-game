@@ -45,6 +45,30 @@ export function makeGeokkuri(){const root=new THREE.Group();root.name='geokkuri'
     st.pt+=((st.mode==='point'?1:0)-st.pt)*Math.min(1,dt*8);st.wv=(st.wv||0)+((st.mode==='wave'?1:0)-(st.wv||0))*Math.min(1,dt*8);
     arms.forEach(g=>{const s=g.userData.s,sw=w?Math.sin(t*9+(s>0?0:PI))*.35:Math.sin(t*2+s)*.06;g.rotation.z=s*(.5+(tk?.25+Math.sin(t*7+s)*.2:0))+(s>0?st.pt*1.25+st.wv*(1.9+Math.sin(t*9)*.35):0);g.rotation.x=sw-(s>0?st.pt*.5:0);});}
   return {root,body,mesh:me,tick,head:1.0};}
+/* ── 토링(토성 고리지기 — 임시 모델, 2026-11-26. 디자인은 나중에 확정): 고리 얼음 느낌의 반투명 하늘색 — 둥근 얼음 머리 + 작은 몸 + 허리에 비스듬히 걸친 얼음 고리(천천히 돎) + 머리 위 얼음 결정.
+   거꾸리(연보라 구름)와 겹치지 않게 각진 얼음 조각·하늘색. 키 약 0.95m. 그리기 4(몸·팔 둘·고리). 눈·볼·입은 머리 겉면에 붙임(faceDecal) ── */
+export function makeToring(){const root=new THREE.Group();root.name='toring';const body=new THREE.Group();root.add(body);
+  const A='#a9dcf7',B='#d6f0ff',C='#7fc4ee',L=[],R=.34,c=[0,.66,0],k=[1,.95,.94];
+  L.push([sph(R,32,22).applyMatrix4(M4(c,[0,0,0],k)),A]);
+  L.push([new THREE.IcosahedronGeometry(.25,1).applyMatrix4(M4([0,.25,0],[0,.3,0],[1,1.05,.9])),C]); /* 작은 몸(각진 얼음) */
+  for(const s of [-1,1])L.push([new THREE.IcosahedronGeometry(.085,0).applyMatrix4(M4([s*.12,.05,.05],[0,0,0],[1,.6,1.4])),C]); /* 발 */
+  [[0,1.07,0,.11,.3,0,0],[-.13,1.0,-.03,.07,.2,0,.5],[.14,1.0,-.02,.075,.22,0,-.45]].forEach(([x,y,z,r,h,rx,rz])=>L.push([new THREE.ConeGeometry(r,h,5).applyMatrix4(M4([x,y,z],[rx,.4,rz])),B])); /* 머리 위 얼음 결정 셋 */
+  for(const s of [-1,1]){L.push([fd(R,c,k,.12,s*.36,0,R*.11,R*.145,.008,4,20),'#2c3e5a']);L.push([fd(R,c,k,.2,s*.36-s*.04,0,R*.04,R*.04,.016,2,10),'#ffffff']);L.push([fd(R,c,k,-.12,s*.68,0,R*.13,R*.08,.008),'#f7b9cf']);}
+  L.push([fa(R,c,k,-.14,0,PI,R*.13,R*.09,.2,.008),'#3d5a80']);
+  const me=lump(L.map(([q,cc])=>[q.index?q.toNonIndexed():q,cc]),true,2.2);me.name='toring-body';me.material=me.material.clone();me.material.transparent=true;me.material.opacity=.86;body.add(me);
+  /* 허리 고리: 납작한 얼음 띠 둘(안쪽 밝게·바깥 옅게) — 비스듬히 걸치고 천천히 돎 */
+  const ring=new THREE.Group();ring.position.set(0,.36,0);ring.rotation.set(.32,0,.18);body.add(ring);
+  {const Lr=[];const mk=(r0,r1,col)=>{const g=new THREE.RingGeometry(r0,r1,28,1);g.rotateX(-PI/2);Lr.push([g.toNonIndexed(),col]);};mk(.4,.5,'#f2fbff');mk(.53,.6,'#bfe2f8');for(let i=0;i<5;i++){const a=i*1.257;Lr.push([new THREE.IcosahedronGeometry(.045,0).applyMatrix4(M4([Math.cos(a)*.56,.01,Math.sin(a)*.56])),'#ffffff']);}
+    const rm=lump(Lr,true,1.4);rm.name='toring-ring';rm.material=rm.material.clone();rm.material.transparent=true;rm.material.opacity=.8;rm.material.side=THREE.DoubleSide;ring.add(rm);}
+  const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*.27,.42,.03);body.add(g);const am=lump([[new THREE.IcosahedronGeometry(.07,0).applyMatrix4(M4([0,-.09,0],[0,0,0],[1,1.6,1])).toNonIndexed(),B],[new THREE.IcosahedronGeometry(.065,0).applyMatrix4(M4([0,-.2,.01])).toNonIndexed(),A]],true,2.2);am.material=me.material;g.add(am);g.rotation.z=s*.5;g.userData.s=s;return g;});
+  const st={mode:'idle',pt:0,wv:0};
+  /* mode: idle · walk(앞으로 통통) · talk · point(오른팔로 가리킴) · sit · wave(오른팔을 높이 들어 흔듦 — 마중·배웅) */
+  function tick(dt,t,mode){st.mode=mode||'idle';const w=st.mode==='walk',tk=st.mode==='talk';
+    body.position.y=w?Math.abs(Math.sin(t*8))*.09:tk?Math.abs(Math.sin(t*6))*.03:Math.sin(t*2.2)*.015+(st.mode==='sit'?-.12:0);
+    body.rotation.z=w?Math.sin(t*8)*.07:Math.sin(t*1.7)*.02;body.rotation.x=w?.06:0;ring.rotation.y+=dt*(w?2.4:.8);
+    st.pt+=((st.mode==='point'?1:0)-st.pt)*Math.min(1,dt*8);st.wv+=((st.mode==='wave'?1:0)-st.wv)*Math.min(1,dt*8);
+    arms.forEach(g=>{const s=g.userData.s,sw=w?Math.sin(t*8+(s>0?0:PI))*.35:Math.sin(t*2+s)*.06;g.rotation.z=s*(.5+(tk?.25+Math.sin(t*7+s)*.2:0))+(s>0?st.pt*1.25+st.wv*(1.9+Math.sin(t*9)*.35):0);g.rotation.x=sw-(s>0?st.pt*.5:0);});}
+  return {root,body,mesh:me,tick,head:1.02};}
 /* ── 뭉게 문지기 ── */
 export function makeMunge(){const root=new THREE.Group();root.name='munge';const body=new THREE.Group();root.add(body);
   const A='#f6f1fb',B='#e9def5',C='#ddcdef',L=[],R=.86,c=[0,.86,0],k=[1.22,.94,1];

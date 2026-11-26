@@ -109,6 +109,7 @@ export default {
     geokkuri:{name:'거꾸리',where:'구름 행성',intro:'해가 서쪽에서 뜨는 곳의 길잡이',likes:'저녁에 뜨는 해',quote:'녕안! 그림자 반대쪽이 앞이야.',bg:'#eadcf6',portrait:{side:.45,lift:.08}},
     munge:{name:'뭉게 문지기',where:'구름 행성',intro:'구름 문을 지키는 잠꾸러기',likes:'긴 낮잠',quote:'드르륵… 음? 누구야…?',bg:'#f0eaf8',portrait:{side:.4,lift:.06}},
     ddo:{name:'또생일',where:'구름 행성',intro:'늘 생일인 꼬마',likes:'초 불기',quote:'오늘 생일이야! 하루가 다 가기 전에 1년이 지나 버렸거든!',bg:'#fde6ee',portrait:{side:.45,lift:.1}},
+    toring:{name:'토링',where:'토성 고리',intro:'토성 고리를 돌보는 고리지기',likes:'얼음 배 타고 고리 한 바퀴',quote:'내 배 타고 쉬었다 가!',bg:'#dff1fb',portrait:{side:.45,lift:.08}}, /* 2026-11-26 임시(글·모델 — 디자인 확정 뒤 다시) */
     dungdung:{name:'둥둥',where:'붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은 늘 조금 늦게 도착해.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
   /* 가방 '숨겨진 비밀·발견'(game/front — flag는 구역이 켜는 발견 깃발, note = 덧붙는 한 줄) */
   finds:[{flag:'secret:infinite-space:telescope',name:'망원경으로 본 목성',where:'회색 정원',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.'},
