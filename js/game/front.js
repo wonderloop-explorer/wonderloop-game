@@ -18,7 +18,8 @@ import {startMission} from './mission.js';
 import {cardShown,setHints,toast,transition} from './ui.js';
 import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './controls.js';
 import {cards as profCards,pic,seen} from './profile.js';
-import {flags,gotAt,onFlag,resetAll} from './state.js';
+import {flags,gotAt,onFlag,resetAll,setFlag,setLast,lastZone} from './state.js';
+import {openPlaces,placesOpen} from './places.js';
 import {ITEMS} from './items.js';
 import {applyZone as weatherZone} from './weather.js';
 import {logoEl} from './title.js';
@@ -199,7 +200,7 @@ function build(){const root=document.querySelector('.wlg');if(!root||el)return;c
   const VSTEP=[1,1.25,1.5,.5,.75];
   const vo=chip('',()=>{voiceSet({on:!voiceSettings.on});sfx('ui-click');voLabel();}),vv=chip('',()=>{const i=VSTEP.findIndex(x=>Math.abs(x-voiceSettings.vol)<.01);voiceSet({vol:VSTEP[(i+1)%VSTEP.length]});sfx('ui-click');voLabel();}),
     voLabel=()=>{vo.textContent=voiceSettings.on?'목소리 켜짐':'목소리 꺼짐';vv.textContent='목소리 크기 '+Math.round(voiceSettings.vol*100)+'%';vv.style.opacity=voiceSettings.on?'':'.55';};voLabel();
-  ls.append(snd,vo,vv,eco,chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
+  ls.append(snd,vo,vv,eco,chip('탐험 지도',()=>{sfx('ui-click');setMenu(false);if(hasPlaces())showPlaces();else toast('이 세계에는 탐험 지도가 없어요');}),chip('옷 갈아입기',()=>{setMenu(false);toggleWardrobe();}),chip('조작법 · 도움말',()=>{sfx('ui-click');setMenu(false);showHelp(!helpShown());}));
   /* 버전 표시(2026-11-14 — 휴대폰이 예전 버전을 보고 있는지 확인): 메뉴 맨 아래 작은 글자 '버전 7b75f60a35'(= version.json, 공개 주소 index.html의 WL_V — 한 파일 HTML은 빌드 해시) */
   {const v=document.createElement('div');v.className='wl-ver';v.textContent='버전 '+(window.WL_V||'-')+(window.WL_BUILD&&window.WL_BUILD.commit?' · '+window.WL_BUILD.commit:'');ls.append(v);}
   const setMenu=on=>{menu.classList.toggle('open',on);mb.textContent=on?'✕ 메뉴 닫기':'☰ 메뉴';mb.setAttribute('aria-expanded',on?'true':'false');if(on){sndLabel();ecoLabel();}};
@@ -292,7 +293,7 @@ function openTitle(W){build();frontOn=true;document.body.classList.add('wl-front
   const go=async fr=>{playWorldMusic(W);
     if(fr){if(busy)return;busy=true;try{resetAll();if(restart)await restart();startTime();playWorldMusic(W);}finally{busy=false;}} // 처음부터 하기(2026-11-04): 기록을 지우고 구역을 같은 그림으로 다시 만드는 일을 여기서 — '모험 시작' 때 화면을 까맣게 덮지 않고 카메라만 내려오게(다시 만드는 짧은 멈춤은 타이틀 위에서)
     if(worldX()||(zone().front&&zone().front.explorer)){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
-  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('ui-click');go(false);},onContinue:()=>{playWorldMusic(W);begin(false);},onFresh:()=>{sfx('ui-click');go(true);},onHow:()=>{sfx('ui-click');showHelp(true);},onClick:()=>sfx('ui-click')});
+  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('ui-click');go(false);},onContinue:()=>{playWorldMusic(W);const l=lastZone(),X=worldX();if(X&&l&&l!==zoneId(zone())&&(X.map||[]).some(m=>m.zone===l||m.last)){sfx('ui-click');leaveTitle(l);}else begin(false);},onPlaces:hasPlaces()?()=>{sfx('ui-click');showPlaces();}:null,onFresh:()=>{sfx('ui-click');go(true);},onHow:()=>{sfx('ui-click');showHelp(true);},onClick:()=>sfx('ui-click')});
   document.querySelector('.wlg').appendChild(tEl);if(tEl._place)tEl._place();
   titleCam(W);
   return true;} // 개미굴처럼 단추에 미리 초점을 주지 않는다(Tab으로 옮겨 가면 초점 테두리가 보임)
@@ -302,8 +303,18 @@ function titleCam(W){const B=W.backdrop,t0=performance.now();VIEW.hold(()=>backd
 const backToFront=()=>{if(tEl){tEl.hidden=false;titleCam(WORLD);}else{el.classList.add('on');orbit();}}; // 탐험가 소개를 닫고 첫 화면으로
 function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!zone().front)return false;build();frontOn=true;document.body.classList.add('wl-front-on');block('front',true);setHints(false);corner.classList.remove('on');
   startTime();renderFront();el.classList.add('on');orbit();setTimeout(()=>{const b=el.querySelector('.go');if(b&&!coarse)b.focus({preventScroll:true});},50);return true;}
+/* 탐험 지도(장소 고르기 — game/places, 2026-11-26): 시작 화면 '장소 고르기' · 탐험 준비의 '모험 지도' · 게임 중 메뉴가 모두 이 화면.
+   고르면: 시작 화면이면 타이틀을 닫고 그곳으로(지금 구역이면 이어서 하기와 같음), 게임 중이면 공통 전환(window.wlHop — 구름 화면 → 반짝이 착지). 이야기 장면·탈것 중에는 못 떠남 */
+function leaveTitle(z){closeFront();if(!store.get(HELP_KEY))store.set(HELP_KEY,'1');if(window.wlHop)window.wlHop(z);else if(window.wlZone)window.wlZone.go(z);}
+const hasPlaces=()=>{const W=worldX();return !!(W&&W.map&&W.map.some(m=>m.planet));}; /* 탐험 지도를 쓰는 세계 = 세계 설정 map에 planet이 있는 세계(무한 우주부터 — 개미굴은 예전 그대로) */
+function showPlaces(view){const W=worldX();if(!hasPlaces()||placesOpen())return;const cur=zoneId(zone());
+  openPlaces({world:W,flags,zone:cur,pick:!view,sfx,
+    onGo:(z,here)=>{if(frontOn){playWorldMusic(W);if(wardOn)closeWardrobe(false);if(here)begin(false);else leaveTitle(z);return;}
+      if(here)return;const U=ctx.WL.userData;if(blocking()||U.riding||U.sceneLock||(U.vert&&U.vert.air)){toast('지금은 떠날 수 없어요 — 하던 일을 마치고 다시 열어 봐요');return;}
+      if(wardOn)closeWardrobe(false);if(window.wlHop)window.wlHop(z);else if(window.wlZone)window.wlZone.go(z);},
+    onReset:view?null:()=>{resetAll();location.reload();}});} /* '처음부터'는 고를 수 있는 지도에서만(탐험 준비의 보기 전용 지도에는 없음) */
 function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
-async function begin(fr){if(busy)return;busy=true;sfx('ui-click');const W=curWorld();
+async function begin(fr){if(busy)return;busy=true;sfx('ui-click');const W=curWorld();if(worldX()){const z=zoneId(zone());setFlag('visit:'+z,true);setLast(z);} /* 다녀온 곳·마지막 자리 저장(장소 고르기와 같은 기록) */
   if(W){ // 처음부터 하기도 같은 연출(구역은 '처음부터 하기'를 누를 때 이미 다시 만들었다 — openTitle go) // 시리즈 공통 틀(개미굴 beginGame 그대로, 2026-11-04): 화면을 까맣게 덮지 않고 — 원더룹이 카메라를 등지고 서면 카메라가 이야기 소개 자리에서 원더룹 등 뒤로 휙 내려온다(따라가기 카메라가 지금 자리에서 이어 받아 약 0.5초)
     const P=ctx.WL.position,c=ctx.camera.position;const ry=Math.atan2(P.x-c.x,P.z-c.z);ctx.WL.rotation.y=ry;closeFront();
     VIEW.start({from:[P.x-Math.sin(ry)*7,P.y+.85+1.9,P.z-Math.cos(ry)*7]});}
@@ -383,7 +394,8 @@ function renderWard(mode){const U=ctx.WL.userData,F=zone().front||{},X=worldX(),
     B.append(lab(E.deco.label||'장식'),opts(D,cur,i=>{const d=E.deco.list[i];look.deco=d.hood;save();if(U.setHood)U.setHood(d.hood);sfx('ui-click');}));
     const lk=E.deco.list.find(d=>d.flag&&!flags[d.flag]);if(lk){const n=document.createElement('p');n.className='acclock';n.textContent=lk.lock;B.appendChild(n);}}}
   const faces=U.exprNames||[];B.append(lab('표정 미리보기'),opts(faces,faces.indexOf(U.exprName||'기본'),i=>{U.setExpr(faces[i]);sfx('talk-next');}));
-  if(E.map){const cur=(zone().root&&zone().root.name||'').replace(/^zone:/,'');B.appendChild(lab('모험 지도'));const ol=document.createElement('ol');ol.className='map';
+  if(hasPlaces()){B.appendChild(lab('모험 지도'));const mb=pbtn('gh','탐험 지도 보기',()=>{sfx('ui-click');showPlaces(mode==='start');});mb.style.cssText='display:block;width:100%;box-sizing:border-box;margin:.2rem 0 .5rem;border:2px solid #3f9fa0;border-radius:12px;background:transparent;color:inherit;font:inherit;font-size:1rem;padding:.55rem;min-height:46px;cursor:pointer';B.appendChild(mb);} /* 2026-11-26: 시리즈 세계는 같은 탐험 지도 화면(새로 시작할 때는 보기만) */
+  else if(E.map){const cur=(zone().root&&zone().root.name||'').replace(/^zone:/,'');B.appendChild(lab('모험 지도'));const ol=document.createElement('ol');ol.className='map';
     E.map.forEach(([n,id,rest])=>{const li=document.createElement('li');li.textContent=n;li.className=(id?'on':'')+(rest?' rest':''); /* rest: 스테이지 사이 쉼터 — 번호 없음(세계 설정 map[].rest), zone이 없으면 '준비 중' */if(id===cur)li.setAttribute('aria-current','true');ol.appendChild(li);});B.appendChild(ol);}
   const spin=document.createElement('div');spin.className='spin';spin.append(pbtn('','↺ 돌려 보기',()=>{ctx.WL.rotation.y+=Math.PI/4;spinHold=performance.now();}),pbtn('','돌려 보기 ↻',()=>{ctx.WL.rotation.y-=Math.PI/4;spinHold=performance.now();}));B.appendChild(spin);
   P.append(B,pbtn('done wl-pop-foot',mode==='start'?'모험 떠나기':'다 골랐어요',()=>closeWardrobe(mode==='start')));ward.appendChild(P);}

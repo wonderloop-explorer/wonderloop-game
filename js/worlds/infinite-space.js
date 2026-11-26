@@ -92,7 +92,7 @@ export default {
   ambience:{starlight:'space',meteor:'meteor',aurora:'space',nebula:'space'},
   talModel:'alien',talLabel:'외계인 탈',
   talColors:[['연두 외계인','#9bd46b','#6f9e48'],['연보라 외계인','#c9a6e0','#9a78b4'],['하늘 외계인','#8cc8ec','#5f9cc4'],['회색 외계인','#bfc3cc','#868a96']],
-  guide:{text:'여왕개미의 나침반 바늘이 하늘을 가리킨 밤, 외계인 탈을 쓰고 우주로 날아온 탐험가 원더룹이에요. 낯선 행성도 두 발로 걸어 보는 걸 좋아해요.',goal:'행성을 하나씩 걸어 빈 우주 지도를 채우고, 해 가까이까지 가 보기'},
+  guide:{text:'여왕개미의 나침반 바늘이 하늘을 가리킨 밤, 외계인 탈을 쓰고 우주로 날아온 탐험가 원더룹이에요. 낯선 행성도 두 발로 걸어 보는 걸 좋아해요.',goal:'행성을 하나씩 걸어 빈 우주 지도를 채우고, 목성까지 가 보기'},
   /* 세계 물건(가방): 달떡 — STAGE 1 떡방아(js/zones/space/garden.js). bagOnly: 탐험 준비 장식 목록에는 넣지 않음.
      STAGE 4 연결 메모(share): 친구들이 모였을 때 나눠 먹는 장면에서 쓸 예정 — flags['item:infinite-space:dalddeok']로 가졌는지 본다 */
   items:[{id:'dalddeok',name:'달떡',stage:1,bagOnly:true,share:'stage4-friends',where:'회색 정원 떡방아',icon:()=>ICON_CAKE(),
@@ -109,7 +109,7 @@ export default {
     geokkuri:{name:'거꾸리',where:'구름 행성',intro:'해가 서쪽에서 뜨는 곳의 길잡이',likes:'저녁에 뜨는 해',quote:'녕안! 그림자 반대쪽이 앞이야.',bg:'#eadcf6',portrait:{side:.45,lift:.08}},
     munge:{name:'뭉게 문지기',where:'구름 행성',intro:'구름 문을 지키는 잠꾸러기',likes:'긴 낮잠',quote:'드르륵… 음? 누구야…?',bg:'#f0eaf8',portrait:{side:.4,lift:.06}},
     ddo:{name:'또생일',where:'구름 행성',intro:'늘 생일인 꼬마',likes:'초 불기',quote:'오늘 생일이야! 하루가 다 가기 전에 1년이 지나 버렸거든!',bg:'#fde6ee',portrait:{side:.45,lift:.1}},
-    toring:{name:'토링',where:'토성 고리',intro:'토성 고리를 돌보는 고리지기',likes:'얼음 배 타고 고리 한 바퀴',quote:'내 배 타고 쉬었다 가!',bg:'#dff1fb',portrait:{side:.45,lift:.08}}, /* 2026-11-26 임시(글·모델 — 디자인 확정 뒤 다시) */
+    toring:{name:'토링',where:'토성 고리 쉼터',intro:'토성 고리를 돌보는 고리지기',likes:'얼음 배 타고 고리 한 바퀴',quote:'내 배 타고 쉬었다 가!',bg:'#dff1fb',portrait:{side:.45,lift:.08}}, /* 글 확정(2026-11-26), 모델은 임시 */
     dungdung:{name:'둥둥',where:'붉은 모래 언덕',intro:'말이 늦게 도착하는 키 큰 화성 친구',likes:'삐삐와 보는 노을',quote:'내 대답은 늘 조금 늦게 도착해.',bg:'#f3d6c8',portrait:{side:.45,lift:.06}}},
   /* 가방 '숨겨진 비밀·발견'(game/front — flag는 구역이 켜는 발견 깃발, note = 덧붙는 한 줄) */
   finds:[{flag:'secret:infinite-space:telescope',name:'망원경으로 본 목성',where:'회색 정원',text:'목성의 붉은 폭풍은 지구보다 커요. 그런데 조금씩 작아지고 있대요.'},
@@ -120,8 +120,8 @@ export default {
     {flag:'secret:infinite-space:venussun',name:'해가 서쪽에서 떠요',where:'구름 행성',open:'해돋이 광장에서 해 쪽으로 나가면 알게 돼요',text:'금성은 다른 행성과 거꾸로 돌아서, 해가 서쪽에서 뜨고 동쪽으로 져요.'},
     {flag:'secret:infinite-space:venusair',name:'구름 위는 지구와 비슷해요',where:'구름 행성',open:'구름 끝에서 알게 돼요',text:'금성 땅은 아주 뜨겁지만, 구름 위 높은 곳은 기압과 온도가 지구와 비슷해요.'},
     {flag:'secret:infinite-space:venusday',name:'한 바퀴보다 1년이 먼저 끝나요',where:'구름 행성',open:'또생일의 생일 초를 찾아 주면 알게 돼요',text:'금성이 제자리에서 한 바퀴 도는 데 243일, 해를 한 바퀴 도는 데 225일이 걸려요. 한 바퀴 도는 것보다 1년이 먼저 끝나요.'},
-    {flag:'secret:infinite-space:saturnfloat',name:'토성은 물보다 가벼워요',where:'쉼터 토성 고리',open:'토성 고리에서 쉬고 나면 알게 돼요',text:'토성은 태양계에서 유일하게 평균 밀도가 물보다 낮은 행성이에요. 아주 큰 욕조가 있다면 둥둥 뜰 거예요.' /* SPC-RS-008 임시 */}],
-  map:[{name:'회색 정원',zone:'space-garden'},{name:'붉은 모래 언덕',zone:'space-mars'},{name:'구름 행성',zone:'space-venus'},{name:'쉼터',zone:'space-saturn',rest:true},{name:'붉은 폭풍',zone:null}], /* rest: 번호 없는 쉼터(토성 — 2026-11-24 본편) — 아직 없는 곳은 zone null(붉은 폭풍은 임시 구역 space-jupiter만 있음) */
+    {flag:'secret:infinite-space:saturnfloat',name:'토성은 물보다 가벼워요',where:'토성 고리 쉼터',open:'토성 고리에서 쉬고 나면 알게 돼요',text:'토성은 태양계에서 유일하게 평균 밀도가 물보다 낮은 행성이에요. 아주 큰 욕조가 있다면 둥둥 뜰 거예요.' /* SPC-RS-008 임시 */}],
+  map:[{name:'회색 정원',zone:'space-garden',planet:'moon'},{name:'붉은 모래 언덕',zone:'space-mars',planet:'mars'},{name:'구름 행성',zone:'space-venus',planet:'venus'},{name:'토성 고리 쉼터',zone:'space-saturn',rest:true,planet:'saturn'},{name:'붉은 폭풍',zone:null,planet:'jupiter',last:true}], /* planet = travel.map.bodies id(탐험 지도 game/places의 행성 그림·갈 구역), last = 다른 곳을 모두 다녀와야 열림 */ /* rest: 번호 없는 쉼터(토성 — 2026-11-24 본편) — 아직 없는 곳은 zone null(붉은 폭풍은 임시 구역 space-jupiter만 있음) */
   /* 첫 화면·탐험 준비 곡(game/music 형식): 느린 72bpm, 패드 + 종 아르페지오 + 반짝이 — 잔잔하고 넓게 */
   /* 목소리(2026-11-15 — docs/voice/README.md): 대본 목록 docs/voice/script.csv의 번호 SPC-…, 파일 assets/voice/space/<번호>.mp3. stages = 구역마다 미리 읽을 스테이지 */
   voice:{dir:'space',stages:{'space-garden':'S1','space-mars':'S2','space-venus':'S3','space-saturn':'RS'}},
@@ -134,7 +134,7 @@ export default {
   introNarration:[
     {text:'개미굴을 빠져나온 밤, 여왕개미의 나침반 바늘이 땅이 아니라 하늘을 가리켰어요. 바늘을 따라 도착한 곳은 끝이 보이지 않는 무한 우주예요.',cam:{at:[0,-4,8],r:32,h:10,a:[.3,.75],speed:.06,bob:[1,.25]}},
     {text:'외계인 탈을 쓴 원더룹이 내려앉은 작은 회색 행성에는, 발자국으로 지도를 그리는 달토끼 보름 할아버지가 살고 있었어요.',cam:{at:[1.2,1,5.5],r:9,h:3.6,a:[.9,1.35],speed:.06,bob:[.3,.3]}},
-    {text:'할아버지의 지도에는 아직 빈칸이 많아요. 행성을 하나씩 걸어 빈칸을 채우고, 아무도 가 본 적 없는 해 가까이까지 가 보는 거예요.',cam:{at:[0,1,6],r:22,h:9,a:[1.5,2.0],speed:.06,bob:[.6,.25]}}],
+    {text:'할아버지의 지도에는 아직 빈칸이 많아요. 행성을 하나씩 걸어 빈칸을 채우고, 커다란 줄무늬 행성까지 가 보는 거예요.',cam:{at:[0,1,6],r:22,h:9,a:[1.5,2.0],speed:.06,bob:[.6,.25]}}],
   /* 첫 미션 — 숨방울 목걸이(시간 제한·실패 없음). 2026-11-17: 시작 자리 바로 앞에 떠 있어 시작하면 바로 줍고 참(quick) — 자리는 구역(garden.js NECK)이 넣음 */
   firstMission:{
     item:{id:'necklace',name:'숨방울 목걸이',at:[-3.2,-15.2],y:.9,pickR:1.5,icon:()=>ICON_NECK(),model:necklace,wear,getScale:1.3,getTop:1.9,

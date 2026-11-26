@@ -262,5 +262,5 @@ export const VEILS={'space-garden':{blobs:['#e4e2f0','#d2cfe4','#f0eef8','#c4c0d
   'space-jupiter':{blobs:['#f2b08e','#e98a6c','#f6c9a6','#dd6f58','#f0a07e'],bg:['#eca486','#de7a62'],fade:'rgba(236,150,120,0)',tiles:[[255,226,196],[196,84,62]],dots:['255,236,214','226,110,84','246,176,140']}}; /* space-mars = dustVeil 기본(붉은 먼지) */
 export async function landOn(G,to,o={}){RIDE.pending={from:o.from||null,pick:!o.from};let mp=null;if(o.map){G.travel.note('phase','map');mp=await o.map();}
   G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil(VEILS[to]);if(o.sfx)G.sound.sfx(o.sfx,{gain:1.1});await veil.cover(.75);G.travel.mark('veil');if(o.before)try{o.before();}catch(e){console.error(e);}
-  try{if(window.wlZone)await window.wlZone.go(to);}catch(e){console.error(e);}if(mp)mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}
+  try{if(window.wlZone)await window.wlZone.go(to);G.state.setFlag('visit:'+to,true);G.state.setLast(to);}catch(e){console.error(e);} /* 도착 저장: 다녀온 곳 + 마지막 자리(이어서 하기·장소 고르기) */if(mp)mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}
 if(typeof window!=='undefined')window.wlHop=to=>landOn(GAME,to); /* 지도에서 골라 갈 때(④ 장소 고르기가 부름) · 시험용 */

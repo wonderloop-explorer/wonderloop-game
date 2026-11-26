@@ -32,12 +32,12 @@ import SPACE from '../../worlds/infinite-space.js';
 const ZID='space-saturn',WID=SPACE.id;
 /* 대사 — 모두 [임시](docs/voice/script.csv SPC-RS-003~, 목소리는 나중에 한꺼번에) */
 const T={land:'저 커다란 게 바로 토성이에요. 토성은 디딜 땅이 없는 가스 행성이라, 고리의 얼음 위에 내렸어요.' /* SPC-RS-001(나레이터 — 확정·녹음 완료) */,
-  g1:'[임시] 안녕! 나는 토링, 토성 고리를 돌보는 고리지기야.' /* RS-003 */,g2:'[임시] 여긴 디딜 땅이 없어서 걷기 힘들어. 내 배 타고 쉬면서 토성 이야기 들려줄게.' /* RS-004 */,
-  gt:'[임시] 푹 쉬었으니 고리 던지기 한 판 어때? 저 얼음 뿔에 고리를 걸어 봐!' /* RS-006 */,
+  g1:'안녕! 나는 토링, 토성 고리를 돌보는 고리지기야. 고리는 아주 넓은데, 두께는 10m쯤밖에 안 돼!' /* RS-003 */,g2:'여긴 디딜 땅이 없어서 걷기 힘들어. 내 배 타고 쉬면서 토성 이야기 들려줄게.' /* RS-004 */,
+  gt:'푹 쉬었으니 고리 던지기 한 판 어때? 저 얼음 뿔에 고리를 걸어 봐!' /* RS-006 */,
   howPC:'E를 길게 누르면 게이지가 움직여요. 동그란 표시에 닿을 때 떼면 걸려요!',howPhone:'던지기를 길게 누르면 게이지가 움직여요. 동그란 표시에 닿을 때 떼면 걸려요!' /* 놀이 설명 창(화면 글 — 목소리 없음) */,
-  doneT:'토성 고리 쉼터 완료!',done:'',g3:'[임시] 셋 다 걸었네! 너도 고리지기 해도 되겠는걸!' /* RS-018 */,g4:'[임시] 이렇게 큰 토성을 아주 큰 욕조에 넣으면 둥둥 뜬대!' /* RS-007 */,
+  doneT:'토성 고리 쉼터 완료!',done:'',g3:'셋 다 걸었네! 너도 고리지기 해도 되겠는걸!' /* RS-018 */,g4:'이렇게 큰 토성도 아주 큰 욕조에 넣으면 둥둥 뜰 거야!' /* RS-007 */,
   cardT:'토성은 물보다 가벼워요',card:'[임시] 토성은 태양계에서 유일하게 평균 밀도가 물보다 낮은 행성이에요. 아주 큰 욕조가 있다면 둥둥 뜰 거예요.' /* RS-008 */,
-  g5:'[임시] 잘 가! 고리는 내가 잘 돌보고 있을게. 쉬고 싶으면 또 와!' /* RS-009 */};
+  g5:'잘 가! 고리는 내가 잘 돌보고 있을게. 쉬고 싶으면 또 와!' /* RS-009 */};
 /* 쉬기 장면 나레이션 일곱 줄(SPC-RS-011~017 — 나레이터, 2026-11-26 목소리 넣음. 글자는 docs/voice/script.csv와 똑같이) · NV = 목소리 길이(초) */
 const NARR=['토성은 지구보다 아홉 배쯤 넓은 커다란 행성이에요.','이 고리는 셀 수 없이 많은 얼음 조각이에요. 모래알만 한 것부터 산만 한 것까지 있대요.','이렇게 큰데도 토성은 아주 빨리 돌아요. 하루가 11시간도 안 된대요.',
   '토성 북극에는 육각형 모양의 커다란 구름 띠가 있어요. 왜 이런 모양인지는 아직 다 밝혀지지 않았대요.','작은 달 엔켈라두스는 얼음 분수를 뿜어요. 그 얼음이 토성의 바깥쪽 고리가 된대요.','가장 큰 달 타이탄에는 호수와 강이 있어요. 물이 아니라 아주 차가운 메탄으로요.','토성을 도는 달은 270개가 넘어요. 지금도 새로 찾아내고 있대요.'];
@@ -204,7 +204,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     {const r=gg.root.position,to=[P.x+.25,0,P.z+1.55];st.ggBoat=false;gg.root.scale.setScalar(1);G.sound.sfx('jump',{gain:.6});await hop([r.x,r.y,r.z],to,.8,(x,y,z)=>gg.root.position.set(x,y,z));G.sound.sfx('land',{gain:.4});ggMode='idle';}
     faceTo(gg.root,P.x,P.z);faceTo(W,gg.root.position.x,gg.root.position.z);if(G.view.req&&G.view.req.fn===ic)G.view.hold(null);
     try{await G.view.meetCard('toring',gg.root,gg.head+.2);}catch(e){console.error(e);}st.scene=false;U.sceneLock=false;
-    await scene(async()=>{ggMode='talk';await say('토링',T.g1,4.4);await say('토링',T.g2,6.2);ggMode='idle';},gg);G.state.setFlag(K.met,true);}
+    await scene(async()=>{ggMode='talk';await say('토링',T.g1,7.4);await say('토링',T.g2,6.2);ggMode='idle';},gg);G.state.setFlag(K.met,true);}
   /* ── ② 얼음 고리 던지기 ── */
   const ringGeo=new THREE.TorusGeometry(RING_R,.045,7,22);ringGeo.rotateX(PI/2);const ringMat=sbMat(new THREE.Color('#aadcff'));ringMat.transparent=true;ringMat.opacity=.82;ringMat.emissive=new THREE.Color('#3f8fd0');ringMat.emissiveIntensity=.35;
   const rings=new THREE.InstancedMesh(ringGeo,ringMat,5);rings.name='saturn-rings-toss';rings.frustumCulled=false;rings.userData.noMerge=true;rings.castShadow=false;add(rings);
@@ -272,6 +272,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     /* 결과: 원더룹이 카메라 쪽을 보며 웃으며 폴짝(앞모습) */
     const fc=frontCam(W);faceTo(gg.root,G.view.camera.position.x,G.view.camera.position.z);G.view.hold(fc);await wait(.6);G.sound.sfx('mission-clear');G.react.react('hop',{sound:null,face:'기쁨'});st.ggHop=G.clock.t;await wait(1.5);G.react.react('hop',{sound:null,face:'기쁨'});st.ggHop=G.clock.t;await wait(1.3);
     if(G.view.req&&G.view.req.fn===fc)G.view.hold(null);if(U.setExpr)U.setExpr('기본');st.scene=false;U.sceneLock=false;
+    U.sceneLock=true;st.scene=true;await Promise.all([moveTo(W,AFTER[0],Math.max(.6,Math.hypot(W.position.x-AFTER[0][0],W.position.z-AFTER[0][1])/3.4),true),moveTo(gg.root,AFTER[1],1.6)]);st.scene=false;U.sceneLock=false; /* 섬 가운데로(2026-11-26 — 던지는 자리에서는 휴대폰 대화 카메라 앞에 둘레 얼음 뿔이 끼어 토링을 가렸다) */
     await scene(async()=>{ggMode='talk';await say('토링',T.g3,3.4);ggMode='idle';},gg);}
   /* ── ③ 앉아서 쉬기(2026-11-25 새로 — 약 2분): 둘이 얼음에 앉으면 처음부터 끝까지 배경음 하나(saturn-rest), 나레이션이 토성 이야기를 천천히 하고 카메라가 그 이야기에 맞는 곳을 천천히 보여 줌(한 장면 약 15초, 부드럽게 이어서).
        화면 글자·단추는 모두 숨기고 나레이션 자막(#wlRestCap)만 아래에. 카세트·지나온 행성 소리는 뺌. 10초 뒤부터 화면을 누르면 '건너뛰기' 단추가 잠깐 뜸.

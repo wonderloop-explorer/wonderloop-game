@@ -102,7 +102,7 @@ function render(W,o={}){
   const sub=document.createElement('p');sub.className='sub';(W.intro||[]).forEach((line,i)=>{if(i)sub.appendChild(document.createElement('br'));sub.append(line);});box.appendChild(sub);
   const B=document.createElement('div');B.className='tbtns';
   if(o.progress){B.append(btn('go','이어서 하기',()=>o.onContinue&&o.onContinue()),
-    btn('ghost small','처음부터',()=>{el.dataset.ask='1';if(o.onClick)o.onClick();el.querySelector('.ask .no').focus({preventScroll:true});}));}
+    o.onPlaces?btn('ghost','장소 고르기',()=>o.onPlaces()):btn('ghost small','처음부터',()=>{el.dataset.ask='1';if(o.onClick)o.onClick();el.querySelector('.ask .no').focus({preventScroll:true});}));} /* 2026-11-26: 장소 고르기가 있는 세계는 [이어서 하기 | 장소 고르기 | 조작법] — '처음부터'는 탐험 지도 화면 안으로 */
   else B.appendChild(btn('go','새로 시작',()=>o.onNew&&o.onNew()));
   B.appendChild(btn('ghost','조작법',()=>o.onHow&&o.onHow()));box.appendChild(B);
   const tip=document.createElement('p');tip.className='tip';tip.innerHTML=TIP;box.appendChild(tip);
