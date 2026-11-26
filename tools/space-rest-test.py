@@ -11,7 +11,9 @@ VW = (390, 844) if PHONE else (1280, 632); TAG = 'phone' if PHONE else 'pc'; W =
 READY = 'window.wlZone&&wlZone.cur&&window.wlGame&&wlGame.mission.hero()'
 ORDER = ['rest', 'card', 'toss', 'bye', 'storm']; FL = {'rest': ['rest:met', 'meet:%s:toring' % W], 'card': ['rest:sat'], 'toss': ['secret:%s:saturnfloat' % W], 'bye': ['rest:toss'], 'storm': ['clear:space-saturn']}  # 2026-11-26 ③: 마중 → 쉬기 → 발견 카드 → 고리 던지기 → 배웅 → 붉은 빛
 with sync_playwright() as p:
-    b = p.chromium.launch(args=['--mute-audio'] + (['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal'] if '--video' in A else [])); VID = '--video' in A; cx = b.new_context(viewport={'width': VW[0], 'height': VW[1]}, device_scale_factor=2, has_touch=PHONE, is_mobile=PHONE, **(dict(record_video_dir=OUT + '/_v', record_video_size={'width': VW[0], 'height': VW[1]}) if VID else {})); pg = cx.new_page(); errs = []
+    b = p.chromium.launch(args=['--mute-audio', '--autoplay-policy=no-user-gesture-required'] + (['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal'] if '--video' in A else [])); VID = '--video' in A; cx = b.new_context(viewport={'width': VW[0], 'height': VW[1]}, device_scale_factor=2, has_touch=PHONE, is_mobile=PHONE, **(dict(record_video_dir=OUT + '/_v', record_video_size={'width': VW[0], 'height': VW[1]}) if VID else {})); pg = cx.new_page(); errs = []
+    # --voice: 토링 목소리와 말하는 몸짓 재기 — 프레임마다 [실제 초(게임 시계는 프레임이 멈칫하면 덜 흐름), 나오는 목소리 번호, 토링 동작]을 모아 줄마다 시작·길이·몸짓이 겹친 시간·줄 사이 간격을 냄
+    if '--voice' in A: cx.add_init_script("(()=>{const L=window.__vp=[];const f=()=>{requestAnimationFrame(f);try{const G=window.wlGame,Z=window.wlZone&&wlZone.cur;if(!G||!Z||!Z.state)return;const s=Z.state();if(!('gg' in s))return;L.push([+(performance.now()/1000).toFixed(3),G.sound.voiceNow().id||'',s.gg||'']);}catch(e){}};f();})()")
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append('console: ' + m.text[:300]) if m.type == 'error' and '404' not in m.text and 'Failed to load resource' not in m.text else None)
     url = 'http://localhost:8000/?world=infinite-space&zone=space-saturn&notitle&quality=%s%s' % ('mobile' if PHONE else 'high', '' if FROM else '&arrive')
     pg.goto(url, wait_until='domcontentloaded'); pg.evaluate('localStorage.clear();localStorage.setItem("wl-help-seen","1")'); pg.reload(wait_until='domcontentloaded'); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(600)
@@ -114,6 +116,21 @@ with sync_playwright() as p:
         res['전체(실제 초 — 헤드리스는 느림)'] = round(time.time() - T0, 1); res['그리기(찍은 때)'] = draws
         try: res['단계 시각'] = st().get('T')
         except Exception: pass
+        if '--voice' in A:
+            try:
+                L = pg.evaluate('window.__vp||[]'); V = {}; order = []
+                for i, (t, vid, m) in enumerate(L):
+                    dt = (L[i + 1][0] - t) if i + 1 < len(L) else 0
+                    if vid:
+                        if vid not in V: V[vid] = {'시작': t, '끝': t, '몸짓(초)': 0}; order.append(vid)
+                        V[vid]['끝'] = t + dt
+                        if m == 'talk': V[vid]['몸짓(초)'] += dt
+                idle_talk = sum((L[i + 1][0] - L[i][0]) for i in range(len(L) - 1) if not L[i][1] and L[i][2] == 'talk')
+                out = []
+                for k, vid in enumerate(order):
+                    v = V[vid]; out.append({'번호': vid.replace('.mp3', ''), '시작': round(v['시작'], 2), '길이': round(v['끝'] - v['시작'], 2), '몸짓': round(v['몸짓(초)'], 2), '앞 줄 끝 → 이 줄 시작': round(v['시작'] - V[order[k - 1]]['끝'], 2) if k else None})
+                res['목소리와 몸짓'] = out; res['목소리 없이 말하는 몸짓(초)'] = round(idle_talk, 2)
+            except Exception as e: res['목소리와 몸짓'] = '실패 ' + str(e)[:80]
         res['오류'] = errs[:8]; print(json.dumps(res, ensure_ascii=False, indent=1))
         json.dump(res, open(os.path.join(OUT, '%s-result%s.json' % (TAG, '-' + FROM if FROM else '')), 'w', encoding='utf-8'), ensure_ascii=False, indent=1); cx.close(); b.close()
         if VID:
