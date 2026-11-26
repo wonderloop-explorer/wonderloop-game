@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import {sbMat} from '../../game/storybook.js';
 import {radialTex} from '../../game/glowtex.js';
+import * as GAME from '../../game/index.js';
 /* 회색 정원 → 화성으로 넘길 때 남기는 표시(구역을 바꿔도 모듈은 그대로) */
 export const RIDE={pending:null,hid:false};
 const PI=Math.PI,ss=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x);};
@@ -27,7 +28,7 @@ const dustTex=()=>radialTex(64,[[0,255,255,255,.9],[.55,255,255,255,.4],[1,255,2
 const SEG=30,RAD=7;
 /* ── 별똥별 모양 ── */
 export function makeMeteor(root,{mob=false}={}){
-  const g=new THREE.Group();g.name='meteor';root.add(g);
+  const g=new THREE.Group();g.name='meteor';g.userData.wlRide=true;root.add(g);
   const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.3,1),new THREE.MeshBasicMaterial({color:new THREE.Color('#fff3b8')}));head.userData.noMerge=true;g.add(head);
   const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,color:new THREE.Color('#ffe7a8')}));halo.scale.setScalar(2.6);head.add(halo);
   const star=new THREE.Sprite(new THREE.SpriteMaterial({map:sparkTex(),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,color:new THREE.Color('#fff6c8')}));star.scale.setScalar(1.7);head.add(star);
@@ -37,7 +38,7 @@ export function makeMeteor(root,{mob=false}={}){
   for(let i=0;i<=SEG;i++){const s=i/SEG;if(s<.82)tc.copy(cH).lerp(cM,ss(0,.82,s));else tc.copy(cM).lerp(cE,ss(.82,.9,s));for(let j=0;j<RAD;j++)colA.set([tc.r,tc.g,tc.b],(i*RAD+j)*3);}
   for(let i=0;i<SEG;i++)for(let j=0;j<RAD;j++){const a=i*RAD+j,b=i*RAD+(j+1)%RAD,c=a+RAD,d=b+RAD;idx.push(a,c,b,b,c,d);}
   const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.BufferAttribute(pos,3));tg.setAttribute('color',new THREE.BufferAttribute(colA,3));tg.setIndex(idx);
-  const tail=new THREE.Mesh(tg,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide}));tail.frustumCulled=false;tail.userData.noMerge=true;root.add(tail);
+  const tail=new THREE.Mesh(tg,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide}));tail.frustumCulled=false;tail.userData.noMerge=true;tail.userData.wlRide=true;root.add(tail);
   // 반짝이 가루·먼지 점 묶음(그리기 1번씩)
   const dust=points(root,mob?140:260,{map:sparkTex(),add:true,size:.26});
   const P0=new THREE.Vector3(),P1=new THREE.Vector3(),C=new THREE.Vector3(),_a=new THREE.Vector3(),_b=new THREE.Vector3(),_t=new THREE.Vector3(),_n=new THREE.Vector3(),_m=new THREE.Vector3(),UP=new THREE.Vector3(0,1,0);
@@ -63,7 +64,7 @@ export function points(root,n,{map,add=true,size=.25,grav=0,drag=.6}={}){
   const pos=new Float32Array(n*3),col=new Float32Array(n*3),P=[];for(let i=0;i<n;i++){P.push({t:0,life:0,v:[0,0,0],c:[1,1,1]});pos[i*3+1]=-999;}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
   const m=new THREE.PointsMaterial({size,map,vertexColors:true,transparent:true,depthWrite:false,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,sizeAttenuation:true,opacity:add?1:.85});
-  const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.userData.noMerge=true;pts.renderOrder=2;root.add(pts);let k=0;
+  const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.userData.noMerge=true;pts.userData.wlRide=true; /* wlRide: 이동 연출 물체 — 떠날 때 구역이 땅을 가라앉히거나 숨길 때 빼야 함 */pts.renderOrder=2;root.add(pts);let k=0;
   function emit(x,y,z,vx,vy,vz,life,c){const i=k++%n,p=P[i];p.t=0;p.life=life;p.v=[vx,vy,vz];p.c=c;pos.set([x,y,z],i*3);}
   function tick(dt){let any=false;for(let i=0;i<n;i++){const p=P[i];if(p.life<=0)continue;p.t+=dt;if(p.t>=p.life){p.life=0;pos[i*3+1]=-999;col.set([0,0,0],i*3);continue;}any=true;
       const f=Math.exp(-drag*dt);p.v[0]*=f;p.v[2]*=f;p.v[1]=p.v[1]*f-grav*dt;pos[i*3]+=p.v[0]*dt;pos[i*3+1]+=p.v[1]*dt;pos[i*3+2]+=p.v[2]*dt;
@@ -151,24 +152,30 @@ function applySquish(WL,s){const q=Math.max(.45,s),w=1/Math.sqrt(q);WL.scale.set
 /* 2026-11-14 행성 이동 공통 틀: 이 함수의 시간표(내려와 잡기 0~2.4 → 잡음 2.4 → 당김 3.3 → 비행 FLY초)와 카메라 키(CAMK)를 모든 행성 이동이 그대로 쓴다.
    탈것만 바꿔 끼움: o.carrier 없으면 별똥별(꼬리에 매달림). o.carrier = {tick(dt,t,st,wp) 탈것 움직임, late(dt,t,st), lift(T) 잡은 뒤 원더룹이 땅에서 뜨는 높이, hang:false 원더룹이 길 위에 바로(매달리지 않음),
    pose:{grab, fly(u)} 동작 이름, stop(), dispose()}, o.lookAt [x,z] = 내려다보는 장면에서 카메라가 볼 출발지 볼거리(손 흔드는 친구들) — 화성 → 금성 큰 회오리(mars.js bigLift). 단계 표시 travel.note('phase'): come·grab·pull·rise(u<.31)·space(u<.82)·dest(목적지 정면) */
-export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||null;const M=CR?null:makeMeteor(root,{mob:o.mob}),SC=makeScarf(WL),S=spring();
+/* 2026-11-26 이동 통일(모든 행성 사이 = 달 → 화성과 같은 틀: 반짝이 리본(별똥별 꼬리)을 잡고 우주 비행 → 지도 → 구름 화면 → 반짝이 꼬리를 그리며 착지):
+   o.ribbonAt — 탈것(carrier)이 있어도 별똥별 리본을 씀. 음수 = 처음부터(탈것은 배경·하늘만 맡음 — 금성), 0~1 = 비행 진행 그 자리에서 별똥별이 날아와 꼬리를 잡음(화성 큰 회오리·토성 붉은 빛이 하늘까지 올려 준 뒤) */
+export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||null,RB=o.ribbonAt,MM=!CR||(RB!=null&&RB<0);const M=(!CR||RB!=null)?makeMeteor(root,{mob:o.mob}):null,SC=makeScarf(WL),S=spring(),mh=new THREE.Vector3();if(M&&!MM)M.show(false);
   const P=WL.position.clone(),yaw0=WL.rotation.y,fx=Math.sin(yaw0),fz=Math.cos(yaw0);
   const hover=new THREE.Vector3(P.x+fx*1.9,P.y+2.45,P.z+fz*1.9),hi=new THREE.Vector3(P.x+fx*7-fz*4,P.y+17,P.z+fz*7+fx*4);
   const head=new THREE.Vector3().copy(hi),endP=new THREE.Vector3(),ctrl=new THREE.Vector3(),mid=new THREE.Vector3(),hangV=new THREE.Vector3(),lastH=new THREE.Vector3(),vel=new THREE.Vector3(0,1,0);
   const wp=P.clone(); // 원더룹 자리(이 연출이 정함 — 07은 riding.y에 자세 높이 wy를 더해 그리므로 WL.position에서 다시 읽으면 쌓인다)
   const FO=o.faceOff||0; /* 몸 방향 − 가는 방향(얼음 배: PI = 뒤를 보고 탐). st.face = 가는 방향, 카메라 키의 '원더룹 기준 방향'은 몸(얼굴) 기준 */
   const st={endP:null,t:0,phase:'come',grab:0,liftY:P.y,cu:null,idle:9,wave:false,face:yaw0-FO,end:false};lockOn(G,WL);
-  if(!CR)G.sound.sfx('event-sparkle',{gain:1.15});G.travel.note('phase','come');let t0=null;
+  if(MM)G.sound.sfx('event-sparkle',{gain:1.15});G.travel.note('phase','come');let t0=null;
   function tick(dt,t){if(st.end)return;st.t+=dt;const T=st.t,U=WL.userData;
     if(T<2.4){const u=ss(0,2.2,T),a=hi.clone().lerp(hover,u);a.y+=Math.sin(u*PI)*1.2;a.x+=-fz*Math.sin(u*PI)*1.5;a.z+=fx*Math.sin(u*PI)*1.5;head.copy(a);if(T>2.2){const w=(T-2.2)*3;head.x+=Math.cos(w)*.25;head.z+=Math.sin(w)*.25;}}
     else if(T<3.3){const w=(T-2.2)*3;head.copy(hover);head.x+=Math.cos(w)*.25*(1-ss(2.4,3.2,T));head.z+=Math.sin(w)*.25*(1-ss(2.4,3.2,T));head.y+=Math.sin(T*3)*.06;
-      if(st.phase==='come'){st.phase='grab';G.travel.note('phase','grab');G.travel.begin({id:'meteor',expect:(3.75-T)+FLY+(o.after||0)}); /* 꼬리를 잡는 순간 이동 공통 틀(game/travel) 시작: 배경음 줄이고 이동 테마 — expect = 착지까지 남은 초 */U.action=CR?CR.pose.grab:'꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');if(!CR)WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y-FO;}}
+      if(st.phase==='come'){st.phase='grab';G.travel.note('phase','grab');G.travel.begin({id:'meteor',expect:(3.75-T)+FLY+(o.after||0)}); /* 꼬리를 잡는 순간 이동 공통 틀(game/travel) 시작: 배경음 줄이고 이동 테마 — expect = 착지까지 남은 초 */U.action=MM?'꼬리 잡기':CR.pose.grab;U.at=0;if(U.setExpr)U.setExpr('반짝 신남');if(MM)WL.rotation.y=Math.atan2(hover.x-P.x,hover.z-P.z);st.face=WL.rotation.y-FO;}}
     else if(T<3.75){if(st.phase!=='pull'){st.phase='pull';G.travel.note('phase','pull');G.sound.sfx('event-whoosh',{gain:.85});}head.copy(hover);head.y+=ss(3.3,3.75,T)*.55;}
     else{if(st.phase!=='fly'){st.phase='fly';G.travel.note('phase','fly');st.liftT=T;G.travel.depart();if(!(CR&&CR.plain))S.v+=2.2;lastH.copy(head);}
       const u=Math.min(1,(T-3.75)/FLY),p=o.path(u);head.set(p.x,p.y,p.z);
       if(o.onFly)o.onFly(u);if(!st.wave&&u>.12){st.wave=true;if(o.onWave)o.onWave(true);}
       {const ph=u<.31?'rise':u<.82?'space':'dest';if(ph!==st.ph2){st.ph2=ph;G.travel.note('phase',ph);}}
-      if(CR&&CR.pose.fly){const a=CR.pose.fly(u);if(a&&U.action!==a){U.action=a;U.at=0;}}
+      if(CR&&!MM&&!st.rib&&CR.pose&&CR.pose.fly){const a=CR.pose.fly(u);if(a&&U.action!==a){U.action=a;U.at=0;}}
+      /* 리본(비행 도중): 별똥별이 앞 위에서 날아와 원더룹 앞에 맴돌고 → RB에서 꼬리를 두 손으로 잡음(그 뒤로는 달 → 화성과 같은 모습) */
+      if(M&&!MM&&u>RB-.07){if(!st.ribIn){st.ribIn=true;M.show(true);G.sound.sfx('event-sparkle',{gain:1.1});}
+        const e=1-ss(RB-.07,RB,u),f1=Math.sin(st.face+FO),f2=Math.cos(st.face+FO);mh.set(wp.x+f1*(1.9+11*e)-f2*6*e,wp.y+2.45+9*e+Math.sin(T*3)*.06,wp.z+f2*(1.9+11*e)+f1*6*e);
+        if(u>=RB&&!st.rib){st.rib=true;st.ribT=T;U.action='꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');G.sound.sfx('event-whoosh',{gain:.7});S.v+=1.6;}}
       G.travel.tick(dt,'fly'); // 잔잔한 바람 + 꼬리 반짝이(작게)
       if(u>=1&&!st.end){st.end=true;if(o.onEnd)o.onEnd();}}
     // 몸 늘어남: 당기는 동안 1.38까지, 끌려 올라가면 1로(넘쳤다 돌아옴)
@@ -181,21 +188,22 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
       const ly=Math.min(1,(T-st.liftT)/.35);wp.lerp(hangV,ly<1?ly*ly:1-Math.exp(-dt*7));}
     else if(CR&&CR.lift)wp.y=P.y+CR.lift(T); /* 큰 회오리: 잡은 뒤 땅에서 천천히 뜸 */
     WL.position.copy(wp);U.riding.y=wp.y;st.sx=S.x;st.hy=head.y;st.wy=wp.y;
-    if(CR)CR.tick(dt,t,st,wp);else M.tick(dt,t,{emit:st.phase==='fly'?(o.mob?32:60):st.phase==='come'?(o.mob?14:24):6});}
+    if(CR)CR.tick(dt,t,st,wp);if(M&&MM)M.tick(dt,t,{emit:st.phase==='fly'?(o.mob?32:60):st.phase==='come'?(o.mob?14:24):6});else if(M&&st.ribIn)M.tick(dt,t,{emit:st.rib?(o.mob?32:60):(o.mob?14:24)});}
   const _v=new THREE.Vector3();
   /* 07 뒤(구역 lateUpdate): 원더룹 자세·늘어남 → 손 자리 → 꼬리 끝 */
   function late(dt,t){const T=st.t;
     if(st.phase==='fly'){const pl=CR&&CR.plain?.25:1;WL.rotation.y=st.face+FO;WL.rotation.z=Math.sin(T*1.7)*.07*pl;WL.rotation.x=Math.sin(T*1.1)*.05*pl;}
     applySquish(WL,S.x);
-    if(CR){CR.late&&CR.late(dt,t,st);SC.tick(t,st.phase==='fly'&&!CR.plain,1);}else{handsMid(WL,mid);
+    if(CR&&CR.late)CR.late(dt,t,st);
+    if(!(M&&(MM||st.ribIn)))SC.tick(t,st.phase==='fly'&&!(CR&&CR.plain),1);else{const hd=MM?head:mh,bf=st.face+FO;handsMid(WL,mid);
     /* 꼬리: 손(가슴 앞)에서 앞으로 나가 위로 — 약 2등신이라 손을 머리 위로 못 올려, 꼬리가 위에서 곧게 내려오면 얼굴·탈을 지나간다.
        잡기 전 꼬리 끝은 손 앞 0.6m에 떠 있다가 0.45초에 걸쳐 손으로 */
-    const grabK=st.phase==='come'?0:ss(0,.45,T-2.4),f1=Math.sin(st.face),f2=Math.cos(st.face);
+    const grabK=MM?(st.phase==='come'?0:ss(0,.45,T-2.4)):(st.rib?ss(0,.45,T-st.ribT):0),f1=Math.sin(bf),f2=Math.cos(bf);
     endP.set(mid.x+f1*.6,mid.y+.1,mid.z+f2*.6).lerp(mid,grabK);
     ctrl.set(endP.x+f1*1.05,endP.y+.2+Math.sin(t*2.3)*.06,endP.z+f2*1.05);
     /* 빛줄기가 얼굴을 가로지르지 않게(2026-11-23): 꼬리의 휘는 점을 카메라 반대쪽 옆으로 1.5m 밀어, 손에서 나간 빛줄기가 얼굴 앞이 아니라 머리 옆·뒤로 돌아 올라감(카메라가 반대쪽으로 넘어가면 천천히 따라 넘어감) */
     {const c=G.view.camera,sx=f2,sz=-f1;let sd=st.tside||0;if(c){const d=(c.position.x-WL.position.x)*sx+(c.position.z-WL.position.z)*sz;if(Math.abs(d)>.6)sd=d>0?-1:1;}st.tsd=(st.tsd||0)+(sd-(st.tsd||0))*Math.min(1,dt*2.2);st.tside=sd;ctrl.x+=sx*st.tsd*1.5;ctrl.z+=sz*st.tsd*1.5;ctrl.y-=.3*Math.abs(st.tsd);} /* 옆으로 낮게 나갔다가 올라감 */
-    st.endP=endP;st.head=head;    M.g.position.copy(head);M.setTail(head,endP,ctrl,t);SC.tick(t,st.phase==='fly',1);}
+    st.endP=endP;st.head=hd;    M.g.position.copy(hd);M.setTail(hd,endP,ctrl,t);SC.tick(t,st.phase==='fly',1);}
     /* 기본 각도(손을 뗀 지 1.6초 뒤 이쪽으로 — 2026-11-09 다듬기: 등 뒤 위만 보면 초록 탈만 보이고 휴대폰에선 꼬리가 탈에 붙은 풍선 같았다):
        내려와 잡을 때까지 옆 앞 → 끌려 올라간 직후 앞옆 낮게(얼굴·꼬리 잡은 손·멀어지는 달) → 마을 내려다보기(짧게) → 옆모습(목성·토성이 뒤로 스쳐 감)
        → 어깨 너머로 다가오는 화성 → 마지막 얼굴 정면(반짝 신남). 키: [비행 진행 u, 원더룹 기준 방향, 위아래, 거리] */
@@ -206,24 +214,25 @@ export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||nul
      if(o.lookAt&&u>=.06&&u<LE[1]){const w=ss(.06,.13,u)*(1-ss(LE[0],LE[1],u)),yl=Math.atan2(WL.position.x-o.lookAt[0],WL.position.z-o.lookAt[1])+(o.lookOff||0);let dy=yl-ya;dy=Math.atan2(Math.sin(dy),Math.cos(dy));ya+=dy*w;}
      {const c=G.view.camera,wide=c&&c.aspect>1.25;if(wide)d*=1.25;if(WL.userData.riding)WL.userData.riding.lookY=wide?.8:null;} /* 보는 점은 몸 가운데(가로 화면 — 따라가기의 '보는 점 올림'이면 발이 아래로 잘림) */ /* 가로 화면(컴퓨터)은 조금 멀리 — 가까운 장면에서 발·탈이 화면 밖으로 잘렸다(2026-11-14 — 별똥별도 같았다) */
      camHome(G,dt,ya,p,d,st,2.2);}}
-  function stop(){if(M)M.show(false);else if(CR.stop)CR.stop();SC.tick(0,false);}
-  function dispose(){if(M){M.dispose();M.g.removeFromParent();M.tail.removeFromParent();M.dust.pts.removeFromParent();}else if(CR.dispose)CR.dispose();SC.dispose();}
+  function stop(){if(M)M.show(false);if(CR&&CR.stop)CR.stop();SC.tick(0,false);}
+  function dispose(){if(M){M.dispose();M.g.removeFromParent();M.tail.removeFromParent();M.dust.pts.removeFromParent();}if(CR&&CR.dispose)CR.dispose();SC.dispose();}
   function shift(k,sh){wp[k]+=sh;head[k]+=sh;lastH[k]+=sh;hover[k]+=sh;hi[k]+=sh;if(M)M.dust.shift(k,sh);}
   return {tick,late,stop,dispose,shift,state:st,meteor:M};}
-/* ── 도착 ── o: {G,root,WL,groundY,mob,dust(points 붉은 먼지),onDone()} — WL은 이미 착지 자리 위(xz)에 있다 */
+/* ── 도착(모든 행성 공통 — 2026-11-26) ── o: {G,root,WL,groundY,mob,dust(points — 없으면 여기서 만듦),dustCols[[r,g,b]…] 착지 먼지 색,landSfx 착지 소리 하나 더,grav,quick,onLand(),onDone()} — WL은 이미 착지 자리 위(xz)에 있다 */
 export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mob}),SC=makeScarf(WL),S=spring();lockOn(G,WL);const U=WL.userData;U.action='꼬리 잡기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');
   const P=WL.position.clone(),gy=o.groundY(P.x,P.z),face=WL.rotation.y,fx=Math.sin(face),fz=Math.cos(face);
   const head=new THREE.Vector3(),endP=new THREE.Vector3(),ctrl=new THREE.Vector3(),mid=new THREE.Vector3(),away=new THREE.Vector3(fx*9,7,fz*9);
   const st={t:0,phase:'down',y:gy+6,vy:0,bounce:0,cu:null,idle:9,done:false,rel:null};G.travel.note('phase','arrive');
   /* 내려오는 동안(먼지구름이 걷히는 때부터 착지까지): 앞옆 3/4 조금 위에서 — 내려오는 얼굴과 화성 땅이 함께(2026-11-09 다시: 예전엔 비행 끝 카메라를 이어 받고 1.6초를 기다려 등 뒤 탈만 보였다).
      화면이 덮인 동안 그 각도로 바로 놓고(riding.snap), 착지 뒤에는 리액션 각도(아래 late)로 천천히 */
-  const DOWN=[face+.85,.38,6.2];{const C=G.controls.input.cam;if(C){C.yaw=DOWN[0];C.pitch=DOWN[1];C.dist=DOWN[2];st.cu=C.user;}U.riding.snap=true;}
-  const G2=3.7; // 화성 중력(지구의 약 38%) m/초²
+  const DC0=o.downCam||[.85,.38,6.2],SC0=o.standCam||[.75,.28,7],DOWN=[face+DC0[0],DC0[1],DC0[2]]; /* o.downCam·o.standCam [얼굴 기준 방향, 위아래, 거리]: 내려오는 동안·선 뒤의 카메라(토성: 낮게 — 커다란 토성이 보이게) */{const C=G.controls.input.cam;if(C){C.yaw=DOWN[0];C.pitch=DOWN[1];C.dist=DOWN[2];st.cu=C.user;}U.riding.snap=true;}
+  const G2=o.grav||3.7; // 떨어지는 빠르기(화성 중력 — 모든 행성이 같은 느낌으로)
+  const own=!o.dust,DU=o.dust||points(root,o.mob?40:70,{map:dustTex(),add:false,size:.42,grav:.5,drag:1.6}),DC=o.dustCols||[[.86,.58,.46],[.93,.7,.56]];
   function puff(n,sp){const x=WL.position.x,z=WL.position.z;for(let i=0;i<n;i++){const a=Math.random()*PI*2,r=Math.random()*.35,v=sp*(.5+Math.random()*.7);
-    o.dust.emit(x+Math.cos(a)*r,gy+.05,z+Math.sin(a)*r,Math.cos(a)*v,.35+Math.random()*.6,Math.sin(a)*v,1.4+Math.random()*1.2,Math.random()<.5?[.86,.58,.46]:[.93,.7,.56]);}}
-  function land(k,first){S.v-=k;puff(o.mob?16:28,1.2*Math.min(1,k/5));G.sound.sfx('land',{gain:first?1.3:1});G.sound.sfx('event-pop',{gain:first?1.15:.6});G.sound.sfx('event-dust',{gain:first?1.2:1});}
+    DU.emit(x+Math.cos(a)*r,gy+.05,z+Math.sin(a)*r,Math.cos(a)*v,.35+Math.random()*.6,Math.sin(a)*v,1.4+Math.random()*1.2,DC[Math.floor(Math.random()*DC.length)]);}}
+  function land(k,first){S.v-=k;puff(o.mob?16:28,1.2*Math.min(1,k/5));G.sound.sfx('land',{gain:first?1.3:1});G.sound.sfx('event-pop',{gain:first?1.15:.6});G.sound.sfx(o.landSfx||'event-dust',{gain:first?1.2:1});}
   G.sound.sfx('event-sparkle');
-  function tick(dt,t){if(st.done)return;st.t+=dt;const T=st.t;
+  function tick(dt,t){if(own)DU.tick(dt);if(st.done)return;st.t+=dt;const T=st.t;
     if(st.phase==='down'){const u=ss(0,1.8,T);head.set(P.x+fx*1.9,gy+11-5*u+Math.sin(T*3)*.08,P.z+fz*1.9);st.y=head.y-2.45;
       if(T>=1.9||(T>=1.1&&(()=>{const l=G.travel.untilResolve();return l!=null&&l<=Math.sqrt(2*Math.max(0,st.y-gy)/G2)+.03;})())){st.phase='fall';G.travel.note('phase','fall');st.vy=0;U.action='서기';U.at=0;G.sound.sfx('event-whoosh',{gain:.8});st.rel=head.clone();G.react.react('startle',{sound:null});G.travel.landIn(Math.sqrt(2*Math.max(0,st.y-gy)/G2));} /* 놓아준 순간 착지 시각을 알림 → 이동 테마 해결 화음이 착지에 */}
     else{if(st.rel){const k=T-1.9;head.copy(st.rel).addScaledVector(away,k*(.5+k*.6));if(k>3){M.show(false);}}
@@ -242,6 +251,16 @@ export function arrival(o){const {G,root,WL}=o;const M=makeMeteor(root,{mob:o.mo
     if(st.phase==='down'){endP.copy(mid);WL.rotation.z=Math.sin(T*1.7)*.06;ctrl.set(mid.x+fx*1.05,mid.y+.2,mid.z+fz*1.05);}
     else{endP.copy(head);endP.y-=1.9;endP.x-=fx*1.2;endP.z-=fz*1.2;ctrl.copy(head).lerp(endP,.5);ctrl.y+=.3;} /* 놓아준 뒤: 꼬리가 별똥별을 따라감 */
     st.endP=endP;M.g.position.copy(head);M.setTail(head,endP,ctrl,t);SC.tick(t,st.phase==='down'||st.phase==='fall',st.phase==='down'?.6:1);
-    if(st.phase==='down'||st.phase==='fall')camHome(G,dt,DOWN[0],DOWN[1],DOWN[2],st,2.2);else camHome(G,dt,face+.75,.28,7,st,1.6);} // 착지 뒤: 얼굴이 보이는 앞쪽 3/4(깜짝·갸웃·두리번이 보이게)
-  function dispose(){M.dispose();M.g.removeFromParent();M.tail.removeFromParent();M.dust.pts.removeFromParent();SC.dispose();}
+    if(st.phase==='down'||st.phase==='fall')camHome(G,dt,DOWN[0],DOWN[1],DOWN[2],st,2.2);else camHome(G,dt,face+SC0[0],SC0[1],SC0[2],st,1.6);} // 착지 뒤: 얼굴이 보이는 앞쪽 3/4(깜짝·갸웃·두리번이 보이게)
+  function dispose(){M.dispose();M.g.removeFromParent();M.tail.removeFromParent();M.dust.pts.removeFromParent();SC.dispose();if(own){DU.dispose();DU.pts.removeFromParent();}}
   return {tick,late,dispose,state:st};}
+/* ── 공통 전환(2026-11-26): (우주 지도 →) 구름 화면 → 구역 바꿈 → 걷힘. 도착 구역은 RIDE.pending을 보고 반짝이 꼬리 착지(arrival)를 한다.
+   순서대로 다음 행성으로 갈 때는 비행 끝(onEnd)에서 o.map(지도)과 함께, 지도에서 골라 갈 때는 o 없이(구름 화면 → 착지만) — window.wlHop(구역 id) ── */
+export const VEILS={'space-garden':{blobs:['#e4e2f0','#d2cfe4','#f0eef8','#c4c0da','#dcd9ec'],bg:['#d8d5e8','#c6c2dc'],fade:'rgba(214,210,232,0)',tiles:[[248,246,255],[160,154,190]],dots:['252,250,255','190,184,214','226,222,240']},
+  'space-venus':{blobs:['#e6d2f4','#d9c0ee','#f1e4fa','#cdb0e6','#e0c9f2'],bg:['#dcc6ef','#cfb4e6'],fade:'rgba(214,190,236,0)',tiles:[[250,240,255],[176,146,206]],dots:['252,244,255','198,170,226','226,206,242']},
+  'space-saturn':{blobs:['#eef6ff','#dbeafc','#f6f1e2','#cfe0f6','#e9f0fb'],bg:['#dfeaf8','#cfdcf0'],fade:'rgba(220,232,248,0)',tiles:[[250,252,255],[170,190,220]],dots:['255,255,255','200,216,240','236,226,200']},
+  'space-jupiter':{blobs:['#f2b08e','#e98a6c','#f6c9a6','#dd6f58','#f0a07e'],bg:['#eca486','#de7a62'],fade:'rgba(236,150,120,0)',tiles:[[255,226,196],[196,84,62]],dots:['255,236,214','226,110,84','246,176,140']}}; /* space-mars = dustVeil 기본(붉은 먼지) */
+export async function landOn(G,to,o={}){RIDE.pending={from:o.from||null,pick:!o.from};let mp=null;if(o.map){G.travel.note('phase','map');mp=await o.map();}
+  G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil(VEILS[to]);if(o.sfx)G.sound.sfx(o.sfx,{gain:1.1});await veil.cover(.75);G.travel.mark('veil');if(o.before)try{o.before();}catch(e){console.error(e);}
+  try{if(window.wlZone)await window.wlZone.go(to);}catch(e){console.error(e);}if(mp)mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}
+if(typeof window!=='undefined')window.wlHop=to=>landOn(GAME,to); /* 지도에서 골라 갈 때(④ 장소 고르기가 부름) · 시험용 */

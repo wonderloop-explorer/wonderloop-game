@@ -38,7 +38,7 @@ import {popShown} from '../../game/popup.js';
 import {radialTex} from '../../game/glowtex.js';
 import SPACE from '../../worlds/infinite-space.js';
 import {canvasTex,srand,wob,hatch,shade,jupiterMap,marsMap,saturnMap,sunArt,sunGlowTex,paperArt,sparkArt,nebulaArt,milkyArt,makeOrb} from './skyboard.js';
-import {RIDE,departure,dustVeil} from './meteor-ride.js'; // 출구 → 별똥별 꼬리 타고 화성으로(2026-11-09)
+import {RIDE,departure,arrival,landOn} from './meteor-ride.js'; // 출구 → 별똥별 꼬리 타고 화성으로(2026-11-09)
 /* 행성 크기(2026-11-08 — 17m → 24m): 걷기 속도는 그대로 두고 행성을 키워 땅이 도는 속도를 약 30% 늦춤(땅 회전만 따로 늦추면 발이 미끄러져 보여서). 한 바퀴 2πR/3.78 ≈ 40초.
    ?debug 톱니 메뉴 '행성 반지름' 막대(localStorage 'wl-space-R', 12~40 — 바꾸면 다시 연다) 또는 ?planetR=로 맞춰 볼 수 있다.
    배치는 17m 때 자리를 기준으로 S = R/17배 펼친다: 멀리 있는 것(분화구·언덕·발자국 길·출구·따뜻한 땅·그늘 분화구 자리)은 S배,
@@ -446,7 +446,7 @@ PEST.rest.q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),P
 const _hR=new THREE.Vector3(),_hL=new THREE.Vector3(),_px=new THREE.Vector3(),_py=new THREE.Vector3(),_pz=new THREE.Vector3(),_pm=new THREE.Matrix4(),_pqH=new THREE.Quaternion(),_ph=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
 let foreR=null,foreL=null;
 function poundingNow(W){const A=W&&W.userData.action;return A==='떡메 찧기'||A==='떡메 들기';}
-function lateUpdate(dt,t){const W=U0();if(!W)return;const U=W.userData;if(ride)ride.late(dt,t);
+function lateUpdate(dt,t){const W=U0();if(!W)return;const U=W.userData;if(ride)ride.late(dt,t);if(arrG)arrG.late(dt,t);
   if(!foreR){foreR=W.getObjectByName('forearm.R');foreL=W.getObjectByName('forearm.L');}
   PEST.idle+=dt;
   // 찧기 사이 잡고 기다리다가 — 2.4초 쉬거나 걷기 시작하면 내려놓음
@@ -683,7 +683,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
     if(dC>3.2)st.caveOff=false;}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown()){ /* 2026-11-17 세 번째: 그늘 안내 문구가 떠 있으면 지우고 카드 먼저(겹쳐 떴다) — 다 못 읽었으면(2.6초 안) 카드가 닫힌 뒤 다시 */
     if(st.coldT!=null&&G.clock.t-st.coldT<4.4){G.ui.toast(COLD_MSG,0);if(G.clock.t-st.coldT<2.6)st.cold=false;}st.coldT=null;st.caveT=G.clock.t;caveSecret();} // 얼음 동굴(2026-11-17부터 꼭 지나가는 단계 — 출구는 이 카드를 본 뒤에)
-  bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}tickBits(dt);tickCake(dt);tickTry(dt,t,P);
+  bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}if(pendG&&!arrG&&cam)arrG=arrival({G,root,WL,groundY,mob:MOB,quick:true,dustCols:[[.8,.78,.88],[.9,.88,.95]]});if(arrG)arrG.tick(dt,t);tickBits(dt);tickCake(dt);tickTry(dt,t,P);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}
@@ -729,6 +729,7 @@ const EXIT_R=1.1;
    비행 길(별똥별 머리 자리): 출구 → 마을 위(약 17m — 보름 할아버지·아기 토끼가 손 흔듦) → 계속 오르며 행성이 작아짐(작은 행성 그림이 원더룹 높이만큼 아래로 — 위로 70m),
    하늘 그림판의 토성·목성이 옆으로 스쳐 지나가고(FLY.k), 끝에 붉은 화성이 커짐 → 화면 전환으로 화성(space-mars) */
 let ride=null;const FLY={k:0},WAVE={on:false};
+const pendG=RIDE.pending;RIDE.pending=null;let arrG=null; /* 지도에서 골라 왔을 때(2026-11-26 공통 전환): 구름 화면이 걷히며 반짝이 꼬리 착지 */
 G.travel.prepare(SPACE.travel); // 이동 테마 파일을 미리 불러 둠(휴대폰에서 연출 시작이 늦지 않게)
 function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W.userData;st.exitOut=false;if(U.stopWalk)U.stopWalk();U.riding={y:W.position.y};st.rideWait=true;
   const go=()=>{st.rideWait=false;const P=W.position;
@@ -741,12 +742,10 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
       onFly:u=>{FLY.k=u;if(u>.3&&!st.marsPre){st.marsPre=true;import('./mars.js').catch(()=>{});}}, // 화성 구역을 비행 중에 미리 불러 둠(넘어갈 때 기다리지 않게)
       /* 비행 끝: 우주 지도 장면(game/travel 공통 — 달 → 화성 발자국 점선·발견한 것·예고 한 줄, 약 3.6초) → 화성 대기로 들어섬(낮은 우웅 + 먼지구름 휙) →
          파스텔 먼지구름이 화면을 덮었다 걷힘(어두운 화면 없이 — 예전 ui.transition은 1초쯤 어두웠다) */
-      onEnd:async()=>{G.travel.note('phase','map');RIDE.pending={from:'space-garden',scarf:true};const mp=await G.travel.mapFor(SPACE,'space-garden','space-mars',F);
-        G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil();await veil.cover(.75);G.travel.mark('veil');
-        try{if(window.wlZone)await window.wlZone.go('space-mars');}catch(e){console.error(e);}mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);}});};
+      onEnd:()=>landOn(G,'space-mars',{from:'space-garden',map:()=>G.travel.mapFor(SPACE,'space-garden','space-mars',F)})});};
   if(first){ /* 2026-11-23: 출구에 닿으면 먼저 카메라 쪽으로 돌아서고(뒷모습으로 완료 창이 떴다) → 폴짝 + 완료 창 → 이동 */
     const c=G.view.camera.position,P=W.position,ry=Math.atan2(c.x-P.x,c.z-P.z),t0=G.clock.t;U.action='서기';U.at=0;
-    G.core.until(()=>{const d=ry-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.22;return G.clock.t-t0>.5;},1.2).then(()=>{W.rotation.y=ry;G.react.react('hop',{face:'기쁨'});return Promise.race([G.ui.itemCard({title:'STAGE 1 완료!',text:'회색 정원 탐험 완료 · 다음 목적지: 붉은 모래 언덕',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]);}).then(()=>{if(U.setExpr)U.setExpr('기본');setTimeout(go,250);});}
+    G.core.until(()=>{const d=ry-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.22;return G.clock.t-t0>.5;},1.2).then(()=>{W.rotation.y=ry;G.react.react('hop',{face:'기쁨'});return Promise.race([G.ui.itemCard({title:'회색 정원 탐험 완료!',text:'',icon:ICON_MAP(),sec:3.2,sound:'mission-clear',who:'완료'}),new Promise(r=>setTimeout(r,3600))]);}).then(()=>{if(U.setExpr)U.setExpr('기본');setTimeout(go,250);});}
   else go();}
 const ICON_MAP=()=>SPACE.icons.map();
 // 얼음 동굴 카드(꼭 지나가는 단계 — 카드 모양은 그대로 '숨겨진 비밀')
@@ -779,7 +778,7 @@ start:{compass:true},world:null,
   sun:ZSUN,lights:[lav],light,rim:.32,
   sky:SK,bend:{sphere:R,wrap:L},gravity:.38,jumpK:1.15,
   groundY,ground:[ground],keepOut:keep,mergeColors:true,music:null,
-  update,lateUpdate,dispose(){cntShow(null);G.ui.todo(null);scopeClose();if(ride){ride.dispose();ride=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
+  update,lateUpdate,dispose(){cntShow(null);G.ui.todo(null);scopeClose();if(ride){ride.dispose();ride=null;}if(arrG){arrG.dispose();arrG=null;}if(radBox)radBox.remove();const W=G.mission.hero&&G.mission.hero();if(W&&W.userData.wrapShift===wrapShift)W.userData.wrapShift=null;},
 };
 }
 /* 바닥 크레용 결(storybook 크레용 결과 같은 그리기): 획은 연보라·크림 위주(진한 갈색 획은 휴대폰에서 지저분한 얼룩처럼 보였다), 진하기는 공용 결과 한 단계 진한 결의 중간 — 파스텔 색연필 */

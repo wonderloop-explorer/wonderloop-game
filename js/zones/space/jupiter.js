@@ -7,9 +7,8 @@ import * as THREE from 'three';
 import {PI,QUALITY,rng} from '../../01-textures.js';
 import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
-import {RIDE} from './meteor-ride.js';
+import {RIDE,arrival} from './meteor-ride.js';
 import {lump,M4,sph} from './martians.js';
-import {cloudArrival} from './whirl-lift.js';
 import SPACE from '../../worlds/infinite-space.js';
 const ZID='space-jupiter',TMP={card:'[임시] 붉은 폭풍 이야기는 다음에 이어져요.' /* SPC-RS-010 글자만 */};
 export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],R0=rng('space-jupiter:cloud'),RR=(a,b)=>a+R0()*(b-a);
@@ -24,19 +23,19 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],R0=rng('
     geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.computeVertexNormals();const m=sbMat(new THREE.Color('#ffffff'));m.vertexColors=true;const g=new THREE.Mesh(geo,m);g.name='jupiter-cloud-floor';g.receiveShadow=true;g.userData.noMerge=true;add(g);var ground=g;}
   {const Lp=[],CC=['#f8e6cc','#f1c6a0','#ee9f80','#f6d8b8'];for(let i=0;i<(MOB?26:40);i++){const a=RR(0,PI*2),d=RR(9,30),r=RR(.8,2.4);for(let k=0;k<3;k++)Lp.push([sph(r*RR(.6,1),8,6).applyMatrix4(M4([Math.cos(a)*d+RR(-1,1)*r,r*.35+RR(0,.5)*r,Math.sin(a)*d+RR(-1,1)*r],[0,0,0],[1,.62,1])),CC[(i+k)%4]]);}
     const me=lump(Lp,true,1.6);me.name='jupiter-cloud-puffs';me.frustumCulled=false;add(me);}
-  const pend=RIDE.pending&&RIDE.pending.storm?RIDE.pending:null;if(pend)RIDE.pending=null;
+  const pend=RIDE.pending;RIDE.pending=null; /* 2026-11-26: 어디서 오든 같은 반짝이 착지 */
   const st={t:0,done:!pend,carded:false,T:{}},mark=k=>{if(st.T[k]==null)st.T[k]=+G.clock.t.toFixed(2);};let arr=null;
   const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
   const card=()=>{if(st.carded)return;st.carded=true;mark('card');G.ui.notice({kicker:'붉은 폭풍',title:'다음 이야기 준비 중',text:TMP.card,icon:SPACE.icons.map()});};
   function update(dt,t){const W=U0();if(!W)return;st.t+=dt;mark('start');
-    if(pend&&!arr&&!st.done){arr=cloudArrival({G,root,WL:W,groundY:()=>0,mob:MOB,doneAt:3.6,onDone(){st.done=true;mark('free');}});mark('arrive');}
-    if(arr&&!arr.state.done)arr.tick(dt,t);
+    if(pend&&!arr&&!st.done){arr=arrival({G,root,WL:W,groundY:()=>0,mob:MOB,quick:true,dustCols:[[.97,.86,.72],[.95,.72,.56],[.98,.92,.84]],landSfx:'cloud-poof',onDone(){st.done=true;mark('free');}});mark('arrive');}
+    if(arr)arr.tick(dt,t);
     if(st.done&&!st.carded&&st.t>1.5&&!(G.front.frontShown&&G.front.frontShown()))card();}
-  function lateUpdate(dt){if(arr&&!arr.state.done)arr.late(dt);}
+  function lateUpdate(dt){if(arr)arr.late(dt,G.clock.t);}
   return {name:'붉은 폭풍',kind:'outdoor',start:{compass:true},world:null,
     spawn:{x:0,z:0,ry:PI/2},
     areas:{field:{bounds:[-6.5,6.5,-6.5,6.5],obstacles:[],camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
     sun:{dir:new THREE.Vector3(...KEY.sunDir).normalize(),shadow:14,follow:true},
     sky:SK,far:120,ambience:'wind',charFog:.2,groundY:()=>0,ground:[ground],keepOut:keep,after:()=>({time:0}),
-    state:()=>({done:st.done,carded:st.carded,landed:!!(arr&&arr.state.landed),T:{...st.T},t:+G.clock.t.toFixed(2)}),
+    state:()=>({done:st.done,carded:st.carded,landed:!!(arr&&arr.state.landT!=null),T:{...st.T},t:+G.clock.t.toFixed(2)}),
     update,lateUpdate,dispose(){if(arr&&arr.dispose)arr.dispose();const W=U0();if(W){W.scale.set(1,1,1);W.userData.riding=null;G.core.block('meteor',false);}}};}

@@ -175,7 +175,7 @@ with sync_playwright() as p:
     # ⑨ 구름 끝 → ⑩ 얼음 배 출발 → 토성
     walk(S['end'][0] + 1.5, S['end'][1], 40, .6); until("!!wlZone.cur.state().T.end", 10); pg.wait_for_timeout(1500); shot('40-end-arrive')
     until("!!wlZone.cur.state().T.look", 40); shot('41-look-airship'); until("document.getElementById('wlStrip').classList.contains('on')", 10); pg.wait_for_timeout(1300); shot('41-card2-airship'); until("!!wlZone.cur.state().T.card2", 30); pg.wait_for_timeout(1500); shot('42-end-talk')  # 2026-11-21: 비행선·발견 카드 먼저, 그다음 거꾸리 대사
-    until("wlZone.cur.state().clear", 30); pg.wait_for_timeout(1000); shot('43-clear-standing'); until("wlZone.cur.state().aboard", 40); pg.wait_for_timeout(900); shot('44-boat-aboard'); until("!!wlZone.cur.state().T.sail", 20)
+    until("wlZone.cur.state().clear", 30); pg.wait_for_timeout(1000); shot('43-clear-standing'); until("!!wlZone.cur.state().T.boat", 40); pg.wait_for_timeout(900); shot('44-wave-goodbye');  # 2026-11-26: 얼음 배 없이 거꾸리 배웅 → 리본 출발 until("!!wlZone.cur.state().T.sail", 20)
     s = st(); T = dict(s['T']); R['발견'] = s['disc']; R['완료'] = s['clear']; t0 = time.time(); sh = [(2.2, '45-boat-rise'), (4.6, '46-boat-fly0'), (6.2, '46-boat-fly1'), (8.2, '47-boat-fly2'), (10.0, '47-boat-fly3'), (11.5, '48-space-side'), (13.0, '48-space-back'), (14.2, '49-saturn-near'), (16.2, '4a-saturn-big'), (18.9, '4b-map'), (20.6, '4c-map-steps')]; back = 0; lastb = None
     while time.time() - t0 < 60:
         if pg.evaluate("!!(wlZone.cur&&wlZone.cur.spots&&wlZone.cur.spots.dock)"): break

@@ -30,8 +30,7 @@ import * as G from '../../game/index.js';
 import {sbMat} from '../../game/storybook.js';
 import {setZoneBend} from '../../game/bend.js';
 import {radialTex} from '../../game/glowtex.js';
-import {RIDE,arrival,departure,redDust,points,lockOn,lockOff,dustVeil,camHome,makeScarf} from './meteor-ride.js';
-import {CLOUD_VEIL} from './whirl-lift.js';
+import {RIDE,arrival,departure,landOn,redDust,points,lockOn,lockOff,dustVeil,camHome,makeScarf} from './meteor-ride.js';
 import {makeSkyBoard,makeOrb,canvasTex,jupiterMap,saturnMap,marsMap,venusMap} from './skyboard.js';
 import {makePipi,makeDungdung,makeWhirl,makeCassette,makeGlass,glassIcon,jumbleBubble,dotTex,makeFlag} from './martians.js';
 import SPACE from '../../worlds/infinite-space.js';
@@ -411,7 +410,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   /* 완료(2026-11-23 — 달·금성과 같은 규칙): 노을을 보던 원더룹이 먼저 카메라 쪽으로 돌아서고 폴짝 → 완료 창 */
   {const c=G.view.camera.position,P=W.position,ry=Math.atan2(c.x-P.x,c.z-P.z),t0=G.clock.t;await G.core.until(()=>{const d=ry-W.rotation.y;W.rotation.y+=Math.atan2(Math.sin(d),Math.cos(d))*.22;return G.clock.t-t0>.5;},1.2);W.rotation.y=ry;G.react.react('hop',{sound:null,face:'기쁨'});}
   G.sound.sfx('mission-clear');G.state.setFlag(K.clear,true);saveAfterMars();
-  await Promise.race([G.ui.itemCard({title:'STAGE 2 완료!',text:'붉은 모래 언덕 탐험 완료 · 다음 목적지: 구름 행성',icon:SPACE.icons.map(),sec:3.2,sound:null,who:'완료'}),wait(3.8)]);
+  await Promise.race([G.ui.itemCard({title:'붉은 모래 언덕 탐험 완료!',text:'',icon:SPACE.icons.map(),sec:3.2,sound:null,who:'완료'}),wait(3.8)]);
   G.ui.toast(PHOTO_TIP,4.6);saveAfterMars();}
 /* ⑧ 화성 → 금성(2026-11-14 다시 — 행성 이동 공통 틀, meteor-ride departure 맨 위 주석): 달 → 화성 별똥별 이동과 같은 시간표·카메라 키, 탈것만 큰 회오리.
    0~2.4초 큰 회오리가 다가와 감쌈 → 2.4초 들림(두 팔 벌리기, 땅에서 천천히 뜸) → 3.75초부터 비행 13초: 꼭대기에서 노을 언덕의 삐삐·둥둥 쪽으로 휙(아래로 손 흔드는 둘 — 내려다보는 장면 약 2초)
@@ -449,7 +448,7 @@ function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:
     {const k=ss(.5,1,u);board.place(oVen,lerp(pt?.5:.55,pt?.04:.06,k),lerp(.56,.12,k),on&&u>.5?lerp(.025,pt?1.5:1.2,Math.pow(k,2.4)):tiny);}} /* 금성: 오른쪽 위 작은 점 → 마지막 약 2초(얼굴 정면) 동안 원더룹 뒤에서 화면을 거의 채울 만큼 */
   /* 땅 가라앉히기(07·구역 update 뒤 — carrier.late): 구역 뿌리의 물체(하늘·빛·하늘 그림판·회오리·화성 구 빼고)를 drop만큼 아래로. 구역이 높이를 다시 쓴 물체는 그 값을 기준으로 */
   function sinkTick(){const u=flyU;if(u<=.2||hidG)return;
-    if(!sink){sink=[];for(const ch of root.children)if(ch!==board.anchor&&ch!==big.me&&ch!==gM.g&&ch.name!=="sky"&&!ch.isLight){let lt=false;ch.traverse(q=>{if(q.isLight)lt=true;});if(lt)continue;sink.push({ch,y0:ch.position.y,set:ch.position.y});}
+    if(!sink){sink=[];for(const ch of root.children)if(ch!==board.anchor&&ch!==big.me&&ch!==gM.g&&ch.name!=="sky"&&!ch.isLight&&!ch.userData.wlRide){let lt=false;ch.traverse(q=>{if(q.isLight)lt=true;});if(lt)continue;sink.push({ch,y0:ch.position.y,set:ch.position.y});}
       {let m=1e9;const c=G.view.camera.position;for(let ix=-3;ix<=3;ix++)for(let iz=-3;iz<=3;iz++)m=Math.min(m,groundY(c.x+ix*50,c.z+iz*50));yTop=m-6;}}
     drop=1300*Math.pow(ss(.27,.385,u),2.2);st.bendFull=ss(.2,.29,u);
     for(const o of sink){if(o.ch.position.y!==o.set)o.y0=o.ch.position.y;o.set=o.y0-drop;o.ch.position.y=o.set;}
@@ -468,7 +467,7 @@ function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:
       if(big.me.visible){hole(wp);if(T<5)whirlDust(big,bo,dt,MOB?14:24);}
       if(Math.floor(T/2.1)!==bwi){bwi=Math.floor(T/2.1);if(T<9)G.sound.sfx('event-whirl',{gain:.85});}},
     stop(){big.show(false);},dispose(){}};
-  const dep=departure({G,root,WL:W,groundY,mob:MOB,fly:FLYS,carrier,after:3.6+.75+.06+3.1, /* 비행 뒤 착지까지: 지도 3.6 + 구름 덮음 .75 + 구역 바꿈 약 .06 + 금성에 내려앉기 3.1(cloudArrival D) */
+  const dep=departure({G,root,WL:W,groundY,mob:MOB,fly:FLYS,carrier,ribbonAt:.46 /* 2026-11-26 이동 통일: 큰 회오리가 하늘까지 올려 주고(우주에 닿으면 옅어짐) 거기서 별똥별 리본을 잡고 날아감 */,after:3.6+.75+.06+1.9+1.385, /* 비행 뒤 착지까지: 지도 3.6 + 구름 덮음 .75 + 구역 바꿈 약 .06 + 금성에 내려앉기 3.1(cloudArrival D) */
     path:u=>{const x=Math.min(1,u/.17),lin=Math.min(1,Math.max(0,(u-.15)/.17)),d=(vl-15)*ss(0,1,x)+13*lin+30*ss(.36,1,u); /* 둘의 15m 앞에서 2m 앞까지 천천히(둘이 원더룹 앞쪽 아래에 계속 보이게 — 머리 위를 지나치면 화면 아래로 빠졌다) */ /* 꼭대기에서 둘 가까이까지 휙(약 2초) → 둘의 머리 위를 천천히 지나감(약 2초, 초당 약 8m — 내려다보는 장면) → 우주로 */ /* 거의 고른 빠르기(초당 약 40m) — 꼭대기(높이 약 40m)에서 노을 언덕 쪽으로 내려가며 둘의 머리 위 약 9m를 지나감(달 → 화성의 마을 위처럼 — 둘은 본래 크기), 그 뒤 우주로 훌쩍 */
       const X=P0.x+ux*d,Z=P0.z+uz*d,y0=lerp(P0.y+2.4,yF+6.5,ss(0,.9,x))+120*Math.pow(ss(.33,1,u),1.5),gq=groundY(X,Z)+3.2*ss(0,.03,u)+1.4; /* 땅 위 여유(2026-11-14 — 곧은 길이 화산 가장자리 둔덕·비탈을 뚫고 지나가 원더룹이 모래에 묻혔다): 부드러운 큰 값 */
       return {x:X,y:.5*(y0+gq+Math.sqrt((y0-gq)*(y0-gq)+.6)),z:Z};},
@@ -476,10 +475,7 @@ function bigLift(W,U){return new Promise(res=>{const big=makeWhirl(root,{radius:
     onWave:()=>{},lookAt:WAVE.c,
     onFly:u=>{flyU=u;if(u>.17&&!spc){spc=true;SK.to(2,1.8);} /* 내려다보는 장면 동안 하늘이 노을에서 우주로(고개를 들면 이미 별 하늘) */
 },
-    onEnd:async()=>{G.travel.note('phase','map');RIDE.pending={from:'space-mars',cloud:true};const mp=await G.travel.mapFor(SPACE,'space-mars','space-venus',F);
-      G.travel.note('phase','veil');G.travel.arrive();const veil=dustVeil(CLOUD_VEIL);G.sound.sfx('cloud-poof',{gain:1.2});await veil.cover(.75);G.travel.mark('cloud');G.travel.mark('veil');
-      st.bigTick=null;st.bigLate=null;dep.stop();
-      try{if(window.wlZone)await window.wlZone.go('space-venus');}catch(e){console.error(e);}mp.remove();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));veil.clear(1.5);res();}});
+    onEnd:async()=>{await landOn(G,'space-venus',{from:'space-mars',map:()=>G.travel.mapFor(SPACE,'space-mars','space-venus',F),sfx:'cloud-poof',before:()=>{G.travel.mark('cloud');st.bigTick=null;st.bigLate=null;dep.stop();}});res();}});
   st.dep=dep;st.bigTick=dt=>dep.tick(dt,G.clock.t);st.bigLate=dt=>dep.late(dt,G.clock.t);
 });}
 /* 사진 안내 — 휴대폰·터치 기기는 키보드 글자 없이(2026-11-14) */
@@ -607,7 +603,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
   if(st.scene||st.cross||st.ride||st.bigTick||U.riding)return;
   if(st.summit){const S=st.summit;S.t+=dt; /* 화산 꼭대기 고원에 머무는 동안(걸어 다님): 깃발 자리 안내 → 꽂은 뒤엔 내려가는 회오리 안내. 깃발을 안 꽂아도 회오리를 타면 내려감(비밀이라 진행과 무관) */
     if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
-    else if(F[K.clear]){quest('큰 회오리로 다음 행성에',{at:BIGTOP,y:groundY(...BIGTOP),label:'금성행 회오리',style:'ant',h:4});
+    else if(F[K.clear]){quest('큰 회오리를 타고 하늘로',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4});
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else quest('회오리를 타고 내려가요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'내려가는 회오리',style:'ant',h:5});
     return;}
