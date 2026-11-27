@@ -891,3 +891,5 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
     else{// 망원경 안경 고쳐 쓰기: 오른팔을 들어 눈가에, 고개를 살짝 갸웃
       armL.rotation.set(0,0,0);armR.rotation.set(-2.2*k,0,-.35*k+Math.sin(t*6)*.04*k);map.scale.x=.001;map.visible=false;head.rotation.x=-.08*k;head.rotation.z+=.12*k;}}
   return {root,tick};}
+
+export {makeBunny,makeBobo}; /* 캐릭터 시트 촬영(tools/sheet-shots.py)이 모델만 따로 만들어 찍음 */

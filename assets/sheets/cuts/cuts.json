@@ -1,0 +1,1180 @@
+{
+ "bobo-34": {
+  "cut": [],
+  "cx": 193.0,
+  "ground": 863.2,
+  "h": 882,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.648,
+  "w": 433
+ },
+ "bobo-back": {
+  "cut": [],
+  "cx": 197.0,
+  "ground": 860.2,
+  "h": 869,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.643,
+  "w": 394
+ },
+ "bobo-front": {
+  "cut": [],
+  "cx": 198.0,
+  "ground": 861.2,
+  "h": 873,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.645,
+  "w": 396
+ },
+ "bobo-glass": {
+  "cut": [],
+  "cx": 194.0,
+  "ground": 863.2,
+  "h": 881,
+  "note": "망원경 안경 고쳐 쓰기",
+  "ppm": 520,
+  "top_m": 1.648,
+  "w": 417
+ },
+ "bobo-map": {
+  "cut": [],
+  "cx": 254.0,
+  "ground": 844.2,
+  "h": 862,
+  "note": "지도 펼쳐 보기",
+  "ppm": 520,
+  "top_m": 1.612,
+  "w": 477
+ },
+ "bobo-side": {
+  "cut": [],
+  "cx": 217.0,
+  "ground": 864.2,
+  "h": 881,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.65,
+  "w": 433
+ },
+ "bosul-34": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 456.2,
+  "h": 467,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.866,
+  "w": 232
+ },
+ "bosul-back": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 451.2,
+  "h": 449,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.856,
+  "w": 232
+ },
+ "bosul-front": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 453.2,
+  "h": 461,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.86,
+  "w": 232
+ },
+ "bosul-side": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 457.2,
+  "h": 466,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.868,
+  "w": 232
+ },
+ "ddo-34": {
+  "cut": [],
+  "cx": 123.0,
+  "ground": 479.2,
+  "h": 486,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.91,
+  "w": 246
+ },
+ "ddo-back": {
+  "cut": [],
+  "cx": 140.0,
+  "ground": 475.2,
+  "h": 479,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.902,
+  "w": 281
+ },
+ "ddo-front": {
+  "cut": [],
+  "cx": 140.0,
+  "ground": 479.2,
+  "h": 483,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.91,
+  "w": 281
+ },
+ "ddo-side": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 477.2,
+  "h": 484,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.906,
+  "w": 249
+ },
+ "ddo-talk": {
+  "cut": [],
+  "cx": 151.0,
+  "ground": 450.2,
+  "h": 446,
+  "note": "통통 뛰며 말하기",
+  "ppm": 520,
+  "top_m": 0.854,
+  "w": 288
+ },
+ "dungdung-34": {
+  "cut": [],
+  "cx": 200.0,
+  "ground": 941.2,
+  "h": 944,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.798,
+  "w": 361
+ },
+ "dungdung-back": {
+  "cut": [],
+  "cx": 183.0,
+  "ground": 941.2,
+  "h": 940,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.798,
+  "w": 380
+ },
+ "dungdung-face": {
+  "cut": [
+   "아"
+  ],
+  "cx": 400.0,
+  "ground": 1781.0,
+  "h": 931,
+  "note": "늘 내려온 눈꺼풀",
+  "ppm": 1000,
+  "top_m": 1.775,
+  "w": 692
+ },
+ "dungdung-front": {
+  "cut": [],
+  "cx": 198.0,
+  "ground": 941.2,
+  "h": 943,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.798,
+  "w": 381
+ },
+ "dungdung-side": {
+  "cut": [],
+  "cx": 193.0,
+  "ground": 941.2,
+  "h": 944,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.798,
+  "w": 356
+ },
+ "dungdung-talk": {
+  "cut": [],
+  "cx": 175.0,
+  "ground": 936.2,
+  "h": 943,
+  "note": "말하기",
+  "ppm": 520,
+  "top_m": 1.789,
+  "w": 364
+ },
+ "dungdung-wave": {
+  "cut": [],
+  "cx": 182.0,
+  "ground": 938.2,
+  "h": 943,
+  "note": "손 흔들기",
+  "ppm": 520,
+  "top_m": 1.793,
+  "w": 364
+ },
+ "geokkuri-34": {
+  "cut": [],
+  "cx": 254.0,
+  "ground": 770.2,
+  "h": 782,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.47,
+  "w": 523
+ },
+ "geokkuri-back": {
+  "cut": [],
+  "cx": 289.0,
+  "ground": 767.2,
+  "h": 776,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.464,
+  "w": 578
+ },
+ "geokkuri-front": {
+  "cut": [],
+  "cx": 293.0,
+  "ground": 770.2,
+  "h": 777,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.47,
+  "w": 585
+ },
+ "geokkuri-hat": {
+  "cut": [
+   "아"
+  ],
+  "cx": 568.0,
+  "ground": 1626.0,
+  "h": 1131,
+  "note": "해시계 모자",
+  "ppm": 1100,
+  "top_m": 1.473,
+  "w": 1127
+ },
+ "geokkuri-side": {
+  "cut": [],
+  "cx": 219.0,
+  "ground": 769.2,
+  "h": 782,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.468,
+  "w": 494
+ },
+ "geokkuri-walk": {
+  "cut": [],
+  "cx": 233.0,
+  "ground": 808.2,
+  "h": 815,
+  "note": "뒷걸음 걷기",
+  "ppm": 520,
+  "top_m": 1.543,
+  "w": 530
+ },
+ "geokkuri-wave": {
+  "cut": [],
+  "cx": 282.0,
+  "ground": 785.2,
+  "h": 792,
+  "note": "손 흔들기",
+  "ppm": 520,
+  "top_m": 1.498,
+  "w": 557
+ },
+ "herdsheep-34": {
+  "cut": [],
+  "cx": 264.0,
+  "ground": 472.2,
+  "h": 515,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.897,
+  "w": 519
+ },
+ "herdsheep-back": {
+  "cut": [],
+  "cx": 306.0,
+  "ground": 477.2,
+  "h": 509,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.906,
+  "w": 619
+ },
+ "herdsheep-front": {
+  "cut": [],
+  "cx": 303.0,
+  "ground": 471.2,
+  "h": 503,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.895,
+  "w": 614
+ },
+ "herdsheep-side": {
+  "cut": [],
+  "cx": 277.0,
+  "ground": 474.2,
+  "h": 510,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.9,
+  "w": 549
+ },
+ "kongkong-34": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 456.2,
+  "h": 467,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.866,
+  "w": 232
+ },
+ "kongkong-back": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 451.2,
+  "h": 449,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.856,
+  "w": 232
+ },
+ "kongkong-front": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 453.2,
+  "h": 461,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.86,
+  "w": 232
+ },
+ "kongkong-side": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 457.2,
+  "h": 466,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.868,
+  "w": 232
+ },
+ "mongsil-34": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 456.2,
+  "h": 467,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.866,
+  "w": 232
+ },
+ "mongsil-back": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 451.2,
+  "h": 449,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.856,
+  "w": 232
+ },
+ "mongsil-front": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 453.2,
+  "h": 461,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.86,
+  "w": 232
+ },
+ "mongsil-side": {
+  "cut": [],
+  "cx": 116.0,
+  "ground": 457.2,
+  "h": 466,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.868,
+  "w": 232
+ },
+ "munge-34": {
+  "cut": [],
+  "cx": 671.0,
+  "ground": 1176.0,
+  "h": 1266,
+  "note": "",
+  "ppm": 520,
+  "top_m": 2.25,
+  "w": 1492
+ },
+ "munge-awake": {
+  "cut": [],
+  "cx": 829.0,
+  "ground": 1084.0,
+  "h": 1193,
+  "note": "뜬 눈(눈뜸)",
+  "ppm": 520,
+  "top_m": 2.073,
+  "w": 1678
+ },
+ "munge-back": {
+  "cut": [],
+  "cx": 878.0,
+  "ground": 1177.0,
+  "h": 1243,
+  "note": "",
+  "ppm": 520,
+  "top_m": 2.252,
+  "w": 1756
+ },
+ "munge-face-awake": {
+  "cut": [
+   "위",
+   "오",
+   "아"
+  ],
+  "cx": 975.0,
+  "ground": 1312.0,
+  "h": 1280,
+  "note": "뜬 눈",
+  "ppm": 640,
+  "top_m": 2.05,
+  "w": 1999
+ },
+ "munge-face-sleep": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 966.0,
+  "ground": 1312.0,
+  "h": 1280,
+  "note": "감은 눈",
+  "ppm": 640,
+  "top_m": 2.05,
+  "w": 1990
+ },
+ "munge-front": {
+  "cut": [],
+  "cx": 849.0,
+  "ground": 1176.0,
+  "h": 1266,
+  "note": "",
+  "ppm": 520,
+  "top_m": 2.25,
+  "w": 1698
+ },
+ "munge-side": {
+  "cut": [],
+  "cx": 595.0,
+  "ground": 1177.0,
+  "h": 1287,
+  "note": "",
+  "ppm": 520,
+  "top_m": 2.252,
+  "w": 1299
+ },
+ "munge-warn": {
+  "cut": [],
+  "cx": 866.0,
+  "ground": 1079.0,
+  "h": 1217,
+  "note": "미리 알림(들썩)",
+  "ppm": 520,
+  "top_m": 2.063,
+  "w": 1705
+ },
+ "pipi-34": {
+  "cut": [],
+  "cx": 151.0,
+  "ground": 505.2,
+  "h": 514,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.96,
+  "w": 267
+ },
+ "pipi-back": {
+  "cut": [],
+  "cx": 121.0,
+  "ground": 506.2,
+  "h": 512,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.962,
+  "w": 271
+ },
+ "pipi-call": {
+  "cut": [],
+  "cx": 108.0,
+  "ground": 514.2,
+  "h": 514,
+  "note": "부르기",
+  "ppm": 520,
+  "top_m": 0.977,
+  "w": 266
+ },
+ "pipi-face": {
+  "cut": [
+   "아"
+  ],
+  "cx": 301.0,
+  "ground": 1269.0,
+  "h": 918,
+  "note": "아몬드 눈·별빛",
+  "ppm": 1300,
+  "top_m": 0.972,
+  "w": 659
+ },
+ "pipi-front": {
+  "cut": [],
+  "cx": 151.0,
+  "ground": 504.2,
+  "h": 513,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.958,
+  "w": 272
+ },
+ "pipi-give": {
+  "cut": [],
+  "cx": 147.0,
+  "ground": 509.2,
+  "h": 513,
+  "note": "두 손으로 내밀기",
+  "ppm": 520,
+  "top_m": 0.968,
+  "w": 270
+ },
+ "pipi-side": {
+  "cut": [],
+  "cx": 141.0,
+  "ground": 506.2,
+  "h": 515,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.962,
+  "w": 261
+ },
+ "pipi-wave": {
+  "cut": [],
+  "cx": 135.0,
+  "ground": 511.2,
+  "h": 514,
+  "note": "손 흔들기",
+  "ppm": 520,
+  "top_m": 0.972,
+  "w": 270
+ },
+ "sheep-34": {
+  "cut": [],
+  "cx": 268.0,
+  "ground": 383.2,
+  "h": 407,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.725,
+  "w": 523
+ },
+ "sheep-back": {
+  "cut": [],
+  "cx": 306.0,
+  "ground": 377.2,
+  "h": 391,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.714,
+  "w": 618
+ },
+ "sheep-front": {
+  "cut": [],
+  "cx": 303.0,
+  "ground": 384.2,
+  "h": 420,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.727,
+  "w": 613
+ },
+ "sheep-side": {
+  "cut": [],
+  "cx": 336.0,
+  "ground": 380.2,
+  "h": 399,
+  "note": "",
+  "ppm": 520,
+  "top_m": 0.72,
+  "w": 544
+ },
+ "toring-34": {
+  "cut": [],
+  "cx": 194.0,
+  "ground": 678.2,
+  "h": 688,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.293,
+  "w": 372
+ },
+ "toring-back": {
+  "cut": [],
+  "cx": 224.0,
+  "ground": 661.2,
+  "h": 666,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.26,
+  "w": 447
+ },
+ "toring-front": {
+  "cut": [],
+  "cx": 225.0,
+  "ground": 679.2,
+  "h": 684,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.295,
+  "w": 450
+ },
+ "toring-point": {
+  "cut": [],
+  "cx": 218.0,
+  "ground": 711.2,
+  "h": 713,
+  "note": "가리키기",
+  "ppm": 520,
+  "top_m": 1.356,
+  "w": 470
+ },
+ "toring-ring": {
+  "cut": [
+   "아"
+  ],
+  "cx": 370.0,
+  "ground": 1447.0,
+  "h": 952,
+  "note": "머리 위 얼음 고리",
+  "ppm": 1100,
+  "top_m": 1.31,
+  "w": 742
+ },
+ "toring-side": {
+  "cut": [],
+  "cx": 172.0,
+  "ground": 671.2,
+  "h": 683,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.279,
+  "w": 344
+ },
+ "toring-sit": {
+  "cut": [],
+  "cx": 218.0,
+  "ground": 641.2,
+  "h": 700,
+  "note": "앉기",
+  "ppm": 520,
+  "top_m": 1.222,
+  "w": 421
+ },
+ "toring-wave": {
+  "cut": [],
+  "cx": 218.0,
+  "ground": 704.2,
+  "h": 706,
+  "note": "손 흔들기",
+  "ppm": 520,
+  "top_m": 1.343,
+  "w": 411
+ },
+ "wonderloop-space-34": {
+  "cut": [],
+  "cx": 374.0,
+  "ground": 919.2,
+  "h": 929,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.756,
+  "w": 772
+ },
+ "wonderloop-space-act-arms": {
+  "cut": [],
+  "cx": 330.0,
+  "ground": 1274.2,
+  "h": 913,
+  "note": "두 팔 벌리고 떠다니기|표정: 반짝 신남|떠 있는 높이 0.70m",
+  "ppm": 520,
+  "top_m": 2.439,
+  "w": 770
+ },
+ "wonderloop-space-act-float": {
+  "cut": [],
+  "cx": 376.0,
+  "ground": 1290.2,
+  "h": 925,
+  "note": "둥실 헤엄치기|표정: 반짝 신남|떠 있는 높이 0.70m",
+  "ppm": 520,
+  "top_m": 2.47,
+  "w": 776
+ },
+ "wonderloop-space-act-hop": {
+  "cut": [],
+  "cx": 366.0,
+  "ground": 1075.2,
+  "h": 1083,
+  "note": "폴짝|표정: 신남|떠 있는 높이 0.28m",
+  "ppm": 520,
+  "top_m": 2.056,
+  "w": 774
+ },
+ "wonderloop-space-act-jump": {
+  "cut": [],
+  "cx": 362.0,
+  "ground": 1346.2,
+  "h": 965,
+  "note": "둥실 뛰기|표정: 기본|떠 있는 높이 0.74m",
+  "ppm": 520,
+  "top_m": 2.577,
+  "w": 755
+ },
+ "wonderloop-space-act-pound-down": {
+  "cut": [],
+  "cx": 435.0,
+  "ground": 912.2,
+  "h": 922,
+  "note": "떡메 찧기 — 내려치기|표정: 기본|떠 있는 높이 -0.00m",
+  "ppm": 520,
+  "top_m": 1.743,
+  "w": 785
+ },
+ "wonderloop-space-act-pound-up": {
+  "cut": [],
+  "cx": 375.0,
+  "ground": 927.2,
+  "h": 937,
+  "note": "떡메 찧기 — 들기|표정: 기본|떠 있는 높이 0.00m",
+  "ppm": 520,
+  "top_m": 1.772,
+  "w": 772
+ },
+ "wonderloop-space-act-sit": {
+  "cut": [],
+  "cx": 358.0,
+  "ground": 800.2,
+  "h": 840,
+  "note": "앉기|표정: 기본|떠 있는 높이 -0.23m",
+  "ppm": 520,
+  "top_m": 1.527,
+  "w": 769
+ },
+ "wonderloop-space-act-tail": {
+  "cut": [],
+  "cx": 341.0,
+  "ground": 1285.2,
+  "h": 924,
+  "note": "별똥별 꼬리 잡기|표정: 반짝 신남|떠 있는 높이 0.70m",
+  "ppm": 520,
+  "top_m": 2.46,
+  "w": 772
+ },
+ "wonderloop-space-act-toss": {
+  "cut": [],
+  "cx": 425.0,
+  "ground": 920.2,
+  "h": 930,
+  "note": "고리 던지기|표정: 기본|떠 있는 높이 0.00m",
+  "ppm": 520,
+  "top_m": 1.758,
+  "w": 787
+ },
+ "wonderloop-space-act-umbrella": {
+  "cut": [],
+  "cx": 857.0,
+  "ground": 1500.2,
+  "h": 1138,
+  "note": "우산 들고 내려오기|표정: 기본|떠 있는 높이 0.70m",
+  "ppm": 520,
+  "top_m": 2.873,
+  "w": 1269
+ },
+ "wonderloop-space-act-wave": {
+  "cut": [],
+  "cx": 321.0,
+  "ground": 916.2,
+  "h": 926,
+  "note": "손 흔들기|표정: 기쁨|떠 있는 높이 0.00m",
+  "ppm": 520,
+  "top_m": 1.75,
+  "w": 777
+ },
+ "wonderloop-space-back": {
+  "cut": [],
+  "cx": 379.0,
+  "ground": 920.2,
+  "h": 930,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.758,
+  "w": 781
+ },
+ "wonderloop-space-combo1-34": {
+  "cut": [],
+  "cx": 372.0,
+  "ground": 921.2,
+  "h": 931,
+  "note": "파랑 옷 · 노랑 목도리",
+  "ppm": 520,
+  "top_m": 1.76,
+  "w": 772
+ },
+ "wonderloop-space-combo1-front": {
+  "cut": [],
+  "cx": 395.0,
+  "ground": 921.2,
+  "h": 931,
+  "note": "파랑 옷 · 노랑 목도리",
+  "ppm": 520,
+  "top_m": 1.76,
+  "w": 772
+ },
+ "wonderloop-space-combo2-34": {
+  "cut": [],
+  "cx": 368.0,
+  "ground": 929.2,
+  "h": 939,
+  "note": "분홍 옷 · 민트 목도리",
+  "ppm": 520,
+  "top_m": 1.775,
+  "w": 773
+ },
+ "wonderloop-space-combo2-front": {
+  "cut": [],
+  "cx": 389.0,
+  "ground": 929.2,
+  "h": 939,
+  "note": "분홍 옷 · 민트 목도리",
+  "ppm": 520,
+  "top_m": 1.775,
+  "w": 772
+ },
+ "wonderloop-space-combo3-34": {
+  "cut": [],
+  "cx": 363.0,
+  "ground": 930.2,
+  "h": 940,
+  "note": "노랑 옷 · 파랑 목도리",
+  "ppm": 520,
+  "top_m": 1.777,
+  "w": 774
+ },
+ "wonderloop-space-combo3-front": {
+  "cut": [],
+  "cx": 383.0,
+  "ground": 930.2,
+  "h": 940,
+  "note": "노랑 옷 · 파랑 목도리",
+  "ppm": 520,
+  "top_m": 1.777,
+  "w": 773
+ },
+ "wonderloop-space-combo4-34": {
+  "cut": [],
+  "cx": 359.0,
+  "ground": 922.2,
+  "h": 932,
+  "note": "민트 옷 · 분홍 목도리",
+  "ppm": 520,
+  "top_m": 1.762,
+  "w": 774
+ },
+ "wonderloop-space-combo4-front": {
+  "cut": [],
+  "cx": 377.0,
+  "ground": 922.2,
+  "h": 932,
+  "note": "민트 옷 · 분홍 목도리",
+  "ppm": 520,
+  "top_m": 1.762,
+  "w": 772
+ },
+ "wonderloop-space-expr-걱정": {
+  "cut": [
+   "왼",
+   "위",
+   "아"
+  ],
+  "cx": 570.0,
+  "ground": 1295.8,
+  "h": 1102,
+  "note": "걱정",
+  "ppm": 760,
+  "top_m": 1.705,
+  "w": 1070
+ },
+ "wonderloop-space-expr-궁금": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 566.0,
+  "ground": 1295.8,
+  "h": 1102,
+  "note": "궁금",
+  "ppm": 760,
+  "top_m": 1.705,
+  "w": 1120
+ },
+ "wonderloop-space-expr-기본": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 566.0,
+  "ground": 1295.8,
+  "h": 1102,
+  "note": "기본",
+  "ppm": 760,
+  "top_m": 1.705,
+  "w": 1120
+ },
+ "wonderloop-space-expr-기쁨": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 566.0,
+  "ground": 1295.8,
+  "h": 1102,
+  "note": "기쁨",
+  "ppm": 760,
+  "top_m": 1.705,
+  "w": 1120
+ },
+ "wonderloop-space-expr-놀람": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 566.0,
+  "ground": 1295.8,
+  "h": 1102,
+  "note": "놀람",
+  "ppm": 760,
+  "top_m": 1.705,
+  "w": 1120
+ },
+ "wonderloop-space-expr-반짝신남": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 566.0,
+  "ground": 1295.8,
+  "h": 1102,
+  "note": "반짝 신남",
+  "ppm": 760,
+  "top_m": 1.705,
+  "w": 1120
+ },
+ "wonderloop-space-expr-신남": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 566.0,
+  "ground": 1295.8,
+  "h": 1102,
+  "note": "신남",
+  "ppm": 760,
+  "top_m": 1.705,
+  "w": 1120
+ },
+ "wonderloop-space-front": {
+  "cut": [],
+  "cx": 397.0,
+  "ground": 920.2,
+  "h": 930,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.758,
+  "w": 772
+ },
+ "wonderloop-space-hood-nobubble-close": {
+  "cut": [
+   "아"
+  ],
+  "cx": 483.0,
+  "ground": 1362.0,
+  "h": 1119,
+  "note": "숨방울 막 끔",
+  "ppm": 900,
+  "top_m": 1.507,
+  "w": 994
+ },
+ "wonderloop-space-lineup": {
+  "cut": [],
+  "cx": 388.0,
+  "ground": 926.2,
+  "h": 936,
+  "note": "키 비교용 정면",
+  "ppm": 520,
+  "top_m": 1.77,
+  "w": 772
+ },
+ "wonderloop-space-necklace-close": {
+  "cut": [
+   "왼",
+   "위",
+   "오",
+   "아"
+  ],
+  "cx": 750.0,
+  "ground": 1425.0,
+  "h": 1350,
+  "note": "숨방울 목걸이",
+  "ppm": 1500,
+  "top_m": 0.95,
+  "w": 1500
+ },
+ "wonderloop-space-nobubble-front": {
+  "cut": [],
+  "cx": 304.0,
+  "ground": 796.2,
+  "h": 806,
+  "note": "숨방울 목걸이를 받기 전",
+  "ppm": 520,
+  "top_m": 1.52,
+  "w": 589
+ },
+ "wonderloop-space-pack-close": {
+  "cut": [
+   "왼",
+   "위",
+   "오",
+   "아"
+  ],
+  "cx": 715.0,
+  "ground": 1300.0,
+  "h": 1300,
+  "note": "배낭과 나침반 키링",
+  "ppm": 1300,
+  "top_m": 1.0,
+  "w": 1430
+ },
+ "wonderloop-space-side": {
+  "cut": [],
+  "cx": 357.0,
+  "ground": 920.2,
+  "h": 930,
+  "note": "",
+  "ppm": 520,
+  "top_m": 1.758,
+  "w": 776
+ },
+ "wonderloop-space-tal1-34": {
+  "cut": [],
+  "cx": 359.0,
+  "ground": 927.2,
+  "h": 937,
+  "note": "연두 외계인",
+  "ppm": 520,
+  "top_m": 1.772,
+  "w": 774
+ },
+ "wonderloop-space-tal1-close": {
+  "cut": [
+   "아"
+  ],
+  "cx": 634.0,
+  "ground": 1593.0,
+  "h": 1350,
+  "note": "연두 외계인 탈 확대",
+  "ppm": 900,
+  "top_m": 1.768,
+  "w": 1333
+ },
+ "wonderloop-space-tal2-34": {
+  "cut": [],
+  "cx": 363.0,
+  "ground": 932.2,
+  "h": 942,
+  "note": "연보라 외계인",
+  "ppm": 520,
+  "top_m": 1.781,
+  "w": 774
+ },
+ "wonderloop-space-tal2-close": {
+  "cut": [
+   "위",
+   "아"
+  ],
+  "cx": 642.0,
+  "ground": 1593.0,
+  "h": 1350,
+  "note": "연보라 외계인 탈 확대",
+  "ppm": 900,
+  "top_m": 1.77,
+  "w": 1333
+ },
+ "wonderloop-space-tal3-34": {
+  "cut": [],
+  "cx": 367.0,
+  "ground": 925.2,
+  "h": 935,
+  "note": "하늘 외계인",
+  "ppm": 520,
+  "top_m": 1.768,
+  "w": 773
+ },
+ "wonderloop-space-tal3-close": {
+  "cut": [
+   "아"
+  ],
+  "cx": 653.0,
+  "ground": 1593.0,
+  "h": 1350,
+  "note": "하늘 외계인 탈 확대",
+  "ppm": 900,
+  "top_m": 1.763,
+  "w": 1333
+ },
+ "wonderloop-space-tal4-34": {
+  "cut": [],
+  "cx": 371.0,
+  "ground": 919.2,
+  "h": 929,
+  "note": "회색 외계인",
+  "ppm": 520,
+  "top_m": 1.756,
+  "w": 772
+ },
+ "wonderloop-space-tal4-close": {
+  "cut": [
+   "아"
+  ],
+  "cx": 662.0,
+  "ground": 1583.0,
+  "h": 1340,
+  "note": "회색 외계인 탈 확대",
+  "ppm": 900,
+  "top_m": 1.752,
+  "w": 1331
+ }
+}
