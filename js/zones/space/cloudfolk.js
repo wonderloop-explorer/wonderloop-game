@@ -56,9 +56,9 @@ export function makeToring(){const root=new THREE.Group();root.name='toring';con
   L.push([fa(R,c,k,-.14,0,PI,R*.13,R*.09,.2,.008),'#3d5a80']);
   const me=lump(L.map(([q,cc])=>[q.index?q.toNonIndexed():q,cc]),true,2.2);me.name='toring-body';body.add(me); /* 2026-11-27: 불투명(얼음 하늘색 그대로)·머리 위 결정 장식 없음 */
   /* 허리 고리: 납작한 얼음 띠 둘(안쪽 밝게·바깥 옅게) — 비스듬히 걸치고 천천히 돎 */
-  const ring=new THREE.Group();ring.position.set(0,1.16,0);ring.rotation.set(.1,0,.06);ring.scale.setScalar(.46);body.add(ring); /* 2026-11-27: 허리 고리 → 머리 위에 작게 떠 있는 고리(천사 고리처럼, 천천히 돎) */
-  {const Lr=[];const mk=(r0,r1,col)=>{const g=new THREE.RingGeometry(r0,r1,28,1);g.rotateX(-PI/2);Lr.push([g.toNonIndexed(),col]);};mk(.4,.5,'#f2fbff');mk(.53,.6,'#bfe2f8');Lr.push([new THREE.TorusGeometry(.5,.06,6,28).rotateX(PI/2).toNonIndexed(),'#8ecdf2']); /* 머리 위에 떠 있을 때 또렷이 보이게 도톰한 하늘색 테(2026-11-27 — 납작한 흰 띠만으로는 밝은 배경에서 안 보였다) */for(let i=0;i<5;i++){const a=i*1.257;Lr.push([new THREE.IcosahedronGeometry(.045,0).applyMatrix4(M4([Math.cos(a)*.56,.01,Math.sin(a)*.56])),'#ffffff']);}
-    const rm=lump(Lr,true,1.4);rm.name='toring-ring';rm.material=rm.material.clone();rm.material.side=THREE.DoubleSide;ring.add(rm);}
+  const ring=new THREE.Group();ring.position.set(0,1.16,0);ring.rotation.set(.32,0,.18);ring.scale.setScalar(.46);body.add(ring); /* 2026-11-27: 허리 고리 → 머리 위에 작게 떠 있는 고리(천사 고리처럼, 천천히 돎) */
+  {const Lr=[];const mk=(r0,r1,col)=>{const g=new THREE.RingGeometry(r0,r1,28,1);g.rotateX(-PI/2);Lr.push([g.toNonIndexed(),col]);};mk(.4,.5,'#f2fbff');mk(.53,.6,'#bfe2f8');/* 고리 모양은 처음 디자인 그대로(납작한 얼음 띠 둘 + 작은 결정 다섯, 살짝 비침) — 도톰한 테는 뺌(2026-11-27 사용자 요청) */for(let i=0;i<5;i++){const a=i*1.257;Lr.push([new THREE.IcosahedronGeometry(.045,0).applyMatrix4(M4([Math.cos(a)*.56,.01,Math.sin(a)*.56])),'#ffffff']);}
+    const rm=lump(Lr,true,1.4);rm.name='toring-ring';rm.material=rm.material.clone();rm.material.transparent=true;rm.material.opacity=.8;rm.material.side=THREE.DoubleSide;ring.add(rm);}
   const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*.27,.42,.03);body.add(g);const am=lump([[new THREE.IcosahedronGeometry(.07,0).applyMatrix4(M4([0,-.09,0],[0,0,0],[1,1.6,1])).toNonIndexed(),B],[new THREE.IcosahedronGeometry(.065,0).applyMatrix4(M4([0,-.2,.01])).toNonIndexed(),A]],true,2.2);am.material=me.material;g.add(am);g.rotation.z=s*.5;g.userData.s=s;return g;});
   const st={mode:'idle',pt:0,wv:0};
   /* mode: idle · walk(앞으로 통통) · talk · point(오른팔로 가리킴) · sit · wave(오른팔을 높이 들어 흔듦 — 마중·배웅) */
