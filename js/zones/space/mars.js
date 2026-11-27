@@ -604,7 +604,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     if(ground&&!SW.busy&&SW.armed&&!secretW.faded&&Math.hypot(P.x-SW.x,P.z-SW.z)<1.6&&stage()!=='meet'){if(st.summit)summitDown(W);else secretRide(W);return;}}
   if(st.scene||st.cross||st.ride||st.bigTick||U.riding)return;
   if(st.summit){const S=st.summit;S.t+=dt; /* 화산 꼭대기 고원에 머무는 동안(걸어 다님): 깃발 자리 안내 → 꽂은 뒤엔 내려가는 회오리 안내. 깃발을 안 꽂아도 회오리를 타면 내려감(비밀이라 진행과 무관) */
-    if(REV){quest('',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4,path:false},'revtop');
+    if(REV){quest('',null,'revtop'); /* 2026-11-27: 다시 찾은 탐방 — 하늘 회오리도 빛기둥·이름표 없이 회오리만(사용자 요청) */
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
     else if(F[K.clear]){quest('큰 회오리를 타고 하늘로',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4});
@@ -624,7 +624,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     else{if((st.stone??-1)<0)quest('징검다리로 둥둥에게 가요',{at:STONES[0].c,y:STONES[0].top,label:'징검다리',style:'ant',h:2.2},'stone'); /* 2026-11-27: 먼저 작은 바위(징검다리) 쪽 표시 — 올라서면 사라지고 둥둥 쪽 표시 */
       else quest('징검다리로 둥둥에게 가요',{at:ROCKD.c,y:ROCKD.top,label:'둥둥',style:'ant',h:2.8},'dung'); /* 2026-11-17 세 번째: 예전 방식으로 — 빛기둥·이름표는 둥둥 바위에만, 작은 바위는 바닥 동그란 표시만(바위마다 이름표·빛기둥은 뺌) */
       if(onRock(W)&&!G.ui.cardShown()&&!G.dialog.talking())scene(deliverA,dung);}return;} /* 2026-11-17: 바위에 올라 둥둥에게 다가가면 바로 이어지는 대화(단추 없이) */
-  if(s==='done'&&REV){quest('',null,'revsw');return;} /* 2026-11-27: 다시 찾은 탐방 — 땅의 화산 회오리에는 빛기둥·이름표 없음(사용자 요청: 해 본 사람은 들어가면 올라가는 걸 안다). 꼭대기의 하늘 회오리(출구)만 표시 */
+  if(s==='done'&&REV){quest('',null,'revsw');return;} /* 2026-11-27: 다시 찾은 탐방 — 땅의 화산 회오리에는 빛기둥·이름표 없음(사용자 요청: 해 본 사람은 들어가면 올라가는 걸 안다). 꼭대기의 하늘 회오리도 표시 없음 */
   if(s==='done'){quest(F[K.flag]?'꼭대기 큰 회오리를 타요':'화산 꼭대기에 깃발을 꽂아요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'화산 회오리',style:'ant',h:5});return;} /* 2026-11-13: 끝낸 뒤 — 화산으로 올라가는 회오리까지 점선(꼭대기에서는 깃발 자리 → 큰 회오리) */
   if(s==='finale'){ /* 둥둥과 이야기한 뒤 닫았다 다시 연 경우 — 언덕에 오면 이어서 */
     if(east(P.x))quest('회오리로 협곡을 건너요',{at:()=>[WS.x,WS.z],label:'먼지 회오리',style:'ant',h:5});else quest('삐삐 언덕에서 노을을 봐요',{at:SUNSET.wl,y:HILL.h,label:'삐삐의 언덕',style:'ant',h:3});
