@@ -403,7 +403,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   {const pc=G.view.pairCam(dung.root,2.02);if(pc)G.view.hold(pc);st.pc=pc;}
   dung.mode='talk';mumble(true,3);await say('둥둥','언젠가 그 유리에 좋은 빛을 담아 보렴!',2.9);dung.mode='idle';
   {const pc=G.view.pairCam(pipi.root,1.12);if(pc)G.view.hold(pc);st.pc=pc;}
-  pipi.mode='talk';mumble(false,2.6);await say('삐삐',F[K.flag]?'꼭대기에 네 깃발이 보여! 거기 가면 큰 회오리가 하늘까지 데려다줄 거야.':'화산 꼭대기에 깃발 하나 꽂고 와! 그럼 큰 회오리가 하늘까지 데려다줄 거야.',4.2);pipi.mode='idle';
+  pipi.mode='talk';mumble(false,2.6);await say('삐삐',F[K.flag]?'꼭대기에 네 깃발이 보여! 거기 가면 큰 회오리가 하늘까지 데려다줄 거야.':'화산 꼭대기에 올라가서 깃발을 꽂아 봐! 큰 회오리가 하늘까지 데려다줄 거야.',4.2);pipi.mode='idle';
   if(st.pc&&G.view.req&&G.view.req.fn===st.pc)G.view.hold(null);st.pc=null;
   /* 삐삐를 한 걸음 다가오기 전 자리로 돌려보내고, 셋 다 다시 노을 쪽으로(부드럽게) — 완료 뒤 둘은 이 자리에 그대로 서 있음(2026-11-17: 옮겨 서지 않음) */
   st.sunFace=true;{const a=[pipi.root.position.x,pipi.root.position.z],t0=G.clock.t;await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/.9),e=u*u*(3-2*u);place(pipi,pipiOb,lerp(a[0],SUNSET.pipi[0],e),lerp(a[1],SUNSET.pipi[1],e));
@@ -607,7 +607,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     if(REV){quest('',null,'revtop'); /* 2026-11-27: 다시 찾은 탐방 — 하늘 회오리도 빛기둥·이름표 없이 회오리만(사용자 요청) */
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
-    else if(F[K.clear]){quest('큰 회오리를 타고 하늘로',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4});
+    else if(F[K.clear]){if(st.bigOn&&!st.flagBusy)quest('큰 회오리를 타고 하늘로',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4});else quest('',null,'flagwait'); /* 2026-11-27: 표시는 하늘 회오리가 실제로 생긴 뒤에만 — 예전엔 깃발이 꽂힌 순간(동작 0.6초 — 한 바퀴 카메라 장면이 시작되기 전)부터 빛기둥·이름표가 잠깐 떴다가 장면이 지웠다 */
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else quest('회오리를 타고 내려가요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'내려가는 회오리',style:'ant',h:5});
     return;}
