@@ -176,6 +176,7 @@ with sync_playwright() as p:
     R['화면 UI 돌아옴'] = pg.evaluate("wlGame.ui.hintsVisible()&&!document.getElementById('wlRideCam')&&getComputedStyle(document.getElementById('wlHud')).visibility!=='hidden'")
     for _ in range(160):  # 2026-11-17: 착지하면 곧(도착 나레이션 + 2초 뒤) 삐삐가 달려와 말을 검(조작은 그 장면이 끝난 뒤)
         if pg.evaluate('wlGame.ui.dialogShown()'): break
+        if pg.evaluate("(()=>{const c=document.getElementById('wlProf');if(c&&c.classList.contains('on')){c.querySelector('button').click();return true}return false})()"): R['화성: 삐삐 친구 카드가 먼저 뜸'] = True  # 2026-11-21부터 첫 만남은 확대 → 친구 카드 → 대사(카드를 닫아야 대사가 나옴 — 예전 시험은 카드를 안 닫아 늘 거짓이었다)
         pg.wait_for_timeout(100)
     R['화성: 삐삐가 말을 검'] = pg.evaluate('wlGame.ui.dialogShown()'); shot('mars-pipi')
     R['오류'] = errs; R['영상 시각(초)'] = T

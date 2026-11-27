@@ -154,7 +154,7 @@ function applySquish(WL,s){const q=Math.max(.45,s),w=1/Math.sqrt(q);WL.scale.set
    pose:{grab, fly(u)} 동작 이름, stop(), dispose()}, o.lookAt [x,z] = 내려다보는 장면에서 카메라가 볼 출발지 볼거리(손 흔드는 친구들) — 화성 → 금성 큰 회오리(mars.js bigLift). 단계 표시 travel.note('phase'): come·grab·pull·rise(u<.31)·space(u<.82)·dest(목적지 정면) */
 /* 2026-11-26 이동 통일(모든 행성 사이 = 달 → 화성과 같은 틀: 반짝이 리본(별똥별 꼬리)을 잡고 우주 비행 → 지도 → 구름 화면 → 반짝이 꼬리를 그리며 착지):
    o.ribbonAt — 탈것(carrier)이 있어도 별똥별 리본을 씀. 음수 = 처음부터(탈것은 배경·하늘만 맡음 — 금성), 0~1 = 비행 진행 그 자리에서 별똥별이 날아와 꼬리를 잡음(화성 큰 회오리·토성 붉은 빛이 하늘까지 올려 준 뒤) */
-export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||null,RB=o.ribbonAt,MM=!CR||(RB!=null&&RB<0);const M=(!CR||RB!=null)?makeMeteor(root,{mob:o.mob}):null,SC=makeScarf(WL),S=spring(),mh=new THREE.Vector3();if(M&&!MM)M.show(false);
+export function departure(o){const {G,root,WL}=o,FLY=o.fly||13,CR=o.carrier||null,RB=o.ribbonAt,MM=!CR||(RB!=null&&RB<0);const M=(!CR||RB!=null)?makeMeteor(root,{mob:o.mob}):null,SC={tick(){},dispose(){}} /* 2026-11-27: 이동하는 동안 펄럭이던 목도리 가닥은 모든 이동에서 뺌(사용자 요청) */,S=spring(),mh=new THREE.Vector3();if(M&&!MM)M.show(false);
   const P=WL.position.clone(),yaw0=WL.rotation.y,fx=Math.sin(yaw0),fz=Math.cos(yaw0);
   const hover=new THREE.Vector3(P.x+fx*1.9,P.y+2.45,P.z+fz*1.9),hi=new THREE.Vector3(P.x+fx*7-fz*4,P.y+17,P.z+fz*7+fx*4);
   const head=new THREE.Vector3().copy(hi),endP=new THREE.Vector3(),ctrl=new THREE.Vector3(),mid=new THREE.Vector3(),hangV=new THREE.Vector3(),lastH=new THREE.Vector3(),vel=new THREE.Vector3(0,1,0);

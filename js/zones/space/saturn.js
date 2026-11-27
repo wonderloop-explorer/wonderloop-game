@@ -356,14 +356,15 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     /* 2026-11-27: 나레이션이 끝나면 둘이 배에 앉은 채로 토링 RS-007 — 둘의 앞모습 구도 그대로 */
     {const fc2=()=>({at:faceAt(),from:faceFrom(REST-CUT)});G.view.hold(fc2,{snap:true});st.farMin=0;music(null);W.rotation.y=-PI/2+.6;gg.root.rotation.y=-PI/2+.6;st.sitting=true;
       G.core.block('meteor',false);G.ui.setHints(st.hints!==false); /* 대사창이 뜨게(쉬는 동안의 잠금·표시 숨김을 먼저 풂 — 앉은 채로는 U.riding이 그대로 잡고 있음) */
-      ggMode='talk';await say('토링',T.g4,5.6,{to:null});ggMode='sit';await wait(.3);if(G.view.req&&G.view.req.fn===fc2)G.view.hold(null);}
+      ggMode='talk';await say('토링',T.g4,5.6,{to:null});ggMode='sit';if(G.view.req&&G.view.req.fn===fc2)G.view.hold(null);}
     /* 일어나 내려옴 */
     st.sitting=false;U.action='서기';U.at=0;ggMode='idle';G.sound.sfx('jump',{gain:.5});
+    const p6=say('토링',T.g6,3.6,{to:null}).then(()=>{st.g6=true;}); /* 2026-11-27: RS-019는 배에서 내리며 바로(내려서 걸어온 뒤에 말하면 RS-007과 3.8초 떨어졌다) — 걸으며 말함 */
     await Promise.all([hop(hs,[HS[0]-1.9,0,HS[1]-.9],.7,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;}),hop(gs,[GS[0]-2.6,0,GS[1]-2.2],.8,(x,y,z)=>gg.root.position.set(x,y,z))]);
     U.riding=null;G.core.block('meteor',false);G.ui.setHints(st.hints!==false);G.state.setFlag(K.sat,true);
-    await Promise.all([moveTo(W,AFTER[0],1.0,true),moveTo(gg.root,AFTER[1],1.5)]);st.scene=false;U.sceneLock=false;} /* 섬 가운데로(둘이 남북으로 나란히 — 대화 카메라가 동·서의 트인 쪽에서 봄. 둘레 얼음 뿔이 카메라 앞을 가리지 않게) */
+    await Promise.all([moveTo(W,AFTER[0],1.0,true),moveTo(gg.root,AFTER[1],1.5)]);await p6;st.scene=false;U.sceneLock=false;} /* 섬 가운데로(둘이 남북으로 나란히 — 대화 카메라가 동·서의 트인 쪽에서 봄. 둘레 얼음 뿔이 카메라 앞을 가리지 않게) */
   /* ── ④ 발견 카드 ── */
-  async function floatCard(){await scene(async()=>{ggMode='talk';await say('토링',T.g6,3.6);ggMode='idle';},gg); /* RS-019 — 배에서 내린 뒤 */
+  async function floatCard(){if(!st.g6)await scene(async()=>{ggMode='talk';await say('토링',T.g6,3.6);ggMode='idle';},gg); /* 쉬기 뒤에 이어 오면 이미 말함(배에서 내리며) — 다시 열어 여기서 시작할 때만 */ /* RS-019 — 배에서 내린 뒤 */
     const W=U0(),P=W.position,q=gg.root.position,k=pk(),pt=k>1.3,cx=(P.x+q.x)/2,cz=(P.z+q.z)/2,fc=()=>({at:[cx-3,pt?2.3:1.9,cz],from:[cx+(pt?12:8.2),pt?3.0:2.2,cz+1.2]}); /* 2026-11-27: 카드가 화면 위쪽 — 보는 점을 올려 둘이 화면 가운데~아래쪽에 */ /* 동쪽에서 토성 쪽을 — 보는 점을 낮춰 둘이 화면 가운데쯤(아래 카드에 안 가림) */
     W.userData.sceneLock=true;faceTo(W,cx+9,cz+1.2);faceTo(gg.root,cx+9,cz+1.2);G.view.hold(fc);G.state.setFlag(K.float,true);G.sound.sfx('card-secret');mark('card');await G.ui.secret({kicker:'새 발견',title:T.cardT,text:T.card,vo:T.card,lines:6});if(G.view.req&&G.view.req.fn===fc)G.view.hold(null);W.userData.sceneLock=false;await wait(.4);}
   /* ── ⑤ 거꾸리와 인사 ── */
