@@ -41,7 +41,7 @@ with sync_playwright() as p:
             if s0.get('summit') and not s0.get('ride'): break
             pg.wait_for_timeout(250)
         pg.wait_for_timeout(1800); pg.evaluate("([x,z])=>%s.userData.walkTo(x,z)" % hero, pg.evaluate('wlZone.cur.spots.bigTop'))
-    elif LEG == 'venus': pg.evaluate('wlZone.cur.dbgSail()')
+    elif LEG == 'venus': e = pg.evaluate('wlZone.cur.spots.end'); pg.evaluate("([x,z])=>{const W=%s;W.position.x=x+5;W.position.z=z;W.userData.walkTo(x-1.6,z)}" % hero, e)  # 다시 찾은 탐방: 구름 끝 얼음 배에 다가가면 탐
     elif LEG == 'venus-end': e = pg.evaluate('wlZone.cur.spots.end'); pg.evaluate("([x,z])=>{const W=%s;W.position.x=x+4;W.position.z=z;W.userData.walkTo(x+1.5,z)}" % hero, e)
     elif LEG == 'saturn': pg.wait_for_timeout(1500); pg.evaluate('wlZone.cur.dbgStorm()')
     tS = time.time(); shots = []; k = 0; arrived = None; os.makedirs(OUT + '/_s', exist_ok=True)

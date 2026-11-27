@@ -126,7 +126,9 @@ const voiceLog=()=>({mute:VB.lines.filter(l=>l.mute&&!l.fx).map(l=>l.text),log:V
 const SPEAK=new Set(); // 지금 말하는 목소리 (배경음 줄이기)
 let CURV=null,CURM=null;const MQ=[];
 function tickVoiceQ(){if(!MQ.length||(CURV&&CURV.live())||(CURM&&CURM.live()))return;const q=MQ.shift();if(clock.t-q.t>6){vlog('skip',null,q.v.text);return;}voice(q.v);} // 지금 나오는 큰 목소리(대사·나레이션) · 작은 목소리(말풍선·안내 문구)
-function voice(v){let id=v.id,e=null;if(!id&&!SHOT&&VB.dir){e=vbFind(v.who,v.text);if(e&&e.has&&!e.mute){id='vo:'+e.id;SRC[id]=e.url;}}
+/* 다시 찾은 탐방(2026-11-27): 이미 끝낸 장소를 둘러볼 때는 목소리를 틀지 않고 글자만 — 구역이 voiceGag(true), 구역을 떠나면 저절로 풀림(clearZoneGame) */
+let GAG=false;function voiceGag(b){GAG=!!b;}
+function voice(v){let id=v.id,e=null;if(!GAG&&!id&&!SHOT&&VB.dir){e=vbFind(v.who,v.text);if(e&&e.has&&!e.mute){id='vo:'+e.id;SRC[id]=e.url;}}if(GAG)id=null;
   const busy=!!(CURV&&CURV.live())||!!(v.minor&&CURM&&CURM.live()),can=!!id&&(VS.on||!e&&!String(id).startsWith('vo:'))&&!(v.minor&&busy);
   /* 작은 목소리 줄 세우기(2026-11-15 — 말풍선 대사가 연달아 뜰 때: 아기 토끼 떡방아 구경): 다른 작은 목소리가 나오는 중이면 건너뛰지 않고 줄을 섰다가 끝나면 차례로(6초 넘게 기다린 줄은 버림). 큰 목소리(대사·나레이션) 중이면 예전처럼 건너뜀 */
   if(v.minor&&!v._q&&id&&VS.on&&!(CURV&&CURV.live())&&CURM&&CURM.live()){if(MQ.length<3){MQ.push({v:{...v,_q:1},t:clock.t});vlog('queue',e&&e.id,v.text);}else vlog('skip',e&&e.id,v.text);return null;}
@@ -211,4 +213,4 @@ const narrating=()=>!!cur||NQ.length>0;
 function stopAll(){if(cur&&cur.h)cur.h.stop();if(cur)cur.done();cur=null;NQ.splice(0).forEach(n=>n.done());}
 /* 공간음 자리(game/weather): 소리가 깨어 있을 때만 {ctx, bus} — 소리 끄기(M)는 전체(out)를 거치므로 그대로 따른다. 촬영 모드는 null */
 const ambience=()=>{if(SHOT)return null;const c=audio();return c&&ambBus?{ctx:c,bus:ambBus,running:c.state==='running'}:null;};
-export {voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voicePeak,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,bedTime,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};
+export {voiceGag,voiceBook,voiceStage,voiceLog,voiceNow,voiceHold,voiceBusy,voicePeak,voiceSet,VS as voiceSettings,MIX,lufsGain,duckState,tap,audioNow,bedLevel,bedTone,travelOut,quietBuf,kindOf,useWorld,ambience,songs,bedHandle,bedTime,S as soundSettings,hooks as soundHooks,setMuted,wake,zoneMusic,bed,estimate,narrate,narrating,preload,register,sfx,stopAll,synth,tickBed,tickNarration,voice};

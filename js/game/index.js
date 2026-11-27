@@ -8,7 +8,7 @@ import {clearStage,initStage,setStageZone,tickStage} from './stage.js';
 import {clearStealth,initStealth,setStealthZone,tickStealth} from './stealth.js';
 import {clearFinale,initFinale,tickFinale} from './finale.js';
 import {clock,cues,tickCore,wait as coreWait} from './core.js';
-import {bed,stopAll,tickBed,tickNarration} from './sound.js';
+import {bed,stopAll,tickBed,tickNarration,voiceGag} from './sound.js';
 import {clearDialog,clickNPC,initDialog,setDialogZone,tickDialog,talkNPC} from './dialog.js';
 import {clearEvents,initEvents,tickEvents} from './events.js';
 import {clearCards,setPrompt,setQuest,tickCut} from './ui.js';
@@ -96,7 +96,7 @@ function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
 function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking,talkCam:()=>!!(TC&&TC.fn&&view.req&&view.req.fn===TC.fn)});uiHooks.layout=layoutNow;}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickPieces(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}
-function clearZoneGame(id){STEPS++;setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();clearFloat();setQuest('');setPrompt('');}
+function clearZoneGame(id){STEPS++;voiceGag(false);setDialogZone(id);view.req=null;view.aim=null;clearControls();clearDialog();clearInteract();clearCourse();clearRide();clearCompanions();clearEvents();stopAll();bed(null);clearCards();clearSpots();clearOcclude();clearProfile();clearMission();clearGoal();clearIncident();clearReact();clearItemGet();clearStage();clearStealth();clearFinale();clearFloat();setQuest('');setPrompt('');}
 /* 첫 화면·옷 갈아입기(game/front): 08이 첫 구역을 만든 뒤 startFront({zone, restart}) */
 function startFront(o){initFront({ctx:o.ctx,view,zone:o.zone,restart:o.restart,world:o.world});} // world: 지금 세계 설정(js/worlds)
 export {enterZone,clickNPC,clearZoneGame,clock,cues,initGame,startFront,steps,updateGame,view};

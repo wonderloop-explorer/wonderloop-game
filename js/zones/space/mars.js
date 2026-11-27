@@ -255,6 +255,8 @@ const WAVE=(()=>{const c=SUNSET.wl,dx=SUMMIT[0]-c[0],dz=SUMMIT[1]-c[1],L=Math.hy
   return {c,u,n,pipi:[c[0]+u[0]*1.1+n[0]*1.2,c[1]+u[1]*1.1+n[1]*1.2],dung:[c[0]-u[0]*.3-n[0]*1.2,c[1]-u[1]*.3-n[1]*1.2]};})();
 const saveAfterMars=()=>G.state.saveAfter(ZID,{time:1,flag:!!F[K.flag],who:{pipi:[...SUNSET.pipi,SUNSET.face],dung:[...SUNSET.dung,SUNSET.face]}}); /* 2026-11-17: 완료 뒤 둘은 노을을 본 그 자리에 그대로(떠날 때만 bigLift가 겹치지 않는 WAVE 자리로 — 꼭대기에서는 안 보임) */
 let AF=G.state.afterOf(ZID);
+/* 다시 찾은 탐방(2026-11-27): 이미 끝낸 화성을 다시 열면 길 안내·할 일 없이 출구 빛기둥만(땅에서는 화산 회오리, 꼭대기에서는 하늘 회오리 — 깃발을 안 꽂았어도 하늘 회오리는 있음), 목소리 없이 글자만 */
+const REV=!!F[K.clear];if(REV)G.sound.voiceGag(true);
 if(F[K.told]){SK.set(1);}
 /* 처음 자리: 삐삐는 착지 자리 곁(만난 뒤면 언덕), 둥둥은 바위 위(노을을 같이 본 뒤면 언덕) */
 if(F[K.met])place(pipi,pipiOb,...(F[K.told]?SUNSET.pipi:PIPI_SPOT));else place(pipi,pipiOb,...PIPI0);
@@ -545,7 +547,7 @@ const pend=RIDE.pending;RIDE.pending=null;let arr=null,started=false;const RUN=5
 function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)return;const U=W.userData,P=W.position;
   if(pend&&!started&&G.view.camera){started=true;arr=arrival({G,root,WL:W,groundY,mob:MOB,dust,quick:!F[K.met], /* 2026-11-17: 첫 방문은 착지 뒤 1초에 조작을 돌려주고(예전 5.6초 두리번), 착지하는 순간 도착 안내·삐삐가 달려오기 시작 → 착지 2~3초 뒤 삐삐가 말을 검 */
       /* 2026-11-17 세 번째: 도착 안내 문구와 나레이션은 화면 표시(메뉴·할 일)가 돌아오는 순간 같이(예전엔 발이 닿는 순간 목소리만 먼저 나오고 글은 뒤에 떴다) — 삐삐는 그 나레이션이 끝나고 2초 뒤 */
-      onDone:()=>{st.arrDone=true;st.ready=true;G.ui.toast('붉은 화성에 도착했어요! 화성 중력은 지구의 약 38%예요',4.2,'붉은 화성에 도착했어요!');if(!F[K.met])st.pipiWait={t:0,q:0};}});}
+      onDone:()=>{st.arrDone=true;st.ready=true;if(!REV)G.ui.toast('붉은 화성에 도착했어요! 화성 중력은 지구의 약 38%예요',4.2,'붉은 화성에 도착했어요!'); /* 다시 찾은 탐방: 도착 안내 없음 */if(!F[K.met])st.pipiWait={t:0,q:0};}});}
   if(arr)arr.tick(dt,t);dust.tick(dt);fine.tick(dt,t,P);
   /* 꼭대기에 있는 동안 먼지 안개를 걷는다(2026-11-12 — 85m 위라 '먼지 위로 올라온' 자리: 낮 안개 60~330m → 190~950m, 올라가고 내려오는 동안 천천히) */
   {const hi=st.summit||((st.ride||st.bigTick)&&W.position.y>20)?1:0;st.clearK=(st.clearK||0)+(hi-(st.clearK||0))*Math.min(1,dt*.8);const k=st.clearK;SK.fogPush=k>.002?[130*k,620*k]:null;
@@ -553,7 +555,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     if(k>.002||st.bendOn){st.bendOn=k>.002;setZoneBend({k:.0012*(1-.88*k*(1-(st.bendFull||0))),d0:18});} /* bendFull: 떠나며 땅이 멀어질 때는 평소 세기로(땅이 둥근 화성 구를 따라 휨) */
     st.sumK=(st.sumK||0)+((st.summit?1:0)-(st.sumK||0))*Math.min(1,dt*.8);SK.dirMix=st.sumK>.002?[SK.t>.5?SUN_DUSK_HI:SUN_LOW,st.sumK*.85]:null;} /* 해 눕히기는 화산 꼭대기에서만(큰 회오리로 떠날 때는 노을 해가 서쪽 그대로 — 2026-11-12) */ /* 꼭대기에서는 해를 옆으로 눕힘: 바위·분화구 계단의 밝은 면과 그늘진 면이 나뉘고 그림자가 길게 */ /* 하늘 모듈이 키 값을 복사해 쓰므로 밀어내는 값으로(game/sky fogPush) */
   {const dusk=SK.t>.5;if(dusk!==st.duskTone){st.duskTone=dusk;G.sound.bedTone(dusk?{lp:3400,gain:.78}:{},dusk?6:2);}} /* 노을: 같은 곡을 조금 작게·높은 소리 살짝 덜(저녁 느낌) */
-  {const on=!!(F[K.clear]&&F[K.flag])&&!st.bigGo&&(st.bigOn||(!st.scene&&!st.flagBusy));if(on&&!st.bigOn){st.bigOn=true;st.bigK=0;bigIdle.show(true);if(st.summit)G.sound.sfx('event-whirl',{gain:.9});}
+  {const on=!!(F[K.clear]&&(REV||F[K.flag]))&&!st.bigGo&&(st.bigOn||(!st.scene&&!st.flagBusy));if(on&&!st.bigOn){st.bigOn=true;st.bigK=0;bigIdle.show(true);if(st.summit)G.sound.sfx('event-whirl',{gain:.9});}
     if(st.bigOn&&!st.bigGo){st.bigK=Math.min(1,(st.bigK||0)+dt*.9);const e=st.bigK*st.bigK*(3-2*st.bigK);bigIdle.me.scale.set(e,e,e);bigIdle.tick(dt);}else if(st.bigGo&&st.bigOn){st.bigOn=false;bigIdle.show(false);}} /* 꼭대기의 큰 회오리: 완료 + 깃발 뒤에 스르륵 생김 */
   {const far=0; /* 2026-11-14: 떠날 때 둘을 키우지 않음(회오리가 둘의 머리 위를 낮게 지나감 — 키우면 길쭉한 거인처럼 보였다) */st.farK=(st.farK||0)+(far-(st.farK||0))*Math.min(1,dt*1.5);if(st.farK>.002||st.farOn){st.farOn=st.farK>.002;const cm=G.view.camera,cd=cm?Math.hypot(cm.position.x-WAVE.c[0],cm.position.y-groundY(WAVE.c[0],WAVE.c[1]),cm.position.z-WAVE.c[1]):165,k=st.farK*Math.min(1,Math.max(0,(cd-15)/80)),sp=1+2.2*k; /* 키우는 정도는 카메라 거리로(2026-11-14 — 회오리가 둘 위를 지나가면 가까워지니 본래 크기로) */pipi.root.scale.setScalar(1+7*k);dung.root.scale.setScalar(1+5*k);
     for(const [m,ob,w] of [[pipi,pipiOb,WAVE.pipi],[dung,dungOb,WAVE.dung]])place(m,ob,WAVE.c[0]+(w[0]-WAVE.c[0])*sp,WAVE.c[1]+(w[1]-WAVE.c[1])*sp);} /* 키운 만큼 사이도 벌림(그대로면 커진 몸끼리 겹침) */
@@ -602,7 +604,9 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     if(ground&&!SW.busy&&SW.armed&&!secretW.faded&&Math.hypot(P.x-SW.x,P.z-SW.z)<1.6&&stage()!=='meet'){if(st.summit)summitDown(W);else secretRide(W);return;}}
   if(st.scene||st.cross||st.ride||st.bigTick||U.riding)return;
   if(st.summit){const S=st.summit;S.t+=dt; /* 화산 꼭대기 고원에 머무는 동안(걸어 다님): 깃발 자리 안내 → 꽂은 뒤엔 내려가는 회오리 안내. 깃발을 안 꽂아도 회오리를 타면 내려감(비밀이라 진행과 무관) */
-    if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
+    if(REV){quest('',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4,path:false},'revtop');
+      if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
+    else if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
     else if(F[K.clear]){quest('큰 회오리를 타고 하늘로',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4});
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else quest('회오리를 타고 내려가요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'내려가는 회오리',style:'ant',h:5});
@@ -620,6 +624,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     else{if((st.stone??-1)<0)quest('징검다리로 둥둥에게 가요',{at:STONES[0].c,y:STONES[0].top,label:'징검다리',style:'ant',h:2.2},'stone'); /* 2026-11-27: 먼저 작은 바위(징검다리) 쪽 표시 — 올라서면 사라지고 둥둥 쪽 표시 */
       else quest('징검다리로 둥둥에게 가요',{at:ROCKD.c,y:ROCKD.top,label:'둥둥',style:'ant',h:2.8},'dung'); /* 2026-11-17 세 번째: 예전 방식으로 — 빛기둥·이름표는 둥둥 바위에만, 작은 바위는 바닥 동그란 표시만(바위마다 이름표·빛기둥은 뺌) */
       if(onRock(W)&&!G.ui.cardShown()&&!G.dialog.talking())scene(deliverA,dung);}return;} /* 2026-11-17: 바위에 올라 둥둥에게 다가가면 바로 이어지는 대화(단추 없이) */
+  if(s==='done'&&REV){quest('',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'화산 회오리',style:'ant',h:5,path:false},'revsw');return;}
   if(s==='done'){quest(F[K.flag]?'꼭대기 큰 회오리를 타요':'화산 꼭대기에 깃발을 꽂아요',{at:()=>[SW.x,SW.z],y:groundY(SW.x,SW.z),label:'화산 회오리',style:'ant',h:5});return;} /* 2026-11-13: 끝낸 뒤 — 화산으로 올라가는 회오리까지 점선(꼭대기에서는 깃발 자리 → 큰 회오리) */
   if(s==='finale'){ /* 둥둥과 이야기한 뒤 닫았다 다시 연 경우 — 언덕에 오면 이어서 */
     if(east(P.x))quest('회오리로 협곡을 건너요',{at:()=>[WS.x,WS.z],label:'먼지 회오리',style:'ant',h:5});else quest('삐삐 언덕에서 노을을 봐요',{at:SUNSET.wl,y:HILL.h,label:'삐삐의 언덕',style:'ant',h:3});

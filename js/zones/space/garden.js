@@ -497,10 +497,11 @@ const mortarMark=new THREE.Object3D();mortarMark.position.set(MORTAR[0],groundY(
 /* 횟수 표시(2026-11-10 두 번째): 절구 바로 위에 크게(game/float count — 화면 위 가운데 칩도 세로가 낮은 창 1280×632에서 대화창에 가려졌다). 대화창·획득 카드가 뜨면 그 위로 비켜남 */
 /* 횟수는 화면 위쪽 고정 자리(할 일 안내 바로 아래 — 화면 가림 규칙 4, 2026-11-10: 절구 위에 띄우면 가까이 잡은 카메라에서 원더룹 얼굴에 걸렸다) */
 function cntShow(n){G.ui.count(n==null?null:{label:'떡 찧기',n,max:3});}
-const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,when:()=>!F[CAKE_KEY]&&!st.poundDone, /* 세 번 찧으면 끝 — 다시 다가가도 더 찧을 수 없음(2026-11-23: 예전엔 0부터 다시 셌다) */
+const mortarIt=G.interact.add({root:mortarMark,at:MSTAND,face:MORTAR,label:'찧기',action:'떡메 찧기',dur:1.25,near:1.9,once:false,when:()=>REV||(!F[CAKE_KEY]&&!st.poundDone), /* 세 번 찧으면 끝 — 다시 다가가도 더 찧을 수 없음(2026-11-23: 예전엔 0부터 다시 셌다) */
   onPress:()=>{st.poundGo=true;G.goal.set(null);}, /* 2026-11-17: '찧기'를 누르는 순간 떡방아 빛기둥·길 안내를 바로 끔(찧는 동안 남아 있었다) — 그만두고 떠나면 다시 */
-  onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();GATHER.on=true;GATHER.until=1e9;st.cntOn=!F[CAKE_KEY];if(st.cntOn){st.cntK=(st.cntK||0)+1;cntShow(PEST.n);}}, /* 이미 달떡을 얻은 뒤 다시 찧을 때는 횟수 표시 없음(2026-11-17) */
+  onStart:()=>{PEST.hit=false;PEST.idle=0;poundCamStart();if(!REV){GATHER.on=true;GATHER.until=1e9;}st.cntOn=!REV&&!F[CAKE_KEY];if(st.cntOn){st.cntK=(st.cntK||0)+1;cntShow(PEST.n);}}, /* 이미 달떡을 얻은 뒤 다시 찧을 때는 횟수 표시 없음(2026-11-17) */
   onDone:()=>{PEST.idle=0;PEST.n++;{const W=U0();if(W){W.userData.action='떡메 들기';W.userData.at=0;}} /* 다음 찧기까지 잡은 채 기다림 */const n=PEST.n;
+    if(REV){PEST.n=0;return;} /* 다시 찾은 탐방: 세지 않고 찧고 싶은 만큼 — 걸어가거나 2.4초 쉬면 떡메를 내려놓음 */
     if(st.cntOn)cntShow(n);
     if(n<3)return; /* 횟수는 절구 위 표시가 맡는다(단추 글자는 '찧기' 그대로) */
     mortarIt.label='찧기';PEST.n=0;st.poundDone=true;st.cakeT=2.4;{const k=st.cntK;setTimeout(()=>{if(st.cntK===k){st.cntOn=false;cntShow(null);}},1800);}}}); /* 그사이 다시 찧기 시작했으면 그대로 둠 */
@@ -614,6 +615,8 @@ const platforms=[{c:[ROCK.c[0],ROCK.c[1],ROCK.r*.98],top:ROCK_TOP},
   {c:[EXIT[0],EXIT[1],1.5],top:groundY(...EXIT)+.16}]; /* 출구 돌판 윗면(2026-11-23 — 발판이 아니어서 원더룹이 돌판 속 땅 높이에 서 발목 아래가 묻혔다) */
 /* ── 이야기 진행 */
 const F=G.state.flags,HAVE='have:'+WID+':necklace',K={demo:'space:demo',rock:'space:rock',clear:'clear:space-garden',cave:'secret:'+WID+':icecave'};
+/* 다시 찾은 탐방(2026-11-27 — 규칙 docs/series-rules.md): 이미 끝낸 장소를 다시 열면 미션 없이 둘러보기 — 길 안내·할 일 없음(출구 빛기둥만), 목소리 없이 글자만, 떡방아는 찧고 싶은 만큼(횟수·토끼 구경 없음) */
+const REV=!!F[K.clear];if(REV)G.sound.voiceGag(true);
 G.profile.setup({world:WID,cards:SPACE.cards}); /* 친구 카드는 세계 설정(스테이지마다 같은 목록 — '만난 친구 n/m'이 세계 전체 수) */
 const st={warm:false,cold:false,start:false,hop:null,lastQ:'',culled:false,cam:0,scene:false};
 const coarse=matchMedia('(pointer:coarse)').matches;
@@ -723,7 +726,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   else if(step==='rock')quest('높은 바위에 올라요',{at:ROCK.c,label:'높은 바위',style:'ant',h:ROCK_TOP+2.4});
   else if(step==='cave'){quest('얼음 동굴에 들어가 봐요',{at:CAVE,label:'얼음 동굴',style:'ant',h:3.4});}
   else if(step==='exit')quest('빛기둥 한가운데로 가요',{at:EXIT,label:'출구',style:'ant',h:4});
-  else quest('',null);
+  else quest('',{at:EXIT,label:'출구',style:'ant',h:4,path:false}); /* 끝낸 뒤: 길·할 일 없이 출구 빛기둥만(2026-11-27) */
   /* 출구: 빛기둥 한가운데(반지름 EXIT_R 안)에 들어서야 끝남(2026-11-17 — 예전 1.7m는 받침돌 가장자리에서 끝났다) */
   const de=dist(P.x,P.z,EXIT);
   if(!F[K.clear]){if(de<EXIT_R&&!G.ui.cardShown()){if(F[K.rock]&&F[K.cave]){G.state.setFlag(K.clear,true);quest('',null);showTodo();startRide(true);}

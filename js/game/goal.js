@@ -93,9 +93,10 @@ function tickGoal(dt){if(!G||!cur)return;const P=where(),W=ctx.WL;if(!P||!W||!hi
       const wv=Math.max(0,Math.sin(k*.55-t0*5)),s=(.85+wv*.55)*Math.min(1,(k+1)/3);_p.set(x,y,z);_q.setFromAxisAngle(_up,0);_s.set(s,1,s);_m.compose(_p,_q,_s);dotsA.setMatrixAt(n++,_m);}
     dotsA.count=n;dotsA.instanceMatrix.needsUpdate=true;dotsA.visible=n>0;dots.visible=false;}
   else{dots.count=n;dots.instanceMatrix.needsUpdate=true;dots.visible=n>0;}
+  if(cur.path===false)dots.visible=dotsA.visible=false; /* path:false — 동그라미 길 없이 빛기둥·이름표만(다시 찾은 탐방의 출구, 2026-11-27) */
   // 화살표: 카메라가 보는 쪽(앞)을 위로 — 오른쪽이면 오른쪽으로
   const cam=ctx.camera;cam.getWorldDirection(_p);_p.y=0;_p.normalize();const f=dx*_p.x+dz*_p.z,r=dx*-_p.z+dz*_p.x;
-  setArrow(L<1.6?null:Math.atan2(f,r)*-1);}
+  setArrow(L<1.6||cur.path===false?null:Math.atan2(f,r)*-1);}
 /* 이름표 화면 네모(시험용 — tools/cover-probe.js가 카드에 가려졌는지 잼): 보일 때(불투명도 .3 넘게)만 [왼, 위, 오른, 아래] 화면 화소 */
 function tagRect(){const cam=ctx&&ctx.camera;if(!G||!G.visible||!cur||!tag||tag.material.opacity<.3||!cam)return null;_v.copy(tag.position).project(cam);if(_v.z>1)return null;
   const depth=cam.position.distanceTo(tag.position),ppm=innerHeight/(2*Math.tan(cam.fov*Math.PI/360)*depth),w=tag.scale.x*ppm,h=tag.scale.y*ppm,cx=(_v.x+1)/2*innerWidth,cy=(1-_v.y)/2*innerHeight;

@@ -35,6 +35,8 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
   const RK=Object.assign({},RAIN_KEY,rainKey||{}),RC={};CKEYS.forEach(c=>RC[c]=new THREE.Color(RK[c]));RC.dir=new THREE.Vector3(...RK.sunDir).normalize();
   const K=DEFAULT_KEYS.map((d,i)=>Object.assign({milky:0},d,keys[i]||{}));
   const KC=K.map(k=>{const o={};CKEYS.forEach(c=>o[c]=new THREE.Color(k[c]));o.dir=new THREE.Vector3(...k.sunDir).normalize();return o;});
+  /* 거쳐 가는 색(2026-11-27 — 금성을 떠날 때 복숭아빛 지평선 → 남색이 곧게 섞이면 가운데가 탁한 회갈색): 칸에 via:{색 이름:'#hex'}를 주면 앞 칸에서 이 칸으로 넘어가는 가운데에서 그 색 쪽으로 끌림(양 끝에서는 0 — 없으면 예전 그대로) */
+  const VIA=K.map(k=>{if(!k.via)return null;const o={};for(const c in k.via)o[c]=new THREE.Color(k.via[c]);return o;});
   // 하늘 둥근 지붕: 지평선 → 위로 색이 바뀐다(땅 아래는 지평선 색). 카메라를 따라다닌다
   const uni={top:{value:new THREE.Color()},horizon:{value:new THREE.Color()},milky:{value:0},cloud:{value:0},cloudK:{value:1}};
   /* 휴대폰 단계(2026-11-10 발열): 은하수·비구름 얼룩은 방향만의 함수(시간에 따라 안 변함)라 화소마다 sin 여덟 번을 계산하지 않고 256×128 그림 한 장에 구워(구의 uv — R 은하수 얼룩, G 구름 얼룩, B 은하수 띠) 한 번 읽는다.
@@ -70,7 +72,7 @@ function sky({parent,keys=[],t=0,radius=100,nStars=260,seed=7,starSize=3,rainKey
     light(L,camera,dt,sunDirOut){
       if(S.goal!=null){S.tw+=dt;const k=ss(0,1,S.tw/S.dur);S.t=S.from+(S.goal-S.from)*k;if(S.tw>=S.dur){S.t=S.goal;S.goal=null;}}
       const i=Math.min(1,Math.floor(S.t)),u=S.t-i,a=KC[i],b=KC[i+1],ka=K[i],kb=K[i+1];
-      const R=S.rain||0;CKEYS.forEach(c=>{cur[c].copy(a[c]).lerp(b[c],u);if(R)cur[c].lerp(RC[c],R*(S.t>1.5?.35:1));});const num0=n=>ka[n]+(kb[n]-ka[n])*u,num=n=>R?num0(n)+(Math.min(num0(n),RK[n])-num0(n))*R*(n==='stars'||n==='milky'?1:S.t>1.5?.35:1):num0(n); // 비: 밤이면 조금만 섞음(이미 어두움)
+      const R=S.rain||0;const V=VIA[i+1];CKEYS.forEach(c=>{cur[c].copy(a[c]).lerp(b[c],u);if(V&&V[c])cur[c].lerp(V[c],4*u*(1-u)*.85);if(R)cur[c].lerp(RC[c],R*(S.t>1.5?.35:1));});const num0=n=>ka[n]+(kb[n]-ka[n])*u,num=n=>R?num0(n)+(Math.min(num0(n),RK[n])-num0(n))*R*(n==='stars'||n==='milky'?1:S.t>1.5?.35:1):num0(n); // 비: 밤이면 조금만 섞음(이미 어두움)
       uni.top.value.copy(cur.top);uni.horizon.value.copy(cur.horizon);
       L.hemi.color.copy(cur.hemi);L.hemi.groundColor.copy(cur.ground);L.hemi.intensity=num('hemiI');
       L.sun.color.copy(cur.sun);L.sun.intensity=num('sunI');L.fill.intensity=num('fill');
