@@ -718,8 +718,8 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
   if(!onRockTop)st.rockWarn=false;
   if(!F[K.rock]&&onRockTop){const left=leftList();
     if(left.length){if(!st.rockWarn){st.rockWarn=true;G.ui.toast('아직 해 볼 게 남았어요: '+left.join(', '),4);}}
-    else{G.state.setFlag(K.rock,true);G.react.react('joy');const NEXT='얼음 동굴을 지나면 빛기둥 출구가 있어요. 빛기둥 한가운데로 들어가 봐요.';
-      G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',vo:'보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()}).then(w=>{if(w!==-1)G.ui.toast(NEXT,6,NEXT);});}}
+    else{G.state.setFlag(K.rock,true);G.react.react('joy');const NEXT='이번엔 그늘 분화구의 얼음 동굴에 가 봐요.'; /* SPC-S1-038(2026-11-27 — 얼음 동굴과 빛기둥 안내를 둘로 나눔: 빛기둥 안내 SPC-S1-039는 동굴 카드가 닫힌 뒤) */
+      G.ui.notice({kicker:'우주 지도',title:'첫 빈칸을 채웠어요!',text:'바람이 없는 곳에선 발자국이 아주 오래 남아요. 보름 할아버지의 지도에 회색 정원이 그려졌어요.',vo:'보름 할아버지의 지도에 회색 정원이 그려졌어요.',icon:ICON_MAP()}).then(w=>{if(w!==-1)G.ui.toast(NEXT,4.5,NEXT);});}}
   if(st.poundGo){if(G.interact.busy()||poundingNow(WL)||st.cntOn)st.poundOff=0;else{st.poundOff=(st.poundOff||0)+dt;if(st.poundOff>.4)st.poundGo=false;}}
   if(step==='mortar')quest('떡방아를 찧어 봐요',st.poundGo?null:{at:MORTAR,label:'떡방아',style:'ant',h:3});
   else if(step==='scope')quest('망원경으로 목성을 봐요',{at:SCOPE,label:'망원경',style:'ant',h:3.4});
@@ -759,7 +759,8 @@ function startRide(first){const W=U0();if(!W||ride||st.rideWait)return;const U=W
 const ICON_MAP=()=>SPACE.icons.map();
 // 얼음 동굴 카드(꼭 지나가는 단계 — 카드 모양은 그대로 '숨겨진 비밀')
 function caveSecret(){G.state.setFlag(K.cave,true);G.react.react('awe',{sound:'card-secret'});
-  G.ui.secret({kicker:'숨겨진 비밀',title:'그늘 분화구의 얼음 동굴',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 아주 오래오래 그대로 남은 곳이에요. 차갑게 반짝이는 얼음 결이 천장까지 자랐어요.',vo:'햇빛이 한 번도 들지 않은 얼음 동굴이에요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`});}
+  G.ui.secret({kicker:'숨겨진 비밀',title:'그늘 분화구의 얼음 동굴',text:'햇빛이 한 줄기도 들지 않아 얼음이 녹지 않고 아주 오래오래 그대로 남은 곳이에요. 차갑게 반짝이는 얼음 결이 천장까지 자랐어요.',vo:'햇빛이 한 번도 들지 않은 얼음 동굴이에요.',count:`발견한 비밀 ${discN()}/${DISC_TOTAL}`}).then(w=>{if(w!==-1&&!F[K.clear])G.ui.toast(EXIT_MSG,6,EXIT_MSG);});} /* 동굴 카드가 닫힌 뒤 출구 안내(SPC-S1-039) */
+const EXIT_MSG='발자국을 따라가면 빛기둥 출구가 있어요. 빛기둥 한가운데로 들어가 봐요.';
 function tickWeather(dt,t,w){const M=meteors,cam=G.view.camera;
   /* 별똥별: 그림판 좌표(화면 위쪽 하늘)에서 비스듬히 쉭 — 머리 반짝, 꼬리 어둡게. 유성우 날씨에만 */
   const tv=cam?Math.tan(cam.fov*PI/360):.27,th=cam?tv*cam.aspect:.48;
