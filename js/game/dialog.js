@@ -127,11 +127,12 @@ function tickDialog(dt){if(!ctx)return;const P=ctx.WL.position;tickFace(dt);
   if(talk){talk.n.root.getWorldPosition(_p);if(Math.hypot(_p.x-P.x,_p.z-P.z)>3.6+talk.n.talkR)endTalk(false);}
   near=null;let nd=1.7;if(!talk&&(!blocking()||blockedOnlyBy('notice')))for /* 미션 카드만 떠 있으면 말을 걸 수 있다 — 걸면 카드가 먼저 닫힘(ui showDialog) */(const n of NPCS){if(!talkable(n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z)-n.talkR;if(d<nd){nd=d;near=n;}}
   if(talk){const L=talk.L;setPrompt('',talk.i>=L.length-1?'닫기':'다음');} // 대화 중에도 터치 넘김 단추를 남긴다
-  else setPrompt(near?(coarse?'말 걸기':'E 말 걸기'):handPrompt());
-  placePrompt(talk?null:near);
+  else if(near)setPrompt('','말 걸기'); /* 2026-11-27 말 걸기 표시 통일: 'E 말 걸기' 글자는 없음 — 머리 위 '…' 말풍선만(PC는 E, 휴대폰은 말 걸기 단추 그대로) */
+  else setPrompt(handPrompt());
+  placePrompt(null);
   // 말풍선: 9m 안 가까운 주민들 위에 늘(대화 중인 상대는 빼고) — 아직 끝까지 이야기하지 않은 주민은 '…', 이야기한 주민은 작은 하트(조금 작게)
-  const L=[];if(hintsVisible()&&!(blocking()&&!talk)){for(const n of NPCS){if(!talkable(n)||(talk&&talk.n===n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<(n.bubbleR||9))L.push([d,n]);} /* bubbleR: 이 주민의 '…' 말풍선이 보이는 거리(없으면 9m — 화성 삐삐·둥둥은 가까이 갔을 때만, 2026-11-17) */L.sort((a,b)=>a[0]-b[0]);}
-  for(let i=0;i<BUBS.length;i++){const b=BUBS[i],e=L[i];if(!e){if(b.visible){b.visible=false;if(b.parent)b.parent.remove(b);}continue;}const [wd,who]=e,hm=met(who);
+  const L=[];if(hintsVisible()&&!(blocking()&&!talk)){for(const n of NPCS){if(!talkable(n)||(talk&&talk.n===n))continue;n.root.getWorldPosition(_p);const d=Math.hypot(_p.x-P.x,_p.z-P.z);if(d<(n.bubbleR||4.5)||n===near)L.push([d,n]);} /* bubbleR: 이 주민의 '…' 말풍선이 보이는 거리(없으면 9m — 화성 삐삐·둥둥은 가까이 갔을 때만, 2026-11-17) */L.sort((a,b)=>a[0]-b[0]);}
+  for(let i=0;i<BUBS.length;i++){const b=BUBS[i],e=L[i];if(!e){if(b.visible){b.visible=false;if(b.parent)b.parent.remove(b);}continue;}const [wd,who]=e,hm=false; /* 하트 없음(2026-11-27) — 이야기한 뒤에도 가까이 가면 다시 '…' */
     if(b.material.map!==(hm?heartTex:bubTex)){b.material.map=hm?heartTex:bubTex;b.material.needsUpdate=true;}
     who.root.getWorldPosition(_q);const cam=ctx.camera,h=bubbleSize(cam,cam.position.distanceTo(_q))*(.72+.28*Math.min(1,Math.max(0,(wd-1.5)/2.5)))*(hm?.78:1);b.scale.set(h*1.1/.82,h,1); // 대화 거리 가까이는 72%까지 작게
     _q.y+=(who.bubbleY||1.4)-.133+h*.5+(reduce.matches?0:Math.sin(clock.t*4+i*1.7)*.04);b.position.copy(_q);b.visible=true;if(!b.parent)bubScene.add(b);}

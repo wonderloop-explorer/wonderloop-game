@@ -101,9 +101,10 @@ function render(W,o={}){
     for(let i=0;i<(P.n||6);i++){const it=document.createElement('i');it.innerHTML=P.svgs?P.svgs[i%P.svgs.length]:P.svg;m.appendChild(it);} /* svgs: 아이콘 여러 개를 차례로(무한 우주 행성 다섯) */t.appendChild(m);box.appendChild(t);}
   const sub=document.createElement('p');sub.className='sub';(W.intro||[]).forEach((line,i)=>{if(i)sub.appendChild(document.createElement('br'));sub.append(line);});box.appendChild(sub);
   const B=document.createElement('div');B.className='tbtns';
-  if(o.progress){B.append(btn('go','이어서 하기',()=>o.onContinue&&o.onContinue()),
-    o.onPlaces?btn('ghost','장소 고르기',()=>o.onPlaces()):btn('ghost small','처음부터',()=>{el.dataset.ask='1';if(o.onClick)o.onClick();el.querySelector('.ask .no').focus({preventScroll:true});}));} /* 2026-11-26: 장소 고르기가 있는 세계는 [이어서 하기 | 장소 고르기 | 조작법] — '처음부터'는 탐험 지도 화면 안으로 */
-  else B.appendChild(btn('go','새로 시작',()=>o.onNew&&o.onNew()));
+  /* 단추(2026-11-27 — game/front가 규칙을 정해 넘김): progress면 '이어서 하기' 아니면 o.newLabel('새로 시작'), o.onPlaces가 있으면 '장소 고르기', o.fresh(기본: 기록이 있고 장소 고르기가 없을 때)면 작은 '처음부터'(한 번 더 물음) */
+  B.appendChild(o.progress?btn('go','이어서 하기',()=>o.onContinue&&o.onContinue()):btn('go',o.newLabel||'새로 시작',()=>o.onNew&&o.onNew()));
+  if(o.onPlaces)B.appendChild(btn('ghost','장소 고르기',()=>o.onPlaces()));
+  if(o.fresh??(o.progress&&!o.onPlaces))B.appendChild(btn('ghost small','처음부터',()=>{el.dataset.ask='1';if(o.onClick)o.onClick();el.querySelector('.ask .no').focus({preventScroll:true});}));
   B.appendChild(btn('ghost','조작법',()=>o.onHow&&o.onHow()));box.appendChild(B);
   const tip=document.createElement('p');tip.className='tip';tip.innerHTML=TIP;box.appendChild(tip);
   const ask=document.createElement('div');ask.className='ask';ask.innerHTML='<p>처음부터 다시 할까요?<br>지금까지 모은 기록이 지워져요.</p>';

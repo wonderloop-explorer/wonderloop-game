@@ -7,6 +7,7 @@
      afterOf(구역 id) → 그 덩어리 또는 null — 구역이 만들 때 읽어 주민을 그 자리에 세우고, 구역 정보 after:()=>afterOf(id)로 내주면 game/weather가 그날 날씨 대신 그 시간으로 연다.
      '처음부터 하기'·진행 초기화 때 함께 지워진다.
    저장: localStorage 'wl-state'. 촬영 모드(?shot)에서는 저장된 값을 읽지도 쓰지도 않는다(매번 같은 그림). */
+import '../config.js'; // ?reset(기록 초기화)를 저장 값을 읽기 전에
 const KEY='wl-state',SHOT=new URLSearchParams(location.search).has('shot');
 let saved={};if(!SHOT)try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}
 const flags=Object.assign({compass:false,umbrella:false},saved.flags);

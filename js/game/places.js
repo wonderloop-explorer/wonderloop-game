@@ -48,11 +48,14 @@ const css=`
 let cssDone=false,cur=null;
 const visited=(F,z)=>!!z&&!!(F['visit:'+z]||F['clear:'+z]);
 /* 장소 목록과 상태: [{name, zone(갈 구역), planet 이름, color, ring, open, here, been, why(잠긴 까닭), finds:[n,m]}] */
-export function placeState(W,F,curZone){const M=(W&&W.map)||[],B=(W&&W.travel&&W.travel.map&&W.travel.map.bodies)||[],first=M[0]&&M[0].zone,FD=(W&&W.finds)||[];
+/* 마지막 장소(목성)까지 다녀왔는지 — 다 마친 기록 */
+export function allDone(W,F,curZone){const M=(W&&W.map)||[],B=(W&&W.travel&&W.travel.map&&W.travel.map.bodies)||[],L=M.find(m=>m.last);if(!L)return false;const z=L.zone||(B.find(x=>x.id===L.planet)||{}).zone;return !!z&&(z===curZone||visited(F,z));}
+export function placeState(W,F,curZone,openAll){const M=(W&&W.map)||[],B=(W&&W.travel&&W.travel.map&&W.travel.map.bodies)||[],first=M[0]&&M[0].zone,FD=(W&&W.finds)||[];
   const mids=M.filter(m=>!m.last);
   return M.map((m,i)=>{const b=B.find(x=>x.id===m.planet)||{},zone=m.zone||b.zone||null,here=zone===curZone,been=here||visited(F,zone);let open=true,why='';
     if(m.last){open=mids.every(q=>q.zone===curZone||visited(F,q.zone));if(!open)why='다른 행성을 모두 다녀오면 열려요';}
     else if(i>0){open=!!F['clear:'+first]||been;if(!open)why=M[0].name+'을 먼저 둘러보면 열려요';}
+    if(openAll&&zone){open=true;why='';} /* 개발용 스위치(js/config.js DEV_OPEN_ALL): 잠금 없이 모두 열림 */
     if(!zone){open=false;why=why||'준비 중이에요';}
     const fs=FD.filter(f=>f.where===m.name);
     return {name:m.name,zone,planet:b.name||'',color:b.color||'#cfc3e6',ring:!!b.ring,band:m.planet==='jupiter',last:!!m.last,open,here,been,why,finds:[fs.filter(f=>F[f.flag]).length,fs.length]};});}
@@ -60,7 +63,7 @@ export const placesOpen=()=>!!cur;
 export function closePlaces(){if(cur)cur.close();}
 /* o: {world, flags, zone(지금 구역 id), title?, lead?, pick(false면 보기만 — 누를 수 없음), onGo(zone), onReset(), sfx(name)} */
 export function openPlaces(o){if(cur)return cur;if(!cssDone){cssDone=true;const s=document.createElement('style');s.dataset.wl='places';s.textContent=css;document.head.appendChild(s);}
-  const L=placeState(o.world,o.flags||{},o.zone),el=document.createElement('div');el.className='wl-pop';el.id='wlPlaces';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','탐험 지도');
+  const L=placeState(o.world,o.flags||{},o.zone,o.openAll),el=document.createElement('div');el.className='wl-pop';el.id='wlPlaces';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','탐험 지도');
   const card=document.createElement('div');card.className='wl-pop-card';const body=document.createElement('div');body.className='wl-pop-body';
   const h=document.createElement('h2');h.textContent=o.title||'탐험 지도';const lead=document.createElement('p');lead.className='lead';lead.textContent=o.lead||(o.pick===false?'다녀온 곳과 앞으로 갈 곳이에요':'가고 싶은 곳을 골라요');
   const ul=document.createElement('ul');const snd=n=>{try{o.sfx&&o.sfx(n);}catch(e){}};

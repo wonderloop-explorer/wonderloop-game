@@ -28,7 +28,7 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],R0=rng('
   const U0=()=>G.view.camera&&G.mission.hero&&G.mission.hero();
   const card=()=>{if(st.carded)return;st.carded=true;mark('card');G.ui.notice({kicker:'붉은 폭풍',title:'다음 이야기 준비 중',text:TMP.card,icon:SPACE.icons.map()});};
   function update(dt,t){const W=U0();if(!W)return;st.t+=dt;mark('start');
-    if(pend&&!arr&&!st.done){arr=arrival({G,root,WL:W,groundY:()=>0,mob:MOB,quick:true,dustCols:[[.97,.86,.72],[.95,.72,.56],[.98,.92,.84]],landSfx:'cloud-poof',onDone(){st.done=true;mark('free');}});mark('arrive');}
+    if(pend&&!arr&&!st.done){arr=arrival({G,root,WL:W,groundY:()=>0,mob:MOB,quick:true,plain:true,dustCols:[[.97,.86,.72],[.95,.72,.56],[.98,.92,.84]],landSfx:'cloud-poof',onDone(){st.done=true;mark('free');}});mark('arrive');}
     if(arr)arr.tick(dt,t);
     if(st.done&&!st.carded&&st.t>1.5&&!(G.front.frontShown&&G.front.frontShown()))card();}
   function lateUpdate(dt){if(arr)arr.late(dt,G.clock.t);}

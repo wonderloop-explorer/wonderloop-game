@@ -58,7 +58,7 @@ with sync_playwright() as p:
             res['나레이션 [번호, 시작 초]'] = st()['rest']['narr']
             until('!wlZone.cur.state().rest.on', 60); res['쉬기(초)'] = round(time.time() - tr0, 1)
         if not FROM or FROM in ('rest', 'card'):
-            until("document.body.innerText.includes('욕조에 넣으면')", 40); pg.wait_for_timeout(900); shot('03-card-line')
+            until("document.body.innerText.includes('즐거웠어')", 60); pg.wait_for_timeout(900); shot('03-card-line')
             until("document.body.innerText.includes('물보다 가벼워요')", 40); pg.wait_for_timeout(900); shot('03-card'); draw()
         if not FROM or FROM in ('rest', 'card', 'toss'):
             # ── 고리 던지기 ──

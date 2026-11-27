@@ -347,7 +347,7 @@ const bunTalkOK=()=>!GATHER.on&&!!F[K.demo]&&!st.scene&&!ride;
 const bunnies=BUN.map((b,i)=>{const m=makeBunny(b.fur,b.scarf);const [x,z]=b.way[0];m.root.position.set(x,groundY(x,z),z);root.add(m.root);keep.push(m.root);
   const st={i:0,t:0,wait:RR(.5,2.5),from:[x,z],to:null,ry:0};
   /* 2026-11-17 세 번째: 저절로 뜨는 말풍선 없음('…'도 — bubbleR) — 가까이 가면 '말 걸기'만, 걸면 아래 대사창에 글자로(목소리 없음), 처음 이야기하면 친구 카드에 조용히 넣음 */
-  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:.92,talkR:1.4,bubbleR:.01,onDone:()=>{if(!G.profile.seen('bunnies'))G.profile.found('bunnies',m.root);},variants:[{when:bunTalkOK,lines:[b.line]},{when:()=>!bunTalkOK(),lines:[]}]});
+  G.dialog.npc({id:'bun-'+b.id,name:'아기 토끼 '+b.name,root:m.root,bubbleY:1.02,talkR:1.4,bubbleR:3,onDone:()=>{if(!G.profile.seen('bunnies'))G.profile.found('bunnies',m.root);},variants:[{when:bunTalkOK,lines:[b.line]},{when:()=>!bunTalkOK(),lines:[]}]});
   return {...b,m,st};});
 function tickBunnies(dt,t,P){
   if(WAVE.on&&P){bunnies.forEach((b,i)=>{const r=b.m.root,a=i*2.1+.6,x=BOBO[0]+Math.cos(a)*1.5,z=BOBO[1]+Math.sin(a)*1.5,hop=Math.abs(Math.sin(t*4.2+i*1.7)); // 별똥별 타고 가는 원더룹에게: 할아버지 둘레에서 통통 뛰며 몸을 좌우로 흔듦(손 흔들기 — 토끼는 팔이 따로 없다)
@@ -654,13 +654,19 @@ const faceEach=W=>{const b=bobo.root.position,P=W.position;W.rotation.y=Math.ata
 const COLD_MSG='햇빛이 안 드는 그늘 분화구는 영하 160도 — 서리가 그대로 얼어 있어요';
 const JUMP_TIP=coarse?'점프 버튼을 눌러요':'점프 버튼(Space)을 눌러요';
 async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopWalk();U.sceneLock=true;quest('',null);let pc=null;
-  const cam=on=>{if(on){pc=G.view.pairCam(bobo.root,1.62);if(pc)G.view.hold(pc);}else{if(pc&&G.view.req&&G.view.req.fn===pc)G.view.hold(null);pc=null;}};
+  const cam=on=>{if(on){pc=G.view.pairCam(bobo.root,1.62);if(pc)G.view.hold(pc);}else{const r=G.view.req;if(r&&(r.fn===pc||r.fn===heroCam||r.fn===boboCam))G.view.hold(null);pc=null;}};
+  /* 2026-11-27: 첫 대화(약 30초)가 한 각도로 원더룹 뒤쪽만 보였다 → 대사가 바뀔 때 구도를 바꿈: 둘 다(대화 카메라) ↔ 원더룹 앞 3/4(할아버지 어깨 너머) ↔ 말하는 할아버지 가까이. 작은 행성이라 자리는 그려지는 자리(bentPos)로 */
+  const shot=(who,side)=>()=>{const c=G.view.camera,k=c&&c.aspect<1?Math.min(2,1.25/c.aspect):1,P=W.position,b=bobo.root.position,bx=P.x+wd(b.x-P.x),bz=P.z+wd(b.z-P.z),dx=bx-P.x,dz=bz-P.z,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,sx=-uz*side,sz=ux*side;
+    const hero=who==='hero',tx=hero?P.x:bx,tz=hero?P.z:bz,th=hero?.95:1.15,D=(hero?4.6:5.2)*(1+.55*(k-1)),fx=tx+(hero?ux:-ux)*D*.86+sx*D*.5,fz=tz+(hero?uz:-uz)*D*.86+sz*D*.5; /* 원더룹 장면: 할아버지 쪽(원더룹 앞)에서 옆으로 비껴, 할아버지 장면: 원더룹 쪽에서 */
+    const A=bentPos({x:tx,y:groundY(tx,tz)+th,z:tz}),B=bentPos({x:fx,y:groundY(fx,fz)+(hero?1.25:1.5)+.3*(k-1),z:fz});return {at:[A.x,A.y,A.z],from:[B.x,B.y,B.z]};};
+  const sideOf=()=>{const c=G.view.camera.position,P=W.position,b=bobo.root.position,dx=wd(b.x-P.x),dz=wd(b.z-P.z);return ((c.x-P.x)*-dz+(c.z-P.z)*dx)>=0?1:-1;}; /* 지금 카메라가 있는 쪽 옆(반대편으로 넘어가지 않게) */
+  let heroCam=null,boboCam=null;const cut=w=>{const sd=sideOf();if(w==='hero'){heroCam=shot('hero',sd);G.view.hold(heroCam);}else if(w==='bobo'){boboCam=shot('bobo',sd);G.view.hold(boboCam);}else cam(true);};
   try{await boboCome(W);faceEach(W);await G.view.meetCard('bobo',bobo.root,1.62); /* 처음 만나는 순간: 확대 → 친구 카드 → 대화(2026-11-21 — 예전엔 첫 만남 대화가 다 끝난 뒤에 떴다) */cam(true);
     await say('보름 할아버지','어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.',4.4);
-    await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2);
-    await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라가 보렴.',6.4);
-    await say('보름 할아버지','그 전에 꼭 알아 둘 게 있단다. 여기선 걷고 뛰는 게 지구랑 조금 다르거든.',6.8); /* SPC-S1-037(2026-11-23 — 해 볼 것 안내에서 뛰는 법으로 넘어가는 말) */
-    await say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.4);
+    cut('hero');await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2); /* 숨방울을 찬 원더룹 얼굴 */
+    cut('bobo');await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라가 보렴.',6.4);
+    cut('hero');await say('보름 할아버지','그 전에 꼭 알아 둘 게 있단다. 여기선 걷고 뛰는 게 지구랑 조금 다르거든.',6.8); /* SPC-S1-037(2026-11-23 — 해 볼 것 안내에서 뛰는 법으로 넘어가는 말) */
+    cut('pair');await say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.4);
     cam(false);await hopDemo();faceEach(W);
     await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);
     /* 점프를 기다림: 조작을 돌려주고(점프 단추가 다시 보임) 대화창에 안내 — 뛰어오르면 닫힘 */
@@ -683,7 +689,7 @@ function update(dt,t,env){const WL=U0();const cam=G.view.camera;tickAnchor(dt,ca
     if(dC>3.2)st.caveOff=false;}
   if(!F[K.cave]&&dist(P.x,P.z,CAVE)<1.5&&!G.ui.cardShown()){ /* 2026-11-17 세 번째: 그늘 안내 문구가 떠 있으면 지우고 카드 먼저(겹쳐 떴다) — 다 못 읽었으면(2.6초 안) 카드가 닫힌 뒤 다시 */
     if(st.coldT!=null&&G.clock.t-st.coldT<4.4){G.ui.toast(COLD_MSG,0);if(G.clock.t-st.coldT<2.6)st.cold=false;}st.coldT=null;st.caveT=G.clock.t;caveSecret();} // 얼음 동굴(2026-11-17부터 꼭 지나가는 단계 — 출구는 이 카드를 본 뒤에)
-  bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}if(pendG&&!arrG&&cam)arrG=arrival({G,root,WL,groundY,mob:MOB,quick:true,dustCols:[[.8,.78,.88],[.9,.88,.95]]});if(arrG)arrG.tick(dt,t);tickBits(dt);tickCake(dt);tickTry(dt,t,P);
+  bobo.tick(dt,t,st.hop||st.come,WAVE.on&&W0(P));tickSparks(t,P,cam);tickBunnies(dt,t,P);if(ride){ride.tick(dt,t);return;}if(pendG&&!arrG&&cam)arrG=arrival({G,root,WL,groundY,mob:MOB,quick:true,plain:true,dustCols:[[.8,.78,.88],[.9,.88,.95]]});if(arrG)arrG.tick(dt,t);tickBits(dt);tickCake(dt);tickTry(dt,t,P);
   skyW.position.set(P.x,0,P.z);tickWeather(dt,t,env&&env.weather);
   // 발자국: 땅을 밟고 걸을 때 0.42m마다 번갈아
   {const V=U.vert;if(V&&!V.air&&!U.riding){if(!fpLast)fpLast={x:P.x,z:P.z};const dx=wd(P.x-fpLast.x),dz=wd(P.z-fpLast.z),d=Math.hypot(dx,dz);if(d>.42&&d<3){stepPrint(P.x,P.z,Math.atan2(dx,dz));fpLast={x:P.x,z:P.z};}else if(d>=3)fpLast={x:P.x,z:P.z};}else fpLast=null;}

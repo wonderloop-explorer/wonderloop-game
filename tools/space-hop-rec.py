@@ -14,7 +14,8 @@ FL = {'moon': N('have:necklace', 'space:demo', 'space:rock', 'secret:icecave', '
       'mars': N('have:necklace', 'mars:met', 'mars:call', 'mars:recA', 'mars:recB', 'mars:told', 'clear:space-mars', 'item:bluesunset-glass', 'meet:pipi', 'meet:dungdung', 'secret:marssound', 'secret:bluesunset', 'secret:volcano', 'mars:flag', 'mars:bgm-intro'),
       'venus': N('have:necklace', 'venus:met', 'venus:ask', 'venus:c1', 'venus:c2', 'venus:c3', 'venus:ddo', 'secret:venusday', 'venus:town', 'venus:sheep', 'venus:sunrise', 'venus:plaza', 'secret:venussun', 'venus:gate', 'clear:space-venus', 'meet:geokkuri', 'meet:ddo', 'meet:munge', 'secret:venusair'),
       'saturn': N('have:necklace', 'rest:met', 'rest:toss', 'rest:sat', 'secret:saturnfloat', 'clear:space-saturn')}
-ZONE = {'moon': 'space-garden', 'mars': 'space-mars', 'venus': 'space-venus', 'saturn': 'space-saturn'}; NEXT = {'moon': 'space-mars', 'mars': 'space-venus', 'venus': 'space-saturn', 'saturn': 'space-jupiter'}
+FL['venus-end'] = [k for k in FL['venus'] if k != 'clear:space-venus' and 'venusair' not in k]  # 구름 끝 마무리(거꾸리 → 얼음 배 → 원더룹만 탐 → 배웅)부터
+ZONE = {'venus-end': 'space-venus', 'moon': 'space-garden', 'mars': 'space-mars', 'venus': 'space-venus', 'saturn': 'space-saturn'}; NEXT = {'venus-end': 'space-saturn', 'moon': 'space-mars', 'mars': 'space-venus', 'venus': 'space-saturn', 'saturn': 'space-jupiter'}
 pick = LEG.startswith('pick:'); to = LEG[5:].split('@')[0] if pick else NEXT[LEG]; zone = (LEG.split('@')[1] if '@' in LEG else 'space-garden') if pick else ZONE[LEG]
 READY = 'window.wlZone&&wlZone.cur&&window.wlGame&&wlGame.mission.hero()'
 with sync_playwright() as p:
@@ -41,14 +42,15 @@ with sync_playwright() as p:
             pg.wait_for_timeout(250)
         pg.wait_for_timeout(1800); pg.evaluate("([x,z])=>%s.userData.walkTo(x,z)" % hero, pg.evaluate('wlZone.cur.spots.bigTop'))
     elif LEG == 'venus': pg.evaluate('wlZone.cur.dbgSail()')
+    elif LEG == 'venus-end': e = pg.evaluate('wlZone.cur.spots.end'); pg.evaluate("([x,z])=>{const W=%s;W.position.x=x+4;W.position.z=z;W.userData.walkTo(x+1.5,z)}" % hero, e)
     elif LEG == 'saturn': pg.wait_for_timeout(1500); pg.evaluate('wlZone.cur.dbgStorm()')
     tS = time.time(); shots = []; k = 0; arrived = None; os.makedirs(OUT + '/_s', exist_ok=True)
-    while time.time() - tS < 75:
+    while time.time() - tS < (140 if LEG == 'venus-end' else 75):
         f = '%s/_s/%s-%03d.png' % (OUT, TAG, k); pg.screenshot(path=f); shots.append(f); k += 1
         on = pg.evaluate("wlZone.cur&&wlZone.cur.root.name")
         if on == 'zone:' + to and arrived is None: arrived = time.time()
         if arrived and time.time() - arrived > 8.5: break
-        pg.wait_for_timeout(1050)
+        pg.wait_for_timeout(2300 if LEG == 'venus-end' else 1050)
     info = pg.evaluate("(()=>{const W=%s,U=W.userData;return {zone:wlZone.cur.root.name,riding:!!U.riding,y:+W.position.y.toFixed(2),blocked:!!(wlGame.core.blocked&&wlGame.core.blocked()),hints:wlGame.ui.hintsVisible&&wlGame.ui.hintsVisible(),log:wlGame.travel.log&&wlGame.travel.log()}})()" % hero)
     print(json.dumps({'구간': LEG, '크기': '%dx%d' % VW, '도착까지(초 — 벽시계)': round(arrived - tS, 1) if arrived else None, '끝 상태': info, '오류': errs[:6]}, ensure_ascii=False, indent=1)[:2400])
     cx.close(); b.close()

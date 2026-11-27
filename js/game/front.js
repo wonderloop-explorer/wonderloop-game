@@ -19,7 +19,8 @@ import {cardShown,setHints,toast,transition} from './ui.js';
 import {controlHooks,helpShown,input,setHelpExtra,setHelpNote,showHelp} from './controls.js';
 import {cards as profCards,pic,seen} from './profile.js';
 import {flags,gotAt,onFlag,resetAll,setFlag,setLast,lastZone} from './state.js';
-import {openPlaces,placesOpen} from './places.js';
+import {openPlaces,placesOpen,allDone} from './places.js';
+import {DEV_OPEN_ALL} from '../config.js';
 import {ITEMS} from './items.js';
 import {applyZone as weatherZone} from './weather.js';
 import {logoEl} from './title.js';
@@ -293,7 +294,7 @@ function openTitle(W){build();frontOn=true;document.body.classList.add('wl-front
   const go=async fr=>{playWorldMusic(W);
     if(fr){if(busy)return;busy=true;try{resetAll();if(restart)await restart();startTime();playWorldMusic(W);}finally{busy=false;}} // 처음부터 하기(2026-11-04): 기록을 지우고 구역을 같은 그림으로 다시 만드는 일을 여기서 — '모험 시작' 때 화면을 까맣게 덮지 않고 카메라만 내려오게(다시 만드는 짧은 멈춤은 타이틀 위에서)
     if(worldX()||(zone().front&&zone().front.explorer)){fresh=fr;openWardrobe('start');}else begin(fr);}; // 세계에 탐험가 소개가 있으면 그것부터
-  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('ui-click');go(false);},onContinue:()=>{playWorldMusic(W);const l=lastZone(),X=worldX();if(X&&l&&l!==zoneId(zone())&&(X.map||[]).some(m=>m.zone===l||m.last)){sfx('ui-click');leaveTitle(l);}else begin(false);},onPlaces:hasPlaces()?()=>{sfx('ui-click');showPlaces();}:null,onFresh:()=>{sfx('ui-click');go(true);},onHow:()=>{sfx('ui-click');showHelp(true);},onClick:()=>sfx('ui-click')});
+  tEl=renderTitle(W,{progress:hasProgress(),onNew:()=>{sfx('ui-click');go(false);},onContinue:()=>{playWorldMusic(W);const l=lastZone(),X=worldX();if(X&&l&&l!==zoneId(zone())&&(X.map||[]).some(m=>m.zone===l||m.last)){sfx('ui-click');leaveTitle(l);}else begin(false);},...titleRule(),onFresh:()=>{sfx('ui-click');go(true);},onHow:()=>{sfx('ui-click');showHelp(true);},onClick:()=>sfx('ui-click')});
   document.querySelector('.wlg').appendChild(tEl);if(tEl._place)tEl._place();
   titleCam(W);
   return true;} // 개미굴처럼 단추에 미리 초점을 주지 않는다(Tab으로 옮겨 가면 초점 테두리가 보임)
@@ -307,12 +308,19 @@ function openFront(){const W=titleWorld();if(W)return openTitle(W);if(!zone()||!
    고르면: 시작 화면이면 타이틀을 닫고 그곳으로(지금 구역이면 이어서 하기와 같음), 게임 중이면 공통 전환(window.wlHop — 구름 화면 → 반짝이 착지). 이야기 장면·탈것 중에는 못 떠남 */
 function leaveTitle(z){closeFront();if(!store.get(HELP_KEY))store.set(HELP_KEY,'1');if(window.wlHop)window.wlHop(z);else if(window.wlZone)window.wlZone.go(z);}
 const hasPlaces=()=>{const W=worldX();return !!(W&&W.map&&W.map.some(m=>m.planet));}; /* 탐험 지도를 쓰는 세계 = 세계 설정 map에 planet이 있는 세계(무한 우주부터 — 개미굴은 예전 그대로) */
-function showPlaces(view){const W=worldX();if(!hasPlaces()||placesOpen())return;const cur=zoneId(zone());
-  openPlaces({world:W,flags,zone:cur,pick:!view,sfx,
+/* 시작 화면 단추·지도 규칙(2026-11-27 — js/config.js DEV_OPEN_ALL): 개발 중(true)엔 '장소 고르기'가 늘 보이고 모두 열림. false면 처음 하는 사람 규칙 —
+   기록 없음 [시작하기] · 하다 만 기록 [이어서 하기 | 처음부터] · 마지막 장소까지 다녀옴 [이어서 하기 | 장소 고르기 | 처음부터], 지도는 다 마치기 전엔 보기만 */
+const finished=()=>{const W=worldX();return !!W&&allDone(W,flags,frontOn?null:zoneId(zone()));};
+const canPick=()=>DEV_OPEN_ALL||finished();
+function titleRule(){if(!hasPlaces())return {};const pl=()=>{sfx('ui-click');showPlaces();};
+  if(DEV_OPEN_ALL)return {onPlaces:pl,fresh:false};
+  return {newLabel:'시작하기',onPlaces:hasProgress()&&finished()?pl:null,fresh:hasProgress()};}
+function showPlaces(view){const W=worldX();if(!hasPlaces()||placesOpen())return;const cur=zoneId(zone());view=view||!canPick();
+  openPlaces({world:W,flags,zone:cur,pick:!view,openAll:DEV_OPEN_ALL,sfx,
     onGo:(z,here)=>{if(frontOn){playWorldMusic(W);if(wardOn)closeWardrobe(false);if(here)begin(false);else leaveTitle(z);return;}
       if(here)return;const U=ctx.WL.userData;if(blocking()||U.riding||U.sceneLock||(U.vert&&U.vert.air)){toast('지금은 떠날 수 없어요 — 하던 일을 마치고 다시 열어 봐요');return;}
       if(wardOn)closeWardrobe(false);if(window.wlHop)window.wlHop(z);else if(window.wlZone)window.wlZone.go(z);},
-    onReset:view?null:()=>{resetAll();location.reload();}});} /* '처음부터'는 고를 수 있는 지도에서만(탐험 준비의 보기 전용 지도에는 없음) */
+    onReset:view||!DEV_OPEN_ALL?null:()=>{resetAll();location.reload();}});} /* '처음부터'는 고를 수 있는 지도에서만(탐험 준비의 보기 전용 지도에는 없음) */
 function closeFront(){if(tEl){if(tEl._unplace)tEl._unplace();tEl.remove();tEl=null;}frontOn=false;document.body.classList.remove('wl-front-on');el.classList.remove('on');block('front',false);setHints(true);corner.classList.add('on');VIEW.hold(null);}
 async function begin(fr){if(busy)return;busy=true;sfx('ui-click');const W=curWorld();if(worldX()){const z=zoneId(zone());setFlag('visit:'+z,true);setLast(z);} /* 다녀온 곳·마지막 자리 저장(장소 고르기와 같은 기록) */
   if(W){ // 처음부터 하기도 같은 연출(구역은 '처음부터 하기'를 누를 때 이미 다시 만들었다 — openTitle go) // 시리즈 공통 틀(개미굴 beginGame 그대로, 2026-11-04): 화면을 까맣게 덮지 않고 — 원더룹이 카메라를 등지고 서면 카메라가 이야기 소개 자리에서 원더룹 등 뒤로 휙 내려온다(따라가기 카메라가 지금 자리에서 이어 받아 약 0.5초)
