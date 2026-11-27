@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="b89ad1ccd5";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="a80bbff1c2";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 fb364f1, 버전 9d8e21dd73, 2026-11-27)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 82d845b, 버전 5df20819b0, 2026-11-27)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="9d8e21dd73";
-window.WL_BUILD={"commit":"fb364f1","date":"2026-11-27","stage":"basecamp"};
+window.WL_V="5df20819b0";
+window.WL_BUILD={"commit":"82d845b","date":"2026-11-27","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 window.WL_REMOTE="https://wonderloop-explorer.github.io/wonderloop-game/"; /* 소리 파일을 받아 올 공개 주소 */
 </script>
@@ -11176,6 +11176,8 @@ function makeBobo(){const root=new THREE.Group();root.name='bobo';
     else{// 망원경 안경 고쳐 쓰기: 오른팔을 들어 눈가에, 고개를 살짝 갸웃
       armL.rotation.set(0,0,0);armR.rotation.set(-2.2*k,0,-.35*k+Math.sin(t*6)*.04*k);map.scale.x=.001;map.visible=false;head.rotation.x=-.08*k;head.rotation.z+=.12*k;}}
   return {root,tick};}
+
+export {makeBunny,makeBobo}; /* 캐릭터 시트 촬영(tools/sheet-shots.py)이 모델만 따로 만들어 찍음 */
 
 </script>
 <script type="text/x-wl-module" data-path="js/zones/space/jupiter.js">
