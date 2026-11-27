@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="50b22a64f0";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="c54ce5fe4b";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 736ea2a, 버전 786cd3eaa0, 2026-11-27)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 008ae41, 버전 322af9d717, 2026-11-27)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="786cd3eaa0";
-window.WL_BUILD={"commit":"736ea2a","date":"2026-11-27","stage":"basecamp"};
+window.WL_V="322af9d717";
+window.WL_BUILD={"commit":"008ae41","date":"2026-11-27","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 window.WL_REMOTE="https://wonderloop-explorer.github.io/wonderloop-game/"; /* 소리 파일을 받아 올 공개 주소 */
 </script>
@@ -10050,9 +10050,9 @@ export function makeToring(){const root=new THREE.Group();root.name='toring';con
   L.push([fa(R,c,k,-.14,0,PI,R*.13,R*.09,.2,.008),'#3d5a80']);
   const me=lump(L.map(([q,cc])=>[q.index?q.toNonIndexed():q,cc]),true,2.2);me.name='toring-body';body.add(me); /* 2026-11-27: 불투명(얼음 하늘색 그대로)·머리 위 결정 장식 없음 */
   /* 허리 고리: 납작한 얼음 띠 둘(안쪽 밝게·바깥 옅게) — 비스듬히 걸치고 천천히 돎 */
-  const ring=new THREE.Group();ring.position.set(0,1.16,0);ring.rotation.set(.1,0,.06);ring.scale.setScalar(.46);body.add(ring); /* 2026-11-27: 허리 고리 → 머리 위에 작게 떠 있는 고리(천사 고리처럼, 천천히 돎) */
-  {const Lr=[];const mk=(r0,r1,col)=>{const g=new THREE.RingGeometry(r0,r1,28,1);g.rotateX(-PI/2);Lr.push([g.toNonIndexed(),col]);};mk(.4,.5,'#f2fbff');mk(.53,.6,'#bfe2f8');Lr.push([new THREE.TorusGeometry(.5,.06,6,28).rotateX(PI/2).toNonIndexed(),'#8ecdf2']); /* 머리 위에 떠 있을 때 또렷이 보이게 도톰한 하늘색 테(2026-11-27 — 납작한 흰 띠만으로는 밝은 배경에서 안 보였다) */for(let i=0;i<5;i++){const a=i*1.257;Lr.push([new THREE.IcosahedronGeometry(.045,0).applyMatrix4(M4([Math.cos(a)*.56,.01,Math.sin(a)*.56])),'#ffffff']);}
-    const rm=lump(Lr,true,1.4);rm.name='toring-ring';rm.material=rm.material.clone();rm.material.side=THREE.DoubleSide;ring.add(rm);}
+  const ring=new THREE.Group();ring.position.set(0,1.16,0);ring.rotation.set(.32,0,.18);ring.scale.setScalar(.46);body.add(ring); /* 2026-11-27: 허리 고리 → 머리 위에 작게 떠 있는 고리(천사 고리처럼, 천천히 돎) */
+  {const Lr=[];const mk=(r0,r1,col)=>{const g=new THREE.RingGeometry(r0,r1,28,1);g.rotateX(-PI/2);Lr.push([g.toNonIndexed(),col]);};mk(.4,.5,'#f2fbff');mk(.53,.6,'#bfe2f8');/* 고리 모양은 처음 디자인 그대로(납작한 얼음 띠 둘 + 작은 결정 다섯, 살짝 비침) — 도톰한 테는 뺌(2026-11-27 사용자 요청) */for(let i=0;i<5;i++){const a=i*1.257;Lr.push([new THREE.IcosahedronGeometry(.045,0).applyMatrix4(M4([Math.cos(a)*.56,.01,Math.sin(a)*.56])),'#ffffff']);}
+    const rm=lump(Lr,true,1.4);rm.name='toring-ring';rm.material=rm.material.clone();rm.material.transparent=true;rm.material.opacity=.8;rm.material.side=THREE.DoubleSide;ring.add(rm);}
   const arms=[-1,1].map(s=>{const g=new THREE.Group();g.position.set(s*.27,.42,.03);body.add(g);const am=lump([[new THREE.IcosahedronGeometry(.07,0).applyMatrix4(M4([0,-.09,0],[0,0,0],[1,1.6,1])).toNonIndexed(),B],[new THREE.IcosahedronGeometry(.065,0).applyMatrix4(M4([0,-.2,.01])).toNonIndexed(),A]],true,2.2);am.material=me.material;g.add(am);g.rotation.z=s*.5;g.userData.s=s;return g;});
   const st={mode:'idle',pt:0,wv:0};
   /* mode: idle · walk(앞으로 통통) · talk · point(오른팔로 가리킴) · sit · wave(오른팔을 높이 들어 흔듦 — 마중·배웅) */
