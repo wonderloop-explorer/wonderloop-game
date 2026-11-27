@@ -176,7 +176,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   /* 다시 찾은 탐방(2026-11-27 — 규칙 docs/series-rules.md): 이미 끝낸 쉼터를 다시 열면 배에서 내린 원더룹을 토링이 돌아보며 머리 위 말풍선 한마디(목소리·나레이션 없음) → '…'로 다시 말 걸 수 있음(글자만), 길 안내·할 일 없이 붉은 빛만 */
   const REV=!!F[K.clear];if(REV)G.sound.voiceGag(true);
   B.x=BOATAT[0];B.z=BOATAT[1];gg.root.position.set(REV?REVG[0]:GGAT[0],0,REV?REVG[1]:GGAT[1]);gg.root.rotation.y=PI/2;boat.position.set(B.x,B.y,B.z);boat.rotation.y=BRY;boat.visible=!pend;gg.root.visible=true; /* 2026-11-27: 토링은 고리 위에서 기다림, 얼음 배는 원더룹이 타고 옴(바로 열면 이미 섬에 얹혀 있음) */ /* 처음엔 없음 — 원더룹이 내린 뒤 토링이 배를 타고 마중 나옴 */
-  G.dialog.npc({id:'toring',name:'토링',root:gg.root,bubbleY:gg.head+.32,talkR:1.3,bubbleR:REV?4.5:.01,variants:[{when:()=>true,lines:[]},{when:()=>REV&&!!st.greeted&&G.clock.t>st.greetT+4.6&&!st.dep&&!st.scene,lines:[T.back]}]}); /* 쉼터에서는 흐름이 저절로 이어져 따로 말 걸 상대가 아님 */
+  G.dialog.npc({id:'toring',name:'토링',root:gg.root,bubbleY:gg.head+.32,talkR:1.3,bubbleR:REV?4.5:.01,variants:[{when:()=>true,lines:[]},{when:()=>REV&&!!st.greeted&&!st.dep&&!st.scene,lines:[T.back]}]}); /* 쉼터에서는 흐름이 저절로 이어져 따로 말 걸 상대가 아님 */
   const hop=(from,to,sec,fn,h=.8)=>{const t0=G.clock.t;return G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/sec),e=u*u*(3-2*u);fn(lerp(from[0],to[0],e),lerp(from[1],to[1],e)+Math.sin(u*PI)*h,lerp(from[2],to[2],e));return u>=1;},sec+1);};
   const faceTo=(o,x,z)=>{o.rotation.y=Math.atan2(x-o.position.x,z-o.position.z);};
   /* 배경음: 쉼터 바탕은 조용히(공간음만) · 놀이 곡 · 쉬는 곡 — 파일 자리 assets/audio/saturn-play.mp3 · saturn-rest.mp3(수노 곡이 오면 넣기만). 없으면 놀이는 코드 곡(saturn-play-code), 쉬기는 달 배경음(moon-bgm) */
@@ -207,7 +207,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
       (async()=>{await wait(.7);G.sound.sfx('jump');const p=W.position;await hop([p.x,p.y,p.z],[HERO[0],0,HERO[1]],.9,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;});G.sound.sfx('land',{gain:.5});
         st.arrB=null;lockOff(G,W);W.scale.set(1,1,1);G.travel.end();ggMode='idle';mark('free');if(REV){{const q=gg.root.position,c=G.view.camera.position,a=Math.atan2(q.x-W.position.x,q.z-W.position.z),cc=Math.atan2(c.x-W.position.x,c.z-W.position.z);W.rotation.y=a+Math.atan2(Math.sin(cc-a),Math.cos(cc-a))*.45;} /* 토링 쪽으로 몸을 돌림(얼굴은 카메라에 3/4) */greet();await wait(1.2);st.done=true;return;}await wait(3.2);st.done=true;})();}}
   /* 다시 찾은 탐방: 토링이 원더룹 쪽으로 돌아서 손을 흔들며 머리 위 말풍선(목소리 없음) */
-  function greet(){if(st.greeted)return;st.greeted=true;st.greetT=G.clock.t;ggMode='wave';G.float.bubble({root:gg.root,y:gg.head+.55,text:T.back,sec:4.2});G.core.wait(2.6).then(()=>{if(ggMode==='wave'&&!st.dep)ggMode='idle';});}
+  function greet(){if(st.greeted)return;st.greeted=true;st.greetT=G.clock.t;ggMode='wave'; /* 2026-11-27: 글자 말풍선은 띄우지 않음(사용자 요청 — '…'로 말을 걸면 나오는 말) */G.core.wait(2.6).then(()=>{if(ggMode==='wave'&&!st.dep)ggMode='idle';});}
   /* ── 거꾸리 첫 대사 둘 ── */
   /* ── ② 마중(2026-11-26 ③): 토링이 얼음 배를 타고 토성 쪽에서 떠 와 손을 흔듦 → 배에서 내려 원더룹 앞으로 → 확대·친구 카드 → 대사 둘 ── */
   async function intro(){const W=U0(),U=W.userData,P=W.position;mark('intro'); /* 2026-11-27: 토링은 고리 위에서 기다림 — 확대·친구 카드 → 대사 둘 */
