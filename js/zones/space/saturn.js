@@ -307,21 +307,27 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
       fragmentShader:'uniform sampler2D uMap;varying float vA;void main(){vec4 c=texture2D(uMap,gl_PointCoord);if(c.a<.02)discard;gl_FragColor=vec4(vec3(1.,.95,.8)*c.a*vA*1.6,1.);}'});
     m.userData.noBend=true;const pts=new THREE.Points(geo,m);pts.name='saturn-moons';pts.frustumCulled=false;pts.userData.noMerge=true;pts.renderOrder=-2.6;pts.visible=false;add(pts);
     return {set(k,t){pts.visible=k>.01;m.uniforms.uK.value=k;m.uniforms.uT.value=t;m.uniforms.uSc.value=Math.min(window.devicePixelRatio||1,MOB?1.25:2);}};})();
-  const CUTS=[84.6,109.2],CUT=CUTS[1] /* 디졸브로 넘어가는 두 곳: 엔켈라두스 → 타이탄(2026-11-26 — 날아가는 동안 3~6초 빈 하늘만 보였다) · 먼 토성 → 둘의 얼굴 */,CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],NT=[9.5,24.5,41,58.5,75.8,86.4,101.5]; /* 나레이션 시작 초 — 구간마다 목소리(NV)가 끝나고 1.5초 넘게 머문 뒤에 카메라가 떠남(2026-11-26: 4구간 육각형 8.1초가 잘렸다) */ /* 1구간 자막은 토성과 고리 전체가 다 보인 뒤(카메라가 물러난 11.5초 앞뒤)에 */
-  const faceFrom=tau=>{const pt=pk()>1.3,w=ss(0,REST-CUT,tau);return [CC[0]-lerp(pt?10.6:6.0,pt?9.6:5.2,w),lerp(pt?1.55:1.35,pt?1.4:1.2,w),CC[2]+lerp(pt?2.6:2.5,pt?2.1:2.0,w)];},faceAt=()=>[CC[0],pk()>1.3?1.0:.92,CC[2]];
+  const CUT_T=84.6,CUT=109.2;let CUTS=[CUT_T,CUT]; /* 세로 화면은 restKeys가 두 곳을 더함(2026-11-28): 1구간 둘의 뒷모습 → 토성 전체(물러나는 동안 겉면이 화면을 꽉 채웠다) · 북극 육각형 → 엔켈라두스(날아가는 동안 고리 끝만 보였다) */const _CUTNOTE=0 /* 디졸브로 넘어가는 두 곳: 엔켈라두스 → 타이탄(2026-11-26 — 날아가는 동안 3~6초 빈 하늘만 보였다) · 먼 토성 → 둘의 얼굴 */,CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],NT=[9.5,24.5,41,58.5,75.8,86.4,101.5]; /* 나레이션 시작 초 — 구간마다 목소리(NV)가 끝나고 1.5초 넘게 머문 뒤에 카메라가 떠남(2026-11-26: 4구간 육각형 8.1초가 잘렸다) */ /* 1구간 자막은 토성과 고리 전체가 다 보인 뒤(카메라가 물러난 11.5초 앞뒤)에 */
+  const faceFrom=tau=>{const pt=pk()>1.3,w=ss(0,REST-CUT,tau);return [CC[0]-lerp(pt?13.6:6.0,pt?12.6:5.2,w),lerp(pt?1.75:1.35,pt?1.6:1.2,w),CC[2]+lerp(pt?1.5:2.5,pt?1.2:2.0,w)];},faceAt=()=>[CC[0],pk()>1.3?1.0:.92,CC[2]-(pk()>1.3?.16:0)]; /* 세로 화면(2026-11-28): 더 물러나고 보는 점을 탈이 넓은 원더룹 쪽으로 — 원더룹이 화면 왼쪽 끝에 잘렸다 */
   const restKeys=()=>{const k=pk(),pt=k>1.3,m=pt?1.5:1,fr=pt?1.75:1,E=oEnc.g.position,SCP=[SC[0],SR*.97,SC[2]],V=(b,o,q=1)=>[b[0]+o[0]*q,b[1]+o[1]*q,b[2]+o[2]*q],
-      g0=[30,1.5,10],g1=[-11,2.0,-52],gd=[-.55,-.02,-.83],ek=pt?24:45,EA=[E.x+ENC_PD.x*ek,E.y+ENC_PD.y*ek,E.z+ENC_PD.z*ek],face=[CC[0],pt?1.2:.95,CC[2]];
+      g0=[30,1.5,10],g1=[-11,2.0,-52],PC1=4.2,PC2=69,gd=[-.55,-.02,-.83],ek=pt?24:45,EA=[E.x+ENC_PD.x*ek,E.y+ENC_PD.y*ek,E.z+ENC_PD.z*ek],face=[CC[0],pt?1.2:.95,CC[2]];
     const FAR=pt?[SC[0]+3300,1150,SC[2]+1500]:[SC[0]+2050,720,SC[2]+960],FARA=pt?[SC[0],-60,SC[2]]:[SC[0]+330,-40,SC[2]-160]; /* 7구간: 멀리서 — 토성은 화면 한쪽에 작게(가로 화면 왼쪽, 세로 화면 가운데), 둘레를 도는 작은 달들 */
-    return [[
+    CUTS=pt?[PC1,PC2,CUT_T,CUT]:[CUT_T,CUT];
+    /* 세로 화면(2026-11-28): 가로 시야가 ±7°뿐이라 섬에서 본 토성(반지름 24°)은 벽처럼 화면을 채운다 → ① 첫 구도는 낮은 데서 올려다봐 둘은 화면 아래·토성 둥근 꼭대기와 그 위 하늘이 화면 위에
+       ② 물러나지 않고 디졸브로 토성과 고리 전체로(카메라는 그 뒤 천천히 더 물러남) ③ 육각형 → 엔켈라두스도 디졸브(엔켈라두스가 먼저 화면에 들어와 있음) */
+    const P1=pt?[[[0,[CC[0]+12.4,.95,CC[2]],[CC[0]-40,9.6,CC[2]]],[PC1+3,[CC[0]+13.6,1.0,CC[2]],[CC[0]-40,10.0,CC[2]]]],[
+      [PC1,[SC[0]+1120*1.72,380*1.72,SC[2]+240*1.72],[SC[0],-30,SC[2]]],[11.5,[SC[0]+1120*1.95,380*1.95,SC[2]+240*1.95],[SC[0],-30,SC[2]]],[17.5,[SC[0]+1160*1.95,400*1.95,SC[2]+180*1.95],[SC[0],-30,SC[2]]]]]:null;
+    const A=[
     [0,[CC[0]+(pt?10.6:6.2),pt?2.0:1.5,CC[2]+(pt?0:1.4)],[CC[0]-40,pt?-.9:1.3,CC[2]-(pt?0:5)]],[2.5,[CC[0]+(pt?11.4:6.8),pt?2.2:1.7,CC[2]+(pt?0:1.6)],[CC[0]-40,pt?-.5:1.6,CC[2]-(pt?0:5)]], /* 1 둘의 뒷모습 너머 커다란 토성 → 뒤로·위로 물러나 토성과 고리 전체(11.5초부터 머묾 — 자막은 이때) */
     [11.5,[SC[0]+1120*fr,380*fr,SC[2]+240*fr],[SC[0],pt?-30:10,SC[2]]],[17.5,[SC[0]+1160*fr,400*fr,SC[2]+180*fr],[SC[0],pt?-30:10,SC[2]]],
     [23,g0,V(g0,gd,60)],[34,g1,V(g1,gd,60)],                                                                                               /* 2 고리 얼음 들판 위를 낮게 미끄러지듯(토성은 왼쪽에) */
     [40,pt?[SC[0]+1250,240,SC[2]+880]:[SC[0]+560,120,SC[2]+420],[SC[0]+(pt?0:70),pt?125:55,SC[2]]],[49,pt?[SC[0]+1200,265,SC[2]+940]:[SC[0]+520,140,SC[2]+470],[SC[0]+(pt?0:70),pt?130:60,SC[2]]], /* 세로 화면은 더 물러나 둥근 윗가장자리와 그 위 하늘이 보이게(2026-11-25 세 번째 — 겉면이 화면을 거의 다 덮었다) */ /* 3 줄무늬 구름: 둥근 가장자리와 줄무늬 여러 줄이 함께(구가 빨리 돎 — 구름 무늬가 옆으로 흐름) */
-    [57.5,V(SCP,[180,313,140],m),SCP],[68.3,V(SCP,[146,342,108],m),SCP],                                                                    /* 4 천천히 올라가 북극의 육각형 구름 띠 */
-    [74.8,V([E.x,E.y,E.z],[150,25,170],m),EA],[CUTS[0]+3,V([E.x,E.y,E.z],[126,44,191],m),V(EA,[0,9,0])]],[                                         /* 5 엔켈라두스의 얼음 분수 */
-    [CUTS[0],V(TITAN,[204,17,-136],pt?2.3:1.15),TITAN],[95.6,V(TITAN,[182,34,-160],pt?2.3:1.15),TITAN],                                        /* 6 주황 안개에 싸인 타이탄 */
+    [57.5,V(SCP,[180,313,140],m),SCP],[68.3,V(SCP,[146,342,108],m),SCP],[PC2+3.5,V(SCP,[136,350,100],m),SCP]],B5=[[PC2,V([E.x,E.y,E.z],[168,18,150],m*1.28),EA],                                                                    /* 4 천천히 올라가 북극의 육각형 구름 띠 */
+    [74.8,V([E.x,E.y,E.z],[150,25,170],m),EA],[CUT_T+3,V([E.x,E.y,E.z],[126,44,191],m),V(EA,[0,9,0])]],C=[                                         /* 5 엔켈라두스의 얼음 분수 */
+    [CUT_T,V(TITAN,[204,17,-136],pt?2.3:1.15),TITAN],[95.6,V(TITAN,[182,34,-160],pt?2.3:1.15),TITAN],                                        /* 6 주황 안개에 싸인 타이탄 */
     [101,FAR,FARA],[107.5,V(FAR,[-60,20,40]),FARA],                                                                                       /* 7 멀리서 본 작은 토성과 그 둘레를 도는 작은 달들 → 천천히 내려와 둘에게 */
-    [CUT+4,V(FAR,[-95,32,64]),FARA]],[[CUT,faceFrom(0),faceAt()],[REST,faceFrom(REST-CUT),faceAt()]]];}; /* 구간 묶음 셋(디졸브로 나뉨) — 묶음 안에서만 카메라가 이어 움직임 */ /* 7구간은 넘어가는 순간(CUT)까지 그대로 흐름 — 그 뒤는 faceCam */
+    [CUT+4,V(FAR,[-95,32,64]),FARA]],D=[[CUT,faceFrom(0),faceAt()],[REST,faceFrom(REST-CUT),faceAt()]];
+    return pt?[P1[0],P1[1].concat(A.slice(4)),B5,C,D]:[A.slice(0,-1).concat(B5.slice(1)),C,D];}; /* 구간 묶음 셋(디졸브로 나뉨) — 묶음 안에서만 카메라가 이어 움직임 */ /* 7구간은 넘어가는 순간(CUT)까지 그대로 흐름 — 그 뒤는 faceCam */
   const RS={on:false,t:0,keys:null,ni:0,skip:false,chip:null,chipT:0,cap:null,capEnd:0};
   const _a=new THREE.Vector3(),_b=new THREE.Vector3();
   /* 자리는 곧게, 보는 방향은 두 키의 방향을 섞어(멀리 떨어진 두 자리의 '보는 점'을 곧게 이으면 가는 동안 엉뚱한 곳을 봄) */
@@ -370,14 +376,14 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
       ggMode='talk';await say('토링',T.g4,5.6,{to:null});ggMode='sit';if(G.view.req&&G.view.req.fn===fc2)G.view.hold(null);}
     /* 일어나 내려옴 */
     st.sitting=false;U.action='서기';U.at=0;ggMode='idle';G.sound.sfx('jump',{gain:.5});
-    const wc=()=>{const k=pk(),pt=k>1.3;return {at:[AFTER[0][0]-.6,pt?1.7:1.3,(AFTER[0][1]+AFTER[1][1])/2+.9],from:[AFTER[0][0]+(pt?12.5:8.6),pt?3.2:2.4,(AFTER[0][1]+AFTER[1][1])/2+1.6]};};G.view.hold(wc); /* 2026-11-27: 내려서 걸어가는 동안은 동쪽 트인 쪽에서(따라가기 카메라가 둘레 큰 얼음 뿔 뒤로 가 화면을 가렸다) — 이어지는 발견 카드 구도와 같은 쪽 */
+    const wc=()=>{const k=pk(),pt=k>1.3;return {at:[AFTER[0][0]-.6,pt?1.7:1.3,(AFTER[0][1]+AFTER[1][1])/2+(pt?.16:.9)],from:[AFTER[0][0]+(pt?14.6:8.6),pt?3.6:2.4,(AFTER[0][1]+AFTER[1][1])/2+(pt?.8:1.6)]};}; /* 세로 화면(2026-11-28): 보는 점이 원더룹 쪽에 치우쳐 토링이 오른쪽 끝에 잘렸다 → 둘의 가운데 + 조금 더 멀리 */G.view.hold(wc); /* 2026-11-27: 내려서 걸어가는 동안은 동쪽 트인 쪽에서(따라가기 카메라가 둘레 큰 얼음 뿔 뒤로 가 화면을 가렸다) — 이어지는 발견 카드 구도와 같은 쪽 */
     const p6=say('토링',T.g6,3.6,{to:null}).then(()=>{st.g6=true;}); /* 2026-11-27: RS-019는 배에서 내리며 바로(내려서 걸어온 뒤에 말하면 RS-007과 3.8초 떨어졌다) — 걸으며 말함 */
     await Promise.all([hop(hs,[HS[0]-1.9,0,HS[1]-.9],.7,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;}),hop(gs,[GS[0]-2.6,0,GS[1]-2.2],.8,(x,y,z)=>gg.root.position.set(x,y,z))]);
     U.riding=null;G.core.block('meteor',false);G.ui.setHints(st.hints!==false);G.state.setFlag(K.sat,true);
     await Promise.all([moveTo(W,AFTER[0],1.0,true),moveTo(gg.root,AFTER[1],1.5)]);await p6;if(G.view.req&&G.view.req.fn===wc)G.view.hold(null);st.scene=false;U.sceneLock=false;} /* 섬 가운데로(둘이 남북으로 나란히 — 대화 카메라가 동·서의 트인 쪽에서 봄. 둘레 얼음 뿔이 카메라 앞을 가리지 않게) */
   /* ── ④ 발견 카드 ── */
   async function floatCard(){if(!st.g6)await scene(async()=>{ggMode='talk';await say('토링',T.g6,3.6);ggMode='idle';},gg); /* 쉬기 뒤에 이어 오면 이미 말함(배에서 내리며) — 다시 열어 여기서 시작할 때만 */ /* RS-019 — 배에서 내린 뒤 */
-    const W=U0(),P=W.position,q=gg.root.position,k=pk(),pt=k>1.3,cx=(P.x+q.x)/2,cz=(P.z+q.z)/2,fc=()=>({at:[cx-3,pt?2.3:1.9,cz],from:[cx+(pt?12:8.2),pt?3.0:2.2,cz+1.2]}); /* 2026-11-27: 카드가 화면 위쪽 — 보는 점을 올려 둘이 화면 가운데~아래쪽에 */ /* 동쪽에서 토성 쪽을 — 보는 점을 낮춰 둘이 화면 가운데쯤(아래 카드에 안 가림) */
+    const W=U0(),P=W.position,q=gg.root.position,k=pk(),pt=k>1.3,cx=(P.x+q.x)/2,cz=(P.z+q.z)/2,hz=pt?(P.z>q.z?.16:-.16):0,fc=()=>({at:[cx-3,pt?2.3:1.9,cz+hz],from:[cx+(pt?14.4:8.2),pt?3.4:2.2,cz+hz+(pt?.8:1.2)]}); /* 세로 화면(2026-11-28): 둘 다 여백 안에 — 조금 더 멀리·탈 쪽으로 */ /* 2026-11-27: 카드가 화면 위쪽 — 보는 점을 올려 둘이 화면 가운데~아래쪽에 */ /* 동쪽에서 토성 쪽을 — 보는 점을 낮춰 둘이 화면 가운데쯤(아래 카드에 안 가림) */
     W.userData.sceneLock=true;faceTo(W,cx+9,cz+1.2);faceTo(gg.root,cx+9,cz+1.2);G.view.hold(fc);G.state.setFlag(K.float,true);G.sound.sfx('card-secret');mark('card');await G.ui.secret({kicker:'새 발견',title:T.cardT,text:T.card,vo:T.card,lines:6});if(G.view.req&&G.view.req.fn===fc)G.view.hold(null);W.userData.sceneLock=false;await wait(.4);}
   /* ── ⑤ 거꾸리와 인사 ── */
   async function bye(W,U){U.sceneLock=true;st.scene=true; /* 2026-11-26 ③: 붉은 빛이 내려올 자리 앞에서 토링이 배웅(얼음 배를 타고 떠나는 장면 없음) */

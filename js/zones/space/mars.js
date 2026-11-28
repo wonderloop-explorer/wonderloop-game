@@ -324,7 +324,8 @@ async function call(W,U){const cam=G.view.camera;faceTo(pipi,ROCKD.c[0],ROCKD.c[
   if(!F[DISC.sound]){G.state.setFlag(DISC.sound,true);G.react.react('awe',{sound:'card-secret'});
     await G.ui.secret({kicker:'새 발견',title:'화성의 두 가지 소리 빠르기',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요(1초에 약 250m와 240m). 공기가 아주 엷어서 소리가 금방 작아지기도 해요. 그래서 멀리서 부르면 말이 엇갈려 도착해요.',vo:'화성에선 높은 소리가 조금 더 빨리 달려요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}}
 /* ③ 녹음 — 카세트를 꺼내 삐삐 말을 녹음 */
-async function recordA(W,U){faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);holdCas(W,true);G.sound.sfx('item-pickup',{gain:.7});await wait(.5);
+async function recordA(W,U){{const P=W.position,q=pipi.root.position,dx=P.x-q.x,dz=P.z-q.z,d=Math.hypot(dx,dz)||1;if(d<1.55){const a=[P.x,P.z],to=[q.x+dx/d*1.65,q.z+dz/d*1.65],t0=G.clock.t; /* 바짝 붙어 서 있으면 한 걸음 물러섬(2026-11-28 — 세로 화면에서 큰 탈이 삐삐를 덮었다) */
+    await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/.4),e=u*u*(3-2*u),x=lerp(a[0],to[0],e),z=lerp(a[1],to[1],e);W.position.set(x,groundY(x,z),z);return u>=1;},1);}}faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);holdCas(W,true);G.sound.sfx('item-pickup',{gain:.7});await wait(.5);
   G.sound.sfx('cassette-click');cas.rec(true);tapeRun(true);await wait(.35);
   pipi.mode='call';mumble(false,3.4);await say('삐삐 (녹음 중)',LINE_A,4.6,{hear:W,hearName:'카세트(둥둥에게 남기는 말)'}); /* 듣는 사람 = 원더룹이 든 카세트 */
   pipi.mode='idle';tapeRun(false);G.sound.sfx('cassette-click');cas.rec(false);await wait(.5);holdCas(W,false);
@@ -380,7 +381,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   W.rotation.y=SUNSET.face;st.sunFace=true;
   /* 카메라: 셋 뒤 비스듬히 위에서 서쪽(해 쪽)을 — 셋과 낮게 걸린 파란 해가 한 화면에. 노을을 보는 동안 완전히 고정(2026-11-17 — 예전엔 처음 각도만 잡아 주고 따라가기 카메라로 넘어가 위아래로 흔들렸다). 만지면 플레이어 것 */
   const c=[SUNSET.wl[0],groundY(...SUNSET.wl),SUNSET.wl[1]],SD=(()=>{const d=DUSK.sunDir,l=Math.hypot(d[0],d[2]);return [-d[0]/l,-d[2]/l];})(), /* 해 쪽 수평 방향(정서쪽에서 남쪽으로 약 9°) */
-    fix=()=>{const k=pk(),pt=k>1.3,D=7.4*k*(pt?1.12:1);return {at:[c[0]+SD[0]*3,c[1]+2.4,c[2]+SD[1]*3],from:[c[0]-SD[0]*D,c[1]+1.7+.9*(k-1),c[2]-SD[1]*D]};};G.view.hold(fix); /* 2026-11-17: 카메라를 해 → 원더룹을 잇는 선 위(원더룹 뒤)에 — 해가 화면에서 원더룹 머리 바로 위에 옴(예전엔 정동쪽에서 봐서 해가 왼쪽 위로 치우치고 세로 화면에서는 화면 밖) */ /* 세로 화면은 셋이 다 들어오게 정면 뒤에서 조금 더 멀리 */ /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
+    fix=()=>{const k=pk(),pt=k>1.3,D=7.4*k*(pt?1.34:1);return {at:[c[0]+SD[0]*3,c[1]+2.4,c[2]+SD[1]*3],from:[c[0]-SD[0]*D,c[1]+1.7+.9*(k-1),c[2]-SD[1]*D]};};G.view.hold(fix); /* 2026-11-17: 카메라를 해 → 원더룹을 잇는 선 위(원더룹 뒤)에 — 해가 화면에서 원더룹 머리 바로 위에 옴(예전엔 정동쪽에서 봐서 해가 왼쪽 위로 치우치고 세로 화면에서는 화면 밖) */ /* 세로 화면은 셋이 다 들어오게 정면 뒤에서 조금 더 멀리 */ /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
   await wait(.7);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
   await wait(.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','같이 보니까 더 파랗다!',2.4,{look:'노을'});dung.mode='idle';
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});

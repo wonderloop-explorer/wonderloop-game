@@ -27,7 +27,7 @@ import {applyZone as weatherZone} from './weather.js';
 import {clearIncident,initIncident,tickIncident} from './incident.js';
 import {clearFloat,initFloat,tickFloat} from './float.js';
 import {band,initLayout,layoutNow,tickLayout} from './layout.js';
-import {faceHook,heroSpeaking,speaking,talking} from './dialog.js';
+import {faceHook,heroSpeaking,lineInfo,speaking,talking} from './dialog.js';
 import {uiHooks} from './ui.js';
 /* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기)
    view.focus({at:[x,y,z], from:[x,y,z]?, dist, sec}): 따라가기 카메라가 sec초 동안 at을 비췄다가 돌아온다(미션 장소 알려 주기, 2026-11-02).
@@ -50,7 +50,7 @@ const view={camera:null,aim:null,
    플레이어가 카메라를 만지면 08이 연출을 끝내고 넘겨줌(그 대화 동안 다시 잡지 않음). 벽이 있는 방(방 카메라에 가로 범위)·촬영 모드는 하지 않음.
    view.pairCam(root, 머리 높이)는 구역 이야기 장면(혼잣말 줄로 진행하는 대화)이 같은 구도를 쓸 때 — hold에 넘길 함수를 돌려준다 */
 let HERO=null,TC=null;const SHOT_Q=new URLSearchParams(location.search).has('shot');
-function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
+function pairCam(root,headY=1.4,opt){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
   /* 2026-11-11 다시: 두 사람의 몸 전체(발 ~ 머리 위)가 화면 띠(맨 위 단추 줄 아래 ~ 내려간 대화창 위) 안에 들어오는 가장 가까운 거리 — 키 큰 상대(둥둥)는 저절로 더 멀리.
      방향은 둘을 잇는 선의 옆에서 상대 쪽으로 PHI만큼 돌아간 사선 → 원더룹 얼굴이 옆모습보다 더 보이고(얼굴·카메라 방향 내적 ≈ sin PHI + 여유), 상대는 옆모습.
      (예전엔 '낮은 쪽 얼굴을 화면 위 38%에'를 거리로 풀어서 띠가 좁으면 19m까지 물러났고, 원더룹 조금 뒤에서 봐 탈 뒤통수 쪽이 보였다.)
@@ -60,7 +60,11 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
      ④ 옆·사선 네 자리(지금 카메라 쪽 옆 → 반대쪽 옆, 각각 보통 사선 → 더 튼 사선) 가운데 큰 것(집·큰 바위)이 끼지 않는 첫 자리 */
   /* 말하는 쪽 얼굴 우선(2026-11-11): 사선은 '듣는 쪽 어깨' 쪽으로 — 주민이 말하면 원더룹 쪽(sg −1), 원더룹 줄이면 주민 쪽(sg +1)으로 0.25라디안. 둘은 몸을 카메라 쪽으로 열어 선다(game/dialog tickFace)
      → 말하는 쪽 얼굴 3/4, 듣는 쪽 옆모습 조금 넘게. 말하는 사람이 바뀌면 카메라가 천천히 반대쪽 어깨로 넘어간다 */
-  const P=W.position;let side=0,B=null,phi=-.25,phiMin=.25;const o={at:[0,0,0],from:[0,0,0]};
+  /* 세로 화면 대화 구도(2026-11-28 — 휴대폰 녹화: 한 명이 화면 끝에 반쯤 잘리거나 원더룹 탈이 화면 절반을 덮음. 규칙 docs/series-rules.md '세로 화면 대화 구도'):
+     ① 두 사람 몸 전체가 화면 가로 안쪽 8% 여백 안 — 탈 너비(반지름 0.64m)와 상대 몸 너비를 따로 재고, 보는 점을 둘의 '몸 가장자리' 가운데로 옮김(예전엔 두 발 사이 가운데라 큰 탈 쪽이 가장자리에 붙었다)
+     ② 나란히 서서 안 들어가면 더 물러나지 않고 듣는 쪽 어깨 너머로 비스듬히(사선을 더 틂 — 둘이 화면에서 앞뒤로 겹치지 않는 각도까지만) ③ 원더룹 탈이 화면 가로의 45%를 넘지 않는 거리(가까이 붙어 선 장면)
+     가로 화면은 예전 그대로. opt.face 'hero'|'npc' = 말하는 사람과 상관없이 그쪽 얼굴이 보이는 어깨로(구역이 대사마다 구도를 바꿀 때) */
+  const P=W.position;let side=0,B=null,phi=-.25,phiMin=.25;const o={at:[0,0,0],from:[0,0,0]},FACE=opt&&opt.face,HWh=.66,HWn=Math.min(.66,Math.max(.34,headY*.34));
   return ()=>{root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14];let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
     const mx=(P.x+nx)/2,mz=(P.z+nz)/2;
     if(!side){side=((cam.position.x-mx)*-az+(cam.position.z-mz)*ax)<0?-1:1;
@@ -72,11 +76,15 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
     const [fT,fB]=B,top=Math.max(P.y+1.6,ny+headY+.18),bot=Math.min(P.y,ny)-.05,asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360);
     const Dh=Math.max(5.2,(top-bot)/(Math.max(.2,fB-fT-.1)*.78*tf)),low=Math.min(1,Math.max(0,(headY-.9)/.7)),BW=.72+.3*low /* 두 사람 몸 너비의 절반씩 + 여유 — 키 작은 상대는 몸도 좁다 */,wFit=.70*asp*tf,Dw=ph=>(sep*Math.cos(ph)+BW)/wFit; /* 가로: 둘 사이(화면에 비친 폭) + 몸 너비가 화면 가로 70% 안 */
     const Dt=Math.max(Dh,14.5); /* 이 거리보다 멀어져야 할 때만 사선을 더 틂(상대가 등을 보이게 되니 꼭 필요할 때만) */
-    let want=phiMin;if(Dw(want)>Dt){const c=(Dt*wFit-BW)/sep;want=Math.max(phiMin,Math.min(.7,c>=1?phiMin:Math.acos(Math.max(.5,c))));} /* 더 틀어도 0.7까지(듣는 쪽이 옆모습 아래로 내려가지 않게 — 몸을 여는 각이 따라감) */
-    const sg=heroSpeaking()?1:-1;phi+=(sg*want-phi)*.07;PAIR.root=root;PAIR.side=side;PAIR.phi=phi;PAIR.y=headY;PAIR.t=clock.t;const D=Math.min(19,Math.max(Dh,Dw(phi))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
+    let want=phiMin;const pt=asp<1,tw=tf*asp,wF=.77*tw /* 여백 8%씩 + 가까운 쪽이 조금 크게 보이는 몫 */,Dhood=2*.55/(.43*tw),lapC=Math.acos(Math.min(1,(HWh+HWn+.1)/sep)),need=ph=>(sep*Math.cos(ph)+HWh+HWn)/wF+sep*.5*Math.sin(ph);
+    if(pt){const D0=Math.max(Dh,Dhood+sep*.5*Math.sin(phiMin));want=Math.min(phiMin,lapC); /* 붙어 서 있으면 옆에서(사선이면 탈이 상대를 덮음) */
+      if(need(want)>D0){const c=(D0*wF-HWh-HWn)/sep;want=Math.max(want,Math.min(1.25,lapC,c>=1?0:Math.acos(Math.max(0,c))));}} /* 멀리 떨어져 선 둘(5m 넘게)은 어깨 너머로 깊게(1.25라디안까지) — 19m 상한에 걸려 한 명이 잘리지 않게 */
+    else if(Dw(want)>Dt){const c=(Dt*wFit-BW)/sep;want=Math.max(phiMin,Math.min(.7,c>=1?phiMin:Math.acos(Math.max(.5,c))));} /* 더 틀어도 0.7까지(듣는 쪽이 옆모습 아래로 내려가지 않게 — 몸을 여는 각이 따라감) */
+    const sg=FACE?(FACE==='hero'?1:-1):heroSpeaking()?1:-1;phi+=(sg*want-phi)*.07;PAIR.root=root;PAIR.side=side;PAIR.phi=phi;PAIR.y=headY;PAIR.t=clock.t;const D=pt?Math.min(19,Math.max(Dh,Dhood+sep*.5*Math.abs(Math.sin(phi)),need(Math.abs(phi)))):Math.min(19,Math.max(Dh,Dw(phi))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
     const c=Math.cos(phi),sn=Math.sin(phi);let fx=mx+(px*c+ax*sn)*D,fz=mz+(pz*c+az*sn)*D;const fy=my+D*(.045+.075*low); /* 키 작은 상대(머리 0.9m)는 카메라를 낮춰 내려다보지 않게 */
+    let cx=mx,cz=mz;if(pt){const dx=(fx-mx)/D,dz=(fz-mz)/D,rx=dz,rz=-dx,hr=-(ax*rx+az*rz),sh=(hr<0?-1:1)*(HWh-HWn)/2;cx+=rx*sh;cz+=rz*sh;fx+=rx*sh;fz+=rz*sh;} /* 보는 점: 두 몸 가장자리의 가운데(탈이 넓은 만큼 원더룹 쪽으로) */
     if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
-    o.at[0]=mx;o.at[1]=my;o.at[2]=mz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
+    o.at[0]=cx;o.at[1]=my;o.at[2]=cz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
 view.pairCam=pairCam;
 /* 처음 만나는 순간(2026-11-21 — 시리즈 규칙 '확대 → 친구 카드 → 대화'): 카드는 그 주민을 처음 만나는 순간에 뜬다(대화 중간·미션이 끝난 뒤가 아니라).
    view.meetCard(id, root, 머리 높이): 아직 안 만난 주민이면 카메라가 그 주민을 가까이(원더룹 쪽에서 0.9라디안 비켜 선 앞옆 — 얼굴 3/4) 0.9초 → 친구 카드 → 닫으면 앞서 잡혀 있던 카메라(대화 카메라)로. 이미 만났으면 바로 false */
@@ -87,12 +95,20 @@ view.meetCam=(root,headY=1.2)=>{const cam=view.camera,W=HERO;if(!cam||!W||!root)
 view.meetCard=async(id,root,headY=1.2,sec=.9)=>{if(profileSeen(id))return false;const prev=REQ&&REQ.fn?REQ.fn:null,z=SHOT_Q?null:view.meetCam(root,headY);if(z){view.hold(z);await coreWait(sec);}
   const r=await profileMeet(id,root);if(z&&REQ&&REQ.fn===z)view.hold(prev);return r;};
 const PAIR={root:null,side:1,phi:0,y:1.4,t:-9},pairNow=()=>clock.t-PAIR.t<.25&&PAIR.root?PAIR:null;
-faceHook.pair=pairNow;
+faceHook.pair=pairNow;view.pair=pairNow; /* 시험용(tools/frame-probe.js) — 지금 대화 카메라가 잡은 상대 */
 pieceHook.hero=()=>{if(!HERO)return null;const P=HERO.position;return [[P.x,P.y,P.z,1.55]];};
 pieceHook.targets=()=>{const p=pairNow();if(!p||!HERO)return null;const e=p.root.matrixWorld.elements,P=HERO.position;return [[P.x,P.y,P.z,1.55],[e[12],e[13],e[14],p.y]];};
 function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
-  else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}}
+  else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}
+  /* 장면 대사(2026-11-28): 구역이 카메라를 따로 잡지 않은 채(따라가기 카메라) 주민이 원더룹에게 하는 대사 — 조작이 잠겨 있고(sceneLock) 9m 안이면 같은 대화 카메라로.
+     보는 곳 표시(look)·다른 주민에게 하는 말(hear)·걸으며 듣는 대사는 그대로. 구역이 카메라를 잡거나 플레이어가 만지면 그 장면이 끝날 때까지 다시 잡지 않음 */
+  if(n||!HERO)return;const li=lineInfo(),ok=li&&!li.hero&&li.npc&&li.npc.root&&!li.look&&!li.hear&&HERO.userData.sceneLock&&!HERO.userData.riding&&view.camera&&view.camera.aspect<1; /* 세로 화면만(가로 화면은 예전 그대로) */
+  if(ok){SC.t=clock.t;if(SC.fn&&(!view.req||view.req.fn!==SC.fn)){SC.fn=null;SC.lost=true;}
+    if(!SC.fn&&!SC.lost&&!view.req){const e=li.npc.root.matrixWorld.elements;if(Math.hypot(e[12]-HERO.position.x,e[14]-HERO.position.z)<9){const fn=pairCam(li.npc.root,li.npc.bubbleY||1.4);if(fn){SC.fn=fn;SC.root=li.npc.root;view.hold(fn);}}}
+    else if(SC.fn&&SC.root!==li.npc.root){const fn=pairCam(li.npc.root,li.npc.bubbleY||1.4);if(fn){SC.fn=fn;SC.root=li.npc.root;view.hold(fn);}}}
+  else if((SC.fn||SC.lost)&&clock.t-SC.t>.7){if(SC.fn&&view.req&&view.req.fn===SC.fn)view.hold(null);SC.fn=null;SC.lost=false;SC.root=null;}}
+const SC={fn:null,root:null,t:-9,lost:false};
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
 function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking,talkCam:()=>!!(TC&&TC.fn&&view.req&&view.req.fn===TC.fn)});uiHooks.layout=layoutNow;}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickPieces(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}

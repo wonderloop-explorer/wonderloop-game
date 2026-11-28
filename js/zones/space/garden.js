@@ -663,15 +663,15 @@ async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopW
     const hero=who==='hero',tx=hero?P.x:bx,tz=hero?P.z:bz,th=hero?.95:1.15,D=(hero?4.6:5.2)*(1+.55*(k-1)),fx=tx+(hero?ux:-ux)*D*.86+sx*D*.5,fz=tz+(hero?uz:-uz)*D*.86+sz*D*.5; /* 원더룹 장면: 할아버지 쪽(원더룹 앞)에서 옆으로 비껴, 할아버지 장면: 원더룹 쪽에서 */
     const A=bentPos({x:tx,y:groundY(tx,tz)+th,z:tz}),B=bentPos({x:fx,y:groundY(fx,fz)+(hero?1.25:1.5)+.3*(k-1),z:fz});return {at:[A.x,A.y,A.z],from:[B.x,B.y,B.z]};};
   const sideOf=()=>{const c=G.view.camera.position,P=W.position,b=bobo.root.position,dx=wd(b.x-P.x),dz=wd(b.z-P.z);return ((c.x-P.x)*-dz+(c.z-P.z)*dx)>=0?1:-1;}; /* 지금 카메라가 있는 쪽 옆(반대편으로 넘어가지 않게) */
-  let heroCam=null,boboCam=null;const cut=w=>{const sd=sideOf();if(w==='hero'){heroCam=shot('hero',sd);G.view.hold(heroCam);}else if(w==='bobo'){boboCam=shot('bobo',sd);G.view.hold(boboCam);}else cam(true);};
+  let heroCam=null,boboCam=null;const cut=w=>{const sd=sideOf();if(w!=='pair'&&G.view.camera.aspect<1){pc=G.view.pairCam(bobo.root,1.62,{face:w==='hero'?'hero':'npc'});if(pc)G.view.hold(pc);return;} /* 세로 화면(2026-11-28): 가까운 구도는 한 명이 화면 끝에 잘림 → 둘 다 들어오는 대화 카메라에서 어깨만 바꿈(원더룹 얼굴 쪽 ↔ 할아버지 얼굴 쪽) */if(w==='hero'){heroCam=shot('hero',sd);G.view.hold(heroCam);}else if(w==='bobo'){boboCam=shot('bobo',sd);G.view.hold(boboCam);}else cam(true);};
   try{await boboCome(W);faceEach(W);await G.view.meetCard('bobo',bobo.root,1.62); /* 처음 만나는 순간: 확대 → 친구 카드 → 대화(2026-11-21 — 예전엔 첫 만남 대화가 다 끝난 뒤에 떴다) */cam(true);
     await say('보름 할아버지','어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.',4.4);
     cut('hero');await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2); /* 숨방울을 찬 원더룹 얼굴 */
     cut('bobo');await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라가 보렴.',6.4);
     cut('hero');await say('보름 할아버지','그 전에 꼭 알아 둘 게 있단다. 여기선 걷고 뛰는 게 지구랑 조금 다르거든.',6.8); /* SPC-S1-037(2026-11-23 — 해 볼 것 안내에서 뛰는 법으로 넘어가는 말) */
     cut('pair');await say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.4);
-    cam(false);await hopDemo();faceEach(W);
-    await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);
+    cam(false);await hopDemo();faceEach(W);const ptc=G.view.camera.aspect<1;if(ptc)cam(true); /* 세로 화면(2026-11-28): 시범 카메라가 풀리며 할아버지가 화면 끝에 잘렸다 → 이 대사는 대화 카메라 */
+    await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);if(ptc)cam(false);
     /* 점프를 기다림: 조작을 돌려주고(점프 단추가 다시 보임) 대화창에 안내 — 뛰어오르면 닫힘 */
     U.sceneLock=false;let jumped=false;const jl=say('',JUMP_TIP,0,{until:()=>jumped,hear:'혼잣말',pin:'top'});
     await G.core.until(()=>{const V=U.vert;if(V&&V.air&&V.vy>0)jumped=true;return jumped;},600);await jl;

@@ -304,11 +304,11 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
       music('sunrise',{fresh:true});st.riseT0=G.clock.t;st.riseGo=true;G.state.setFlag(K.sun,true);SK.to(1,RISE);mark('rise');
       /* 세로 화면(2026-11-22 — 멀리서 좁게 보는 카메라라 똑바로 마주 보면 원더룹이 뒷모습에 가까웠다): 둘이 서로가 아니라 둘 사이 카메라 쪽 한 점을 봐서 몸을 카메라로 연다(원더룹 3/4 얼굴, 거꾸리도 얼굴) */
       const LK=pk()>1.3?{look:{at:[c0+4.1,c1+.05],name:'서로'},pin:'bottom'}:{pin:'bottom'};
-      st.ggMode='talk';const ln=say('거꾸리',T2.goal,6.2,LK).then(()=>say('거꾸리',T2.rise,2.6,LK)); /* 목적을 먼저(왜 해 뜨는 쪽을 찾는지) · 이 장면의 대사창은 아래 */
+      const ptw=pk()>1.3,speak=()=>{st.ggMode='talk';return say('거꾸리',T2.goal,6.2,LK).then(()=>say('거꾸리',T2.rise,2.6,LK));};let ln=ptw?null:speak(); /* 세로 화면(2026-11-28): 좁은 화면이라 걸어 들어오는 동안 원더룹이 화면 밖 — 둘이 자리에 선 뒤에 대사 */ /* 목적을 먼저(왜 해 뜨는 쪽을 찾는지) · 이 장면의 대사창은 아래 */
       /* 대사하는 동안 원더룹은 광장 가운데 옆으로(해시계를 가리지 않게 남쪽으로 비켜), 거꾸리는 반대쪽 옆으로 */
-      {const a=[P.x,P.z],to=[c0+2.8,HZ],L=Math.hypot(to[0]-a[0],to[1]-a[1]),TT=Math.max(.6,L/3.6);await wait(.9);const t1=G.clock.t;U.action='걷기';U.at=0;W.rotation.y=Math.atan2(to[0]-a[0],to[1]-a[1]);st.ggTo=[c0+2.4,GZ];
+      {const a=[P.x,P.z],to=[c0+2.8,HZ],L=Math.hypot(to[0]-a[0],to[1]-a[1]),TT=Math.max(.6,L/3.6);await wait(ptw?.25:.9);const t1=G.clock.t;U.action='걷기';U.at=0;W.rotation.y=Math.atan2(to[0]-a[0],to[1]-a[1]);st.ggTo=[c0+2.4,GZ];
         await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t1)/TT),x=lerp(a[0],to[0],u),z=lerp(a[1],to[1],u);W.position.set(x,groundY(x,z),z);return u>=1;},TT+1);U.action='서기';U.at=0;st.lastP=null;}
-      await ln;st.ggTo=null;
+      if(ptw){await G.core.until(()=>Math.hypot(gg.root.position.x-(c0+2.4),gg.root.position.z-GZ)<.25,1.6);faceTo(gg.root,P.x,P.z);ln=speak();}await ln;st.ggTo=null;
       st.ggMode='point';faceTo(gg.root,c0-30,GZ);st.faceW=true;G.sound.sfx('event-sparkle');
       await G.core.until(()=>st.rise>.72,RISE+3);G.react.react('awe',{sound:null});await G.core.until(()=>st.rise>=1,RISE+3);G.sound.sfx('event-open',{gain:.8});mark('sun1');await wait(.9);
       st.faceW=false;st.ggMode='talk';faceTo(gg.root,P.x,P.z);await say('거꾸리',T2.west,4.2,{look:'해',pin:'bottom'});
@@ -657,13 +657,13 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     if(sg==='wind'&&!air&&caught()<3&&st.padArm&&dPad<1.15){rideStart(W,U);return;}
     if((sg==='ask'||sg==='wind')&&!air&&q.s>S_TOWN+4&&q.d<6){G.ui.toast(T2.first,2.6);carryBack(W,[0,-7.5]);return;}
     /* ③ 마을 입구 대사 자리(멈추지 않음) · ④ 광장에 들어서면 해돋이 */
-    if(sg==='town'&&!st.townSaid&&q.s>S_TOWN&&q.d<4&&!air){st.townSaid=true;G.state.setFlag(K.town,true);mark('town');say('거꾸리',T2.town,3.6);return;}
+    if(sg==='town'&&!st.townSaid&&q.s>S_TOWN&&q.d<4&&!air){st.townSaid=true;G.state.setFlag(K.town,true);mark('town');if(pk()>1.3){scene(async()=>{st.ggMode='talk';faceTo(gg.root,P.x,P.z);await say('거꾸리',T2.town,3.6);st.ggMode='idle';},gg);}else say('거꾸리',T2.town,3.6);return;} /* 세로 화면(2026-11-28): 걸으며 들으면 앞서가는 거꾸리가 화면 오른쪽 끝에 잘렸다 → 잠깐 서서 대화 카메라로(가로 화면은 그대로 걸으며) */
     /* 구름 양 몰기: 빈터에 들어서면 시작 · 다 몰기 전에 구름 둑을 돌아 지나가면 구름이 빈터로 되돌림 */
     if(sg==='town'&&!SG.done&&!SG.started&&!air&&q.s>GL_S-RES+2.2&&q.d<5){sheepStart(W);return;}
     if(sg==='town'&&!SG.done&&!air&&q.s>BAR_S+2.2&&q.d<6){carryBack(W,[GC[0]-GDIR[0]*.9,GC[1]-GDIR[1]*.9]);return;}
     if(sg==='town'&&!st.dialSaid&&SG.done&&!st.scene&&stopDial&&q.s>sOf(stopDial)-1.4&&q.d<4&&!air){ /* 양을 다 몬 뒤·다른 장면이 끝난 뒤에만(2026-11-21 — 양을 몰다 이 자리를 지나면 장면이 겹쳐 대사 없이 지나간 것으로 표시됐다) */st.dialSaid=true;mark('dial');scene(async()=>{const sx=stopDial[0],sz=stopDial[1];faceTo(gg.root,sx,sz);st.ggMode='point';W.rotation.y=Math.atan2(sx-P.x,sz-P.z);
         /* 해시계를 보는 구도: 원더룹 등 뒤 위에서 해시계 판(그림자)이 보이게 내려다봄 — 세로 화면은 더 물러남. 만지면 플레이어 것 */
-        const dx=P.x-sx,dz=P.z-sz,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,k=pk()>1.3?1.5:1,cam=()=>({at:[sx+dx*.45,.8,sz+dz*.45],from:[P.x+ux*5.8*k-uz*3.1*k,3.9*k,P.z+uz*5.8*k+ux*3.1*k]});G.view.hold(cam); /* 옆으로 비켜서: 원더룹 뒤 옆얼굴·해시계·그 옆에 온 거꾸리가 한 화면에 */
+        const dx=P.x-sx,dz=P.z-sz,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,ptc=pk()>1.3,k=ptc?1.5:1,cam=()=>ptc?{at:[sx+dx*.5+uz*.55,.7,sz+dz*.5-ux*.55],from:[P.x+ux*6.3*k+uz*.55,6.1*k,P.z+uz*6.3*k-ux*.55]}:{at:[sx+dx*.45,.8,sz+dz*.45],from:[P.x+ux*5.8*k-uz*3.1*k,3.9*k,P.z+uz*5.8*k+ux*3.1*k]};G.view.hold(cam); /* 세로 화면(2026-11-28): 옆으로 비켜 보면 좁은 화면에서 원더룹 탈이 거꾸리를 통째로 덮었다 → 원더룹 바로 뒤 위에서 내려다봄(아래 원더룹 · 위 해시계 · 그 옆 거꾸리) */ /* 옆으로 비켜서: 원더룹 뒤 옆얼굴·해시계·그 옆에 온 거꾸리가 한 화면에 */
         {const to=[sx+uz*1.35+ux*.3,sz-ux*1.35+uz*.3];st.ggTo=to;st.ggMode='walk';await G.core.until(()=>Math.hypot(gg.root.position.x-to[0],gg.root.position.z-to[1])<.15,1.8);st.ggTo=null;}st.ggMode='point';faceTo(gg.root,sx,sz);
         await say('거꾸리',T2.dial,3.2,{look:{at:[sx,sz],name:'해시계'}});st.ggMode='idle';if(G.view.req&&G.view.req.fn===cam)G.view.hold(null);},null);return;}
     if(sg==='town'&&dp<5.8&&!air){sunrise(W,U);return;}
