@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="d314beefe1";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="de844f2168";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 0581157, 버전 2939a00fdc, 2026-11-28)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 e50f49e, 버전 3736032e0f, 2026-11-28)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="2939a00fdc";
-window.WL_BUILD={"commit":"0581157","date":"2026-11-28","stage":"basecamp"};
+window.WL_V="3736032e0f";
+window.WL_BUILD={"commit":"e50f49e","date":"2026-11-28","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 window.WL_REMOTE="https://wonderloop-explorer.github.io/wonderloop-game/"; /* 소리 파일을 받아 올 공개 주소 */
 </script>
@@ -4511,7 +4511,7 @@ import {applyZone as weatherZone} from './weather.js';
 import {clearIncident,initIncident,tickIncident} from './incident.js';
 import {clearFloat,initFloat,tickFloat} from './float.js';
 import {band,initLayout,layoutNow,tickLayout} from './layout.js';
-import {faceHook,heroSpeaking,speaking,talking} from './dialog.js';
+import {faceHook,heroSpeaking,lineInfo,speaking,talking} from './dialog.js';
 import {uiHooks} from './ui.js';
 /* view.camera: 구역 코드가 화면 방향을 알아야 할 때(예: 동행 NPC가 카메라에서 보이는 쪽으로 따라오기)
    view.focus({at:[x,y,z], from:[x,y,z]?, dist, sec}): 따라가기 카메라가 sec초 동안 at을 비췄다가 돌아온다(미션 장소 알려 주기, 2026-11-02).
@@ -4534,7 +4534,7 @@ const view={camera:null,aim:null,
    플레이어가 카메라를 만지면 08이 연출을 끝내고 넘겨줌(그 대화 동안 다시 잡지 않음). 벽이 있는 방(방 카메라에 가로 범위)·촬영 모드는 하지 않음.
    view.pairCam(root, 머리 높이)는 구역 이야기 장면(혼잣말 줄로 진행하는 대화)이 같은 구도를 쓸 때 — hold에 넘길 함수를 돌려준다 */
 let HERO=null,TC=null;const SHOT_Q=new URLSearchParams(location.search).has('shot');
-function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
+function pairCam(root,headY=1.4,opt){const cam=view.camera,W=HERO;if(!cam||!W||!root)return null;const Z=window.wlZone&&window.wlZone.cur,A=Z&&Z.areas&&Z.areas[window.wlZone.area];if(A&&A.camera&&A.camera.azimuth)return null;
   /* 2026-11-11 다시: 두 사람의 몸 전체(발 ~ 머리 위)가 화면 띠(맨 위 단추 줄 아래 ~ 내려간 대화창 위) 안에 들어오는 가장 가까운 거리 — 키 큰 상대(둥둥)는 저절로 더 멀리.
      방향은 둘을 잇는 선의 옆에서 상대 쪽으로 PHI만큼 돌아간 사선 → 원더룹 얼굴이 옆모습보다 더 보이고(얼굴·카메라 방향 내적 ≈ sin PHI + 여유), 상대는 옆모습.
      (예전엔 '낮은 쪽 얼굴을 화면 위 38%에'를 거리로 풀어서 띠가 좁으면 19m까지 물러났고, 원더룹 조금 뒤에서 봐 탈 뒤통수 쪽이 보였다.)
@@ -4544,7 +4544,11 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
      ④ 옆·사선 네 자리(지금 카메라 쪽 옆 → 반대쪽 옆, 각각 보통 사선 → 더 튼 사선) 가운데 큰 것(집·큰 바위)이 끼지 않는 첫 자리 */
   /* 말하는 쪽 얼굴 우선(2026-11-11): 사선은 '듣는 쪽 어깨' 쪽으로 — 주민이 말하면 원더룹 쪽(sg −1), 원더룹 줄이면 주민 쪽(sg +1)으로 0.25라디안. 둘은 몸을 카메라 쪽으로 열어 선다(game/dialog tickFace)
      → 말하는 쪽 얼굴 3/4, 듣는 쪽 옆모습 조금 넘게. 말하는 사람이 바뀌면 카메라가 천천히 반대쪽 어깨로 넘어간다 */
-  const P=W.position;let side=0,B=null,phi=-.25,phiMin=.25;const o={at:[0,0,0],from:[0,0,0]};
+  /* 세로 화면 대화 구도(2026-11-28 — 휴대폰 녹화: 한 명이 화면 끝에 반쯤 잘리거나 원더룹 탈이 화면 절반을 덮음. 규칙 docs/series-rules.md '세로 화면 대화 구도'):
+     ① 두 사람 몸 전체가 화면 가로 안쪽 8% 여백 안 — 탈 너비(반지름 0.64m)와 상대 몸 너비를 따로 재고, 보는 점을 둘의 '몸 가장자리' 가운데로 옮김(예전엔 두 발 사이 가운데라 큰 탈 쪽이 가장자리에 붙었다)
+     ② 나란히 서서 안 들어가면 더 물러나지 않고 듣는 쪽 어깨 너머로 비스듬히(사선을 더 틂 — 둘이 화면에서 앞뒤로 겹치지 않는 각도까지만) ③ 원더룹 탈이 화면 가로의 45%를 넘지 않는 거리(가까이 붙어 선 장면)
+     가로 화면은 예전 그대로. opt.face 'hero'|'npc' = 말하는 사람과 상관없이 그쪽 얼굴이 보이는 어깨로(구역이 대사마다 구도를 바꿀 때) */
+  const P=W.position;let side=0,B=null,phi=-.25,phiMin=.25;const o={at:[0,0,0],from:[0,0,0]},FACE=opt&&opt.face,HWh=.66,HWn=Math.min(.66,Math.max(.34,headY*.34));
   return ()=>{root.updateWorldMatrix(true,false);const e=root.matrixWorld.elements,nx=e[12],ny=e[13],nz=e[14];let ax=nx-P.x,az=nz-P.z;const sep=Math.hypot(ax,az)||1;ax/=sep;az/=sep;
     const mx=(P.x+nx)/2,mz=(P.z+nz)/2;
     if(!side){side=((cam.position.x-mx)*-az+(cam.position.z-mz)*ax)<0?-1:1;
@@ -4556,11 +4560,15 @@ function pairCam(root,headY=1.4){const cam=view.camera,W=HERO;if(!cam||!W||!root
     const [fT,fB]=B,top=Math.max(P.y+1.6,ny+headY+.18),bot=Math.min(P.y,ny)-.05,asp=cam.aspect,tf=2*Math.tan((cam.fov||30)*Math.PI/360);
     const Dh=Math.max(5.2,(top-bot)/(Math.max(.2,fB-fT-.1)*.78*tf)),low=Math.min(1,Math.max(0,(headY-.9)/.7)),BW=.72+.3*low /* 두 사람 몸 너비의 절반씩 + 여유 — 키 작은 상대는 몸도 좁다 */,wFit=.70*asp*tf,Dw=ph=>(sep*Math.cos(ph)+BW)/wFit; /* 가로: 둘 사이(화면에 비친 폭) + 몸 너비가 화면 가로 70% 안 */
     const Dt=Math.max(Dh,14.5); /* 이 거리보다 멀어져야 할 때만 사선을 더 틂(상대가 등을 보이게 되니 꼭 필요할 때만) */
-    let want=phiMin;if(Dw(want)>Dt){const c=(Dt*wFit-BW)/sep;want=Math.max(phiMin,Math.min(.7,c>=1?phiMin:Math.acos(Math.max(.5,c))));} /* 더 틀어도 0.7까지(듣는 쪽이 옆모습 아래로 내려가지 않게 — 몸을 여는 각이 따라감) */
-    const sg=heroSpeaking()?1:-1;phi+=(sg*want-phi)*.07;PAIR.root=root;PAIR.side=side;PAIR.phi=phi;PAIR.y=headY;PAIR.t=clock.t;const D=Math.min(19,Math.max(Dh,Dw(phi))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
+    let want=phiMin;const pt=asp<1,tw=tf*asp,wF=.77*tw /* 여백 8%씩 + 가까운 쪽이 조금 크게 보이는 몫 */,Dhood=2*.55/(.43*tw),lapC=Math.acos(Math.min(1,(HWh+HWn+.1)/sep)),need=ph=>(sep*Math.cos(ph)+HWh+HWn)/wF+sep*.5*Math.sin(ph);
+    if(pt){const D0=Math.max(Dh,Dhood+sep*.5*Math.sin(phiMin));want=Math.min(phiMin,lapC); /* 붙어 서 있으면 옆에서(사선이면 탈이 상대를 덮음) */
+      if(need(want)>D0){const c=(D0*wF-HWh-HWn)/sep;want=Math.max(want,Math.min(1.25,lapC,c>=1?0:Math.acos(Math.max(0,c))));}} /* 멀리 떨어져 선 둘(5m 넘게)은 어깨 너머로 깊게(1.25라디안까지) — 19m 상한에 걸려 한 명이 잘리지 않게 */
+    else if(Dw(want)>Dt){const c=(Dt*wFit-BW)/sep;want=Math.max(phiMin,Math.min(.7,c>=1?phiMin:Math.acos(Math.max(.5,c))));} /* 더 틀어도 0.7까지(듣는 쪽이 옆모습 아래로 내려가지 않게 — 몸을 여는 각이 따라감) */
+    const sg=FACE?(FACE==='hero'?1:-1):heroSpeaking()?1:-1;phi+=(sg*want-phi)*.07;PAIR.root=root;PAIR.side=side;PAIR.phi=phi;PAIR.y=headY;PAIR.t=clock.t;const D=pt?Math.min(19,Math.max(Dh,Dhood+sep*.5*Math.abs(Math.sin(phi)),need(Math.abs(phi)))):Math.min(19,Math.max(Dh,Dw(phi))),my=(top+bot)/2-(.5-((fT+fB)/2-.025))*D*tf; /* 발끝과 대화창 사이에 여유(띠의 5%) — 대화창이 아래에 그대로 있게 */
     const c=Math.cos(phi),sn=Math.sin(phi);let fx=mx+(px*c+ax*sn)*D,fz=mz+(pz*c+az*sn)*D;const fy=my+D*(.045+.075*low); /* 키 작은 상대(머리 0.9m)는 카메라를 낮춰 내려다보지 않게 */
+    let cx=mx,cz=mz;if(pt){const dx=(fx-mx)/D,dz=(fz-mz)/D,rx=dz,rz=-dx,hr=-(ax*rx+az*rz),sh=(hr<0?-1:1)*(HWh-HWn)/2;cx+=rx*sh;cz+=rz*sh;fx+=rx*sh;fz+=rz*sh;} /* 보는 점: 두 몸 가장자리의 가운데(탈이 넓은 만큼 원더룹 쪽으로) */
     if(Z&&Z.camRoom){const [rx,rz]=Z.camRoom.c,r=Z.camRoom.r-.5,d=Math.hypot(fx-rx,fz-rz);if(d>r){fx=rx+(fx-rx)/d*r;fz=rz+(fz-rz)/d*r;}}
-    o.at[0]=mx;o.at[1]=my;o.at[2]=mz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
+    o.at[0]=cx;o.at[1]=my;o.at[2]=cz;o.from[0]=fx;o.from[1]=fy;o.from[2]=fz;return o;};}
 view.pairCam=pairCam;
 /* 처음 만나는 순간(2026-11-21 — 시리즈 규칙 '확대 → 친구 카드 → 대화'): 카드는 그 주민을 처음 만나는 순간에 뜬다(대화 중간·미션이 끝난 뒤가 아니라).
    view.meetCard(id, root, 머리 높이): 아직 안 만난 주민이면 카메라가 그 주민을 가까이(원더룹 쪽에서 0.9라디안 비켜 선 앞옆 — 얼굴 3/4) 0.9초 → 친구 카드 → 닫으면 앞서 잡혀 있던 카메라(대화 카메라)로. 이미 만났으면 바로 false */
@@ -4571,12 +4579,20 @@ view.meetCam=(root,headY=1.2)=>{const cam=view.camera,W=HERO;if(!cam||!W||!root)
 view.meetCard=async(id,root,headY=1.2,sec=.9)=>{if(profileSeen(id))return false;const prev=REQ&&REQ.fn?REQ.fn:null,z=SHOT_Q?null:view.meetCam(root,headY);if(z){view.hold(z);await coreWait(sec);}
   const r=await profileMeet(id,root);if(z&&REQ&&REQ.fn===z)view.hold(prev);return r;};
 const PAIR={root:null,side:1,phi:0,y:1.4,t:-9},pairNow=()=>clock.t-PAIR.t<.25&&PAIR.root?PAIR:null;
-faceHook.pair=pairNow;
+faceHook.pair=pairNow;view.pair=pairNow; /* 시험용(tools/frame-probe.js) — 지금 대화 카메라가 잡은 상대 */
 pieceHook.hero=()=>{if(!HERO)return null;const P=HERO.position;return [[P.x,P.y,P.z,1.55]];};
 pieceHook.targets=()=>{const p=pairNow();if(!p||!HERO)return null;const e=p.root.matrixWorld.elements,P=HERO.position;return [[P.x,P.y,P.z,1.55],[e[12],e[13],e[14],p.y]];};
 function tickTalkCam(){if(SHOT_Q)return;const n=talkNPC();
   if(n&&!TC){TC={n,fn:null};if(!view.req&&n.root&&n.talkCam!==false){const fn=pairCam(n.root,n.bubbleY||1.4);if(fn){TC.fn=fn;view.hold(fn);}}}
-  else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}}
+  else if(TC&&TC.n!==n){if(TC.fn&&view.req&&view.req.fn===TC.fn)view.hold(null);TC=null;}
+  /* 장면 대사(2026-11-28): 구역이 카메라를 따로 잡지 않은 채(따라가기 카메라) 주민이 원더룹에게 하는 대사 — 조작이 잠겨 있고(sceneLock) 9m 안이면 같은 대화 카메라로.
+     보는 곳 표시(look)·다른 주민에게 하는 말(hear)·걸으며 듣는 대사는 그대로. 구역이 카메라를 잡거나 플레이어가 만지면 그 장면이 끝날 때까지 다시 잡지 않음 */
+  if(n||!HERO)return;const li=lineInfo(),ok=li&&!li.hero&&li.npc&&li.npc.root&&!li.look&&!li.hear&&HERO.userData.sceneLock&&!HERO.userData.riding&&view.camera&&view.camera.aspect<1; /* 세로 화면만(가로 화면은 예전 그대로) */
+  if(ok){SC.t=clock.t;if(SC.fn&&(!view.req||view.req.fn!==SC.fn)){SC.fn=null;SC.lost=true;}
+    if(!SC.fn&&!SC.lost&&!view.req){const e=li.npc.root.matrixWorld.elements;if(Math.hypot(e[12]-HERO.position.x,e[14]-HERO.position.z)<9){const fn=pairCam(li.npc.root,li.npc.bubbleY||1.4);if(fn){SC.fn=fn;SC.root=li.npc.root;view.hold(fn);}}}
+    else if(SC.fn&&SC.root!==li.npc.root){const fn=pairCam(li.npc.root,li.npc.bubbleY||1.4);if(fn){SC.fn=fn;SC.root=li.npc.root;view.hold(fn);}}}
+  else if((SC.fn||SC.lost)&&clock.t-SC.t>.7){if(SC.fn&&view.req&&view.req.fn===SC.fn)view.hold(null);SC.fn=null;SC.lost=false;SC.root=null;}}
+const SC={fn:null,root:null,t:-9,lost:false};
 async function steps(...fns){const id=STEPS;for(const f of fns){if(id!==STEPS)return false;try{await f();}catch(e){console.error(e);}}return id===STEPS;}
 function initGame(c){view.camera=c.camera;HERO=c.WL||null;initControls(c);initDialog(c);initEvents(c);initCodex(c);initOcclude(c);initInteract(c);initCourse(c);initRide(c);initCompanions(c);initProfile(c);initGoal(c);initMission({...c,view});initIncident({...c,view});initReact({...c,view});initItemGet({...c,view});initStage(c);initStealth(c);initFinale({...c,view});initFloat(c);initLayout(c,{speaking,talking,talkCam:()=>!!(TC&&TC.fn&&view.req&&view.req.fn===TC.fn)});uiHooks.layout=layoutNow;}
 function updateGame(dt){tickCore(dt);tickCut();tickEvents();tickInteract();tickRide(dt);tickCourse();tickDialog(dt);tickTalkCam();tickNarration();tickBed(dt);tickCodex();tickOcclude(dt);tickPieces(dt);tickCompanions(dt);tickMission(dt);tickGoal(dt);tickIncident(dt);tickReact(dt);tickItemGet(dt);tickStealth(dt);tickStage(dt);tickFinale(dt);tickLayout();tickFloat();}
@@ -10949,15 +10965,15 @@ async function intro(W,U){if(st.scene)return;st.scene=true;if(U.stopWalk)U.stopW
     const hero=who==='hero',tx=hero?P.x:bx,tz=hero?P.z:bz,th=hero?.95:1.15,D=(hero?4.6:5.2)*(1+.55*(k-1)),fx=tx+(hero?ux:-ux)*D*.86+sx*D*.5,fz=tz+(hero?uz:-uz)*D*.86+sz*D*.5; /* 원더룹 장면: 할아버지 쪽(원더룹 앞)에서 옆으로 비껴, 할아버지 장면: 원더룹 쪽에서 */
     const A=bentPos({x:tx,y:groundY(tx,tz)+th,z:tz}),B=bentPos({x:fx,y:groundY(fx,fz)+(hero?1.25:1.5)+.3*(k-1),z:fz});return {at:[A.x,A.y,A.z],from:[B.x,B.y,B.z]};};
   const sideOf=()=>{const c=G.view.camera.position,P=W.position,b=bobo.root.position,dx=wd(b.x-P.x),dz=wd(b.z-P.z);return ((c.x-P.x)*-dz+(c.z-P.z)*dx)>=0?1:-1;}; /* 지금 카메라가 있는 쪽 옆(반대편으로 넘어가지 않게) */
-  let heroCam=null,boboCam=null;const cut=w=>{const sd=sideOf();if(w==='hero'){heroCam=shot('hero',sd);G.view.hold(heroCam);}else if(w==='bobo'){boboCam=shot('bobo',sd);G.view.hold(boboCam);}else cam(true);};
+  let heroCam=null,boboCam=null;const cut=w=>{const sd=sideOf();if(w!=='pair'&&G.view.camera.aspect<1){pc=G.view.pairCam(bobo.root,1.62,{face:w==='hero'?'hero':'npc'});if(pc)G.view.hold(pc);return;} /* 세로 화면(2026-11-28): 가까운 구도는 한 명이 화면 끝에 잘림 → 둘 다 들어오는 대화 카메라에서 어깨만 바꿈(원더룹 얼굴 쪽 ↔ 할아버지 얼굴 쪽) */if(w==='hero'){heroCam=shot('hero',sd);G.view.hold(heroCam);}else if(w==='bobo'){boboCam=shot('bobo',sd);G.view.hold(boboCam);}else cam(true);};
   try{await boboCome(W);faceEach(W);await G.view.meetCard('bobo',bobo.root,1.62); /* 처음 만나는 순간: 확대 → 친구 카드 → 대화(2026-11-21 — 예전엔 첫 만남 대화가 다 끝난 뒤에 떴다) */cam(true);
     await say('보름 할아버지','어서 오렴, 작은 탐험가. 나는 이 회색 정원에 사는 보름 할아버지란다.',4.4);
     cut('hero');await say('보름 할아버지','숨방울이 잘 어울리는구나!',2.2); /* 숨방울을 찬 원더룹 얼굴 */
     cut('bobo');await say('보름 할아버지','이 회색 정원엔 해 볼 게 많단다. 떡방아도 찧어 보고, 망원경으로 목성도 보고, 저 높은 바위에도 올라가 보렴.',6.4);
     cut('hero');await say('보름 할아버지','그 전에 꼭 알아 둘 게 있단다. 여기선 걷고 뛰는 게 지구랑 조금 다르거든.',6.8); /* SPC-S1-037(2026-11-23 — 해 볼 것 안내에서 뛰는 법으로 넘어가는 말) */
     cut('pair');await say('보름 할아버지','자, 발끝에 힘을 주고 톡! 여긴 중력이 약해서 내려오기까지 한참 걸린단다.',4.4);
-    cam(false);await hopDemo();faceEach(W);
-    await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);
+    cam(false);await hopDemo();faceEach(W);const ptc=G.view.camera.aspect<1;if(ptc)cam(true); /* 세로 화면(2026-11-28): 시범 카메라가 풀리며 할아버지가 화면 끝에 잘렸다 → 이 대사는 대화 카메라 */
+    await say('보름 할아버지','자, 너도 한번 톡! 뛰어 보렴.',2.2);if(ptc)cam(false);
     /* 점프를 기다림: 조작을 돌려주고(점프 단추가 다시 보임) 대화창에 안내 — 뛰어오르면 닫힘 */
     U.sceneLock=false;let jumped=false;const jl=say('',JUMP_TIP,0,{until:()=>jumped,hear:'혼잣말',pin:'top'});
     await G.core.until(()=>{const V=U.vert;if(V&&V.air&&V.vy>0)jumped=true;return jumped;},600);await jl;
@@ -11555,7 +11571,8 @@ async function call(W,U){const cam=G.view.camera;faceTo(pipi,ROCKD.c[0],ROCKD.c[
   if(!F[DISC.sound]){G.state.setFlag(DISC.sound,true);G.react.react('awe',{sound:'card-secret'});
     await G.ui.secret({kicker:'새 발견',title:'화성의 두 가지 소리 빠르기',text:'화성에선 높은 소리가 낮은 소리보다 조금 빨리 달려요(1초에 약 250m와 240m). 공기가 아주 엷어서 소리가 금방 작아지기도 해요. 그래서 멀리서 부르면 말이 엇갈려 도착해요.',vo:'화성에선 높은 소리가 조금 더 빨리 달려요.',count:`발견 ${discN()}/${DISC_TOTAL}`});}}
 /* ③ 녹음 — 카세트를 꺼내 삐삐 말을 녹음 */
-async function recordA(W,U){faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);holdCas(W,true);G.sound.sfx('item-pickup',{gain:.7});await wait(.5);
+async function recordA(W,U){{const P=W.position,q=pipi.root.position,dx=P.x-q.x,dz=P.z-q.z,d=Math.hypot(dx,dz)||1;if(d<1.55){const a=[P.x,P.z],to=[q.x+dx/d*1.65,q.z+dz/d*1.65],t0=G.clock.t; /* 바짝 붙어 서 있으면 한 걸음 물러섬(2026-11-28 — 세로 화면에서 큰 탈이 삐삐를 덮었다) */
+    await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t0)/.4),e=u*u*(3-2*u),x=lerp(a[0],to[0],e),z=lerp(a[1],to[1],e);W.position.set(x,groundY(x,z),z);return u>=1;},1);}}faceTo(pipi,W.position.x,W.position.z);faceWL(W,pipi);holdCas(W,true);G.sound.sfx('item-pickup',{gain:.7});await wait(.5);
   G.sound.sfx('cassette-click');cas.rec(true);tapeRun(true);await wait(.35);
   pipi.mode='call';mumble(false,3.4);await say('삐삐 (녹음 중)',LINE_A,4.6,{hear:W,hearName:'카세트(둥둥에게 남기는 말)'}); /* 듣는 사람 = 원더룹이 든 카세트 */
   pipi.mode='idle';tapeRun(false);G.sound.sfx('cassette-click');cas.rec(false);await wait(.5);holdCas(W,false);
@@ -11611,7 +11628,7 @@ async function finale(W,U){SK.to(1,7);G.sound.bedLevel(.55,3);
   W.rotation.y=SUNSET.face;st.sunFace=true;
   /* 카메라: 셋 뒤 비스듬히 위에서 서쪽(해 쪽)을 — 셋과 낮게 걸린 파란 해가 한 화면에. 노을을 보는 동안 완전히 고정(2026-11-17 — 예전엔 처음 각도만 잡아 주고 따라가기 카메라로 넘어가 위아래로 흔들렸다). 만지면 플레이어 것 */
   const c=[SUNSET.wl[0],groundY(...SUNSET.wl),SUNSET.wl[1]],SD=(()=>{const d=DUSK.sunDir,l=Math.hypot(d[0],d[2]);return [-d[0]/l,-d[2]/l];})(), /* 해 쪽 수평 방향(정서쪽에서 남쪽으로 약 9°) */
-    fix=()=>{const k=pk(),pt=k>1.3,D=7.4*k*(pt?1.12:1);return {at:[c[0]+SD[0]*3,c[1]+2.4,c[2]+SD[1]*3],from:[c[0]-SD[0]*D,c[1]+1.7+.9*(k-1),c[2]-SD[1]*D]};};G.view.hold(fix); /* 2026-11-17: 카메라를 해 → 원더룹을 잇는 선 위(원더룹 뒤)에 — 해가 화면에서 원더룹 머리 바로 위에 옴(예전엔 정동쪽에서 봐서 해가 왼쪽 위로 치우치고 세로 화면에서는 화면 밖) */ /* 세로 화면은 셋이 다 들어오게 정면 뒤에서 조금 더 멀리 */ /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
+    fix=()=>{const k=pk(),pt=k>1.3,D=7.4*k*(pt?1.34:1);return {at:[c[0]+SD[0]*3,c[1]+2.4,c[2]+SD[1]*3],from:[c[0]-SD[0]*D,c[1]+1.7+.9*(k-1),c[2]-SD[1]*D]};};G.view.hold(fix); /* 2026-11-17: 카메라를 해 → 원더룹을 잇는 선 위(원더룹 뒤)에 — 해가 화면에서 원더룹 머리 바로 위에 옴(예전엔 정동쪽에서 봐서 해가 왼쪽 위로 치우치고 세로 화면에서는 화면 밖) */ /* 세로 화면은 셋이 다 들어오게 정면 뒤에서 조금 더 멀리 */ /* 파란 해가 원더룹과 삐삐 사이 위쪽에(해는 정서쪽에서 남쪽으로 약 9°) */
   await wait(.7);pipi.mode='talk';mumble(false,2);await say('삐삐','봐, 해가 내려간다… 해 둘레가 파래지기 시작했어!',3.6,{look:'노을'});pipi.mode='idle';
   await wait(.8);dung.mode='talk';mumble(true,2.4);await say('둥둥','같이 보니까 더 파랗다!',2.4,{look:'노을'});dung.mode='idle';
   if(!F[DISC.blue]){G.state.setFlag(DISC.blue,true);G.react.react('awe',{sound:'card-secret'});
@@ -12725,21 +12742,27 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
       fragmentShader:'uniform sampler2D uMap;varying float vA;void main(){vec4 c=texture2D(uMap,gl_PointCoord);if(c.a<.02)discard;gl_FragColor=vec4(vec3(1.,.95,.8)*c.a*vA*1.6,1.);}'});
     m.userData.noBend=true;const pts=new THREE.Points(geo,m);pts.name='saturn-moons';pts.frustumCulled=false;pts.userData.noMerge=true;pts.renderOrder=-2.6;pts.visible=false;add(pts);
     return {set(k,t){pts.visible=k>.01;m.uniforms.uK.value=k;m.uniforms.uT.value=t;m.uniforms.uSc.value=Math.min(window.devicePixelRatio||1,MOB?1.25:2);}};})();
-  const CUTS=[84.6,109.2],CUT=CUTS[1] /* 디졸브로 넘어가는 두 곳: 엔켈라두스 → 타이탄(2026-11-26 — 날아가는 동안 3~6초 빈 하늘만 보였다) · 먼 토성 → 둘의 얼굴 */,CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],NT=[9.5,24.5,41,58.5,75.8,86.4,101.5]; /* 나레이션 시작 초 — 구간마다 목소리(NV)가 끝나고 1.5초 넘게 머문 뒤에 카메라가 떠남(2026-11-26: 4구간 육각형 8.1초가 잘렸다) */ /* 1구간 자막은 토성과 고리 전체가 다 보인 뒤(카메라가 물러난 11.5초 앞뒤)에 */
-  const faceFrom=tau=>{const pt=pk()>1.3,w=ss(0,REST-CUT,tau);return [CC[0]-lerp(pt?10.6:6.0,pt?9.6:5.2,w),lerp(pt?1.55:1.35,pt?1.4:1.2,w),CC[2]+lerp(pt?2.6:2.5,pt?2.1:2.0,w)];},faceAt=()=>[CC[0],pk()>1.3?1.0:.92,CC[2]];
+  const CUT_T=84.6,CUT=109.2;let CUTS=[CUT_T,CUT]; /* 세로 화면은 restKeys가 두 곳을 더함(2026-11-28): 1구간 둘의 뒷모습 → 토성 전체(물러나는 동안 겉면이 화면을 꽉 채웠다) · 북극 육각형 → 엔켈라두스(날아가는 동안 고리 끝만 보였다) */const _CUTNOTE=0 /* 디졸브로 넘어가는 두 곳: 엔켈라두스 → 타이탄(2026-11-26 — 날아가는 동안 3~6초 빈 하늘만 보였다) · 먼 토성 → 둘의 얼굴 */,CC=[SLAB[0]+.3,STOP+.6,(HS[1]+GS[1])/2],NT=[9.5,24.5,41,58.5,75.8,86.4,101.5]; /* 나레이션 시작 초 — 구간마다 목소리(NV)가 끝나고 1.5초 넘게 머문 뒤에 카메라가 떠남(2026-11-26: 4구간 육각형 8.1초가 잘렸다) */ /* 1구간 자막은 토성과 고리 전체가 다 보인 뒤(카메라가 물러난 11.5초 앞뒤)에 */
+  const faceFrom=tau=>{const pt=pk()>1.3,w=ss(0,REST-CUT,tau);return [CC[0]-lerp(pt?13.6:6.0,pt?12.6:5.2,w),lerp(pt?1.75:1.35,pt?1.6:1.2,w),CC[2]+lerp(pt?1.5:2.5,pt?1.2:2.0,w)];},faceAt=()=>[CC[0],pk()>1.3?1.0:.92,CC[2]-(pk()>1.3?.16:0)]; /* 세로 화면(2026-11-28): 더 물러나고 보는 점을 탈이 넓은 원더룹 쪽으로 — 원더룹이 화면 왼쪽 끝에 잘렸다 */
   const restKeys=()=>{const k=pk(),pt=k>1.3,m=pt?1.5:1,fr=pt?1.75:1,E=oEnc.g.position,SCP=[SC[0],SR*.97,SC[2]],V=(b,o,q=1)=>[b[0]+o[0]*q,b[1]+o[1]*q,b[2]+o[2]*q],
-      g0=[30,1.5,10],g1=[-11,2.0,-52],gd=[-.55,-.02,-.83],ek=pt?24:45,EA=[E.x+ENC_PD.x*ek,E.y+ENC_PD.y*ek,E.z+ENC_PD.z*ek],face=[CC[0],pt?1.2:.95,CC[2]];
+      g0=[30,1.5,10],g1=[-11,2.0,-52],PC1=4.2,PC2=69,gd=[-.55,-.02,-.83],ek=pt?24:45,EA=[E.x+ENC_PD.x*ek,E.y+ENC_PD.y*ek,E.z+ENC_PD.z*ek],face=[CC[0],pt?1.2:.95,CC[2]];
     const FAR=pt?[SC[0]+3300,1150,SC[2]+1500]:[SC[0]+2050,720,SC[2]+960],FARA=pt?[SC[0],-60,SC[2]]:[SC[0]+330,-40,SC[2]-160]; /* 7구간: 멀리서 — 토성은 화면 한쪽에 작게(가로 화면 왼쪽, 세로 화면 가운데), 둘레를 도는 작은 달들 */
-    return [[
+    CUTS=pt?[PC1,PC2,CUT_T,CUT]:[CUT_T,CUT];
+    /* 세로 화면(2026-11-28): 가로 시야가 ±7°뿐이라 섬에서 본 토성(반지름 24°)은 벽처럼 화면을 채운다 → ① 첫 구도는 낮은 데서 올려다봐 둘은 화면 아래·토성 둥근 꼭대기와 그 위 하늘이 화면 위에
+       ② 물러나지 않고 디졸브로 토성과 고리 전체로(카메라는 그 뒤 천천히 더 물러남) ③ 육각형 → 엔켈라두스도 디졸브(엔켈라두스가 먼저 화면에 들어와 있음) */
+    const P1=pt?[[[0,[CC[0]+12.4,.95,CC[2]],[CC[0]-40,9.6,CC[2]]],[PC1+3,[CC[0]+13.6,1.0,CC[2]],[CC[0]-40,10.0,CC[2]]]],[
+      [PC1,[SC[0]+1120*1.72,380*1.72,SC[2]+240*1.72],[SC[0],-30,SC[2]]],[11.5,[SC[0]+1120*1.95,380*1.95,SC[2]+240*1.95],[SC[0],-30,SC[2]]],[17.5,[SC[0]+1160*1.95,400*1.95,SC[2]+180*1.95],[SC[0],-30,SC[2]]]]]:null;
+    const A=[
     [0,[CC[0]+(pt?10.6:6.2),pt?2.0:1.5,CC[2]+(pt?0:1.4)],[CC[0]-40,pt?-.9:1.3,CC[2]-(pt?0:5)]],[2.5,[CC[0]+(pt?11.4:6.8),pt?2.2:1.7,CC[2]+(pt?0:1.6)],[CC[0]-40,pt?-.5:1.6,CC[2]-(pt?0:5)]], /* 1 둘의 뒷모습 너머 커다란 토성 → 뒤로·위로 물러나 토성과 고리 전체(11.5초부터 머묾 — 자막은 이때) */
     [11.5,[SC[0]+1120*fr,380*fr,SC[2]+240*fr],[SC[0],pt?-30:10,SC[2]]],[17.5,[SC[0]+1160*fr,400*fr,SC[2]+180*fr],[SC[0],pt?-30:10,SC[2]]],
     [23,g0,V(g0,gd,60)],[34,g1,V(g1,gd,60)],                                                                                               /* 2 고리 얼음 들판 위를 낮게 미끄러지듯(토성은 왼쪽에) */
     [40,pt?[SC[0]+1250,240,SC[2]+880]:[SC[0]+560,120,SC[2]+420],[SC[0]+(pt?0:70),pt?125:55,SC[2]]],[49,pt?[SC[0]+1200,265,SC[2]+940]:[SC[0]+520,140,SC[2]+470],[SC[0]+(pt?0:70),pt?130:60,SC[2]]], /* 세로 화면은 더 물러나 둥근 윗가장자리와 그 위 하늘이 보이게(2026-11-25 세 번째 — 겉면이 화면을 거의 다 덮었다) */ /* 3 줄무늬 구름: 둥근 가장자리와 줄무늬 여러 줄이 함께(구가 빨리 돎 — 구름 무늬가 옆으로 흐름) */
-    [57.5,V(SCP,[180,313,140],m),SCP],[68.3,V(SCP,[146,342,108],m),SCP],                                                                    /* 4 천천히 올라가 북극의 육각형 구름 띠 */
-    [74.8,V([E.x,E.y,E.z],[150,25,170],m),EA],[CUTS[0]+3,V([E.x,E.y,E.z],[126,44,191],m),V(EA,[0,9,0])]],[                                         /* 5 엔켈라두스의 얼음 분수 */
-    [CUTS[0],V(TITAN,[204,17,-136],pt?2.3:1.15),TITAN],[95.6,V(TITAN,[182,34,-160],pt?2.3:1.15),TITAN],                                        /* 6 주황 안개에 싸인 타이탄 */
+    [57.5,V(SCP,[180,313,140],m),SCP],[68.3,V(SCP,[146,342,108],m),SCP],[PC2+3.5,V(SCP,[136,350,100],m),SCP]],B5=[[PC2,V([E.x,E.y,E.z],[168,18,150],m*1.28),EA],                                                                    /* 4 천천히 올라가 북극의 육각형 구름 띠 */
+    [74.8,V([E.x,E.y,E.z],[150,25,170],m),EA],[CUT_T+3,V([E.x,E.y,E.z],[126,44,191],m),V(EA,[0,9,0])]],C=[                                         /* 5 엔켈라두스의 얼음 분수 */
+    [CUT_T,V(TITAN,[204,17,-136],pt?2.3:1.15),TITAN],[95.6,V(TITAN,[182,34,-160],pt?2.3:1.15),TITAN],                                        /* 6 주황 안개에 싸인 타이탄 */
     [101,FAR,FARA],[107.5,V(FAR,[-60,20,40]),FARA],                                                                                       /* 7 멀리서 본 작은 토성과 그 둘레를 도는 작은 달들 → 천천히 내려와 둘에게 */
-    [CUT+4,V(FAR,[-95,32,64]),FARA]],[[CUT,faceFrom(0),faceAt()],[REST,faceFrom(REST-CUT),faceAt()]]];}; /* 구간 묶음 셋(디졸브로 나뉨) — 묶음 안에서만 카메라가 이어 움직임 */ /* 7구간은 넘어가는 순간(CUT)까지 그대로 흐름 — 그 뒤는 faceCam */
+    [CUT+4,V(FAR,[-95,32,64]),FARA]],D=[[CUT,faceFrom(0),faceAt()],[REST,faceFrom(REST-CUT),faceAt()]];
+    return pt?[P1[0],P1[1].concat(A.slice(4)),B5,C,D]:[A.slice(0,-1).concat(B5.slice(1)),C,D];}; /* 구간 묶음 셋(디졸브로 나뉨) — 묶음 안에서만 카메라가 이어 움직임 */ /* 7구간은 넘어가는 순간(CUT)까지 그대로 흐름 — 그 뒤는 faceCam */
   const RS={on:false,t:0,keys:null,ni:0,skip:false,chip:null,chipT:0,cap:null,capEnd:0};
   const _a=new THREE.Vector3(),_b=new THREE.Vector3();
   /* 자리는 곧게, 보는 방향은 두 키의 방향을 섞어(멀리 떨어진 두 자리의 '보는 점'을 곧게 이으면 가는 동안 엉뚱한 곳을 봄) */
@@ -12788,14 +12811,14 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
       ggMode='talk';await say('토링',T.g4,5.6,{to:null});ggMode='sit';if(G.view.req&&G.view.req.fn===fc2)G.view.hold(null);}
     /* 일어나 내려옴 */
     st.sitting=false;U.action='서기';U.at=0;ggMode='idle';G.sound.sfx('jump',{gain:.5});
-    const wc=()=>{const k=pk(),pt=k>1.3;return {at:[AFTER[0][0]-.6,pt?1.7:1.3,(AFTER[0][1]+AFTER[1][1])/2+.9],from:[AFTER[0][0]+(pt?12.5:8.6),pt?3.2:2.4,(AFTER[0][1]+AFTER[1][1])/2+1.6]};};G.view.hold(wc); /* 2026-11-27: 내려서 걸어가는 동안은 동쪽 트인 쪽에서(따라가기 카메라가 둘레 큰 얼음 뿔 뒤로 가 화면을 가렸다) — 이어지는 발견 카드 구도와 같은 쪽 */
+    const wc=()=>{const k=pk(),pt=k>1.3;return {at:[AFTER[0][0]-.6,pt?1.7:1.3,(AFTER[0][1]+AFTER[1][1])/2+(pt?.16:.9)],from:[AFTER[0][0]+(pt?14.6:8.6),pt?3.6:2.4,(AFTER[0][1]+AFTER[1][1])/2+(pt?.8:1.6)]};}; /* 세로 화면(2026-11-28): 보는 점이 원더룹 쪽에 치우쳐 토링이 오른쪽 끝에 잘렸다 → 둘의 가운데 + 조금 더 멀리 */G.view.hold(wc); /* 2026-11-27: 내려서 걸어가는 동안은 동쪽 트인 쪽에서(따라가기 카메라가 둘레 큰 얼음 뿔 뒤로 가 화면을 가렸다) — 이어지는 발견 카드 구도와 같은 쪽 */
     const p6=say('토링',T.g6,3.6,{to:null}).then(()=>{st.g6=true;}); /* 2026-11-27: RS-019는 배에서 내리며 바로(내려서 걸어온 뒤에 말하면 RS-007과 3.8초 떨어졌다) — 걸으며 말함 */
     await Promise.all([hop(hs,[HS[0]-1.9,0,HS[1]-.9],.7,(x,y,z)=>{W.position.set(x,y,z);U.riding.y=y;}),hop(gs,[GS[0]-2.6,0,GS[1]-2.2],.8,(x,y,z)=>gg.root.position.set(x,y,z))]);
     U.riding=null;G.core.block('meteor',false);G.ui.setHints(st.hints!==false);G.state.setFlag(K.sat,true);
     await Promise.all([moveTo(W,AFTER[0],1.0,true),moveTo(gg.root,AFTER[1],1.5)]);await p6;if(G.view.req&&G.view.req.fn===wc)G.view.hold(null);st.scene=false;U.sceneLock=false;} /* 섬 가운데로(둘이 남북으로 나란히 — 대화 카메라가 동·서의 트인 쪽에서 봄. 둘레 얼음 뿔이 카메라 앞을 가리지 않게) */
   /* ── ④ 발견 카드 ── */
   async function floatCard(){if(!st.g6)await scene(async()=>{ggMode='talk';await say('토링',T.g6,3.6);ggMode='idle';},gg); /* 쉬기 뒤에 이어 오면 이미 말함(배에서 내리며) — 다시 열어 여기서 시작할 때만 */ /* RS-019 — 배에서 내린 뒤 */
-    const W=U0(),P=W.position,q=gg.root.position,k=pk(),pt=k>1.3,cx=(P.x+q.x)/2,cz=(P.z+q.z)/2,fc=()=>({at:[cx-3,pt?2.3:1.9,cz],from:[cx+(pt?12:8.2),pt?3.0:2.2,cz+1.2]}); /* 2026-11-27: 카드가 화면 위쪽 — 보는 점을 올려 둘이 화면 가운데~아래쪽에 */ /* 동쪽에서 토성 쪽을 — 보는 점을 낮춰 둘이 화면 가운데쯤(아래 카드에 안 가림) */
+    const W=U0(),P=W.position,q=gg.root.position,k=pk(),pt=k>1.3,cx=(P.x+q.x)/2,cz=(P.z+q.z)/2,hz=pt?(P.z>q.z?.16:-.16):0,fc=()=>({at:[cx-3,pt?2.3:1.9,cz+hz],from:[cx+(pt?14.4:8.2),pt?3.4:2.2,cz+hz+(pt?.8:1.2)]}); /* 세로 화면(2026-11-28): 둘 다 여백 안에 — 조금 더 멀리·탈 쪽으로 */ /* 2026-11-27: 카드가 화면 위쪽 — 보는 점을 올려 둘이 화면 가운데~아래쪽에 */ /* 동쪽에서 토성 쪽을 — 보는 점을 낮춰 둘이 화면 가운데쯤(아래 카드에 안 가림) */
     W.userData.sceneLock=true;faceTo(W,cx+9,cz+1.2);faceTo(gg.root,cx+9,cz+1.2);G.view.hold(fc);G.state.setFlag(K.float,true);G.sound.sfx('card-secret');mark('card');await G.ui.secret({kicker:'새 발견',title:T.cardT,text:T.card,vo:T.card,lines:6});if(G.view.req&&G.view.req.fn===fc)G.view.hold(null);W.userData.sceneLock=false;await wait(.4);}
   /* ── ⑤ 거꾸리와 인사 ── */
   async function bye(W,U){U.sceneLock=true;st.scene=true; /* 2026-11-26 ③: 붉은 빛이 내려올 자리 앞에서 토링이 배웅(얼음 배를 타고 떠나는 장면 없음) */
@@ -13379,11 +13402,11 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
       music('sunrise',{fresh:true});st.riseT0=G.clock.t;st.riseGo=true;G.state.setFlag(K.sun,true);SK.to(1,RISE);mark('rise');
       /* 세로 화면(2026-11-22 — 멀리서 좁게 보는 카메라라 똑바로 마주 보면 원더룹이 뒷모습에 가까웠다): 둘이 서로가 아니라 둘 사이 카메라 쪽 한 점을 봐서 몸을 카메라로 연다(원더룹 3/4 얼굴, 거꾸리도 얼굴) */
       const LK=pk()>1.3?{look:{at:[c0+4.1,c1+.05],name:'서로'},pin:'bottom'}:{pin:'bottom'};
-      st.ggMode='talk';const ln=say('거꾸리',T2.goal,6.2,LK).then(()=>say('거꾸리',T2.rise,2.6,LK)); /* 목적을 먼저(왜 해 뜨는 쪽을 찾는지) · 이 장면의 대사창은 아래 */
+      const ptw=pk()>1.3,speak=()=>{st.ggMode='talk';return say('거꾸리',T2.goal,6.2,LK).then(()=>say('거꾸리',T2.rise,2.6,LK));};let ln=ptw?null:speak(); /* 세로 화면(2026-11-28): 좁은 화면이라 걸어 들어오는 동안 원더룹이 화면 밖 — 둘이 자리에 선 뒤에 대사 */ /* 목적을 먼저(왜 해 뜨는 쪽을 찾는지) · 이 장면의 대사창은 아래 */
       /* 대사하는 동안 원더룹은 광장 가운데 옆으로(해시계를 가리지 않게 남쪽으로 비켜), 거꾸리는 반대쪽 옆으로 */
-      {const a=[P.x,P.z],to=[c0+2.8,HZ],L=Math.hypot(to[0]-a[0],to[1]-a[1]),TT=Math.max(.6,L/3.6);await wait(.9);const t1=G.clock.t;U.action='걷기';U.at=0;W.rotation.y=Math.atan2(to[0]-a[0],to[1]-a[1]);st.ggTo=[c0+2.4,GZ];
+      {const a=[P.x,P.z],to=[c0+2.8,HZ],L=Math.hypot(to[0]-a[0],to[1]-a[1]),TT=Math.max(.6,L/3.6);await wait(ptw?.25:.9);const t1=G.clock.t;U.action='걷기';U.at=0;W.rotation.y=Math.atan2(to[0]-a[0],to[1]-a[1]);st.ggTo=[c0+2.4,GZ];
         await G.core.until(()=>{const u=Math.min(1,(G.clock.t-t1)/TT),x=lerp(a[0],to[0],u),z=lerp(a[1],to[1],u);W.position.set(x,groundY(x,z),z);return u>=1;},TT+1);U.action='서기';U.at=0;st.lastP=null;}
-      await ln;st.ggTo=null;
+      if(ptw){await G.core.until(()=>Math.hypot(gg.root.position.x-(c0+2.4),gg.root.position.z-GZ)<.25,1.6);faceTo(gg.root,P.x,P.z);ln=speak();}await ln;st.ggTo=null;
       st.ggMode='point';faceTo(gg.root,c0-30,GZ);st.faceW=true;G.sound.sfx('event-sparkle');
       await G.core.until(()=>st.rise>.72,RISE+3);G.react.react('awe',{sound:null});await G.core.until(()=>st.rise>=1,RISE+3);G.sound.sfx('event-open',{gain:.8});mark('sun1');await wait(.9);
       st.faceW=false;st.ggMode='talk';faceTo(gg.root,P.x,P.z);await say('거꾸리',T2.west,4.2,{look:'해',pin:'bottom'});
@@ -13732,13 +13755,13 @@ export function build({root}){const MOB=QUALITY.tier==='mobile',keep=[],F=G.stat
     if(sg==='wind'&&!air&&caught()<3&&st.padArm&&dPad<1.15){rideStart(W,U);return;}
     if((sg==='ask'||sg==='wind')&&!air&&q.s>S_TOWN+4&&q.d<6){G.ui.toast(T2.first,2.6);carryBack(W,[0,-7.5]);return;}
     /* ③ 마을 입구 대사 자리(멈추지 않음) · ④ 광장에 들어서면 해돋이 */
-    if(sg==='town'&&!st.townSaid&&q.s>S_TOWN&&q.d<4&&!air){st.townSaid=true;G.state.setFlag(K.town,true);mark('town');say('거꾸리',T2.town,3.6);return;}
+    if(sg==='town'&&!st.townSaid&&q.s>S_TOWN&&q.d<4&&!air){st.townSaid=true;G.state.setFlag(K.town,true);mark('town');if(pk()>1.3){scene(async()=>{st.ggMode='talk';faceTo(gg.root,P.x,P.z);await say('거꾸리',T2.town,3.6);st.ggMode='idle';},gg);}else say('거꾸리',T2.town,3.6);return;} /* 세로 화면(2026-11-28): 걸으며 들으면 앞서가는 거꾸리가 화면 오른쪽 끝에 잘렸다 → 잠깐 서서 대화 카메라로(가로 화면은 그대로 걸으며) */
     /* 구름 양 몰기: 빈터에 들어서면 시작 · 다 몰기 전에 구름 둑을 돌아 지나가면 구름이 빈터로 되돌림 */
     if(sg==='town'&&!SG.done&&!SG.started&&!air&&q.s>GL_S-RES+2.2&&q.d<5){sheepStart(W);return;}
     if(sg==='town'&&!SG.done&&!air&&q.s>BAR_S+2.2&&q.d<6){carryBack(W,[GC[0]-GDIR[0]*.9,GC[1]-GDIR[1]*.9]);return;}
     if(sg==='town'&&!st.dialSaid&&SG.done&&!st.scene&&stopDial&&q.s>sOf(stopDial)-1.4&&q.d<4&&!air){ /* 양을 다 몬 뒤·다른 장면이 끝난 뒤에만(2026-11-21 — 양을 몰다 이 자리를 지나면 장면이 겹쳐 대사 없이 지나간 것으로 표시됐다) */st.dialSaid=true;mark('dial');scene(async()=>{const sx=stopDial[0],sz=stopDial[1];faceTo(gg.root,sx,sz);st.ggMode='point';W.rotation.y=Math.atan2(sx-P.x,sz-P.z);
         /* 해시계를 보는 구도: 원더룹 등 뒤 위에서 해시계 판(그림자)이 보이게 내려다봄 — 세로 화면은 더 물러남. 만지면 플레이어 것 */
-        const dx=P.x-sx,dz=P.z-sz,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,k=pk()>1.3?1.5:1,cam=()=>({at:[sx+dx*.45,.8,sz+dz*.45],from:[P.x+ux*5.8*k-uz*3.1*k,3.9*k,P.z+uz*5.8*k+ux*3.1*k]});G.view.hold(cam); /* 옆으로 비켜서: 원더룹 뒤 옆얼굴·해시계·그 옆에 온 거꾸리가 한 화면에 */
+        const dx=P.x-sx,dz=P.z-sz,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,ptc=pk()>1.3,k=ptc?1.5:1,cam=()=>ptc?{at:[sx+dx*.5+uz*.55,.7,sz+dz*.5-ux*.55],from:[P.x+ux*6.3*k+uz*.55,6.1*k,P.z+uz*6.3*k-ux*.55]}:{at:[sx+dx*.45,.8,sz+dz*.45],from:[P.x+ux*5.8*k-uz*3.1*k,3.9*k,P.z+uz*5.8*k+ux*3.1*k]};G.view.hold(cam); /* 세로 화면(2026-11-28): 옆으로 비켜 보면 좁은 화면에서 원더룹 탈이 거꾸리를 통째로 덮었다 → 원더룹 바로 뒤 위에서 내려다봄(아래 원더룹 · 위 해시계 · 그 옆 거꾸리) */ /* 옆으로 비켜서: 원더룹 뒤 옆얼굴·해시계·그 옆에 온 거꾸리가 한 화면에 */
         {const to=[sx+uz*1.35+ux*.3,sz-ux*1.35+uz*.3];st.ggTo=to;st.ggMode='walk';await G.core.until(()=>Math.hypot(gg.root.position.x-to[0],gg.root.position.z-to[1])<.15,1.8);st.ggTo=null;}st.ggMode='point';faceTo(gg.root,sx,sz);
         await say('거꾸리',T2.dial,3.2,{look:{at:[sx,sz],name:'해시계'}});st.ggMode='idle';if(G.view.req&&G.view.req.fn===cam)G.view.hold(null);},null);return;}
     if(sg==='town'&&dp<5.8&&!air){sunrise(W,U);return;}
