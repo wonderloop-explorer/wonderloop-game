@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<script id="wl-buildcheck">window.WL_SINGLE="d10e9a60a0";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
+<script id="wl-buildcheck">window.WL_SINGLE="d314beefe1";if(/^https?:/.test(location.protocol))fetch('build.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{const v=j["wonderloop-frame.html"];if(v&&v!==window.WL_SINGLE){const u=new URL(location.href);if(u.searchParams.get('_b')!==v){u.searchParams.set('_b',v);location.replace(u);}}}).catch(()=>{});</script>
 <!-- 원더룹 — 시리즈 공통 틀 (개미굴 설정)
-     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 f0f49ac, 버전 bd79895e33, 2026-11-27)
+     한 파일 빌드: node tools/build-single.js basecamp (원본 저장소 wonderloop-game, 커밋 0581157, 버전 2939a00fdc, 2026-11-28)
      서버 없이 이 파일을 더블클릭하면 열린다. 구조: 맨 끝 시작 스크립트가 아래 text/x-wl-module 칸(원본 경로별 모듈, 코드는 원본 그대로)을
      이어 붙여 실행하고, WL_FILES(data URI)로 그림·목록을 돌려준다. 자세한 것은 시작 스크립트 주석. -->
 <meta charset="utf-8">
@@ -348,8 +348,8 @@ body.wl-world .bar .hint:not(#stats),body:not(.wl-devhead) .bar .hint:not(#stats
 
 
 <script>/* 스테이지 설정 (tools/build-single.js) */
-window.WL_V="bd79895e33";
-window.WL_BUILD={"commit":"f0f49ac","date":"2026-11-27","stage":"basecamp"};
+window.WL_V="2939a00fdc";
+window.WL_BUILD={"commit":"0581157","date":"2026-11-28","stage":"basecamp"};
 window.WL_START_ZONE="basecamp";
 window.WL_REMOTE="https://wonderloop-explorer.github.io/wonderloop-game/"; /* 소리 파일을 받아 올 공개 주소 */
 </script>
@@ -11835,7 +11835,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     if(ground&&!SW.busy&&SW.armed&&!secretW.faded&&Math.hypot(P.x-SW.x,P.z-SW.z)<1.6&&stage()!=='meet'){if(st.summit)summitDown(W);else secretRide(W);return;}}
   if(st.scene||st.cross||st.ride||st.bigTick||U.riding)return;
   if(st.summit){const S=st.summit;S.t+=dt; /* 화산 꼭대기 고원에 머무는 동안(걸어 다님): 깃발 자리 안내 → 꽂은 뒤엔 내려가는 회오리 안내. 깃발을 안 꽂아도 회오리를 타면 내려감(비밀이라 진행과 무관) */
-    if(REV){quest('',null,'revtop'); /* 2026-11-27: 다시 찾은 탐방 — 하늘 회오리도 빛기둥·이름표 없이 회오리만(사용자 요청) */
+    if(REV){if(st.bigOn)quest('',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4,path:false},'revtop');else quest('',null,'revwait'); /* 2026-11-28: 다시 찾은 탐방 — 꼭대기의 하늘 회오리(다른 행성으로 떠나는 출구)에는 회색 정원 출구처럼 빛기둥·이름표(사용자 요청, 11-27에 뺐던 것을 되살림). 땅의 화산 회오리는 표시 없음 그대로 */
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
     else if(F[K.clear]){if(st.bigOn&&!st.flagBusy)quest('큰 회오리를 타고 하늘로',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4});else quest('',null,'flagwait'); /* 2026-11-27: 표시는 하늘 회오리가 실제로 생긴 뒤에만 — 예전엔 깃발이 꽂힌 순간(동작 0.6초 — 한 바퀴 카메라 장면이 시작되기 전)부터 빛기둥·이름표가 잠깐 떴다가 장면이 지웠다 */
@@ -12614,6 +12614,10 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   const frontCam=(W,D0=6.2)=>{const P=W.position,c=G.view.camera.position;let nx=c.x-P.x,nz=c.z-P.z;const l=Math.hypot(nx,nz)||1;nx/=l;nz/=l;const k=pk(),pt=k>1.3,D=(pt?D0+.4:D0)*k;W.rotation.y=Math.atan2(nx,nz);return ()=>({at:[P.x,P.y+(pt?.6:1.0),P.z],from:[P.x+nx*D,P.y+1.5+.25*(k-1),P.z+nz*D]});};
   /* ── ① 도착(2026-11-26 이동 통일): 반짝이 꼬리를 그리며 얼음 섬에 착지(meteor-ride arrival — 모든 행성 공통) → 도착 나레이션(RS-001)이 끝난 뒤 흐름 시작 ── */
   let started=false,arrS=null;
+  /* 2026-11-28: 섬에 얹힌 얼음 배는 발판 — 옆에서 걸어 들어가면 막히고(예전: 몸이 배를 뚫고 지나감) 점프하면 위에 올라섬. 배 모양(길쭉한 렌즈 — 가장자리 높이 .42·가운데 .58)을 둥근 발판 여섯으로.
+     배가 제자리(BOATAT)에 얹혀 있을 때만(날아오는 중·떠난 뒤에는 높이 -9 = 없음) */
+  const parked=()=>boat.visible&&Math.abs(boat.position.x-BOATAT[0])<.05&&Math.abs(boat.position.z-BOATAT[1])<.05&&Math.abs(boat.position.y-BY)<.05&&boat.scale.x>.95;
+  const BOATPLAT=[[0,.8,.5],[.82,.64,.5],[-.82,.64,.5],[1.32,.4,.46],[-1.32,.4,.46],[0,.46,.56]].map(([dz,r,top])=>({c:[BOATAT[0],BOATAT[1]+dz,r],get top(){return parked()?top:-9;}}));
   /* 2026-11-27: 원더룹이 얼음 배를 타고 와서 고리 위에 내림(금성에서 타고 온 배 — 지도에서 골라 와도 같음). 배는 쉬는 자리(BOATAT)에 얹히고 그대로 남음 */
   function arrive(W,U){lockOn(G,W);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');W.rotation.y=PI/2;boat.visible=true;boat.scale.setScalar(1);boat.children[0].material.opacity=1;
     const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1;st.arrB={t:0,D,cu:null,idle:9};G.travel.note('phase','arrive');G.travel.landIn(D);ggMode='wave';
@@ -12885,6 +12889,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     if(st.depLate)st.depLate(dt);}
   return {name:'토성 고리',kind:'outdoor',start:{compass:true},world:null,
     spawn:{x:HERO[0],z:HERO[1],ry:-PI/2},
+    platforms:BOATPLAT,
     areas:{field:{bounds:[-6.6,6.6,-6.6,6.6],obstacles,camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
     sun:{dir:new THREE.Vector3(...KEY.sunDir).normalize(),shadow:14,follow:true},
     sky:SK,far:2400,get farMin(){return st.farMin||1400;} /* 엔켈라두스(1050m)까지 — 쉬기 넷째 구간·떠날 때는 더 멀리 */,ambience:'space',rim:.2,groundY:()=>0,ground:[island],keepOut:keep,
