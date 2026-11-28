@@ -196,6 +196,10 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
   const frontCam=(W,D0=6.2)=>{const P=W.position,c=G.view.camera.position;let nx=c.x-P.x,nz=c.z-P.z;const l=Math.hypot(nx,nz)||1;nx/=l;nz/=l;const k=pk(),pt=k>1.3,D=(pt?D0+.4:D0)*k;W.rotation.y=Math.atan2(nx,nz);return ()=>({at:[P.x,P.y+(pt?.6:1.0),P.z],from:[P.x+nx*D,P.y+1.5+.25*(k-1),P.z+nz*D]});};
   /* ── ① 도착(2026-11-26 이동 통일): 반짝이 꼬리를 그리며 얼음 섬에 착지(meteor-ride arrival — 모든 행성 공통) → 도착 나레이션(RS-001)이 끝난 뒤 흐름 시작 ── */
   let started=false,arrS=null;
+  /* 2026-11-28: 섬에 얹힌 얼음 배는 발판 — 옆에서 걸어 들어가면 막히고(예전: 몸이 배를 뚫고 지나감) 점프하면 위에 올라섬. 배 모양(길쭉한 렌즈 — 가장자리 높이 .42·가운데 .58)을 둥근 발판 여섯으로.
+     배가 제자리(BOATAT)에 얹혀 있을 때만(날아오는 중·떠난 뒤에는 높이 -9 = 없음) */
+  const parked=()=>boat.visible&&Math.abs(boat.position.x-BOATAT[0])<.05&&Math.abs(boat.position.z-BOATAT[1])<.05&&Math.abs(boat.position.y-BY)<.05&&boat.scale.x>.95;
+  const BOATPLAT=[[0,.8,.5],[.82,.64,.5],[-.82,.64,.5],[1.32,.4,.46],[-1.32,.4,.46],[0,.46,.56]].map(([dz,r,top])=>({c:[BOATAT[0],BOATAT[1]+dz,r],get top(){return parked()?top:-9;}}));
   /* 2026-11-27: 원더룹이 얼음 배를 타고 와서 고리 위에 내림(금성에서 타고 온 배 — 지도에서 골라 와도 같음). 배는 쉬는 자리(BOATAT)에 얹히고 그대로 남음 */
   function arrive(W,U){lockOn(G,W);U.action='서기';U.at=0;if(U.setExpr)U.setExpr('반짝 신남');W.rotation.y=PI/2;boat.visible=true;boat.scale.setScalar(1);boat.children[0].material.opacity=1;
     const ur=G.travel.untilResolve(),D=ur!=null&&isFinite(ur)&&ur>0?Math.min(4.4,Math.max(2.2,ur)):3.1;st.arrB={t:0,D,cu:null,idle:9};G.travel.note('phase','arrive');G.travel.landIn(D);ggMode='wave';
@@ -467,6 +471,7 @@ export function build({root}){const st0={};const MOB=QUALITY.tier==='mobile',kee
     if(st.depLate)st.depLate(dt);}
   return {name:'토성 고리',kind:'outdoor',start:{compass:true},world:null,
     spawn:{x:HERO[0],z:HERO[1],ry:-PI/2},
+    platforms:BOATPLAT,
     areas:{field:{bounds:[-6.6,6.6,-6.6,6.6],obstacles,camera:{target:[0,1,0],dist:9,polar:[.45,1.35],azimuth:null,start:[2.6,.95],minDist:3,maxDist:30}}},
     sun:{dir:new THREE.Vector3(...KEY.sunDir).normalize(),shadow:14,follow:true},
     sky:SK,far:2400,get farMin(){return st.farMin||1400;} /* 엔켈라두스(1050m)까지 — 쉬기 넷째 구간·떠날 때는 더 멀리 */,ambience:'space',rim:.2,groundY:()=>0,ground:[island],keepOut:keep,

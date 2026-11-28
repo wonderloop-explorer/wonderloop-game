@@ -604,7 +604,7 @@ function update(dt,t){const W=U0();tickSky(G.view.camera,W&&W.position);if(!W)re
     if(ground&&!SW.busy&&SW.armed&&!secretW.faded&&Math.hypot(P.x-SW.x,P.z-SW.z)<1.6&&stage()!=='meet'){if(st.summit)summitDown(W);else secretRide(W);return;}}
   if(st.scene||st.cross||st.ride||st.bigTick||U.riding)return;
   if(st.summit){const S=st.summit;S.t+=dt; /* 화산 꼭대기 고원에 머무는 동안(걸어 다님): 깃발 자리 안내 → 꽂은 뒤엔 내려가는 회오리 안내. 깃발을 안 꽂아도 회오리를 타면 내려감(비밀이라 진행과 무관) */
-    if(REV){quest('',null,'revtop'); /* 2026-11-27: 다시 찾은 탐방 — 하늘 회오리도 빛기둥·이름표 없이 회오리만(사용자 요청) */
+    if(REV){if(st.bigOn)quest('',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4,path:false},'revtop');else quest('',null,'revwait'); /* 2026-11-28: 다시 찾은 탐방 — 꼭대기의 하늘 회오리(다른 행성으로 떠나는 출구)에는 회색 정원 출구처럼 빛기둥·이름표(사용자 요청, 11-27에 뺐던 것을 되살림). 땅의 화산 회오리는 표시 없음 그대로 */
       if(st.bigOn&&st.bigK>=1&&Math.hypot(P.x-BIGTOP[0],P.z-BIGTOP[1])<2.3&&!G.ui.cardShown()&&!G.dialog.talking())scene(()=>bigLift(W,U));}
     else if(!F[K.flag]){quest(F[K.clear]?'화산 꼭대기에 깃발을 꽂아요':'깃발을 꽂아 볼까요?',{at:FLAGSPOT,y:groundY(...FLAGSPOT),label:'깃발 자리',style:'ant',h:2.6});if(!F[K.clear]&&!S.warn&&S.t>26&&!G.ui.cardShown()){S.warn=true;G.ui.toast('꽂지 않아도 괜찮아요 — 옆의 먼지 회오리를 타면 내려가요',4.4);}}
     else if(F[K.clear]){if(st.bigOn&&!st.flagBusy)quest('큰 회오리를 타고 하늘로',{at:BIGTOP,y:groundY(...BIGTOP),label:'하늘 회오리',style:'ant',h:4});else quest('',null,'flagwait'); /* 2026-11-27: 표시는 하늘 회오리가 실제로 생긴 뒤에만 — 예전엔 깃발이 꽂힌 순간(동작 0.6초 — 한 바퀴 카메라 장면이 시작되기 전)부터 빛기둥·이름표가 잠깐 떴다가 장면이 지웠다 */
